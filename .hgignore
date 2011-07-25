@@ -1,0 +1,9 @@
+syntax: glob
+*.svn
+*.hgsvn
+*~
+*.pyc
+*.swp
+*.swo
+dist/
+MANIFEST
