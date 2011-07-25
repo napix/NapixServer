@@ -4,7 +4,7 @@
 import operator
 import os
 
-from pwd import getpwall,getpwuid
+from pwd import getpwall,getpwuid,getpwnam
 from napixd.exceptions import ValidationError,HTTP400,HTTP500,HTTPRC
 from napixd.utils import run_command_or_fail,run_command,ValidateIf
 
@@ -87,7 +87,7 @@ class UnixAccountHandler(object):
         command.append(login)
         code =  run_command(command)
         if code == 0:
-            raise HTTPRC, rc.CREATED
+             return getpwnam(login).pw_uid
         if code == 9:
             raise HTTPRC, rc.DUPLICATE_ENTRY
         raise HTTP500
@@ -144,5 +144,6 @@ class InitdHandler(object):
 
     @action
     def restart(self):
+        """Restart the service"""
         run_command([self.script,'restart'])
 
