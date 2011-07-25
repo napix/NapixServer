@@ -1,9 +1,9 @@
 from django.conf.urls.defaults import patterns, include, url
-from napixd.handlers import NAPIXHandler
+from napixd.views import get_urls
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 # admin.autodiscover()
 
-urlpatterns = NAPIXHandler.get_urls()
+urlpatterns = get_urls()
 

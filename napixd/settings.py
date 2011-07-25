@@ -123,7 +123,11 @@ LOGGING = {
                 'level': 'ERROR',
                 'propagate': True,
                 },
-            'napix' : {
+            'commands' : {
+                'handlers':['console'],
+                'level':'INFO'
+                },
+            'request' : {
                 'handlers':['console'],
                 'level': 'DEBUG',
                 }
