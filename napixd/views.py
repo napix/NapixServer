@@ -32,8 +32,10 @@ def wrap_view(fn):
             traceback.print_tb(sys.exc_info()[2],None,resp)
             return resp
         if isinstance(result,HttpResponse):
+            logger.debug('Found HttpResponse')
             return result
         if hasattr(result,'serialize'):
+            logger.debug('Found serialisable thing')
             result = result.serialize()
         ctypes = [ request.GET.get('format',None), kwargs.get('format',None) ]
         ctypes.extend([a.split(';')[0] for a in request.META['HTTP_ACCEPT'].split(',')])
@@ -79,9 +81,9 @@ class Service(object):
             raise HTTP404
         return resource
 
-    def filter_values(self,data):
+    def filter_values(self,fields,data):
         values = {}
-        for f in self.handler.fields :
+        for f in fields :
             try:
                 values[f] =data[f]
             except KeyError:
@@ -96,13 +98,19 @@ class Service(object):
         if request.method in ('PUT','POST'):
             logger.debug('REQUEST Content-type %s',request.META['CONTENT_TYPE'])
             translate_mime(request)
-            request.values = self.filter_values(request.data)
+            request.values = self.filter_values(self.handler.fields,request.data)
 
     @wrap_view
     def view_collection(self,request):
+        if 'doc' in request.GET:
+            return { 'doc' : self.handler.__doc__,
+                    'resource_id':self.handler.validate_resource_id.__doc__,
+                    'collection_methods':self.handler.collection_methods }
         logger.info('Collection %s %s',self.handler_name,request.method)
         self.prepare_request(request,self.handler.collection_methods)
         m = request.method.upper()
+        if m == 'HEAD':
+            return HttpResponse()
         if m == 'GET':
             return self.handler.find_all()
         if m == 'POST':
@@ -111,10 +119,16 @@ class Service(object):
 
     @wrap_view
     def view_resource(self,request,rid):
+        if 'doc' in request.GET:
+            return { 'doc':self.handler.__doc__,
+                    'resource_methods':self.handler.resource_methods,
+                    'actions':self.handler.actions}
         logger.info('Resource %s %s %s',self.handler_name,rid,request.method)
         self.prepare_request(request,self.handler.resource_methods)
         resource = self.find_resource(rid)
         m = request.method.upper()
+        if m == 'HEAD':
+            return HttpResponse()
         if m == 'GET':
             return resource
         if m == 'PUT':
@@ -125,10 +139,21 @@ class Service(object):
     @wrap_view
     def view_action(self,request,rid,action_id):
         logger.info('Action %s %s %s %s',self.handler_name,rid,action_id,request.method)
-        self.prepare_request(request,('POST',))
+        self.prepare_request(request,('POST','HEAD','GET'))
         resource = self.find_resource(rid)
         cb = getattr(resource,action_id)
-        return cb()
+        m = request.method.upper()
+        if m == 'HEAD':
+            return HttpResponse()
+        if m == 'GET':
+            if 'doc' in request.GET:
+                return { 'doc' : self.handler.__doc__,
+                        'resource':resource.serialize(),
+                        'name':action_id,
+                        'action' : cb.__doc__}
+            return HttpResponse('Action should be called with POST')
+        if m == 'POST':
+            return cb()
 
 def get_urls():
     import handlers
@@ -136,7 +161,7 @@ def get_urls():
     urls =[]
     for ur,handler in registry.items():
         service = Service(handler)
-        urls.append(url(r'^%s/(?P<rid>\w+)/(?P<action_id>\w+)/$'%ur,service.view_action))
-        urls.append(url(r'^%s/(?P<rid>\w+)/$'%ur,service.view_resource))
+        urls.append(url(r'^%s/(?P<rid>.+)/(?P<action_id>\w+)/$'%ur,service.view_action))
+        urls.append(url(r'^%s/(?P<rid>.+)/$'%ur,service.view_resource))
         urls.append(url(r'^%s/$'%ur,service.view_collection))
     return urls
