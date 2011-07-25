@@ -6,3 +6,5 @@ pip install django-piston
 cd NapixServer/napixd
 python manage.py runserver
 
+
+Then install the json plugin for ffox.
