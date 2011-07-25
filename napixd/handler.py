@@ -3,6 +3,8 @@
 
 __all__=('MetaHandler','registry')
 
+from napixd.exceptions import ValidationError
+
 class Property(object):
     def __init__(self,field):
         self.field = '_'+field
@@ -22,7 +24,12 @@ _value=object()
 def value():
     return _value
 
-default_validate = classmethod(lambda x,y:y)
+def _default_validate(cls,x):
+    """Anything"""
+    if not x:
+        raise ValidationError,'RID cannot be empty'
+    return x
+default_validate = classmethod(_default_validate)
 
 class MetaHandler(type):
     def __call__(self,rid=None,**kwargs):
@@ -43,24 +50,27 @@ class MetaHandler(type):
             attrs['validate_resource_id'] = default_validate
         for f in fields:
             attrs[f]= Property(f)
-        def outer(fields):
-            def serialize(self):
-                r={}
-                for x in fields:
-                    r[x] = getattr(self,'_'+x)
-                return r
-            return serialize
-        attrs['serialize'] = outer(fields)
+        if not 'serialize' in attrs:
+            def outer(fields):
+                def serialize(self):
+                    r={'rid':self.rid}
+                    for x in fields:
+                        r[x] = getattr(self,'_'+x)
+                    return r
+                return serialize
+            attrs['serialize'] = outer(fields)
 
         collection_methods = filter(bool,[
-                'find_all' in attrs and 'GET',
-                'create' in attrs and 'POST',
-                ])
+            'HEAD',
+            'find_all' in attrs and 'GET',
+            'create' in attrs and 'POST',
+            ])
         resource_methods = filter(bool,[
-                'find' in attrs and 'GET',
-                'modify' in attrs and 'PUT',
-                'remove' in attrs and 'DELETE'
-                ])
+            'HEAD',
+            'find' in attrs and 'GET',
+            'modify' in attrs and 'PUT',
+            'remove' in attrs and 'DELETE'
+            ])
         attrs['collection_methods'] = collection_methods
         attrs['resource_methods'] = resource_methods
         cls = type.__new__(meta,name,bases,attrs)
