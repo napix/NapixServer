@@ -11,7 +11,7 @@ logger = logging.getLogger('commands')
 def run_command_or_fail(command):
     code = run_command(command)
     if code != 0:
-        raise HTTP500,'Oops command returned '+code
+        raise HTTP500,'Oops command <%s> returned %i'%(subprocess.list2cmdline(command),code)
 
 def run_command(command):
     logger.info('Running '+' '.join(command))
