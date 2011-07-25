@@ -120,7 +120,7 @@ class InitdHandler(object):
         if 'state' not in values:
             return HTTP400('<state> parameter required')
         status = values['state'] == 'off' and 'stop' or 'start'
-        run_command_or_fail([self.rid,status])
+        run_command_or_fail([self.script,status])
         return rc.ALL_OK
 
     @classmethod
