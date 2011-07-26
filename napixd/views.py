@@ -88,8 +88,6 @@ class Service(object):
                 values[f] =data[f]
             except KeyError:
                 pass
-        if not values:
-            return None
         return values
     def prepare_request(self,request,allowed_methods):
         if not request.method in allowed_methods:
@@ -98,7 +96,6 @@ class Service(object):
         if request.method in ('PUT','POST'):
             logger.debug('REQUEST Content-type %s',request.META['CONTENT_TYPE'])
             translate_mime(request)
-            request.values = self.filter_values(self.handler.fields,request.data)
 
     @wrap_view
     def view_collection(self,request):
@@ -114,7 +111,8 @@ class Service(object):
         if m == 'GET':
             return self.handler.find_all()
         if m == 'POST':
-            rid =  self.handler.create(request.values)
+            values = self.filter_values(self.handler.fields,request.data)
+            rid =  self.handler.create(values)
             return {'rid':rid}
 
     @wrap_view
@@ -132,7 +130,8 @@ class Service(object):
         if m == 'GET':
             return resource
         if m == 'PUT':
-            return resource.modify(request.values)
+            values = self.filter_values(self.handler.fields,request.data)
+            return resource.modify(values)
         if m == 'DELETE':
             return resource.remove()
 
@@ -150,10 +149,13 @@ class Service(object):
                 return { 'doc' : self.handler.__doc__,
                         'resource':resource.serialize(),
                         'name':action_id,
+                        'mandatory_params':cb.mandatory,
+                        'optional_params':cb.optional,
                         'action' : cb.__doc__}
             return HttpResponse('Action should be called with POST')
         if m == 'POST':
-            return cb()
+            values = self.filter_values(cb.fields,request.data)
+            return cb(**values)
 
 def get_urls():
     import handlers
