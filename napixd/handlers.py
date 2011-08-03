@@ -10,18 +10,18 @@ from napixd.utils import run_command_or_fail,run_command,ValidateIf
 
 from piston.utils import rc
 
-from handler import MetaHandler,value,action,registry
+from handler import MetaHandler,Value,action,registry
 
 class NAPIXAPI(object):
     """Service d'introspection de API"""
     url = 'napix'
     __metaclass__ = MetaHandler
 
-    doc = value()
-    fields = value()
-    collection_methods = value()
-    resource_methods = value()
-    actions =value()
+    doc = Value('documentation du handler')
+    fields = Value('Champs disponibles dans les ressources')
+    collection_methods = Value('Methodes applicable à la collection')
+    resource_methods = Value('Methodes applicable à la ressource')
+    actions =Value('Actions applicable à la ressource')
 
     @classmethod
     def find_all(cls):
@@ -33,23 +33,22 @@ class NAPIXAPI(object):
             handler = registry[rid]
         except KeyError:
             return None
-        return cls(rid,
-                doc = handler.__doc__,
-                fields=handler.fields,
-                collection_methods=handler.collection_methods,
-                resource_methods = handler.resource_methods,
-                actions=handler.actions)
+        y={}
+        y.update(handler.doc_resource)
+        y.update(handler.doc_collection)
+        y.update(handler.doc_action)
+        return cls(rid,**y)
 
 class UnixAccountHandler(object):
     """Gestionnaire des comptes UNIX """
     __metaclass__ = MetaHandler
     table_pwd = { 'name' : 'login', 'gid': 'gid', 'gecos':'comment' ,'shell':'shell','dir':'home'}
 
-    name = value()
-    gid = value()
-    gecos = value()
-    dir = value()
-    shell = value()
+    name = Value('Login')
+    gid = Value('Groupe ID')
+    gecos = Value('Commentaire')
+    dir = Value('Répertoire personnel')
+    shell = Value('Shell de login')
 
     @classmethod
     def validate_resource_id(cls,r_id):
@@ -110,7 +109,7 @@ class InitdHandler(object):
     __metaclass__ = MetaHandler
 
     path = '/etc/init.d'
-    state = value()
+    state = Value('Etat')
 
     @property
     def script(self):

@@ -86,7 +86,11 @@ TEMPLATE_LOADERS = (
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
+    'napixd.middleware.ConversationMiddleware',
+    'napixd.middleware.AuthMiddleware',
 )
+
+SERVICE = 'ws.napix.local'
 
 ROOT_URLCONF = 'napixd.urls'
 
@@ -97,7 +101,9 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
+        'django.contrib.sessions',
 )
+
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

@@ -16,7 +16,21 @@ class Property(object):
 
 registry = {}
 
+class ActionInstance(object):
+    def __init__(self,action,instance):
+        self.action = action
+        self.instance = instance
+    def __getattr__(self,attr):
+        return getattr(self.action,attr)
+    def __call__(self,**values):
+        self.action(self.instance,**values)
+
 class Action(object):
+    @property
+    def doc(self):
+        return { 'mandatory_params':self.mandatory,
+                'optional_params':self.optional,
+                'action' : self.__doc__}
     def __init__(self,fn,mandatory=None,optional=None):
         self.__doc__=fn.__doc__
         self.fn = fn
@@ -25,16 +39,18 @@ class Action(object):
         fields = mandatory[:]
         fields.extend(optional.keys())
         self.fields = fields
-    def __call__(self,**values):
-        mandatory_count = len(self.mandatory)
-        for k in values:
-            if k not in self.fields:
-                raise HTTP400,'<%s> is not allowed here'%k
-            if not k in self.optional:
-                mandatory_count -= 1
-        if mandatory_count != 0:
-            raise HTTP400,'missing mandatory parameter'
-        return self.fn(**values)
+    def __get__(self,instance,owner):
+        return ActionInstance(self,instance)
+
+    def __call__(self,instance,**values):
+        print self,values
+        missing = filter(lambda x: x not in values,self.mandatory)
+        if missing:
+            raise HTTP400,'missing mandatory parameter "%s"'%(','.join(missing))
+        forbidden = filter(lambda x: x not in self.fields,values)
+        if forbidden:
+            raise HTTP400,'"%s" is not allowed here'%(','.join(forbidden))
+        return self.fn(instance,**values)
 
 def action(fn):
     param = inspect.getargspec(fn)
@@ -49,10 +65,12 @@ def action(fn):
 
     return Action(fn,mandatory,optional)
 
-_value=object()
-
-def value():
-    return _value
+class Value():
+    @property
+    def doc(self):
+        return self.__doc__
+    def __init__(self,doc):
+        self.__doc__ = doc
 
 def _default_validate(cls,x):
     """Anything"""
@@ -60,6 +78,9 @@ def _default_validate(cls,x):
         raise ValidationError,'RID cannot be empty'
     return x
 default_validate = classmethod(_default_validate)
+
+def filter_class(lst,cls):
+    return dict([x for x in lst.items() if isinstance(x[1],cls)])
 
 class MetaHandler(type):
     def __call__(self,rid=None,**kwargs):
@@ -72,9 +93,9 @@ class MetaHandler(type):
     def __new__(meta,name,bases,attrs):
         if 'rid' in attrs:
             raise Exception,'rid is a reserved keyword'
-        fields = map(lambda x:x[0],filter(lambda x:x[1] is _value,attrs.items()))
+        fields = filter_class(attrs,Value)
         attrs['fields'] = fields
-        actions =map(lambda x:x[0],filter(lambda x:isinstance(x[1],Action),attrs.items()))
+        actions =filter_class(attrs,Action)
         attrs['actions'] = actions
         if not 'validate_resource_id' in attrs:
             attrs['validate_resource_id'] = default_validate
@@ -103,6 +124,16 @@ class MetaHandler(type):
             ])
         attrs['collection_methods'] = collection_methods
         attrs['resource_methods'] = resource_methods
+
+        attrs['doc_collection'] = { 'doc' : attrs['__doc__'],
+                    'resource_id':attrs['validate_resource_id'].__doc__,
+                    'collection_methods':attrs['collection_methods'] }
+        attrs['doc_resource'] = { 'doc':attrs['__doc__'],
+                        'fields':dict([(x,y.doc) for x,y in fields.items()]),
+                        'resource_methods':attrs['resource_methods'],
+                        'actions':actions.keys()}
+        attrs['doc_action'] = { 'actions' : dict([(x,y.doc) for x,y in actions.items()]) }
+
         cls = type.__new__(meta,name,bases,attrs)
         if 'url' in attrs:
             url = attrs['url']

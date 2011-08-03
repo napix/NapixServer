@@ -18,3 +18,18 @@ class HTTP500(HTTPException):
 class HTTPRC(Exception):
     def __init__(self,rc):
         self.rc=rc
+
+class HTTPWithContent(Exception):
+    status = 200
+    def __init__(self,content,status=None):
+        self.content = content
+        self.status = status or self.__class__.status
+
+class HTTPRedirect(HTTPWithContent):
+    status = 301
+    def __init__(self,url,content):
+        HTTPWithContent.__init__(self,content)
+        self.url = url
+
+class HTTPForbidden(HTTPWithContent):
+    status = 403
