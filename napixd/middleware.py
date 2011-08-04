@@ -27,8 +27,17 @@ class AuthMiddleware(object):
             return None
         if not 'HTTP_AUTHORIZATION' in request.META:
             raise HTTPForbidden,{'from':'service','reason':'No authentication'}
-        msg,signature = request.META['HTTP_AUTHORIZATION'].split(':')
+        msg,l,signature = request.META['HTTP_AUTHORIZATION'].rpartition(':')
+        if l != ':':
+            raise HTTPForbidden,{'from':'service','reason':'Misformed authentication'}
         content = parse_qs(msg)
+        for x in content:
+            content[x] = content[x][0]
+        try:
+            if content['host'] != settings.SERVICE:
+                raise HTTPForbidden,{'from':'service','reason':'Not this service'}
+        except AttributeError:
+            raise HTTPForbidden,{'from':'service','reason':'No host addressed'}
         content['msg'] = msg
         content['signature'] = signature
         request_logger.debug(msg)
@@ -59,15 +68,15 @@ class ConversationMiddleware(object):
 
     def process_exception(self,request,exception):
         request_logger.debug('Caught %s',exception.__class__.__name__)
-        if isinstance(HTTPRC,exception):
+        if isinstance(exception,HTTPRC):
             return self.respond(request,None,exception.rc)
-        if isinstance(HTTPException,exception):
+        if isinstance(exception,HTTPException):
             return self.respond(request,str(exception),exception.status)
-        if isinstance(HTTPRedirect,exception):
+        if isinstance(exception,HTTPRedirect):
             return self.respond(request,exception.content,301,{'Location':exception.url})
-        if isinstance(HTTPWithContent,exception):
+        if isinstance(exception,HTTPWithContent):
             return self.respond(request,exception.content,exception.status)
-        if isinstance(Exception, exception):
+        if isinstance(exception,Exception):
             request_logger.debug('Caught Exception %s %s'%(
                 exception.__class__.__name__,str(exception)))
             resp = HttpResponseServerError(mimetype='text/plain')
@@ -101,4 +110,6 @@ class ConversationMiddleware(object):
         srl = emitter(content, None, None, None,None)
         stream = srl.render(request)
         resp = HttpResponse(stream,status=status_code,mimetype=ct)
+        for h,v in headers:
+            resp[h] = v
         return resp
