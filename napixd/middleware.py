@@ -15,7 +15,7 @@ from django.http import HttpResponse,HttpResponseServerError
 from piston.emitters import Emitter
 from piston.utils import translate_mime,coerce_put_post
 
-from napixd.exceptions import HTTPException,HTTPRC,HTTPRedirect,HTTPWithContent,HTTPForbidden
+from napixd.exceptions import HTTPException,HTTPRC,HTTPRedirect,HTTPWithContent,HTTPForbidden,PermissionDenied
 
 request_logger = logging.getLogger('request')
 
@@ -26,18 +26,18 @@ class AuthMiddleware(object):
         if settings.DEBUG and 'authok' in request.GET:
             return None
         if not 'HTTP_AUTHORIZATION' in request.META:
-            raise HTTPForbidden,{'from':'service','reason':'No authentication'}
+            raise PermissionDenied({'from':'service','reason':'No authentication'})
         msg,l,signature = request.META['HTTP_AUTHORIZATION'].rpartition(':')
         if l != ':':
-            raise HTTPForbidden,{'from':'service','reason':'Misformed authentication'}
+            raise PermissionDenied({'from':'service','reason':'Misformed authentication'})
         content = parse_qs(msg)
         for x in content:
             content[x] = content[x][0]
         try:
             if content['host'] != settings.SERVICE:
-                raise HTTPForbidden,{'from':'service','reason':'Not this service'}
+                raise PermissionDenied({'from':'service','reason':'Not this service'})
         except AttributeError:
-            raise HTTPForbidden,{'from':'service','reason':'No host addressed'}
+            raise PermissionDenied,{'from':'service','reason':'No host addressed'}
         content['msg'] = msg
         content['signature'] = signature
         request_logger.debug(msg)
@@ -47,7 +47,7 @@ class AuthMiddleware(object):
         body = urlencode(content)
         resp,content = h.request(auth_url,'POST',body=body,headers=headers)
         if resp.status != 200:
-            raise HTTPForbidden, {'from':'auth','reason':content}
+            raise PermissionDenied({'from':'auth','reason':content})
 
 class ConversationMiddleware(object):
     status_code = 200
