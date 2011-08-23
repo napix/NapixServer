@@ -3,6 +3,7 @@
 
 __all__=('MetaHandler','registry')
 
+from django.core.urlresolvers import reverse
 from napixd.exceptions import ValidationError,HTTP400
 import inspect
 
@@ -82,14 +83,21 @@ default_validate = classmethod(_default_validate)
 def filter_class(lst,cls):
     return dict([x for x in lst.items() if isinstance(x[1],cls)])
 
-class MetaHandler(type):
-    def __call__(self,rid=None,**kwargs):
-        instance = super(MetaHandler,self).__call__()
-        instance.rid = rid
-        for k,v in kwargs.items():
-            setattr(instance,'_'+k,v)
-        return instance
+def urlize(lst,view_name):
+    result = []
+    for x in lst:
+        result.append(reverse(view_name,args=[x]))
+    return result
 
+def default_init(self,rid=None,**kwargs):
+    instance = super(MetaHandler,self).__call__()
+    instance.rid = rid
+    for k,v in kwargs.items():
+        setattr(instance,'_'+k,v)
+    return instance
+
+class MetaHandler(type):
+    """MAGIC HAPPENS HERE"""
     def __new__(meta,name,bases,attrs):
         if 'rid' in attrs:
             raise Exception,'rid is a reserved keyword'
@@ -101,6 +109,8 @@ class MetaHandler(type):
             attrs['validate_resource_id'] = default_validate
         for f in fields:
             attrs[f]= Property(f)
+        if not '__init__' in attrs:
+            attrs['__init__'] = default_init
         if not 'serialize' in attrs:
             def outer(fields):
                 def serialize(self):
@@ -110,6 +120,15 @@ class MetaHandler(type):
                     return r
                 return serialize
             attrs['serialize'] = outer(fields)
+
+        if 'url' in attrs:
+            url = attrs['url']
+        elif name.endswith('Handler'):
+            url = name[:-7].lower()
+        else:
+            url = name.lower()
+        if url in registry:
+            raise Exception,'URL %s is allready register by %s'%(url,repr(registry[url]))
 
         collection_methods = filter(bool,[
             'HEAD',
@@ -134,14 +153,15 @@ class MetaHandler(type):
                         'actions':actions.keys()}
         attrs['doc_action'] = { 'actions' : dict([(x,y.doc) for x,y in actions.items()]) }
 
+        if 'find_all' in attrs:
+            def make_find_all(fn,view_name):
+                if isinstance(fn,classmethod):
+                    fn = fn.__func__
+                def inner(*args,**kwargs):
+                    return urlize(fn(*args,**kwargs),view_name)
+                return classmethod(inner)
+            attrs['find_all']=make_find_all(attrs['find_all'],'%s_resource'%(url))
+
         cls = type.__new__(meta,name,bases,attrs)
-        if 'url' in attrs:
-            url = attrs['url']
-        elif name.endswith('Handler'):
-            url = name[:-7].lower()
-        else:
-            url = name.lower()
-        if url in registry:
-            raise Exception,'URL %s is allready register by %s'%(url,repr(registry[url]))
         registry[url] = cls
         return cls
