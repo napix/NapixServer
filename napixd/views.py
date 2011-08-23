@@ -89,10 +89,9 @@ def get_urls():
     import handlers
     from handler import registry
     urls =[]
-    auth_plug = lambda x:x
     for ur,handler in registry.items():
         service = Service(handler)
-        urls.append(url(r'^%s/(?P<rid>.+)/(?P<action_id>\w+)/$'%ur,auth_plug(service.view_action)))
-        urls.append(url(r'^%s/(?P<rid>.+)/$'%ur,auth_plug(service.view_resource)))
-        urls.append(url(r'^%s/$'%ur,auth_plug(service.view_collection)))
+        urls.append(url(r'^%s/(?P<rid>.+)/(?P<action_id>\w+)/$'%ur,service.view_action,name='%s_action'%ur))
+        urls.append(url(r'^%s/(?P<rid>.+)/$'%ur,service.view_resource,name='%s_resource'%ur))
+        urls.append(url(r'^%s/$'%ur,service.view_collection,name='%s_collection'%ur))
     return urls
