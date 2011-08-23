@@ -11,6 +11,7 @@ from napixd.utils import run_command_or_fail,run_command,ValidateIf
 from piston.utils import rc
 
 from handler import MetaHandler,Value,action,registry
+from centrald.cas.models import Client
 
 class NAPIXAPI(object):
     """Service d'introspection de API"""
@@ -103,6 +104,40 @@ class UnixAccountHandler(object):
     def remove(self,resource):
         run_command_or_fail(['/usr/sbin/userdel',resource['name']])
         return rc.DELETED
+
+class APIUserHandler(object):
+    """Gestionnaire des utilisateurs de l'API"""
+    __metaclass__ = MetaHandler
+
+    secret = Value('Mot de passe')
+
+    @classmethod
+    def find(cls,uid):
+        try:
+            return cls(Client.objects.get(uid))
+        except Client.DoesNotExist:
+            return None
+
+    @classmethod
+    def find_all(cls):
+        return Client.objects.values_list('pk',flat=True)
+
+    @classmethod
+    def create(self,values):
+        return Client.objects.create(**values)
+
+    def remove(self):
+        self.client.delete()
+
+    def modify(self,values):
+        self.value = values.pop('secret')
+        self.save()
+
+    def __init__(self,client):
+        self.client = client
+
+    def serialize(self):
+        return { 'rid':self.client.pk,'secret':self.client.value }
 
 class InitdHandler(object):
     """ Gestionnaire des scripts init.d """
