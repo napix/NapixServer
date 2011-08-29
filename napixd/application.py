@@ -3,9 +3,9 @@
 
 from bottle import ServerAdapter
 import bottle
-"""
 import sys
 import traceback
+"""
 from cStringIO import StringIO
 import json
 """
@@ -26,11 +26,22 @@ class RocketAndExecute(ServerAdapter):
         ServerAdapter.__init__(self,**kwargs)
         self.executor = kwargs.pop('executor')
     def run(self,handler):
-        from rocket import Rocket
-        print os.getpid()
-        server = Rocket((self.host, self.port), 'wsgi', { 'wsgi_app' : handler })
-        server.start(background=True)
-        self.executor.run()
+        try:
+            from rocket import Rocket
+            print os.getpid()
+            server = Rocket((self.host, self.port), 'wsgi', { 'wsgi_app' : handler })
+
+            server.start(background=True)
+            self.executor.run()
+        except (MemoryError,KeyboardInterrupt):
+            pass
+        except :
+            a,b,c = sys.exc_info()
+            traceback.print_exception(a,b,c)
+
+        print 'ready to shut down'
+        server.stop()
+        self.executor.stop()
 
 class ConversationPlugin(object):
     name = "conversation_plugin"
@@ -40,7 +51,6 @@ class ConversationPlugin(object):
             request = bottle.request
             request.data = hasattr(request,'json') and request.json or request.forms
             res = callback(*args,**kwargs)
-            print callback
             if hasattr(res,'serialize'):
                 return res.serialize()
             return res
@@ -55,6 +65,7 @@ class ExecutorPlugin(object):
         def inner(*args,**kwargs):
             request = bottle.request
             request.executor = self.executor
+            return callback(*args,**kwargs)
         return inner
 
 import handlers
@@ -79,3 +90,4 @@ if __name__ == '__main__':
     bottle.run(napixd,
             server=RocketAndExecute,
             executor=executor)
+
