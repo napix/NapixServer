@@ -3,10 +3,16 @@
 
 import logging
 
-from django.conf.urls.defaults import url
-from exceptions import ValidationError,HTTP400,HTTP405,HTTP404
+from napixd.exceptions import ValidationError
+from bottle import HTTPError,HTTPResponse
 
 logger = logging.getLogger('request')
+
+def urlize(lst,prefix):
+    """ retourne la liste des urls permettant d'acceder correspondant
+    à la liste *lst* accedée par view_name"""
+    for rid in lst:
+        yield '/%s/%s'%(prefix,rid)
 
 class Service(object):
     def __init__(self,handler):
@@ -15,14 +21,14 @@ class Service(object):
 
     def find_resource(self,rid):
         if rid is None :
-            raise HTTP400,'Resource identifier required'
+            raise HTTPError,400,'Resource identifier required'
         try:
             resource_id = self.handler.validate_resource_id(rid)
         except ValidationError:
-            raise HTTP400,'Invalid resource identifier'
+            raise HTTPError,400,'Invalid resource identifier'
         resource = self.handler.find(resource_id)
         if resource == None:
-            raise HTTP404
+            raise HTTPError,404
         return resource
 
     def filter_values(self,fields,data):
@@ -35,7 +41,7 @@ class Service(object):
         return values
     def prepare_request(self,request,allowed_methods):
         if not request.method in allowed_methods:
-            raise HTTP405
+            raise HTTPError,405
 
     def view_collection(self,request):
         if 'doc' in request.GET:
@@ -46,11 +52,14 @@ class Service(object):
         if m == 'HEAD':
             return None
         if m == 'GET':
-            return self.handler.find_all()
+            res= self.handler.find_all()
+            return {'values':zip(res,urlize(res,self.handler.url))}
         if m == 'POST':
             values = self.filter_values(self.handler.fields,request.data)
             rid =  self.handler.create(values)
-            return {'rid':rid}
+            return HTTPResponse(202,None,
+                    {'Content-location':'/%s/%s'%(self.handler.url,rid)})
+
 
     def view_resource(self,request,rid):
         if 'doc' in request.GET:
@@ -65,9 +74,9 @@ class Service(object):
             return resource
         if m == 'PUT':
             values = self.filter_values(self.handler.fields,request.data)
-            return resource.modify(values)
+            resource.modify(values)
         if m == 'DELETE':
-            return resource.remove()
+            resource.remove()
 
     def view_action(self,request,rid,action_id):
         logger.info('Action %s %s %s %s',self.handler_name,rid,action_id,request.method)
@@ -84,14 +93,3 @@ class Service(object):
         if m == 'POST':
             values = self.filter_values(cb.fields,request.data)
             return cb(**values)
-
-def get_urls():
-    import handlers
-    from handler import registry
-    urls =[]
-    for ur,handler in registry.items():
-        service = Service(handler)
-        urls.append(url(r'^%s/(?P<rid>.+)/(?P<action_id>\w+)/$'%ur,service.view_action,name='%s_action'%ur))
-        urls.append(url(r'^%s/(?P<rid>.+)/$'%ur,service.view_resource,name='%s_resource'%ur))
-        urls.append(url(r'^%s/$'%ur,service.view_collection,name='%s_collection'%ur))
-    return urls

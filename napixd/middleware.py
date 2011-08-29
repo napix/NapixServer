@@ -26,18 +26,18 @@ class AuthMiddleware(object):
         if settings.DEBUG and 'authok' in request.GET:
             return None
         if not 'HTTP_AUTHORIZATION' in request.META:
-            raise PermissionDenied({'from':'service','reason':'No authentication'})
+            return HttpResponse(status=401)
         msg,l,signature = request.META['HTTP_AUTHORIZATION'].rpartition(':')
         if l != ':':
-            raise PermissionDenied({'from':'service','reason':'Misformed authentication'})
+            return HttpResponse('Need moar authentication',status=401,mimetype='text/plain')
         content = parse_qs(msg)
         for x in content:
             content[x] = content[x][0]
         try:
             if content['host'] != settings.SERVICE:
-                raise PermissionDenied({'from':'service','reason':'Not this service'})
+                return HttpResponse('Bad host',status=400,mimetype='text/plain')
         except AttributeError:
-            raise PermissionDenied,{'from':'service','reason':'No host addressed'}
+            return HttpResponse('No host',status=400,mimetype='text/plain')
         content['msg'] = msg
         content['signature'] = signature
         request_logger.debug(msg)
@@ -47,7 +47,7 @@ class AuthMiddleware(object):
         body = urlencode(content)
         resp,content = h.request(auth_url,'POST',body=body,headers=headers)
         if resp.status != 200:
-            raise PermissionDenied({'from':'auth','reason':content})
+            return HttpResponse('No auth',status=403,mimetype='text/plain')
 
 class ConversationMiddleware(object):
     status_code = 200

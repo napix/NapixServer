@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from multiprocessing import Process
+from subprocess import Popen
+import tempfile
 import operator
 import os
+from time import time
 
 from pwd import getpwall,getpwuid,getpwnam
-from napixd.exceptions import ValidationError,HTTP400,HTTP500,HTTPRC
+from napixd.exceptions import ValidationError
 from napixd.utils import run_command_or_fail,run_command,ValidateIf
-
-from piston.utils import rc
 
 from handler import MetaHandler,Value,action,registry
 from centrald.cas.models import Client
@@ -39,6 +41,65 @@ class NAPIXAPI(object):
         y.update(handler.doc_collection)
         y.update(handler.doc_action)
         return cls(rid,**y)
+
+class RunningProcessHandler(object):
+    """ asynchronous process handler """
+    __metaclass__ = MetaHandler
+
+
+    command = Value('command to be run')
+    arguments = Value('args')
+    return_code = Value('Return status of the process')
+
+    tmp_dir = '/tmp/napix'
+    if not os.path.isdir(tmp_dir):
+        os.mkdir(tmp_dir,700)
+
+    @classmethod
+    def create(self,values):
+        command = [ values.pop('command') ]
+        command.extend(values.pop('arguments',[]))
+        directory =tempfile.mkdtemp(dir=self.tmp_dir)
+        out = open(os.path.join(directory,'out'),'w')
+        err = open(os.path.join(directory,'err'),'w')
+        def do():
+            process = Popen(command,stdout=out,stdin=open('/dev/null'),stderr=err)
+            rc=  process.wait()
+            open(os.path.join(directory,'return_code')).write(str(rc))
+        x=Process(None,do)
+        x.start()
+        open(os.path.join(directory,'time'),'w').write(str(time()))
+        open(os.path.join(directory,'pid'),'w').write(str(x.pid))
+        os.symlink(directory,os.path.join(self.tmp_dir,str(x.pid)))
+        return x.pid
+
+    @classmethod
+    @ValidateIf
+    def validate_resource_id(self,rid):
+        return rid.isdigit()
+
+    @classmethod
+    def find(cls,pid):
+        if not os.path.isdir(os.path.join(cls.tmp_dir,pid)):
+            return None
+        try:
+            rc = int(open(os.path.join(cls.tmp_dir,pid,'return_code')).read())
+        except IOError:
+            rc = None
+        return cls(pid,return_code=rc)
+
+    def serialize(self):
+        return {'rid':self.rid,
+                'status': self.return_code and 'finished' or 'running',
+                'return_code':self.return_code}
+
+    @classmethod
+    def find_all(self):
+        pass
+
+    @action
+    def kill(self):
+        pass
 
 class UnixAccountHandler(object):
     """Gestionnaire des comptes UNIX """
@@ -77,10 +138,7 @@ class UnixAccountHandler(object):
     @classmethod
     def create(self,values):
         command = ['/usr/sbin/useradd']
-        try:
-            login = values.pop('name')
-        except KeyError:
-            raise HTTP400,'<name> parameter required'
+        login = values.pop('name')
         for f,x in values.items():
             command.append('--'+self.table_pwd[f])
             command.append(x)
@@ -88,9 +146,6 @@ class UnixAccountHandler(object):
         code =  run_command(command)
         if code == 0:
              return getpwnam(login).pw_uid
-        if code == 9:
-            raise HTTPRC, rc.DUPLICATE_ENTRY
-        raise HTTP500
 
     def modify(self,values):
         command = ['/usr/sbin/usermod']
@@ -99,11 +154,9 @@ class UnixAccountHandler(object):
             command.append(x)
         command.append(self.name)
         run_command_or_fail(command)
-        return rc.ALL_OK
 
     def remove(self,resource):
         run_command_or_fail(['/usr/sbin/userdel',resource['name']])
-        return rc.DELETED
 
 class APIUserHandler(object):
     """Gestionnaire des utilisateurs de l'API"""
@@ -151,11 +204,8 @@ class InitdHandler(object):
          return os.path.join(self.path,self.rid)
 
     def modify(self,values):
-        if 'state' not in values:
-            return HTTP400('<state> parameter required')
         status = values['state'] == 'off' and 'stop' or 'start'
         run_command_or_fail([self.script,status])
-        return rc.ALL_OK
 
     @classmethod
     @ValidateIf
@@ -180,4 +230,3 @@ class InitdHandler(object):
     def restart(self):
         """Restart the service"""
         run_command([self.script,'restart'])
-

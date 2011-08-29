@@ -3,9 +3,10 @@
 
 __all__=('MetaHandler','registry')
 
-from django.core.urlresolvers import reverse
-from napixd.exceptions import ValidationError,HTTP400
+from napixd.exceptions import ValidationError
 import inspect
+
+#>>>filter(lambda x:type(x) is type and issubclass(x,RedisModel),[ getattr(models,x) for x in getattr(models,'__all__',None) or dir(models)])
 
 class Property(object):
     def __init__(self,field):
@@ -18,6 +19,7 @@ class Property(object):
 registry = {}
 
 class ActionInstance(object):
+    """Proxy d'une action pour une ressource donnée"""
     def __init__(self,action,instance):
         self.action = action
         self.instance = instance
@@ -44,13 +46,12 @@ class Action(object):
         return ActionInstance(self,instance)
 
     def __call__(self,instance,**values):
-        print self,values
         missing = filter(lambda x: x not in values,self.mandatory)
         if missing:
-            raise HTTP400,'missing mandatory parameter "%s"'%(','.join(missing))
+            raise KeyError,'missing mandatory parameter "%s"'%(','.join(missing))
         forbidden = filter(lambda x: x not in self.fields,values)
         if forbidden:
-            raise HTTP400,'"%s" is not allowed here'%(','.join(forbidden))
+            raise ValueError,'"%s" is not allowed here'%(','.join(forbidden))
         return self.fn(instance,**values)
 
 def action(fn):
@@ -73,28 +74,22 @@ class Value():
     def __init__(self,doc):
         self.__doc__ = doc
 
-def _default_validate(cls,x):
+@classmethod
+def default_validate(cls,x):
     """Anything"""
     if not x:
         raise ValidationError,'RID cannot be empty'
     return x
-default_validate = classmethod(_default_validate)
 
 def filter_class(lst,cls):
+    """ retourne un dictionnaire sous-ensemble
+    du dictionnaire *lst* dont les element sont une instance de *cls*"""
     return dict([x for x in lst.items() if isinstance(x[1],cls)])
 
-def urlize(lst,view_name):
-    result = []
-    for x in lst:
-        result.append(reverse(view_name,args=[x]))
-    return result
-
-def default_init(self,rid=None,**kwargs):
-    instance = super(MetaHandler,self).__call__()
+def default_init(instance,rid=None,**kwargs):
     instance.rid = rid
     for k,v in kwargs.items():
         setattr(instance,'_'+k,v)
-    return instance
 
 class MetaHandler(type):
     """MAGIC HAPPENS HERE"""
@@ -129,6 +124,7 @@ class MetaHandler(type):
             url = name.lower()
         if url in registry:
             raise Exception,'URL %s is allready register by %s'%(url,repr(registry[url]))
+        attrs['url']=url
 
         collection_methods = filter(bool,[
             'HEAD',
@@ -152,15 +148,6 @@ class MetaHandler(type):
                         'resource_methods':attrs['resource_methods'],
                         'actions':actions.keys()}
         attrs['doc_action'] = { 'actions' : dict([(x,y.doc) for x,y in actions.items()]) }
-
-        if 'find_all' in attrs:
-            def make_find_all(fn,view_name):
-                if isinstance(fn,classmethod):
-                    fn = fn.__func__
-                def inner(*args,**kwargs):
-                    return urlize(fn(*args,**kwargs),view_name)
-                return classmethod(inner)
-            attrs['find_all']=make_find_all(attrs['find_all'],'%s_resource'%(url))
 
         cls = type.__new__(meta,name,bases,attrs)
         registry[url] = cls

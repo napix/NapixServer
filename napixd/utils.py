@@ -4,7 +4,7 @@
 import functools
 import logging
 import subprocess
-from napixd.exceptions import ValidationError,HTTP500
+from napixd.exceptions import ValidationError
 
 command_logger = logging.getLogger('commands')
 request_logger = logging.getLogger('request')
@@ -12,7 +12,7 @@ request_logger = logging.getLogger('request')
 def run_command_or_fail(command):
     code = run_command(command)
     if code != 0:
-        raise HTTP500,'Oops command <%s> returned %i'%(subprocess.list2cmdline(command),code)
+        raise Exception,'Oops command <%s> returned %i'%(subprocess.list2cmdline(command),code)
 
 def run_command(command):
     command_logger.info('Running '+' '.join(command))
