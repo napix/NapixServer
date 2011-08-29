@@ -1,9 +1,3 @@
-syntax: glob
-*.svn
-*.hgsvn
-*~
+syntax:glob
+*.sw?
 *.pyc
-*.swp
-*.swo
-dist/
-MANIFEST
