@@ -14,6 +14,8 @@ from napixd.utils import run_command_or_fail,run_command,ValidateIf
 
 from handler import MetaHandler,Value,action,registry
 from centrald.cas.models import Client
+from executor import executor
+from bottle import HTTPResponse
 
 class NAPIXAPI(object):
     """Service d'introspection de API"""
@@ -46,32 +48,21 @@ class RunningProcessHandler(object):
     """ asynchronous process handler """
     __metaclass__ = MetaHandler
 
+    all_the_process = {}
 
     command = Value('command to be run')
     arguments = Value('args')
     return_code = Value('Return status of the process')
-
-    tmp_dir = '/tmp/napix'
-    if not os.path.isdir(tmp_dir):
-        os.mkdir(tmp_dir,700)
+    stdout = Value('Standard output')
+    stderr = Value('Error output')
 
     @classmethod
     def create(self,values):
         command = [ values.pop('command') ]
         command.extend(values.pop('arguments',[]))
-        directory =tempfile.mkdtemp(dir=self.tmp_dir)
-        out = open(os.path.join(directory,'out'),'w')
-        err = open(os.path.join(directory,'err'),'w')
-        def do():
-            process = Popen(command,stdout=out,stdin=open('/dev/null'),stderr=err)
-            rc=  process.wait()
-            open(os.path.join(directory,'return_code')).write(str(rc))
-        x=Process(None,do)
-        x.start()
-        open(os.path.join(directory,'time'),'w').write(str(time()))
-        open(os.path.join(directory,'pid'),'w').write(str(x.pid))
-        os.symlink(directory,os.path.join(self.tmp_dir,str(x.pid)))
-        return x.pid
+        p = executor.append(command).get()
+        self.all_the_process[p.pid] = p
+        return p.pid
 
     @classmethod
     @ValidateIf
@@ -80,18 +71,20 @@ class RunningProcessHandler(object):
 
     @classmethod
     def find(cls,pid):
-        if not os.path.isdir(os.path.join(cls.tmp_dir,pid)):
-            return None
-        try:
-            rc = int(open(os.path.join(cls.tmp_dir,pid,'return_code')).read())
-        except IOError:
-            rc = None
-        return cls(pid,return_code=rc)
+        process = pid in cls.all_the_process and cls.all_the_process[pid] or None
+        return cls(process)
+
+    def __init__(self,process):
+        self.rid = process.pid
+        self.process = process
 
     def serialize(self):
         return {'rid':self.rid,
                 'status': self.return_code and 'finished' or 'running',
-                'return_code':self.return_code}
+                'return_code':self.return_code,
+                'stderr' : self.stderr.read(),
+                'stdout': self.stdout.read()
+                }
 
     @classmethod
     def find_all(self):

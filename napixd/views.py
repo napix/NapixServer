@@ -6,7 +6,7 @@ import logging
 from napixd.exceptions import ValidationError
 from bottle import HTTPError,HTTPResponse
 
-logger = logging.getLogger('request')
+logger = logging.getLogger('Napix.Service')
 
 def urlize(lst,prefix):
     """ retourne la liste des urls permettant d'acceder correspondant
@@ -16,6 +16,7 @@ def urlize(lst,prefix):
 
 class Service(object):
     def __init__(self,handler):
+        logger.info('Create service for %s',str(handler))
         self.handler = handler
         self.handler_name = handler.__name__
 
@@ -39,15 +40,11 @@ class Service(object):
             except KeyError:
                 pass
         return values
-    def prepare_request(self,request,allowed_methods):
-        if not request.method in allowed_methods:
-            raise HTTPError,405
 
     def view_collection(self,request):
         if 'doc' in request.GET:
             return self.handler.doc_collection
         logger.info('Collection %s %s',self.handler_name,request.method)
-        self.prepare_request(request,self.handler.collection_methods)
         m = request.method.upper()
         if m == 'HEAD':
             return None
@@ -65,7 +62,6 @@ class Service(object):
         if 'doc' in request.GET:
             return self.handler.doc_resource
         logger.info('Resource %s %s %s',self.handler_name,rid,request.method)
-        self.prepare_request(request,self.handler.resource_methods)
         resource = self.find_resource(rid)
         m = request.method.upper()
         if m == 'HEAD':
@@ -80,7 +76,6 @@ class Service(object):
 
     def view_action(self,request,rid,action_id):
         logger.info('Action %s %s %s %s',self.handler_name,rid,action_id,request.method)
-        self.prepare_request(request,('POST','HEAD','GET'))
         resource = self.find_resource(rid)
         cb = getattr(resource,action_id)
         m = request.method.upper()

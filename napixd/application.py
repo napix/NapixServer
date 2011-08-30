@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import logging
+
+logging.basicConfig(filename='/tmp/napix.log', filemode='w', level=logging.DEBUG)
+logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
+
 from bottle import ServerAdapter
 import bottle
 import sys
@@ -14,6 +19,9 @@ from views import Service
 from executor import executor
 import os
 import functools
+
+logger = logging.getLogger('Napix.Server')
+plugin_logger = logging.getLogger('Napix.Plugin')
 
 def wrap(fn):
     @functools.wraps(fn)
@@ -35,11 +43,11 @@ class RocketAndExecute(ServerAdapter):
             self.executor.run()
         except (MemoryError,KeyboardInterrupt):
             pass
-        except :
+        except Exception,e:
+            logger.error('Caught %s (%s)',type(e).__name__,str(e))
             a,b,c = sys.exc_info()
             traceback.print_exception(a,b,c)
-
-        print 'ready to shut down'
+        logger.info('Ready to stop')
         server.stop()
         self.executor.stop()
 
@@ -47,7 +55,9 @@ class ConversationPlugin(object):
     name = "conversation_plugin"
     api = 2
     def apply(self,callback,route):
+        plugin_logger.info('Installing %s',self.name)
         def inner(*args,**kwargs):
+            plugin_logger.debug('%s running',self.name)
             request = bottle.request
             request.data = hasattr(request,'json') and request.json or request.forms
             res = callback(*args,**kwargs)
@@ -62,11 +72,14 @@ class ExecutorPlugin(object):
     def __init__(self):
         self.executor = executor
     def apply(self,callback,route):
+        plugin_logger.info('Installing %s',self.name)
         def inner(*args,**kwargs):
+            plugin_logger.debug('%s running',self.name)
             request = bottle.request
             request.executor = self.executor
             return callback(*args,**kwargs)
         return inner
+
 
 import handlers
 napixd = bottle.app.push()
@@ -74,20 +87,24 @@ for ur,handler in registry.items():
     service = Service(handler)
     napixd.route(r'/%s/:rid/:action_id/'%ur,
             callback=wrap(service.view_action),
-            name='%s_action'%ur)
+            name='%s_action'%ur,
+            method=['HEAD','GET','POST'])
     napixd.route(r'/%s/:rid'%ur,
             callback=wrap(service.view_resource),
-            name='%s_resource'%ur)
+            name='%s_resource'%ur,
+            method=handler.resource_methods)
     napixd.route(r'/%s/'%ur,
             callback=wrap(service.view_collection),
-            name='%s_collection'%ur)
+            name='%s_collection'%ur,
+            method=handler.collection_methods)
 napixd.install(ConversationPlugin())
 napixd.install(ExecutorPlugin())
 
-
 if __name__ == '__main__':
     bottle.debug(True)
+    logger.info('Starting')
     bottle.run(napixd,
             server=RocketAndExecute,
             executor=executor)
+    logger.info('Stopping')
 
