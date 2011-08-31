@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from multiprocessing import Process
-from subprocess import Popen
-import tempfile
 import operator
 import os
-from time import time
 
 from pwd import getpwall,getpwuid,getpwnam
 from napixd.exceptions import ValidationError
@@ -15,7 +11,10 @@ from napixd.utils import run_command_or_fail,run_command,ValidateIf
 from handler import MetaHandler,Value,action,registry
 from centrald.cas.models import Client
 from executor import executor
-from bottle import HTTPResponse
+import logging
+from bottle import HTTPError
+
+logger = logging.getLogger('Napix.Handler')
 
 class NAPIXAPI(object):
     """Service d'introspection de API"""
@@ -48,11 +47,9 @@ class RunningProcessHandler(object):
     """ asynchronous process handler """
     __metaclass__ = MetaHandler
 
-    all_the_process = {}
-
     command = Value('command to be run')
     arguments = Value('args')
-    return_code = Value('Return status of the process')
+    returncode = Value('Return status of the process')
     stdout = Value('Standard output')
     stderr = Value('Error output')
 
@@ -60,18 +57,25 @@ class RunningProcessHandler(object):
     def create(self,values):
         command = [ values.pop('command') ]
         command.extend(values.pop('arguments',[]))
-        p = executor.append(command).get()
-        self.all_the_process[p.pid] = p
+        try:
+            p = executor.append(command).get()
+        except Exception,e:
+            raise HTTPError(400,str(e))
         return p.pid
 
     @classmethod
-    @ValidateIf
     def validate_resource_id(self,rid):
-        return rid.isdigit()
+        try:
+            return int(rid)
+        except ValueError:
+            raise ValidationError
 
     @classmethod
     def find(cls,pid):
-        process = pid in cls.all_the_process and cls.all_the_process[pid] or None
+        try:
+            process = executor.manager[pid]
+        except KeyError:
+            return None
         return cls(process)
 
     def __init__(self,process):
@@ -80,15 +84,15 @@ class RunningProcessHandler(object):
 
     def serialize(self):
         return {'rid':self.rid,
-                'status': self.return_code and 'finished' or 'running',
-                'return_code':self.return_code,
-                'stderr' : self.stderr.read(),
-                'stdout': self.stdout.read()
+                'status': self.process.returncode and 'finished' or 'running',
+                'returncode':self.process.returncode,
+                'stderr' : self.process.stderr.getvalue(),
+                'stdout': self.process.stdout.getvalue()
                 }
 
     @classmethod
     def find_all(self):
-        pass
+        return executor.manager.keys()
 
     @action
     def kill(self):

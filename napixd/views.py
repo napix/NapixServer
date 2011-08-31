@@ -41,6 +41,7 @@ class Service(object):
                 pass
         return values
 
+
     def view_collection(self,request):
         if 'doc' in request.GET:
             return self.handler.doc_collection
@@ -54,7 +55,7 @@ class Service(object):
         if m == 'POST':
             values = self.filter_values(self.handler.fields,request.data)
             rid =  self.handler.create(values)
-            return HTTPResponse(202,None,
+            return HTTPResponse(None,202,
                     {'Content-location':'/%s/%s'%(self.handler.url,rid)})
 
 

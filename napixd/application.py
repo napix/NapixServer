@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
+#import rpdb2; rpdb2.start_embedded_debugger('secret')
 
 logging.basicConfig(filename='/tmp/napix.log', filemode='w', level=logging.DEBUG)
-logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
+logging.getLogger('Rocket.Errors.ThreadPool').setLevel(logging.INFO)
 
 from bottle import ServerAdapter
 import bottle
@@ -12,8 +13,8 @@ import sys
 import traceback
 """
 from cStringIO import StringIO
-import json
 """
+import json
 from handler import registry
 from views import Service
 from executor import executor
@@ -22,6 +23,8 @@ import functools
 
 logger = logging.getLogger('Napix.Server')
 plugin_logger = logging.getLogger('Napix.Plugin')
+
+print os.getpid()
 
 def wrap(fn):
     @functools.wraps(fn)
@@ -36,8 +39,9 @@ class RocketAndExecute(ServerAdapter):
     def run(self,handler):
         try:
             from rocket import Rocket
-            print os.getpid()
-            server = Rocket((self.host, self.port), 'wsgi', { 'wsgi_app' : handler })
+            server = Rocket((self.host, self.port),'wsgi',
+                    { 'wsgi_app' : handler }, min_threads=1, max_threads=2,
+                    queue_size=1)
 
             server.start(background=True)
             self.executor.run()
@@ -59,7 +63,10 @@ class ConversationPlugin(object):
         def inner(*args,**kwargs):
             plugin_logger.debug('%s running',self.name)
             request = bottle.request
-            request.data = hasattr(request,'json') and request.json or request.forms
+            if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
+                request.data = json.load(request.body)
+            else:
+                request.data = request.forms
             res = callback(*args,**kwargs)
             if hasattr(res,'serialize'):
                 return res.serialize()
@@ -104,6 +111,7 @@ if __name__ == '__main__':
     bottle.debug(True)
     logger.info('Starting')
     bottle.run(napixd,
+            host='127.0.0.9',port=8080,
             server=RocketAndExecute,
             executor=executor)
     logger.info('Stopping')
