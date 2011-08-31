@@ -14,7 +14,7 @@ import traceback
 """
 from cStringIO import StringIO
 """
-import json
+from plugins import ConversationPlugin
 from handler import registry
 from views import Service
 from executor import executor
@@ -55,23 +55,6 @@ class RocketAndExecute(ServerAdapter):
         server.stop()
         self.executor.stop()
 
-class ConversationPlugin(object):
-    name = "conversation_plugin"
-    api = 2
-    def apply(self,callback,route):
-        plugin_logger.info('Installing %s',self.name)
-        def inner(*args,**kwargs):
-            plugin_logger.debug('%s running',self.name)
-            request = bottle.request
-            if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
-                request.data = json.load(request.body)
-            else:
-                request.data = request.forms
-            res = callback(*args,**kwargs)
-            if hasattr(res,'serialize'):
-                return res.serialize()
-            return res
-        return inner
 
 class ExecutorPlugin(object):
     name = 'executor'
