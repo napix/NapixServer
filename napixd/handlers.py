@@ -49,6 +49,7 @@ class RunningProcessHandler(object):
 
     command = Value('command to be run')
     arguments = Value('args')
+    discard_output = Value('disable stdout and stderr')
     returncode = Value('Return status of the process')
     stdout = Value('Standard output')
     stderr = Value('Error output')
@@ -57,8 +58,9 @@ class RunningProcessHandler(object):
     def create(self,values):
         command = [ values.pop('command') ]
         command.extend(values.pop('arguments',[]))
+        discard_output = bool(int(values.get('discard_output',True)))
         try:
-            p = executor.append(command).get()
+            p = executor.create_job(command,discard_output,manager=True)
         except Exception,e:
             raise HTTPError(400,str(e))
         return p.pid
@@ -84,6 +86,7 @@ class RunningProcessHandler(object):
 
     def serialize(self):
         return {'rid':self.rid,
+                'command':self.process.command,
                 'status': self.process.returncode is None and 'running' or 'finished',
                 'returncode':self.process.returncode,
                 'stderr' : self.process.stderr.getvalue(),
@@ -96,7 +99,8 @@ class RunningProcessHandler(object):
 
     @action
     def kill(self):
-        pass
+        self.process.kill()
+        return 'ok'
 
 class UnixAccountHandler(object):
     """Gestionnaire des comptes UNIX """

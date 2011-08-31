@@ -16,7 +16,7 @@ def run_command_or_fail(command):
         raise Exception,'Oops command <%s> returned %i'%(subprocess.list2cmdline(command),code)
 
 def run_command(command):
-    return request.append(command).get().wait()
+    return request.create_job(command,discard_output=True,managed=False).wait()
 
 def ValidateIf(fn):
     @functools.wraps(fn)
