@@ -5,7 +5,7 @@ from Queue import Queue,Empty
 from cStringIO import StringIO
 import subprocess
 import select
-from threading import Thread
+from threading import Thread,Lock
 import logging
 import itertools
 import time
@@ -61,10 +61,14 @@ class ExecManager(Thread):
     def __init__(self):
         super(ExecManager,self).__init__(name="exec_manager")
         self.poller = select.epoll()
-        self.running_processes = {}
         self.running_handles = {}
         self.closed_handles = {}
         self.alive = True
+
+    def terminate(self,process):
+        logger.debug('cleaning process %s'%process.pid)
+        del self.running_handles[process.pid]
+        self.closed_handles[process.pid] =  process
 
     def stop(self):
         self.alive = False
@@ -85,56 +89,76 @@ class ExecManager(Thread):
         return x
 
     def append(self,job):
-        handle = ExecHandle(job)
+        handle = ExecHandle(self,job)
         self.running_handles[handle.pid] = handle
-        process = handle.process
-
-        self._register(process.stdout,handle.read_stdout)
-        self._register(process.stderr,handle.read_stderr)
 
         logger.debug('Appending %s job:%s pid:%s out:%s err:%s',
-                subprocess.list2cmdline(job),
-                id(job),handle.pid,process.stdout.fileno(),process.stderr.fileno())
+                subprocess.list2cmdline(job),id(job),handle.pid,
+                handle.process.stdout.fileno(),handle.process.stderr.fileno())
 
         return handle
 
-    def _register(self,stream,read_cb):
-        self.running_processes[stream.fileno()]=read_cb
-        self.poller.register(stream,select.EPOLLIN)
-        fd = stream.fileno()
-        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-
-    def _unregister(self,fd):
-        os.fdopen(fd).close()
-        self.poller.unregister(fd)
-        del self.running_processes[fd]
-
     def run(self):
         while self.alive:
-            for fd,event in self.poller.poll(timeout=1):
-                if event & select.EPOLLIN:
-                    logger.debug('%s gaves something',fd)
-                    Thread(None,self.running_processes[fd],name="epoll event").start()
-                if event & select.EPOLLHUP:
-                    logger.debug('%s gaves SIGHUP',fd)
-                    self._unregister(fd)
+            streams = []
+            for x in self.running_handles.values():
+                streams.append(x.stdout)
+                streams.append(x.stderr)
+            for waiting_streams in select.select(streams,[],[],1):
+                for stream in waiting_streams:
+                    stream.read()
 
 class ExecHandle(object):
     BUFFER_SIZE = 1024
-    def __init__(self,job):
+    def __init__(self,manager,job):
         self.id = id(job)
+        self.manager = manager
         self.process = subprocess.Popen(job,stderr=subprocess.PIPE,stdout=subprocess.PIPE)
-        self.stdout = StringIO()
-        self.stderr = StringIO()
-    def read_stderr(self):
-        logger.debug('read stderr %s',self.id)
-        self.stderr.write(self.process.stderr.read())
-    def read_stdout(self):
-        logger.debug('read stdout %s',self.id)
-        self.stdout.write(self.process.stdout.read())
+        self.stdout = ExecStream(self,'stdout')
+        self.stderr = ExecStream(self,'stderr')
+        self.closing=False
+        self.closing_lock = Lock()
+
+    def close(self):
+        with self.closing_lock:
+            if self.closing:
+                return
+            self.closing = True
+            self.manager.terminate(self)
+            self.process.wait()
+
+    def __del__(self):
+        del self.manager
+
     def __getattr__(self,name):
         return getattr(self.process,name)
+
+class ExecStream(object):
+    def __init__(self,parent,stream):
+        self.parent = parent
+        self.stream = getattr(parent.process,stream)
+        self.buff = StringIO()
+        self.name = stream
+
+        fd = self.stream.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+    def __del__(self):
+        #help refcount
+        del self.parent
+    def read(self):
+        logger.debug('read stream %s',self.name)
+        x= self.stream.read()
+        if not(x):
+            self.parent.close()
+        else:
+            self.buff.write(x)
+        return x
+    def fileno(self):
+        return self.stream.fileno()
+    def getvalue(self):
+        return self.buff.getvalue()
 
 exec_manager = ExecManager()
 executor = Executor(exec_manager)

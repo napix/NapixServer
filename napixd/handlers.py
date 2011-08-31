@@ -84,7 +84,7 @@ class RunningProcessHandler(object):
 
     def serialize(self):
         return {'rid':self.rid,
-                'status': self.process.returncode and 'finished' or 'running',
+                'status': self.process.returncode is None and 'running' or 'finished',
                 'returncode':self.process.returncode,
                 'stderr' : self.process.stderr.getvalue(),
                 'stdout': self.process.stdout.getvalue()
