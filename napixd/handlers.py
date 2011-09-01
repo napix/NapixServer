@@ -11,6 +11,7 @@ from napixd.utils import run_command_or_fail,run_command,ValidateIf
 from handler import MetaHandler,Value,action,registry
 from centrald.cas.models import Client
 from executor import executor
+from threadator import thread_manager
 import logging
 from bottle import HTTPError
 
@@ -86,7 +87,8 @@ class RunningProcessHandler(object):
 
     def serialize(self):
         return {'rid':self.rid,
-                'command':self.process.command,
+                'command':self.process.request.command,
+                'arguments':self.process.request.arguments,
                 'status': self.process.returncode is None and 'running' or 'finished',
                 'returncode':self.process.returncode,
                 'stderr' : self.process.stderr.getvalue(),
@@ -101,6 +103,37 @@ class RunningProcessHandler(object):
     def kill(self):
         self.process.kill()
         return 'ok'
+
+class ThreadManagerHandler(object):
+    """Gestionnaire des taches asynchrones"""
+    __metaclass__ = MetaHandler
+
+    @classmethod
+    def find_all(cls):
+        return thread_manager.keys()
+
+    @classmethod
+    def validate_resource_id(self,rid):
+        try:
+            return int(rid)
+        except ValueError:
+            raise ValidationError
+
+    @classmethod
+    def find(cls,rid):
+        try:
+            return cls(thread_manager[rid])
+        except KeyError:
+            return None
+    def __init__(self,thread):
+        self.thread = thread
+
+    def serialize(self):
+        return {
+                'rid':self.thread.ident,
+                'status':self.thread.status,
+                'execution_state':self.thread.execution_state
+                }
 
 class UnixAccountHandler(object):
     """Gestionnaire des comptes UNIX """

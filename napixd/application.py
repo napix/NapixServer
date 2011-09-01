@@ -5,7 +5,7 @@ import logging
 #import rpdb2; rpdb2.start_embedded_debugger('secret')
 
 logging.basicConfig(filename='/tmp/napix.log', filemode='w', level=logging.DEBUG)
-logging.getLogger('Rocket.Errors.ThreadPool').setLevel(logging.INFO)
+logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
 
 from bottle import ServerAdapter
 import bottle
@@ -89,6 +89,21 @@ for ur,handler in registry.items():
             method=handler.collection_methods)
 napixd.install(ConversationPlugin())
 napixd.install(ExecutorPlugin())
+
+@napixd.get('/TAYST')
+def TAYST():
+    import time
+    from threadator import threadator
+    l=logging.getLogger('WADT')
+    def wait_and_do_thing(thread):
+        l.info('a')
+        for x in xrange(72):
+            l.info('b%s',x)
+            thread.progress = x
+            time.sleep(3)
+        l.info('c')
+    t =  threadator.do_async(wait_and_do_thing)
+    return str(t.ident)
 
 if __name__ == '__main__':
     bottle.debug(True)

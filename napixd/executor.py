@@ -5,7 +5,7 @@ from Queue import Queue,Empty
 from cStringIO import StringIO
 import subprocess
 import select
-from threading import Thread,Lock
+from threading import Thread,Lock,current_thread
 import logging
 import time
 import os
@@ -23,16 +23,38 @@ class ExecutorQueue(Queue):
             raise res
         return res
 
+class ExecutorRequest(object):
+    def __init__(self,job,return_queue,discard_output,managed):
+        self.job = job
+        self.discard_output = discard_output
+        self.requesting_thread = current_thread().ident
+        self.owning_thread  = self.requesting_thread
+        self.managed = False
+        self.return_queue = return_queue
+        logger.debug('Thread %s requested job %s',self.requesting_thread,id(self))
+
+    @property
+    def command(self):
+        return self.job[0]
+    @property
+    def arguments(self):
+        return self.job[1:]
+    @property
+    def commandline(self):
+        return subprocess.lst2cmdline(self.job)
+
+
 class Executor(object):
-    def __init__(self,exec_manager):
+    def __init__(self):
         self.pending_jobs = Queue()
-        self.manager= exec_manager
+        self.manager = ExecManager()
         self.alive = True
 
     def create_job(self,job,discard_output=False,managed=False):
         logger.debug('Registering job %s',id(job))
         return_queue = ExecutorQueue()
-        self.pending_jobs.put((job,return_queue,discard_output,managed))
+        request = ExecutorRequest(job,return_queue,discard_output,managed)
+        self.pending_jobs.put(request)
         return return_queue.get()
 
     def run(self):
@@ -40,26 +62,27 @@ class Executor(object):
         logger.info('Starting listenning %s',os.getpid())
         while self.alive:
             try:
-                job,return_queue,discard_output,managed = self.pending_jobs.get(block=True,timeout=1)
-                logger.debug('Found job %s',id(job))
+                request = self.pending_jobs.get(block=True,timeout=1)
+                logger.debug('Found job %s',id(request))
             except Empty:
                 continue
             try:
-                handler = ExecHandle(job,discard_output)
-                if managed:
+                handler = ExecHandle(request)
+                if request.managed:
                     self.manager.add_hander(handler)
+                else:
+                    self.owner_manager.add_hander(handler)
                 fnlogger.debug('return queue 2')
-                return_queue.put(handler)
+                request.return_queue.put(handler)
             except Exception,e:
                 fnlogger.debug('return queue 1')
                 traceback.print_exception(*sys.exc_info())
-                return_queue.put(e)
-            del job,return_queue
+                request.return_queue.put(e)
+            del request
 
     def stop(self):
         self.alive = False
         self.manager.stop()
-
 
 class ExecManager(Thread):
     def __init__(self):
@@ -123,12 +146,11 @@ class ExecManager(Thread):
                     stream.read()
 
 class ExecHandle(object):
-    BUFFER_SIZE = 1024
-    def __init__(self,job,discard_output):
-        self.id = id(job)
-        outstream = discard_output and open('/dev/null','w') or subprocess.PIPE
-        self.process = subprocess.Popen(job,stderr=outstream,stdout=outstream)
-        if not discard_output:
+    def __init__(self,request):
+        self.request =  request
+        outstream = request.discard_output and open('/dev/null','w') or subprocess.PIPE
+        self.process = subprocess.Popen(request.job,stderr=outstream,stdout=outstream)
+        if not request.discard_output:
             self.stdout = ExecStream(self.process.stdout)
             self.stderr = ExecStream(self.process.stderr)
         else:
@@ -136,25 +158,26 @@ class ExecHandle(object):
             self.stderr = NullStream()
         self.closing=False
         self.closing_lock = Lock()
-        self.command = subprocess.list2cmdline(job)
+        self.kill_lock = Lock()
 
         logger.debug('Appending %s job:%s pid:%s out:%s err:%s',
-                subprocess.list2cmdline(job),id(job),self.pid,
+                request.commandline,id(request),self.pid,
                 self.stdout.fileno(),self.stderr.fileno())
 
     def kill(self):
-        if self.process.returncode is not None:
-            return True
-        logger.info('KILL -15 %s',self.process.pid)
-        self.process.terminate()
-        for x in xrange(30):
-            #wait 3seconds
-            if self.process.poll() is not None:
-                return True
-            time.sleep(.1)
-        logger.info('KILL -9 %s',self.process.pid)
-        self.process.kill()
-        return True
+        with self.kill_lock:
+            if self.returncode is not None:
+                return
+            logger.info('KILL -15 %s',self.process.pid)
+            self.process.terminate()
+            for x in xrange(30):
+                #wait 3seconds
+                if self.process.poll() is not None:
+                    return
+                time.sleep(.1)
+            logger.info('KILL -9 %s',self.process.pid)
+            self.process.kill()
+            return
 
     def close(self):
         with self.closing_lock:
@@ -165,15 +188,8 @@ class ExecHandle(object):
             self.closing = True
             self.process.wait()
 
-    def poll(self):
-        return self.process.poll()
-
-    @property
-    def returncode(self):
-        return self.process.returncode
-    @property
-    def pid(self):
-        return self.process.pid
+    def __getattr__(self,attr):
+        return getattr(self.process,attr)
 
 class ExecStream(object):
     def __init__(self,stream):
@@ -207,5 +223,6 @@ class NullStream(object):
     def fileno(self):
         return -1
 
-exec_manager = ExecManager()
-executor = Executor(exec_manager)
+executor = Executor()
+
+popen = executor.create_job

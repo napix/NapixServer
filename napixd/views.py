@@ -26,7 +26,7 @@ class Service(object):
         try:
             resource_id = self.handler.validate_resource_id(rid)
         except ValidationError:
-            raise HTTPError,400,'Invalid resource identifier'
+            raise HTTPError(400,'Invalid resource identifier')
         resource = self.handler.find(resource_id)
         if resource == None:
             raise HTTPError,404
