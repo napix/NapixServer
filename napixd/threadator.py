@@ -7,6 +7,18 @@ import logging
 from time import time
 logger = logging.getLogger('threadator')
 
+class BackgroundTasker():
+    def __init__(self,threadator):
+        self.threadator =threadator
+    def __call__(self,fn=None,**kw):
+        def outer(fn):
+            def inner(*args,**kwargs):
+                return self.threadator.do_async(fn,args,kwargs,**kw)
+            return inner
+        if fn is None:
+            return outer
+        return outer(fn)
+
 class ThreadManager(Thread):
     def __init__(self):
         Thread.__init__(self,name='threadator')
@@ -96,3 +108,5 @@ class ThreadWrapper(Thread):
 
 thread_manager = ThreadManager()
 threadator = thread_manager
+
+background_task = BackgroundTasker(threadator)
