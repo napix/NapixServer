@@ -120,6 +120,9 @@ class ExecManager(Thread):
 
     def stop(self):
         self.alive = False
+        logger.info('Closing ExecManager, kill them all, God will recognize his own')
+        for process in self.running_handles:
+            process.kill()
 
     def __getitem__(self,item):
         with self.handles:
