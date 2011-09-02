@@ -86,7 +86,11 @@ class OwnerTracer(Thread):
         self.alive_processes = {}
 
     def stop(self):
-        self.isalive=False
+        self.alive = False
+        logger.info('Kill them all, God will recognize his own')
+        for process in self.alive_processes.values():
+            process.kill()
+
     def run(self):
         while self.isalive():
             handle = self.activity_queue.get(True,timeout=1)
@@ -120,9 +124,6 @@ class ExecManager(Thread):
 
     def stop(self):
         self.alive = False
-        logger.info('Closing ExecManager, kill them all, God will recognize his own')
-        for process in self.running_handles:
-            process.kill()
 
     def __getitem__(self,item):
         with self.handles:
