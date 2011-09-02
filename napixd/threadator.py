@@ -2,18 +2,19 @@
 # -*- coding: utf-8 -*-
 
 from threading import Thread
-from Queue import Queue
+from queue import SubQueue,Queue,Empty
 import logging
-logger = logging.getLogger('ThreadWrapper')
+logger = logging.getLogger('threadator')
 
-class ThreadManager(object):
+class ThreadManager(Thread):
     def __init__(self):
+        Thread.__init__(self,name='threadator')
         self.process = {}
+        self.activity = Queue()
 
     def do_async(self,*args,**kwargs):
-        thread = ThreadWrapper(*args,**kwargs)
+        thread = ThreadWrapper(self.activity,*args,**kwargs)
         logger.debug('New Task')
-        self.wait_for(thread)
         thread.start()
         self.process[thread.ident] = thread
         logger.debug('New Task %s',thread.ident)
@@ -24,17 +25,20 @@ class ThreadManager(object):
     def __getitem__(self,item):
         return self.process[item]
 
-    def wait_for(self,thread):
-        def inner():
-            while thread.execution_state != ThreadWrapper.CLOSED:
-                thread.execution_state_queue.get()
+    def run(self):
+        while self.isalive:
+            try:
+                thread,ex_state=self.activity.get(timeout=1)
+            except Empty:
+                continue
+            if ex_state != ThreadWrapper.CLOSED:
+                continue
             logger.debug('Dead Task %s',thread.ident)
             del self.process[thread.ident]
-        Thread(target=inner).start()
 
 class ThreadWrapper(Thread):
     CREATED,RUNNING,RETURNED,EXCEPTION,FINISHING,CLOSED = range(6)
-    def __init__(self,function,args=None,kwargs=None,on_success=None,on_failure=None,on_end=None):
+    def __init__(self,activity,function,args=None,kwargs=None,on_success=None,on_failure=None,on_end=None):
         Thread.__init__(self)
         self.function = function
         self.args = args or ()
@@ -44,7 +48,7 @@ class ThreadWrapper(Thread):
         self.on_end = on_end or self._on_end
         self._execution_state=self.CREATED
         self._status=''
-        self.execution_state_queue=Queue()
+        self.execution_state_queue=SubQueue(activity)
 
     def run(self):
         try:
@@ -69,14 +73,15 @@ class ThreadWrapper(Thread):
 
     def _set_execution_state(self,value):
         self._execution_state = value
-        self.execution_state_queue.put(value)
-        logger.info('execution_state changed %s %s',self.ident,value)
+        self.execution_state_queue.put((self,value))
+        logger.info('execution_state of %s changed %s',self.ident,value)
 
     def _get_execution_state(self):
         return self._execution_state
     execution_state = property(_get_execution_state,_set_execution_state)
 
     def _set_status(self,value):
+        logger.debug('status of %s changed to %s',self.ident,value)
         self._status = value
     def _get_status(self):
         return self._status

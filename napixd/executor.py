@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from Queue import Queue,Empty
+from queue import Queue,Empty,ThrowingSubQueue
 from cStringIO import StringIO
 import subprocess
 import select
@@ -14,14 +14,7 @@ import fcntl
 import traceback
 
 logger=logging.getLogger('Napix.Executor')
-fnlogger=logging.getLogger('Napix.Function')
 
-class ExecutorQueue(Queue):
-    def get(self,block=True,timeout=None):
-        res=Queue.get(self,block,timeout)
-        if isinstance(res,Exception):
-            raise res
-        return res
 
 class ExecutorRequest(object):
     def __init__(self,job,return_queue,discard_output,managed):
@@ -47,18 +40,21 @@ class ExecutorRequest(object):
 class Executor(object):
     def __init__(self):
         self.pending_jobs = Queue()
+        self.activity = Queue()
         self.manager = ExecManager()
+        self.owner_tracer = OwnerTracer(self.done_queue)
         self.alive = True
 
     def create_job(self,job,discard_output=False,managed=False):
         logger.debug('Registering job %s',id(job))
-        return_queue = ExecutorQueue()
+        return_queue = ThrowingSubQueue(self.activity)
         request = ExecutorRequest(job,return_queue,discard_output,managed)
         self.pending_jobs.put(request)
         return return_queue.get()
 
     def run(self):
         self.manager.start()
+        self.owner_tracer.start()
         logger.info('Starting listenning %s',os.getpid())
         while self.alive:
             try:
@@ -72,10 +68,8 @@ class Executor(object):
                     self.manager.add_hander(handler)
                 else:
                     self.owner_manager.add_hander(handler)
-                fnlogger.debug('return queue 2')
                 request.return_queue.put(handler)
             except Exception,e:
-                fnlogger.debug('return queue 1')
                 traceback.print_exception(*sys.exc_info())
                 request.return_queue.put(e)
             del request
@@ -83,6 +77,27 @@ class Executor(object):
     def stop(self):
         self.alive = False
         self.manager.stop()
+        self.owner_tracer.stop()
+
+class OwnerTracer(Thread):
+    def __init__(self,activity_queue):
+        self.activity = activity_queue
+        self.alive=True
+        self.alive_processes = {}
+
+    def stop(self):
+        self.isalive=False
+    def run(self):
+        while self.isalive():
+            handle = self.activity_queue.get(True,timeout=1)
+            if handle.returncode == None:
+                self.alive_processes[handle.pid] = handle
+            else:
+                try:
+                    del self.alive_processes[handle.pid]
+                except KeyError:
+                    #The process finished before the tracer got it
+                    pass
 
 class ExecManager(Thread):
     def __init__(self):
@@ -187,6 +202,16 @@ class ExecHandle(object):
             self.stdout.close()
             self.closing = True
             self.process.wait()
+
+    def wait(self):
+        res = self.process.wait()
+        self.request.return_queue.put(self)
+        return res
+    def poll(self):
+        res = self.process.poll()
+        if res is not None:
+            self.request.return_queue.put(self)
+        return res
 
     def __getattr__(self,attr):
         return getattr(self.process,attr)
