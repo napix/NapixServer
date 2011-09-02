@@ -8,6 +8,7 @@ logging.basicConfig(filename='/tmp/napix.log', filemode='w', level=logging.DEBUG
 logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
 
 from bottle import ServerAdapter
+from threadator import threadator
 import bottle
 import sys
 import traceback
@@ -44,6 +45,7 @@ class RocketAndExecute(ServerAdapter):
                     queue_size=1)
 
             server.start(background=True)
+            threadator.start()
             self.executor.run()
         except (MemoryError,KeyboardInterrupt):
             pass
@@ -53,6 +55,7 @@ class RocketAndExecute(ServerAdapter):
             traceback.print_exception(a,b,c)
         logger.info('Ready to stop')
         server.stop()
+        threadator.stop()
         self.executor.stop()
 
 
@@ -92,16 +95,11 @@ napixd.install(ExecutorPlugin())
 
 @napixd.get('/TAYST')
 def TAYST():
-    import time
     from threadator import threadator
     l=logging.getLogger('WADT')
     def wait_and_do_thing(thread):
-        l.info('a')
-        for x in xrange(72):
-            l.info('b%s',x)
-            thread.status = x
-            time.sleep(3)
-        l.info('c')
+        x=executor.create_job(['sleep','10'],discard_output=True)
+        return x.wait()
     t =  threadator.do_async(wait_and_do_thing)
     return str(t.ident)
 

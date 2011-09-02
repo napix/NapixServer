@@ -20,11 +20,13 @@ class ExecutorRequest(object):
     def __init__(self,job,return_queue,discard_output,managed):
         self.job = job
         self.discard_output = discard_output
-        self.requesting_thread = current_thread().ident
-        self.owning_thread  = self.requesting_thread
+        self.take_ownership()
         self.managed = False
         self.return_queue = return_queue
-        logger.debug('Thread %s requested job %s',self.requesting_thread,id(self))
+        logger.debug('Thread %s requested job %s',self.owning_thread,id(self))
+
+    def take_ownership(self):
+        self.owning_thread  = current_thread().ident
 
     @property
     def command(self):
@@ -34,7 +36,7 @@ class ExecutorRequest(object):
         return self.job[1:]
     @property
     def commandline(self):
-        return subprocess.lst2cmdline(self.job)
+        return subprocess.list2cmdline(self.job)
 
 
 class Executor(object):
@@ -42,7 +44,7 @@ class Executor(object):
         self.pending_jobs = Queue()
         self.activity = Queue()
         self.manager = ExecManager()
-        self.owner_tracer = OwnerTracer(self.done_queue)
+        self.owner_tracer = OwnerTracer(self.activity)
         self.alive = True
 
     def create_job(self,job,discard_output=False,managed=False):
@@ -66,13 +68,15 @@ class Executor(object):
                 handler = ExecHandle(request)
                 if request.managed:
                     self.manager.add_hander(handler)
-                else:
-                    self.owner_manager.add_hander(handler)
+                    request.take_ownership()
                 request.return_queue.put(handler)
             except Exception,e:
                 traceback.print_exception(*sys.exc_info())
                 request.return_queue.put(e)
             del request
+
+    def children_of(self,tid):
+        return self.owner_tracer.children_of(tid)
 
     def stop(self):
         self.alive = False
@@ -84,6 +88,7 @@ class OwnerTracer(Thread):
         self.activity = activity_queue
         self.alive=True
         self.alive_processes = {}
+        Thread.__init__(self,name="OwnerTracer")
 
     def stop(self):
         self.alive = False
@@ -91,9 +96,17 @@ class OwnerTracer(Thread):
         for process in self.alive_processes.values():
             process.kill()
 
+    def children_of(self,tid):
+        return [x for x in self.alive_processes.values() if x.request.owning_thread == tid]
+
     def run(self):
-        while self.isalive():
-            handle = self.activity_queue.get(True,timeout=1)
+        while self.alive:
+            try:
+                handle = self.activity.get(True,timeout=1)
+            except Empty:
+                continue
+            if isinstance(handle,Exception):
+                continue
             if handle.returncode == None:
                 self.alive_processes[handle.pid] = handle
             else:

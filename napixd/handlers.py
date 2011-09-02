@@ -127,12 +127,16 @@ class ThreadManagerHandler(object):
             return None
     def __init__(self,thread):
         self.thread = thread
+        self.spawned_process = executor.children_of(self.thread.ident)
 
     def serialize(self):
         return {
                 'rid':self.thread.ident,
                 'status':self.thread.status,
-                'execution_state':self.thread.execution_state
+                'execution_state':self.thread.execution_state,
+                'start_time':self.thread.start_time,
+                'children' :
+                [RunningProcessHandler(x).serialize() for x in self.spawned_process]
                 }
 
 class UnixAccountHandler(object):

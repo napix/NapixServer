@@ -4,6 +4,7 @@
 from threading import Thread
 from queue import SubQueue,Queue,Empty
 import logging
+from time import time
 logger = logging.getLogger('threadator')
 
 class ThreadManager(Thread):
@@ -11,6 +12,7 @@ class ThreadManager(Thread):
         Thread.__init__(self,name='threadator')
         self.process = {}
         self.activity = Queue()
+        self.alive=True
 
     def do_async(self,*args,**kwargs):
         thread = ThreadWrapper(self.activity,*args,**kwargs)
@@ -25,8 +27,11 @@ class ThreadManager(Thread):
     def __getitem__(self,item):
         return self.process[item]
 
+    def stop(self):
+        self.alive = False
+
     def run(self):
-        while self.isalive:
+        while self.alive:
             try:
                 thread,ex_state=self.activity.get(timeout=1)
             except Empty:
@@ -49,8 +54,10 @@ class ThreadWrapper(Thread):
         self._execution_state=self.CREATED
         self._status=''
         self.execution_state_queue=SubQueue(activity)
+        self.start_time=None
 
     def run(self):
+        self.start_time=time()
         try:
             self.execution_state = self.RUNNING
             result = self.function(self,*self.args,**self.kwargs)
