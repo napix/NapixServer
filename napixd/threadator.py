@@ -27,7 +27,7 @@ class ThreadManager(object):
     def wait_for(self,thread):
         def inner():
             while thread.execution_state != ThreadWrapper.CLOSED:
-                thread.status_queue.get()
+                thread.execution_state_queue.get()
             logger.debug('Dead Task %s',thread.ident)
             del self.process[thread.ident]
         Thread(target=inner).start()
@@ -43,22 +43,23 @@ class ThreadWrapper(Thread):
         self.on_failure = on_failure or self._on_failure
         self.on_end = on_end or self._on_end
         self._execution_state=self.CREATED
-        self.status=''
-        self.status_queue=Queue()
+        self._status=''
+        self.execution_state_queue=Queue()
 
     def run(self):
         try:
+            self.execution_state = self.RUNNING
             result = self.function(self,*self.args,**self.kwargs)
         except Exception,e:
-            self.status = self.EXCEPTION
+            self.execution_state = self.EXCEPTION
             self.on_failure(e)
         else:
-            self.status = self.RETURNED
+            self.execution_state = self.RETURNED
             self.on_success(result)
         finally:
-            self.status = self.FINISHING
+            self.execution_state = self.FINISHING
             self.on_end()
-        self.status = self.CLOSED
+        self.execution_state = self.CLOSED
     def _on_end(self):
         pass
     def _on_failure(self,e):
@@ -68,11 +69,11 @@ class ThreadWrapper(Thread):
 
     def _set_execution_state(self,value):
         self._execution_state = value
-        self.status_queue.put(value)
+        self.execution_state_queue.put(value)
         logger.info('execution_state changed %s %s',self.ident,value)
 
     def _get_execution_state(self):
-        return self._status
+        return self._execution_state
     execution_state = property(_get_execution_state,_set_execution_state)
 
     def _set_status(self,value):

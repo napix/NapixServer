@@ -99,7 +99,7 @@ def TAYST():
         l.info('a')
         for x in xrange(72):
             l.info('b%s',x)
-            thread.progress = x
+            thread.status = x
             time.sleep(3)
         l.info('c')
     t =  threadator.do_async(wait_and_do_thing)
