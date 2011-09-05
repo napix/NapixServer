@@ -1,26 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import operator
 import os
+import operator
+import logging
 
-from pwd import getpwall,getpwuid,getpwnam
+from bottle import HTTPError
+
 from napixd.exceptions import ValidationError
+from napixd.handler import BaseHandler,Value,action
 from napixd.utils import run_command_or_fail,run_command,ValidateIf
 
-from handler import MetaHandler,Value,action,registry
 from centrald.cas.models import Client
+from pwd import getpwall,getpwuid,getpwnam
+
 from executor import executor
 from threadator import thread_manager
-import logging
-from bottle import HTTPError
 
 logger = logging.getLogger('Napix.Handler')
 
-class NAPIXAPI(object):
+__all__ = ['NAPIXAPI','RunningProcessHandler','ThreadManagerHandler','UnixAccountHandler','APIUserHandler','InitdHandler']
+
+class NAPIXAPI(BaseHandler):
     """Service d'introspection de API"""
     url = 'napix'
-    __metaclass__ = MetaHandler
 
     doc = Value('documentation du handler')
     fields = Value('Champs disponibles dans les ressources')
@@ -30,10 +33,12 @@ class NAPIXAPI(object):
 
     @classmethod
     def find_all(cls):
+        from napixd.application import registry
         return registry.keys()
 
     @classmethod
     def find(cls,rid):
+        from napixd.application import registry
         try:
             handler = registry[rid]
         except KeyError:
@@ -44,9 +49,8 @@ class NAPIXAPI(object):
         y.update(handler.doc_action)
         return cls(rid,**y)
 
-class RunningProcessHandler(object):
+class RunningProcessHandler(BaseHandler):
     """ asynchronous process handler """
-    __metaclass__ = MetaHandler
 
     command = Value('command to be run')
     arguments = Value('args')
@@ -104,9 +108,8 @@ class RunningProcessHandler(object):
         self.process.kill()
         return 'ok'
 
-class ThreadManagerHandler(object):
+class ThreadManagerHandler(BaseHandler):
     """Gestionnaire des taches asynchrones"""
-    __metaclass__ = MetaHandler
 
     @classmethod
     def find_all(cls):
@@ -139,9 +142,8 @@ class ThreadManagerHandler(object):
                 [RunningProcessHandler(x).serialize() for x in self.spawned_process]
                 }
 
-class UnixAccountHandler(object):
+class UnixAccountHandler(BaseHandler):
     """Gestionnaire des comptes UNIX """
-    __metaclass__ = MetaHandler
     table_pwd = { 'name' : 'login', 'gid': 'gid', 'gecos':'comment' ,'shell':'shell','dir':'home'}
 
     name = Value('Login')
@@ -196,9 +198,8 @@ class UnixAccountHandler(object):
     def remove(self,resource):
         run_command_or_fail(['/usr/sbin/userdel',resource['name']])
 
-class APIUserHandler(object):
+class APIUserHandler(BaseHandler):
     """Gestionnaire des utilisateurs de l'API"""
-    __metaclass__ = MetaHandler
 
     secret = Value('Mot de passe')
 
@@ -230,9 +231,8 @@ class APIUserHandler(object):
     def serialize(self):
         return { 'rid':self.client.pk,'secret':self.client.value }
 
-class InitdHandler(object):
+class InitdHandler(BaseHandler):
     """ Gestionnaire des scripts init.d """
-    __metaclass__ = MetaHandler
 
     path = '/etc/init.d'
     state = Value('Etat')

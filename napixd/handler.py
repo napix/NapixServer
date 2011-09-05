@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__all__=('MetaHandler','registry')
-
-from napixd.exceptions import ValidationError
 import inspect
 
-#>>>filter(lambda x:type(x) is type and issubclass(x,RedisModel),[ getattr(models,x) for x in getattr(models,'__all__',None) or dir(models)])
+from napixd.exceptions import ValidationError
+
+__all__=('BaseHandler','action','Value')
 
 class Property(object):
     def __init__(self,field):
@@ -14,9 +13,9 @@ class Property(object):
     def __set__(self,instance,value):
         setattr(instance,self.field,value)
     def __get__(self,instance,owner):
+        if instance is None:
+            return self
         return getattr(instance,self.field)
-
-registry = {}
 
 class ActionInstance(object):
     """Proxy d'une action pour une ressource donnée"""
@@ -74,22 +73,12 @@ class Value():
     def __init__(self,doc):
         self.__doc__ = doc
 
-@classmethod
-def default_validate(cls,x):
-    """Anything"""
-    if not x:
-        raise ValidationError,'RID cannot be empty'
-    return x
 
 def filter_class(lst,cls):
     """ retourne un dictionnaire sous-ensemble
     du dictionnaire *lst* dont les element sont une instance de *cls*"""
     return dict([x for x in lst.items() if isinstance(x[1],cls)])
 
-def default_init(instance,rid=None,**kwargs):
-    instance.rid = rid
-    for k,v in kwargs.items():
-        setattr(instance,'_'+k,v)
 
 class MetaHandler(type):
     """MAGIC HAPPENS HERE"""
@@ -97,24 +86,11 @@ class MetaHandler(type):
         if 'rid' in attrs:
             raise Exception,'rid is a reserved keyword'
         fields = filter_class(attrs,Value)
-        attrs['fields'] = fields
+        attrs['_fields'] = fields
         actions =filter_class(attrs,Action)
-        attrs['actions'] = actions
-        if not 'validate_resource_id' in attrs:
-            attrs['validate_resource_id'] = default_validate
+        attrs['_actions'] = actions
         for f in fields:
             attrs[f]= Property(f)
-        if not '__init__' in attrs:
-            attrs['__init__'] = default_init
-        if not 'serialize' in attrs:
-            def outer(fields):
-                def serialize(self):
-                    r={'rid':self.rid}
-                    for x in fields:
-                        r[x] = getattr(self,'_'+x)
-                    return r
-                return serialize
-            attrs['serialize'] = outer(fields)
 
         if 'url' in attrs:
             url = attrs['url']
@@ -122,8 +98,6 @@ class MetaHandler(type):
             url = name[:-7].lower()
         else:
             url = name.lower()
-        if url in registry:
-            raise Exception,'URL %s is allready register by %s'%(url,repr(registry[url]))
         attrs['url']=url
 
         collection_methods = filter(bool,[
@@ -140,15 +114,42 @@ class MetaHandler(type):
         attrs['collection_methods'] = collection_methods
         attrs['resource_methods'] = resource_methods
 
-        attrs['doc_collection'] = { 'doc' : attrs['__doc__'],
-                    'resource_id':attrs['validate_resource_id'].__doc__,
-                    'collection_methods':attrs['collection_methods'] }
-        attrs['doc_resource'] = { 'doc':attrs['__doc__'],
-                        'fields':dict([(x,y.doc) for x,y in fields.items()]),
-                        'resource_methods':attrs['resource_methods'],
-                        'actions':actions.keys()}
-        attrs['doc_action'] = { 'actions' : dict([(x,y.doc) for x,y in actions.items()]) }
-
         cls = type.__new__(meta,name,bases,attrs)
-        registry[url] = cls
         return cls
+
+    def __init__(self,name,bases,attrs):
+        type.__init__(self,name,bases,attrs)
+        attrs['doc_collection'] = { 'doc' : self.__doc__,
+                    'resource_id':self.validate_resource_id.__doc__,
+                    'collection_methods':self.collection_methods }
+        attrs['doc_resource'] = { 'doc':self.__doc__,
+                        'fields':dict([(x,y.doc) for x,y in self._fields.items()]),
+                        'resource_methods':self.resource_methods,
+                        'actions':self._actions.keys()}
+        attrs['doc_action'] = { 'actions' : dict([(x,y.doc) for x,y in self._actions.items()]) }
+
+class BaseHandler(object):
+    """Base for the handlers"""
+    __metaclass__ = MetaHandler
+    fields = {}
+    actions = {}
+    doc_collection = None
+    doc_resource = None
+    doc_action = None
+    def __init__(self,rid=None,**kwargs):
+        self.rid = rid
+        for k,v in kwargs.items():
+            setattr(self,'_'+k,v)
+
+    @classmethod
+    def validate_resource_id(cls,rid):
+        """Anything that evaluates to True"""
+        if not rid:
+            raise ValidationError,'RID cannot be empty'
+        return rid
+
+    def serialize(self):
+        r={'rid':self.rid}
+        for x in self.fields:
+            r[x] = getattr(self,'_'+x)
+        return r
