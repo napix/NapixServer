@@ -54,12 +54,15 @@ class Action(object):
         return self.fn(instance,**values)
 
 def action(fn):
+    """Decorator to declare an action method inside a handler"""
     param = inspect.getargspec(fn)
     args = param.args
-    args.pop(0)
     #self
+    args.pop(0)
+    #default values
     opt = param.defaults or []
 
+    #mandatory params = param list - param that have default values
     len_mand = len(args) - len(opt)
     mandatory = args[:len_mand]
     optional = dict(zip(args[len_mand:],opt))
@@ -67,6 +70,7 @@ def action(fn):
     return Action(fn,mandatory,optional)
 
 class Value():
+    """Class to declare a property inside a handler"""
     @property
     def doc(self):
         return self.__doc__
@@ -81,17 +85,20 @@ def filter_class(lst,cls):
 
 
 class MetaHandler(type):
-    """MAGIC HAPPENS HERE"""
+    """Metaclass to generate handlers"""
     def __new__(meta,name,bases,attrs):
+        """Creation of the type"""
         if 'rid' in attrs:
             raise Exception,'rid is a reserved keyword'
         fields = filter_class(attrs,Value)
         attrs['_fields'] = fields
         actions =filter_class(attrs,Action)
         attrs['_actions'] = actions
+        #install fields as properties
         for f in fields:
             attrs[f]= Property(f)
 
+        #url: first of *url given*, *name minus Handler* or *name*
         if 'url' in attrs:
             url = attrs['url']
         elif name.endswith('Handler'):
@@ -100,11 +107,13 @@ class MetaHandler(type):
             url = name.lower()
         attrs['url']=url
 
+        #method applicable to the collection /res/
         collection_methods = filter(bool,[
             'HEAD',
             'find_all' in attrs and 'GET',
             'create' in attrs and 'POST',
             ])
+        #method applicable to the resource /res/id
         resource_methods = filter(bool,[
             'HEAD',
             'find' in attrs and 'GET',
@@ -118,6 +127,7 @@ class MetaHandler(type):
         return cls
 
     def __init__(self,name,bases,attrs):
+        """initialize the in-line documentation"""
         type.__init__(self,name,bases,attrs)
         attrs['doc_collection'] = { 'doc' : self.__doc__,
                     'resource_id':self.validate_resource_id.__doc__,
@@ -149,6 +159,7 @@ class BaseHandler(object):
         return rid
 
     def serialize(self):
+        """Serialize by getting the declared properties"""
         r={'rid':self.rid}
         for x in self.fields:
             r[x] = getattr(self,'_'+x)

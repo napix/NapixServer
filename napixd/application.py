@@ -57,7 +57,6 @@ for module_name in settings.HANDLERS:
                 name='%s_collection'%ur,
             method=handler.collection_methods)
 napixd.install(ConversationPlugin())
-napixd.install(ExecutorPlugin())
 
 if __name__ == '__main__':
     bottle.debug(settings.DEBUG)

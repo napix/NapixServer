@@ -5,22 +5,23 @@ import functools
 import logging
 import subprocess
 
-from bottle import request
+
+
+from executor import executor
 
 from napixd.exceptions import ValidationError
 
 __all__ = ['run_command_or_fail','run_command','ValidateIf']
 
-command_logger = logging.getLogger('commands')
-request_logger = logging.getLogger('request')
-
 def run_command_or_fail(command):
+    """Run a command and throw an exception if the return code isn't 0"""
     code = run_command(command)
     if code != 0:
         raise Exception,'Oops command <%s> returned %i'%(subprocess.list2cmdline(command),code)
 
 def run_command(command):
-    return request.create_job(command,discard_output=True,managed=False).wait()
+    """Run a command and return the return code"""
+    return executor.create_job(command,discard_output=True,managed=False).wait()
 
 def ValidateIf(fn):
     @functools.wraps(fn)
