@@ -3,6 +3,8 @@
 
 from Queue import Queue,Empty,Full
 
+__all__ = ['Empty','Queue','Full','SubQueue','ThrowingSubQueue','ThrowingQueue']
+
 class SubQueueMixin:
     def __init__(self,main_queue):
         self.main_queue = main_queue

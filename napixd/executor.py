@@ -1,20 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from queue import Queue,Empty,ThrowingSubQueue
-from cStringIO import StringIO
+import time
+import fcntl
+
+import logging
+import os
+import sys
+import traceback
+
 import subprocess
 import select
 from threading import Thread,Lock,current_thread
-import logging
-import time
-import os
-import sys
-import fcntl
-import traceback
+from queue import Queue,Empty,ThrowingSubQueue
+
+from cStringIO import StringIO
 
 logger=logging.getLogger('Napix.Executor')
 
+__all__ = ['Executor','executor','popen']
 
 class ExecutorRequest(object):
     def __init__(self,job,return_queue,discard_output,managed):

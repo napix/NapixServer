@@ -6,6 +6,8 @@ import logging
 from napixd.exceptions import ValidationError
 from bottle import HTTPError,HTTPResponse
 
+__all__ = ['Service']
+
 logger = logging.getLogger('Napix.Service')
 
 def urlize(lst,prefix):
@@ -22,7 +24,7 @@ class Service(object):
 
     def find_resource(self,rid):
         if rid is None :
-            raise HTTPError,400,'Resource identifier required'
+            raise HTTPError(400,'Resource identifier required')
         try:
             resource_id = self.handler.validate_resource_id(rid)
         except ValidationError:

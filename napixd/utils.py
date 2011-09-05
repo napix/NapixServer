@@ -4,8 +4,12 @@
 import functools
 import logging
 import subprocess
-from napixd.exceptions import ValidationError
+
 from bottle import request
+
+from napixd.exceptions import ValidationError
+
+__all__ = ['run_command_or_fail','run_command','ValidateIf']
 
 command_logger = logging.getLogger('commands')
 request_logger = logging.getLogger('request')
