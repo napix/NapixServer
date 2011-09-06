@@ -4,7 +4,7 @@
 import unittest
 from napixd.test.mock.handler import MockHandler
 from napixd.test.mock.request import POST,PUT,GET,DELETE
-from napixd.views import Service
+from napixd.services import Service
 from bottle import HTTPError
 
 class TestService(unittest.TestCase):

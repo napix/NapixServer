@@ -13,7 +13,7 @@ import bottle
 
 from napixd import settings
 from napixd.plugins import ConversationPlugin
-from napixd.views import Service
+from napixd.services import Service
 from napixd.executor_bottle import RocketAndExecutor
 from napixd.base import BaseHandler,check_handler
 
