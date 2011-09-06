@@ -98,6 +98,25 @@ def filter_subclass(lst,cls):
     du dictionnaire *lst* dont les element sont une instance de *cls*"""
     return dict([x for x in lst.items() if isinstance(x[1],type) and issubclass(x[1],cls)])
 
+class Definition(object):
+    def __init__(self,attrs):
+        self.fields = filter_class(attrs,Value)
+        self.actions =filter_class(attrs,Action)
+        self.subhandlers=filter_subclass(attrs,BaseHandler)
+        self.url = None
+        #method applicable to the collection /res/
+        self.collection_methods = filter(bool,[
+            'HEAD',
+            'find_all' in attrs and 'GET',
+            'create' in attrs and 'POST',
+            ])
+        #method applicable to the resource /res/id
+        self.resource_methods = filter(bool,[
+            'HEAD',
+            'find' in attrs and 'GET',
+            'modify' in attrs and 'PUT',
+            'remove' in attrs and 'DELETE'
+            ])
 
 class MetaHandler(type):
     """Metaclass to generate handlers"""
@@ -105,16 +124,9 @@ class MetaHandler(type):
         """Creation of the type"""
         if 'rid' in attrs:
             raise Exception,'rid is a reserved keyword'
-        fields = filter_class(attrs,Value)
-        attrs['fields'] = fields
-        actions =filter_class(attrs,Action)
-        attrs['actions'] = actions
-        attrs['subhandlers']=filter_subclass(attrs,BaseHandler)
-        for sub_name,subhandler in attrs['subhandlers'].items():
-            attrs[sub_name.lower()] = SubHandlerProperty(subhandler)
-        #install fields as properties
-        for f in fields:
-            attrs[f]= Property(f)
+
+        definition = Definition(attrs)
+        attrs['_meta'] = definition
 
         #url: first of *url given*, *name minus Handler* or *name*
         if 'url' in attrs:
@@ -123,23 +135,14 @@ class MetaHandler(type):
             url = name[:-7].lower()
         else:
             url = name.lower()
-        attrs['url']=url
+        definition.url = url
 
-        #method applicable to the collection /res/
-        collection_methods = filter(bool,[
-            'HEAD',
-            'find_all' in attrs and 'GET',
-            'create' in attrs and 'POST',
-            ])
-        #method applicable to the resource /res/id
-        resource_methods = filter(bool,[
-            'HEAD',
-            'find' in attrs and 'GET',
-            'modify' in attrs and 'PUT',
-            'remove' in attrs and 'DELETE'
-            ])
-        attrs['collection_methods'] = collection_methods
-        attrs['resource_methods'] = resource_methods
+        for sub_name,subhandler in definition.subhandlers.items():
+            attrs[sub_name.lower()] = SubHandlerProperty(subhandler)
+
+        #install fields as properties
+        for f in definition.fields:
+            attrs[f]= Property(f)
 
         cls = type.__new__(meta,name,bases,attrs)
         return cls
@@ -147,14 +150,14 @@ class MetaHandler(type):
     def __init__(self,name,bases,attrs):
         """initialize the in-line documentation"""
         type.__init__(self,name,bases,attrs)
-        attrs['doc_collection'] = { 'doc' : self.__doc__,
+        self.doc_collection = { 'doc' : self.__doc__,
                     'resource_id':self.validate_resource_id.__doc__,
-                    'collection_methods':self.collection_methods }
-        attrs['doc_resource'] = { 'doc':self.__doc__,
-                        'fields':dict([(x,y.doc) for x,y in self.fields.items()]),
-                        'resource_methods':self.resource_methods,
-                        'actions':self.actions.keys()}
-        attrs['doc_action'] = { 'actions' : dict([(x,y.doc) for x,y in self.actions.items()]) }
+                    'collection_methods':self._meta.collection_methods }
+        self.doc_resource = { 'doc':self.__doc__,
+                        'fields':dict([(x,y.doc) for x,y in self._meta.fields.items()]),
+                        'resource_methods':self._meta.resource_methods,
+                        'actions':self._meta.actions.keys()}
+        self.doc_action = { 'actions' : dict([(x,y.doc) for x,y in self._meta.actions.items()]) }
 
 class IntIdMixin:
     @classmethod

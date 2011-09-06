@@ -27,11 +27,11 @@ def urlize(lst,prefix):
 class Service(object):
     def __init__(self,handler):
         self.handler = handler
-        self.url = handler.url
+        self.url = handler._meta.url
         self.handler_name = handler.__name__
         if self.__class__ is Service:
             self.subservices = [SubService(handler,subhandler)
-                    for subhandler in handler.subhandlers.values()]
+                    for subhandler in handler._meta.subhandlers.values()]
 
     def setup_bottle(self,app):
         self._setup_bottle(self.handler,app)
@@ -41,12 +41,12 @@ class Service(object):
         app.route(r'/%s/'%self.url,
                 callback=wrap(self.view_collection),
                 name='%s_collection'%self.url,
-                method=handler.collection_methods)
+                method=handler._meta.collection_methods)
         app.route(r'/%s/:rid'%self.url,
                 callback=wrap(self.view_resource),
                 name='%s_resource'%self.url,
-                method=handler.resource_methods)
-        if handler.actions:
+                method=handler._meta.resource_methods)
+        if handler._meta.actions:
             app.route(r'/%s/:rid/:action_id'%self.url,
                     callback=wrap(self.view_action),
                     name='%s_action'%self.url,
@@ -91,7 +91,7 @@ class Service(object):
             res= self.handler.find_all()
             return {'values':zip(res,urlize(res,self.url))}
         if m == 'POST':
-            values = self.filter_values(self.handler.fields,request.data)
+            values = self.filter_values(self.handler._meta.fields,request.data)
             rid =  self.handler.create(values)
             return HTTPResponse(None,202,
                     {'Content-location':'/%s/%s'%(self.url,rid)})
@@ -108,7 +108,7 @@ class Service(object):
         if m == 'GET':
             return resource
         if m == 'PUT':
-            values = self.filter_values(self.handler.fields,request.data)
+            values = self.filter_values(self.handler._meta.fields,request.data)
             resource.modify(values)
         if m == 'DELETE':
             resource.remove()
@@ -133,7 +133,7 @@ class SubService(Service):
         Service.__init__(self,handler)
         self.subhandler = subhandler
         self.related_handler = subhandler.handler
-        self.url = '%s/:mrid/%s'%(handler.url,subhandler.url)
+        self.url = '%s/:mrid/%s'%(handler._meta.url,subhandler._meta.url)
         self.subservices = []
 
     def setup_bottle(self,app):
@@ -155,7 +155,7 @@ class SubService(Service):
         elif m == 'GET':
             return subresource
         elif m == 'PUT':
-            values = self.filter_values(self.subhandler.fields,request.data)
+            values = self.filter_values(self.subhandler._meta.fields,request.data)
             subresource.modify(values)
         elif m == 'DELETE':
             return subresource.remove()
@@ -167,12 +167,12 @@ class SubService(Service):
             return None
         if m == 'GET':
             res = self.subhandler.find_all(resource)
-            return {'values':zip(res,urlize(res,self.related_handler.url))}
+            return {'values':zip(res,urlize(res,self.related_handler._meta.url))}
         elif m == 'POST':
             related = self.related_handler.find(request.data['related_id'])
             if related is None:
                 raise HTTPError(404,'Need existing related value')
-            values = self.filter_values(self.subhandler.fields,request.data)
+            values = self.filter_values(self.subhandler._meta.fields,request.data)
             return self.subhandler.create(resource,related,values)
 
     def view_action(self,request,mrid,rid,action_id):

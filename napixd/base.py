@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from types import MethodType
 
 class BaseHandler(object):
     pass
@@ -13,17 +14,21 @@ class HandlerDefinitionError(Exception):
         return 'Registering %s failed: %s'%(self.cls.__name__,self.msg)
 
 def check_handler(cls):
-    attributes = {
+    meta_attribute = {
             'resource_methods':list,
             'collection_methods':list,
-            'doc_collection':dict,
-            'doc_action':list,
             'url':str,
-            '__name__':str,
             'subhandlers':dict,
             'actions':dict,
-            'fields':list,
-            'validate_resource_id':list,
+            'fields':dict,
+            }
+    attributes = {
+            '_meta':object,
+            'doc_resource':dict,
+            'doc_collection':dict,
+            'doc_action':dict,
+            'validate_resource_id':MethodType,
+            '__name__':str,
             }
     methods  = {
             'find_all': lambda x:'GET' in x.collection_methods,
@@ -32,11 +37,17 @@ def check_handler(cls):
             'remove':lambda x:'DELETE' in x.resource_methods,
             'modify':lambda x:'PUT' in x.resource_methods,
             }
-    for attr,typ in attributes:
+    for attr,typ in attributes.items():
         if not hasattr(cls,attr):
             raise HandlerDefinitionError(cls,'handlers have to define %s attribute'%attr)
         if not isinstance(getattr(cls,attr),typ):
             raise HandlerDefinitionError(cls,'handlers %s attribute have to be a %s'%(attr,typ.__name__))
-    for method,checker in methods:
-        if checker(cls) and not hasattr(cls,method):
+    meta = cls._meta
+    for attr,typ in meta_attribute.items():
+        if not hasattr(meta,attr):
+            raise HandlerDefinitionError(cls,'handlers meta have to define %s attribute'%attr)
+        if not isinstance(getattr(meta,attr),typ):
+            raise HandlerDefinitionError(cls,'handlers meta %s attribute have to be a %s'%(attr,typ.__name__))
+    for method,checker in methods.items():
+        if checker(meta) and not hasattr(cls,method):
             raise HandlerDefinitionError(cls,'this handler have to define a %s method'%method)
