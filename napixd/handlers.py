@@ -168,7 +168,7 @@ class UnixAccountHandler(IntIdMixin,Handler):
         except KeyError:
             return None
         self = cls(uid)
-        for i in cls.fields:
+        for i in cls._meta.fields:
             setattr(self,i,getattr(x,'pw_'+i))
         return self
 

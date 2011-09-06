@@ -26,7 +26,7 @@ class ActionInstance(object):
     def __getattr__(self,attr):
         return getattr(self.action,attr)
     def __call__(self,**values):
-        self.action(self.instance,**values)
+        return self.action(self.instance,**values)
 
 class SubHandlerProperty(object):
     """Property linking to the the subresource"""
@@ -171,8 +171,6 @@ class IntIdMixin:
 class Handler(BaseHandler):
     __metaclass__ = MetaHandler
     """Base for the handlers"""
-    fields = {}
-    actions = {}
     doc_collection = None
     doc_resource = None
     doc_action = None
@@ -194,7 +192,7 @@ class Handler(BaseHandler):
 
     @classmethod
     def make_url(self,rid):
-        return '/%s/%s'%(self.url,rid)
+        return '/%s/%s'%(self._meta.url,rid)
 
     @property
     def get_url(self):
@@ -203,7 +201,7 @@ class Handler(BaseHandler):
     def serialize(self):
         """Serialize by getting the declared properties"""
         r={'rid':self.rid}
-        for x in self.fields:
+        for x in self._meta.fields:
             r[x] = getattr(self,'_hdlr_'+x)
         return r
 
