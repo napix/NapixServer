@@ -192,7 +192,7 @@ class Handler(BaseHandler):
 
     @classmethod
     def make_url(self,rid):
-        return '/%s/%s'%(self.url,rid)
+        return '/%s/%s'%(self._meta.url,rid)
 
     @property
     def get_url(self):
