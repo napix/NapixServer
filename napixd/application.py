@@ -8,28 +8,21 @@ logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
 
 import os
 import sys
-import functools
 
 import bottle
 
 from napixd import settings
 from napixd.plugins import ConversationPlugin
 from napixd.views import Service
-from napixd.executor_bottle import ExecutorPlugin,RocketAndExecutor
-from napixd.handler import BaseHandler
+from napixd.executor_bottle import RocketAndExecutor
+from napixd.handler import Handler
 
 logger = logging.getLogger('Napix.Server')
 
 print os.getpid()
 
-def wrap(fn):
-    @functools.wraps(fn)
-    def inner(*args,**kwargs):
-        logger.info('call wrap')
-        return fn(bottle.request,*args,**kwargs)
-    return inner
 
-
+registry = {}
 napixd = bottle.app.push()
 for module_name in settings.HANDLERS:
     __import__(module_name)
@@ -37,25 +30,15 @@ for module_name in settings.HANDLERS:
     logger.debug('import %s',module)
 
     classes = [ getattr(module,x) for x in getattr(module,'__all__',dir(module))]
+    logger.debug('found %s',classes)
     istype = lambda x:isinstance(x,type)
-    ishandler = lambda x:(issubclass(x,BaseHandler))
+    ishandler = lambda x:(issubclass(x,Handler))
 
     for handler in filter(lambda x:(istype(x) and ishandler(x)),classes):
         service = Service(handler)
-        ur = handler.url
-        logger.debug('Installing %s at %s',handler,ur)
-        napixd.route(r'/%s/:rid/:action_id'%ur,
-                callback=wrap(service.view_action),
-                name='%s_action'%ur,
-                method=['HEAD','GET','POST'])
-        napixd.route(r'/%s/:rid'%ur,
-                callback=wrap(service.view_resource),
-                name='%s_resource'%ur,
-                method=handler.resource_methods)
-        napixd.route(r'/%s/'%ur,
-                callback=wrap(service.view_collection),
-                name='%s_collection'%ur,
-            method=handler.collection_methods)
+        registry[service.url] = service
+        service.setup_bottle(napixd)
+
 napixd.install(ConversationPlugin())
 
 if __name__ == '__main__':

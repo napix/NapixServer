@@ -7,21 +7,21 @@ import logging
 
 from bottle import HTTPError
 
-from napixd.exceptions import ValidationError
-from napixd.handler import BaseHandler,Value,action
+from napixd.handler import Handler,Value,action,SubHandler,IntIdMixin
 from napixd.utils import run_command_or_fail,run_command,ValidateIf
 
 from centrald.cas.models import Client
 from pwd import getpwall,getpwuid,getpwnam
+from grp import getgrall,getgrgid
 
 from executor import executor
 from threadator import thread_manager
 
 logger = logging.getLogger('Napix.Handler')
 
-__all__ = ['NAPIXAPI','RunningProcessHandler','ThreadManagerHandler','UnixAccountHandler','APIUserHandler','InitdHandler']
+__all__ = ['NAPIXAPI','RunningProcessHandler','ThreadManagerHandler','UnixAccountHandler','APIUserHandler','InitdHandler','UnixGroupHandler']
 
-class NAPIXAPI(BaseHandler):
+class NAPIXAPI(Handler):
     """Service d'introspection de API"""
     url = 'napix'
 
@@ -49,7 +49,7 @@ class NAPIXAPI(BaseHandler):
         y.update(handler.doc_action)
         return cls(rid,**y)
 
-class RunningProcessHandler(BaseHandler):
+class RunningProcessHandler(IntIdMixin,Handler):
     """ asynchronous process handler """
 
     command = Value('command to be run')
@@ -69,13 +69,6 @@ class RunningProcessHandler(BaseHandler):
         except Exception,e:
             raise HTTPError(400,str(e))
         return p.pid
-
-    @classmethod
-    def validate_resource_id(self,rid):
-        try:
-            return int(rid)
-        except ValueError:
-            raise ValidationError
 
     @classmethod
     def find(cls,pid):
@@ -108,19 +101,12 @@ class RunningProcessHandler(BaseHandler):
         self.process.kill()
         return 'ok'
 
-class ThreadManagerHandler(BaseHandler):
+class ThreadManagerHandler(IntIdMixin,Handler):
     """Gestionnaire des taches asynchrones"""
 
     @classmethod
     def find_all(cls):
         return thread_manager.keys()
-
-    @classmethod
-    def validate_resource_id(self,rid):
-        try:
-            return int(rid)
-        except ValueError:
-            raise ValidationError
 
     @classmethod
     def find(cls,rid):
@@ -142,7 +128,24 @@ class ThreadManagerHandler(BaseHandler):
                 [RunningProcessHandler(x).serialize() for x in self.spawned_process]
                 }
 
-class UnixAccountHandler(BaseHandler):
+class UnixGroupHandler(IntIdMixin,Handler):
+    name = Value('Group name')
+
+    @classmethod
+    def find_all(cls):
+        return map(operator.itemgetter(2),getgrall())
+
+    @classmethod
+    def find(cls,rid):
+        try:
+            group = getgrgid(rid)
+            inst = cls(rid,name=group.gr_name)
+            inst.members = group.gr_mem
+            return inst
+        except KeyError:
+            return None
+
+class UnixAccountHandler(IntIdMixin,Handler):
     """Gestionnaire des comptes UNIX """
     table_pwd = { 'name' : 'login', 'gid': 'gid', 'gecos':'comment' ,'shell':'shell','dir':'home'}
 
@@ -153,21 +156,13 @@ class UnixAccountHandler(BaseHandler):
     shell = Value('Shell de login')
 
     @classmethod
-    def validate_resource_id(cls,r_id):
-        """ UID de l'utilisateur"""
-        try:
-            return int(r_id)
-        except ValueError:
-            raise ValidationError,''
-
-    @classmethod
     def find(cls,uid):
         try:
             x= getpwuid(uid)
         except KeyError:
             return None
         self = cls(uid)
-        for i in cls.fields:
+        for i in cls._fields:
             setattr(self,i,getattr(x,'pw_'+i))
         return self
 
@@ -198,7 +193,37 @@ class UnixAccountHandler(BaseHandler):
     def remove(self,resource):
         run_command_or_fail(['/usr/sbin/userdel',resource['name']])
 
-class APIUserHandler(BaseHandler):
+    class Group(SubHandler):
+        handler = UnixGroupHandler
+
+        @classmethod
+        def find_all(cls,user):
+            return map(operator.itemgetter('gr_id'),
+                    filter(lambda x:user in x.gr_mem,getgrall()))
+        @classmethod
+        def find(cls,user,sid):
+            group=cls.handler.find(sid)
+            if not group or user.name not in group.members:
+                return None
+            return cls(user,group,sid)
+
+        def remove(self):
+            command = ['gpasswd']
+            command.append('-d')
+            command.append(self.resource.name)
+            command.append(self.related.name)
+            run_command_or_fail(command)
+
+        @classmethod
+        def create(self,user,group,values):
+            command = ['gpasswd']
+            command.append('-a')
+            command.append(user.name)
+            command.append(group.name)
+            run_command_or_fail(command)
+            return group.rid
+
+class APIUserHandler(Handler):
     """Gestionnaire des utilisateurs de l'API"""
 
     secret = Value('Mot de passe')
@@ -231,7 +256,7 @@ class APIUserHandler(BaseHandler):
     def serialize(self):
         return { 'rid':self.client.pk,'secret':self.client.value }
 
-class InitdHandler(BaseHandler):
+class InitdHandler(Handler):
     """ Gestionnaire des scripts init.d """
 
     path = '/etc/init.d'

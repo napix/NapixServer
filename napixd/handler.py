@@ -5,11 +5,11 @@ import inspect
 
 from napixd.exceptions import ValidationError
 
-__all__=('BaseHandler','action','Value')
+__all__=('Handler','action','Value','SubHandler','IntIdMixin')
 
 class Property(object):
     def __init__(self,field):
-        self.field = '_'+field
+        self.field = '_hdlr_'+field
     def __set__(self,instance,value):
         setattr(instance,self.field,value)
     def __get__(self,instance,owner):
@@ -83,6 +83,11 @@ def filter_class(lst,cls):
     du dictionnaire *lst* dont les element sont une instance de *cls*"""
     return dict([x for x in lst.items() if isinstance(x[1],cls)])
 
+def filter_subclass(lst,cls):
+    """ retourne un dictionnaire sous-ensemble
+    du dictionnaire *lst* dont les element sont une instance de *cls*"""
+    return dict([x for x in lst.items() if isinstance(x[1],type) and issubclass(x[1],cls)])
+
 
 class MetaHandler(type):
     """Metaclass to generate handlers"""
@@ -94,6 +99,7 @@ class MetaHandler(type):
         attrs['_fields'] = fields
         actions =filter_class(attrs,Action)
         attrs['_actions'] = actions
+        attrs['subhandlers']=filter_subclass(attrs,BaseHandler)
         #install fields as properties
         for f in fields:
             attrs[f]= Property(f)
@@ -139,17 +145,30 @@ class MetaHandler(type):
         attrs['doc_action'] = { 'actions' : dict([(x,y.doc) for x,y in self._actions.items()]) }
 
 class BaseHandler(object):
-    """Base for the handlers"""
+    pass
+
+class IntIdMixin:
+    @classmethod
+    def validate_resource_id(cls,rid):
+        """Resource identifier has to be a integer"""
+        try:
+            return int(rid)
+        except ValueError:
+            raise ValidationError
+
+class Handler(BaseHandler):
     __metaclass__ = MetaHandler
-    fields = {}
-    actions = {}
+    """Base for the handlers"""
+    _fields = {}
+    _actions = {}
     doc_collection = None
     doc_resource = None
     doc_action = None
+
     def __init__(self,rid=None,**kwargs):
         self.rid = rid
         for k,v in kwargs.items():
-            setattr(self,'_'+k,v)
+            setattr(self,'_hdlr_'+k,v)
 
     @classmethod
     def validate_resource_id(cls,rid):
@@ -158,9 +177,41 @@ class BaseHandler(object):
             raise ValidationError,'RID cannot be empty'
         return rid
 
+    @classmethod
+    def make_url(self,rid):
+        return '/%s/%s'%(self.url,rid)
+
+    @property
+    def get_url(self):
+        return self.make_url(self.rid)
+
     def serialize(self):
         """Serialize by getting the declared properties"""
         r={'rid':self.rid}
-        for x in self.fields:
-            r[x] = getattr(self,'_'+x)
+        for x in self._fields:
+            r[x] = getattr(self,'_hdlr_'+x)
         return r
+
+class SubHandler(Handler):
+    handler = None
+
+    def __init__(self,resource,related,rid,**kwargs):
+        Handler.__init__(self,rid,**kwargs)
+        self.resource = resource
+        self.related = related
+
+    def serialize(self):
+        d ={ 'resource': [str(self.resource),self.resource.get_url],
+                'related' : [str(self.related),self.related.get_url],
+                'rid':self.rid }
+        d.update(Handler.serialize(self))
+        return d
+
+    @property
+    def get_url(self):
+        return self.make_url(self.resource.rid,self.rid)
+
+    @classmethod
+    def make_url(self,mrid,rid):
+        return '/%s/%s/%s'%(self.handler.url,mrid,self.url,rid)
+
