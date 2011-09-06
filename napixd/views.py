@@ -5,7 +5,7 @@ import logging
 import functools
 
 from napixd.exceptions import ValidationError
-from bottle import HTTPError,HTTPResponse,request,redirect
+from bottle import HTTPError,HTTPResponse,request
 
 __all__ = ['Service']
 
@@ -46,7 +46,7 @@ class Service(object):
                 callback=wrap(self.view_resource),
                 name='%s_resource'%self.url,
                 method=handler.resource_methods)
-        if handler._actions:
+        if handler.actions:
             app.route(r'/%s/:rid/:action_id'%self.url,
                     callback=wrap(self.view_action),
                     name='%s_action'%self.url,

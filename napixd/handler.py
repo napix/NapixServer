@@ -4,6 +4,7 @@
 import inspect
 
 from napixd.exceptions import ValidationError
+from napixd.base import BaseHandler
 
 __all__=('Handler','action','Value','SubHandler','IntIdMixin')
 
@@ -105,9 +106,9 @@ class MetaHandler(type):
         if 'rid' in attrs:
             raise Exception,'rid is a reserved keyword'
         fields = filter_class(attrs,Value)
-        attrs['_fields'] = fields
+        attrs['fields'] = fields
         actions =filter_class(attrs,Action)
-        attrs['_actions'] = actions
+        attrs['actions'] = actions
         attrs['subhandlers']=filter_subclass(attrs,BaseHandler)
         for sub_name,subhandler in attrs['subhandlers'].items():
             attrs[sub_name.lower()] = SubHandlerProperty(subhandler)
@@ -150,13 +151,10 @@ class MetaHandler(type):
                     'resource_id':self.validate_resource_id.__doc__,
                     'collection_methods':self.collection_methods }
         attrs['doc_resource'] = { 'doc':self.__doc__,
-                        'fields':dict([(x,y.doc) for x,y in self._fields.items()]),
+                        'fields':dict([(x,y.doc) for x,y in self.fields.items()]),
                         'resource_methods':self.resource_methods,
-                        'actions':self._actions.keys()}
-        attrs['doc_action'] = { 'actions' : dict([(x,y.doc) for x,y in self._actions.items()]) }
-
-class BaseHandler(object):
-    pass
+                        'actions':self.actions.keys()}
+        attrs['doc_action'] = { 'actions' : dict([(x,y.doc) for x,y in self.actions.items()]) }
 
 class IntIdMixin:
     @classmethod
@@ -170,8 +168,8 @@ class IntIdMixin:
 class Handler(BaseHandler):
     __metaclass__ = MetaHandler
     """Base for the handlers"""
-    _fields = {}
-    _actions = {}
+    fields = {}
+    actions = {}
     doc_collection = None
     doc_resource = None
     doc_action = None
@@ -202,7 +200,7 @@ class Handler(BaseHandler):
     def serialize(self):
         """Serialize by getting the declared properties"""
         r={'rid':self.rid}
-        for x in self._fields:
+        for x in self.fields:
             r[x] = getattr(self,'_hdlr_'+x)
         return r
 
