@@ -17,7 +17,7 @@ class BackgroundTasker(object):
     def __init__(self,threadator):
         """init the background task with a threadator"""
         self.threadator =threadator
-    def __call__(self,fn=None,**kw):
+    def __call__(self,fn=None,drop_thread=True,**kw):
         """
         call the decorator
         The keywords provided to the decorator will be transmitted to the threadator
@@ -25,6 +25,10 @@ class BackgroundTasker(object):
         def outer(fn):
             @functools.wraps(fn)
             def inner(*args,**kwargs):
+                if drop_thread:
+                    def droper(*args,**kwargs):
+                        return fn(*args[1:],**kwargs)
+                    fn = droper
                 #real function call
                 return self.threadator.do_async(fn,args,kwargs,**kw)
             return inner
@@ -85,6 +89,9 @@ class ThreadWrapper(Thread):
     def __init__(self,activity,function,args=None,kwargs=None,on_success=None,on_failure=None,on_end=None):
         Thread.__init__(self)
 
+        self.execution_state_queue=SubQueue(activity)
+        self.start_time=None
+
         #function to run with its arguments
         self.function = function
         self.args = args or ()
@@ -96,11 +103,8 @@ class ThreadWrapper(Thread):
         self.on_end = on_end or self._on_end
 
         #execution status initialized
-        self._execution_state=self.CREATED
+        self._set_execution_state(self.CREATED)
         self._status=''
-
-        self.execution_state_queue=SubQueue(activity)
-        self.start_time=None
 
     def run(self):
         """Launch the thread"""

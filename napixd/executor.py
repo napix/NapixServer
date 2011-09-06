@@ -22,7 +22,7 @@ __all__ = ['Executor','executor','popen']
 
 class ExecutorRequest(object):
     """Request for a job to execute"""
-    def __init__(self,job,discard_output,managed):
+    def __init__(self,job,return_queue,discard_output,managed):
         """Create the request for *job*
         :param discard_output: boolean wich is True when you want the input to be redirected to /dev/null
         :param managed: boolean wich is True when the process will be managed by another thread
@@ -30,8 +30,8 @@ class ExecutorRequest(object):
         self.job = job
         self.discard_output = discard_output
         self.take_ownership()
-        self.managed = False
-        self.return_queue = ThrowingSubQueue(self.activity)
+        self.managed = managed
+        self.return_queue = return_queue
         logger.debug('Thread %s requested job %s',self.owning_thread,id(self))
 
     def take_ownership(self):
@@ -68,7 +68,8 @@ class Executor(object):
     def create_job(self,job,discard_output=False,managed=False):
         """Ask for job creation, the arguments are given to ExecutorRequest"""
         logger.debug('Registering job %s',id(job))
-        request = ExecutorRequest(job,discard_output,managed)
+        request = ExecutorRequest(job, ThrowingSubQueue(self.activity),
+                discard_output,managed)
         self.pending_jobs.put(request)
         return request.return_queue.get()
 
@@ -104,6 +105,8 @@ class Executor(object):
 
     def stop(self):
         """Stop the execution of the executor"""
+        while not executor.pending_jobs.empty():
+            executor.pending_jobs.get()
         self.alive = False
         self.manager.stop()
         self.owner_tracer.stop()
@@ -123,6 +126,9 @@ class OwnerTracer(Thread):
         logger.info('Kill them all, God will recognize his own')
         for process in self.alive_processes.values():
             process.kill()
+        self.alive_processes = {}
+        while not self.activity.empty():
+            self.activity.get()
 
     def children_of(self,tid):
         """Get the running children of a thread"""
