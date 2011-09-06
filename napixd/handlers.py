@@ -135,6 +135,9 @@ class UnixGroupHandler(IntIdMixin,Handler):
     def find_all(cls):
         return map(operator.itemgetter(2),getgrall())
 
+    def __str__(self):
+        return self.name
+
     @classmethod
     def find(cls,rid):
         try:
@@ -154,6 +157,9 @@ class UnixAccountHandler(IntIdMixin,Handler):
     gecos = Value('Commentaire')
     dir = Value('Répertoire personnel')
     shell = Value('Shell de login')
+
+    def __str__(self):
+        return self.name
 
     @classmethod
     def find(cls,uid):
@@ -198,8 +204,8 @@ class UnixAccountHandler(IntIdMixin,Handler):
 
         @classmethod
         def find_all(cls,user):
-            return map(operator.itemgetter('gr_id'),
-                    filter(lambda x:user in x.gr_mem,getgrall()))
+            return map(operator.itemgetter(2),
+                    filter(lambda x:user.name in x[3],getgrall()))
         @classmethod
         def find(cls,user,sid):
             group=cls.handler.find(sid)
@@ -249,6 +255,9 @@ class APIUserHandler(Handler):
     def modify(self,values):
         self.value = values.pop('secret')
         self.save()
+
+    def __str__(self):
+        return self.client.pk
 
     def __init__(self,client):
         self.client = client

@@ -27,6 +27,15 @@ class ActionInstance(object):
     def __call__(self,**values):
         self.action(self.instance,**values)
 
+class SubHandlerProperty(object):
+    """Property linking to the the subresource"""
+    def __init__(self,subhandler):
+        self.subhandler = subhandler
+    def __get__(self,instance,owner):
+        if instance is None:
+            return self.subhandler
+        return self.subhandler.find_all(instance)
+
 class Action(object):
     @property
     def doc(self):
@@ -100,6 +109,8 @@ class MetaHandler(type):
         actions =filter_class(attrs,Action)
         attrs['_actions'] = actions
         attrs['subhandlers']=filter_subclass(attrs,BaseHandler)
+        for sub_name,subhandler in attrs['subhandlers'].items():
+            attrs[sub_name.lower()] = SubHandlerProperty(subhandler)
         #install fields as properties
         for f in fields:
             attrs[f]= Property(f)
@@ -164,6 +175,9 @@ class Handler(BaseHandler):
     doc_collection = None
     doc_resource = None
     doc_action = None
+
+    def __str__(self):
+        return str(self.rid)
 
     def __init__(self,rid=None,**kwargs):
         self.rid = rid

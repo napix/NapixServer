@@ -140,7 +140,7 @@ class SubService(Service):
         self._setup_bottle(self.subhandler,app)
 
     def find_sub_resource(self,mrid,rid):
-        resource = self.find_resource(self,request,mrid)
+        resource = self.find_resource(mrid)
         sresource_id = self._validate_rid(self.subhandler,rid)
         res = self.subhandler.find(resource,sresource_id)
         if res is None:
@@ -161,7 +161,7 @@ class SubService(Service):
             return subresource.remove()
 
     def view_collection(self,request,mrid):
-        resource = self.find_resource(self,request,mrid)
+        resource = self.find_resource(mrid)
         m = request.method.upper()
         if m == 'HEAD':
             return None
