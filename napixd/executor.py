@@ -10,8 +10,7 @@ import sys
 import traceback
 
 import subprocess
-import select
-from threading import Thread,Lock,current_thread
+from threading import Lock,current_thread
 from queue import Queue,Empty,ThrowingSubQueue
 
 from cStringIO import StringIO
@@ -22,15 +21,13 @@ __all__ = ['Executor','executor','popen']
 
 class ExecutorRequest(object):
     """Request for a job to execute"""
-    def __init__(self,job,return_queue,discard_output,managed):
+    def __init__(self,job,return_queue,discard_output):
         """Create the request for *job*
         :param discard_output: boolean wich is True when you want the input to be redirected to /dev/null
-        :param managed: boolean wich is True when the process will be managed by another thread
         """
         self.job = job
         self.discard_output = discard_output
         self.take_ownership()
-        self.managed = managed
         self.return_queue = return_queue
         logger.debug('Thread %s requested job %s',self.owning_thread,id(self))
 
@@ -61,15 +58,14 @@ class Executor(object):
         """Create some queues to dispatch jobs and events"""
         self.pending_jobs = Queue()
         self.activity = Queue()
-        self.manager = ExecManager()
-        self.owner_tracer = OwnerTracer(self.activity)
         self.alive = True
+        self.alive_processes = {}
 
-    def create_job(self,job,discard_output=False,managed=False):
+    def create_job(self,job,discard_output=False):
         """Ask for job creation, the arguments are given to ExecutorRequest"""
         logger.debug('Registering job %s',id(job))
-        request = ExecutorRequest(job, ThrowingSubQueue(self.activity),
-                discard_output,managed)
+        request = ExecutorRequest(job,
+                ThrowingSubQueue(self.activity), discard_output)
         self.pending_jobs.put(request)
         return request.return_queue.get()
 
@@ -79,66 +75,23 @@ class Executor(object):
         Run the main loop.
         Listen to the queue and open processes.
         """
-        self.manager.start()
-        self.owner_tracer.start()
         logger.info('Starting listenning %s',os.getpid())
         while self.alive:
             try:
-                request = self.pending_jobs.get(block=True,timeout=1)
+                request = self.pending_jobs.get(block=True,timeout=.1)
                 logger.debug('Found job %s',id(request))
             except Empty:
                 continue
             try:
                 handler = ExecHandle(request)
-                if request.managed:
-                    self.manager.add_hander(handler)
-                    request.take_ownership()
                 request.return_queue.put(handler)
             except Exception,e:
                 traceback.print_exception(*sys.exc_info())
                 request.return_queue.put(e)
             del request
 
-    def children_of(self,tid):
-        """Return the children of a thread"""
-        return self.owner_tracer.children_of(tid)
-
-    def stop(self):
-        """Stop the execution of the executor"""
-        while not executor.pending_jobs.empty():
-            executor.pending_jobs.get()
-        self.alive = False
-        self.manager.stop()
-        self.owner_tracer.stop()
-
-class OwnerTracer(Thread):
-    """Trace the jobs runnings and the thead that asked them"""
-    def __init__(self,activity_queue):
-        """initialize the tracer, with the queue it will listen to"""
-        self.activity = activity_queue
-        self.alive=True
-        self.alive_processes = {}
-        Thread.__init__(self,name="OwnerTracer")
-
-    def stop(self):
-        """stop the tracer and kill the remaining processes"""
-        self.alive = False
-        logger.info('Kill them all, God will recognize his own')
-        for process in self.alive_processes.values():
-            process.kill()
-        self.alive_processes = {}
-        while not self.activity.empty():
-            self.activity.get()
-
-    def children_of(self,tid):
-        """Get the running children of a thread"""
-        return [x for x in self.alive_processes.values() if x.request.owning_thread == tid]
-
-    def run(self):
-        """run the main loop"""
-        while self.alive:
             try:
-                handle = self.activity.get(True,timeout=1)
+                handle = self.activity.get(True,timeout=.1)
             except Empty:
                 continue
             if isinstance(handle,Exception):
@@ -152,78 +105,22 @@ class OwnerTracer(Thread):
                     #The process finished before the tracer got it
                     pass
 
-class ExecManager(Thread):
-    """Manager that keep a trace of the activity of processes it got"""
-    def __init__(self):
-        super(ExecManager,self).__init__(name="exec_manager")
-        self.handles = Lock()
-        self.running_handles = {}
-        self.closed_handles = {}
-        self.alive = True
-
-    def clean(self,process):
-        """move the process from the running to the closed handles"""
-        logger.debug('cleaning process %s'%process.pid)
-        process.close()
-        with self.handles:
-            del self.running_handles[process.pid]
-            self.closed_handles[process.pid] =  process
-
-    def dispose(self,process):
-        with self.handles:
-            del self.closed_handles[process.pid]
+    def children_of(self,tid):
+        """Return the children of a thread"""
+        return [x for x in self.alive_processes.values() if x.request.owning_thread == tid]
 
     def stop(self):
-        """stops the manager"""
+        """Stop the execution of the executor"""
+        while not executor.pending_jobs.empty():
+            executor.pending_jobs.get()
         self.alive = False
 
-    def __getitem__(self,item):
-        """Get a managed process, either in the running handles or in the closed ones"""
-        with self.handles:
-            try:
-                return self.running_handles[item]
-            except KeyError:
-                return self.closed_handles[item]
-
-    def __contains__(self,item):
-        """Return True if the process is in the managed process"""
-        with self.handles:
-            return item in self.running_handles or item in self.closed_handles
-
-    def keys(self):
-        """Get the PID of all the managed processes"""
-        with self.handles:
-            x= []
-            x.extend(self.running_handles.keys())
-            x.extend(self.closed_handles.keys())
-            return x
-
-    def add_hander(self,handle):
-        """Add a process to manage"""
-        self.running_handles[handle.pid] = handle
-        return handle
-
-    def run(self):
-        """
-        Run the loop
-        Check if the processes are still alive
-        Get the processes that have a readable buffer and read them
-        """
-        while self.alive:
-            streams = []
-            for x in self.running_handles.values():
-                streams.append(x.stdout)
-                streams.append(x.stderr)
-                logger.debug('Polling %s',x.pid)
-                if x.poll() is not None:
-                    self.clean(x)
-            streams = filter(lambda x:isinstance(x,ExecStream),streams)
-            if not streams:
-                time.sleep(.2)
-                continue
-            for waiting_streams in select.select(streams,[],[],.1):
-                for stream in waiting_streams:
-                    stream.read()
+        logger.info('Kill them all, God will recognize his own')
+        for process in self.alive_processes.values():
+            process.kill()
+        self.alive_processes = {}
+        while not self.activity.empty():
+            self.activity.get()
 
 class ExecHandle(object):
     """Proxy to Popen"""
