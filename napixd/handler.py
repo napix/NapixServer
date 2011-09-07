@@ -18,16 +18,6 @@ class Property(object):
             return self
         return getattr(instance,self.field)
 
-class ActionInstance(object):
-    """Proxy d'une action pour une ressource donnée"""
-    def __init__(self,action,instance):
-        self.action = action
-        self.instance = instance
-    def __getattr__(self,attr):
-        return getattr(self.action,attr)
-    def __call__(self,**values):
-        return self.action(self.instance,**values)
-
 class SubHandlerProperty(object):
     """Property linking to the the subresource"""
     def __init__(self,subhandler):
@@ -36,32 +26,6 @@ class SubHandlerProperty(object):
         if instance is None:
             return self.subhandler
         return self.subhandler.find_all(instance)
-
-class Action(object):
-    @property
-    def doc(self):
-        return { 'mandatory_params':self.mandatory,
-                'optional_params':self.optional,
-                'action' : self.__doc__}
-    def __init__(self,fn,mandatory=None,optional=None):
-        self.__doc__=fn.__doc__
-        self.fn = fn
-        self.mandatory = mandatory
-        self.optional = optional
-        fields = mandatory[:]
-        fields.extend(optional.keys())
-        self.fields = fields
-    def __get__(self,instance,owner):
-        return ActionInstance(self,instance)
-
-    def __call__(self,instance,**values):
-        missing = filter(lambda x: x not in values,self.mandatory)
-        if missing:
-            raise TypeError,'missing mandatory parameter "%s"'%(','.join(missing))
-        forbidden = filter(lambda x: x not in self.fields,values)
-        if forbidden:
-            raise TypeError,'"%s" is not allowed here'%(','.join(forbidden))
-        return self.fn(instance,**values)
 
 def action(fn):
     """Decorator to declare an action method inside a handler"""
@@ -74,10 +38,11 @@ def action(fn):
 
     #mandatory params = param list - param that have default values
     len_mand = len(args) - len(opt)
-    mandatory = args[:len_mand]
-    optional = dict(zip(args[len_mand:],opt))
+    fn.mandatory = args[:len_mand]
+    fn.optional = dict(zip(args[len_mand:],opt))
+    fn._napix_action=True
 
-    return Action(fn,mandatory,optional)
+    return fn
 
 class Value():
     """Class to declare a property inside a handler"""
@@ -93,15 +58,20 @@ def filter_class(lst,cls):
     du dictionnaire *lst* dont les element sont une instance de *cls*"""
     return dict([x for x in lst.items() if isinstance(x[1],cls)])
 
+def filter_hasattr(lst,attr):
+    """ retourne un dictionnaire sous-ensemble
+    du dictionnaire *lst* dont les element sont ont un attribut *attr*"""
+    return dict([x for x in lst.items() if hasattr(x[1],attr)])
+
 def filter_subclass(lst,cls):
     """ retourne un dictionnaire sous-ensemble
-    du dictionnaire *lst* dont les element sont une instance de *cls*"""
+    du dictionnaire *lst* dont les element sont une sous classe de *cls*"""
     return dict([x for x in lst.items() if isinstance(x[1],type) and issubclass(x[1],cls)])
 
 class Definition(object):
     def __init__(self,attrs):
         self.fields = filter_class(attrs,Value)
-        self.actions =filter_class(attrs,Action)
+        self.actions =filter_hasattr(attrs,'_napix_action')
         self.subhandlers=filter_subclass(attrs,BaseHandler)
         self.url = None
         #method applicable to the collection /res/
@@ -157,7 +127,7 @@ class MetaHandler(type):
                         'fields':dict([(x,y.doc) for x,y in self._meta.fields.items()]),
                         'resource_methods':self._meta.resource_methods,
                         'actions':self._meta.actions.keys()}
-        self.doc_action = { 'actions' : dict([(x,y.doc) for x,y in self._meta.actions.items()]) }
+        self.doc_action = { 'actions' : dict([(x,y.__doc__) for x,y in self._meta.actions.items()]) }
 
 class IntIdMixin:
     @classmethod

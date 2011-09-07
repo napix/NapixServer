@@ -50,7 +50,7 @@ class TestHandlerWithAction(unittest.TestCase):
     def testWithOut(self):
         res = MockHandlerWithAction.find(1)
         self.assertEqual(res.without_args(),909)
-        self.assertRaises(ValueError,res.without_args,dude=1)
+        self.assertRaises(TypeError,res.without_args,dude=1)
     def testWith(self):
         res = MockHandlerWithAction.find(1)
         self.assertDictEqual(
