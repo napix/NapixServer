@@ -6,7 +6,8 @@ import inspect
 from napixd.exceptions import ValidationError
 from napixd.base import BaseHandler
 
-__all__=('Handler','action','Value','SubHandler','IntIdMixin')
+#__all__=('Handler','action','Value','SubHandler','IntIdMixin')
+__all__ = ('Collection','Resource','IntIdMixin')
 
 class Value(object):
     """Class to declare a property inside a handler"""
@@ -193,3 +194,7 @@ class SubHandler(Handler):
     def make_url(self,mrid,rid):
         return '/%s/%s/%s'%(self.handler.url,mrid,self.url,rid)
 
+class Collection(BaseHandler):
+    pass
+class Resource(BaseHandler):
+    pass
