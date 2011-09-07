@@ -8,9 +8,12 @@ from napixd.base import BaseHandler
 
 __all__=('Handler','action','Value','SubHandler','IntIdMixin')
 
-class Property(object):
-    def __init__(self,field):
-        self.field = '_hdlr_'+field
+class Value(object):
+    """Class to declare a property inside a handler"""
+    def __init__(self,doc):
+        self.__doc__ = doc
+    def _set_field(self,field):
+        self.field = '_napix_'+field
     def __set__(self,instance,value):
         setattr(instance,self.field,value)
     def __get__(self,instance,owner):
@@ -43,14 +46,6 @@ def action(fn):
     fn._napix_action=True
 
     return fn
-
-class Value():
-    """Class to declare a property inside a handler"""
-    @property
-    def doc(self):
-        return self.__doc__
-    def __init__(self,doc):
-        self.__doc__ = doc
 
 
 def filter_class(lst,cls):
@@ -111,8 +106,8 @@ class MetaHandler(type):
             attrs[sub_name.lower()] = SubHandlerProperty(subhandler)
 
         #install fields as properties
-        for f in definition.fields:
-            attrs[f]= Property(f)
+        for name,f in definition.fields.items():
+            f._set_field(name)
 
         cls = type.__new__(meta,name,bases,attrs)
         return cls
@@ -124,7 +119,7 @@ class MetaHandler(type):
                     'resource_id':self.validate_resource_id.__doc__,
                     'collection_methods':self._meta.collection_methods }
         self.doc_resource = { 'doc':self.__doc__,
-                        'fields':dict([(x,y.doc) for x,y in self._meta.fields.items()]),
+                        'fields':dict([(x,y.__doc__) for x,y in self._meta.fields.items()]),
                         'resource_methods':self._meta.resource_methods,
                         'actions':self._meta.actions.keys()}
         self.doc_action = { 'actions' : dict([(x,y.__doc__) for x,y in self._meta.actions.items()]) }
@@ -151,7 +146,7 @@ class Handler(BaseHandler):
     def __init__(self,rid=None,**kwargs):
         self.rid = rid
         for k,v in kwargs.items():
-            setattr(self,'_hdlr_'+k,v)
+            getattr(self.__class__,k).__set__(self,v)
 
     @classmethod
     def validate_resource_id(cls,rid):
@@ -172,7 +167,7 @@ class Handler(BaseHandler):
         """Serialize by getting the declared properties"""
         r={'rid':self.rid}
         for x in self._meta.fields:
-            r[x] = getattr(self,'_hdlr_'+x)
+            r[x] = getattr(self,x)
         return r
 
 class SubHandler(Handler):

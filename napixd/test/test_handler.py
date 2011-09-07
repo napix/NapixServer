@@ -10,6 +10,9 @@ from napixd.base import check_handler,HandlerDefinitionError
 class TestHandler(unittest.TestCase):
     def setUp(self):
         MockHandler.objects = { 0:'lol',1:'foo',2:'bar',3:'baz'}
+    def testValue(self):
+        result = MockHandler.find(0)
+        self.assertEqual(MockHandler.name.__doc__,'Name')
     def testID(self):
         self.assertEqual(MockHandler.validate_resource_id('0'),0)
         self.assertEqual(MockHandler.validate_resource_id('2'),2)
