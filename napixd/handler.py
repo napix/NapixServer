@@ -57,10 +57,10 @@ class Action(object):
     def __call__(self,instance,**values):
         missing = filter(lambda x: x not in values,self.mandatory)
         if missing:
-            raise KeyError,'missing mandatory parameter "%s"'%(','.join(missing))
+            raise TypeError,'missing mandatory parameter "%s"'%(','.join(missing))
         forbidden = filter(lambda x: x not in self.fields,values)
         if forbidden:
-            raise ValueError,'"%s" is not allowed here'%(','.join(forbidden))
+            raise TypeError,'"%s" is not allowed here'%(','.join(forbidden))
         return self.fn(instance,**values)
 
 def action(fn):

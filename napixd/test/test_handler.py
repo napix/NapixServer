@@ -41,9 +41,16 @@ class TestHandler(unittest.TestCase):
 class TestHandlerWithAction(unittest.TestCase):
     def setUp(self):
         MockHandlerWithAction.objects = {1:'mpm'}
+    def testActionParams(self):
+        self.assertListEqual(MockHandlerWithAction.without_args.mandatory,[])
+        self.assertDictEqual(MockHandlerWithAction.without_args.optional,{})
+        self.assertDictEqual(MockHandlerWithAction.with_args.optional,{'opt1':None,'opt2':None})
+        self.assertListEqual(MockHandlerWithAction.with_args.mandatory,['mand'])
+
     def testWithOut(self):
         res = MockHandlerWithAction.find(1)
         self.assertEqual(res.without_args(),909)
+        self.assertRaises(ValueError,res.without_args,dude=1)
     def testWith(self):
         res = MockHandlerWithAction.find(1)
         self.assertDictEqual(
@@ -52,6 +59,8 @@ class TestHandlerWithAction(unittest.TestCase):
         self.assertDictEqual(
                 {'mand':'lol','opt1':None,'opt2':None},
                 res.with_args(mand='lol'))
+        self.assertRaises(TypeError,res.with_args,dude=1,mand=True)
+        self.assertRaises(TypeError,res.with_args,opt1=1,opt2=2)
 
 if __name__ == '__main__':
     unittest.main()
