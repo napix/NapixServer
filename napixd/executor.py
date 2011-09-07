@@ -6,8 +6,6 @@ import fcntl
 
 import logging
 import os
-import sys
-import traceback
 
 import subprocess
 from threading import Lock,current_thread
@@ -90,7 +88,6 @@ class Executor(object):
                 handle = ExecHandle(request)
                 request.return_queue.put(handle)
             except Exception,e:
-                traceback.print_exception(*sys.exc_info())
                 request.return_queue.put(e)
             del request
 
