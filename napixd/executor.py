@@ -77,25 +77,30 @@ class Executor(object):
         """
         logger.info('Starting listenning %s',os.getpid())
         while self.alive:
+            self._run_fork()
+            self._run_owner()
+
+    def _run_fork(self):
             try:
                 request = self.pending_jobs.get(block=True,timeout=.1)
                 logger.debug('Found job %s',id(request))
             except Empty:
-                continue
+                return
             try:
-                handler = ExecHandle(request)
-                request.return_queue.put(handler)
+                handle = ExecHandle(request)
+                request.return_queue.put(handle)
             except Exception,e:
                 traceback.print_exception(*sys.exc_info())
                 request.return_queue.put(e)
             del request
 
+    def _run_owner(self):
             try:
                 handle = self.activity.get(True,timeout=.1)
             except Empty:
-                continue
+                return
             if isinstance(handle,Exception):
-                continue
+                return
             if handle.returncode == None:
                 self.alive_processes[handle.pid] = handle
             else:
@@ -158,7 +163,7 @@ class ExecHandle(object):
             self.process.terminate()
             for x in xrange(30):
                 #wait 3seconds
-                if self.process.poll() is not None:
+                if self.poll() is not None:
                     return
                 time.sleep(.1)
             logger.info('KILL -9 %s',self.process.pid)
@@ -173,7 +178,7 @@ class ExecHandle(object):
             self.stderr.close()
             self.stdout.close()
             self.closing = True
-            self.process.wait()
+            self.wait()
 
     def wait(self):
         """Wait for the process to complete and send the returncode in the activity queue"""

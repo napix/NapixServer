@@ -53,6 +53,9 @@ class TestExecutor(unittest.TestCase):
         children = executor.children_of(current_thread().ident)
         self.assertItemsEqual(children,[process])
         process.kill()
+        time.sleep(0.1)
+        children = executor.children_of(current_thread().ident)
+        self.assertEqual(children,[])
 
 
 def main():
