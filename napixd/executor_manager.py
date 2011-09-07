@@ -11,12 +11,13 @@ logger = logging.getLogger('Napix.ExecManager')
 
 class ExecManager(Thread):
     """Manager that keep a trace of the activity of processes it got"""
-    def __init__(self):
+    def __init__(self,executor):
         super(ExecManager,self).__init__(name="exec_manager")
         self.handles = Lock()
         self.running_handles = {}
         self.closed_handles = {}
         self.alive = True
+        self.executor = executor
 
     def clean(self,process):
         """move the process from the running to the closed handles"""
@@ -57,7 +58,7 @@ class ExecManager(Thread):
 
     def create_job(self,job):
         """Add a process to manage"""
-        handle = executor.create_job(job)
+        handle = self.executor.create_job(job)
         self.running_handles[handle.pid] = handle
 
     def run(self):
@@ -82,3 +83,4 @@ class ExecManager(Thread):
                 for stream in waiting_streams:
                     stream.read()
 
+exec_manager = ExecManager(executor)
