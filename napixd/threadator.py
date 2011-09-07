@@ -13,14 +13,24 @@ logger = logging.getLogger('threadator')
 __all__ = ['threadator','thread_manager','background_task']
 
 class BackgroundTasker(object):
-    """Task that will be ran in background"""
+    """
+    Instance of BackgroundTasker can be used to decorate
+    a function. When this function will be called, it will
+    be in background in another thread.
+    """
     def __init__(self,threadator):
-        """init the background task with a threadator"""
+        """
+        init the background task with a threadator
+        The threadator will be used to create the threads.
+        """
         self.threadator =threadator
     def __call__(self,fn=None,drop_thread=True,**kw):
         """
-        call the decorator
+        function called when decorating a function
+        returns a callable that will transmit its parameter
+        to the function in the other thread
         The keywords provided to the decorator will be transmitted to the threadator
+        ex: on_end,on_success,etc
         """
         def outer(fn):
             @functools.wraps(fn)
