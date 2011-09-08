@@ -1,15 +1,18 @@
 import os
 from bottle import HTTPError
 
-from napixd.collections import  SimpleCollection,SubResource
+from napixd.collections import SimpleCollection,action
 
-class File(SimpleCollection):
+class FileManager(SimpleCollection):
     fields = ['content','filename']
     def __init__(self,parent):
-        self.parent = parent
+        self.path = parent['path']
     def _path(self,filename):
-        os.path.join(self.parent['path'],filename)
+        return os.path.join(self.path,filename)
 
+    def get(self):
+        return [path for path in os.listdir(self.path)
+                if path[0] != '.' and not os.path.isdir(path)]
     def create(self,values):
         filename = values.get('filename')
         content = values.get('content','')
@@ -24,10 +27,14 @@ class File(SimpleCollection):
             raise HTTPError,404
         return {'content':content,'filename':fname}
 
-class Directory(SimpleCollection):
+    @action
+    def touch(self,fname):
+        os.utime(self._path(self._path(fname)))
+
+class DirectoryManager(SimpleCollection):
     fields =['path','mode']
 
-    files = SubResource(File)
+    files = FileManager
 
     def __init__(self,root):
         if root[0] != '/':
@@ -46,12 +53,12 @@ class Directory(SimpleCollection):
             id = id[:-1]
         return id
 
-    def find_all(self,filters):
+    def get(self,filters):
         try:
             basedir = filters['basedir']
         except ValueError:
             raise HTTPError(400,'This method require a "basedir" filter')
-        return [path for path in os.listdir(basedir)
+        return [os.path.join(basedir,path) for path in os.listdir(basedir)
                 if os.path.isdir(os.path.join(basedir,path))]
     def child(self,path):
         """"""
@@ -59,7 +66,7 @@ class Directory(SimpleCollection):
             stats=os.stat(path)
         except OSError:
             raise HTTPError,404
-        return {'path':os.path.basename(path),
+        return {'path':path, 'name':os.path.basename(path),
                 'mode':('%o'%stats.st_mode)[-4:]}
 
     def create(self,values):
