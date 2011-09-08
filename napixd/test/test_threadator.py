@@ -24,7 +24,7 @@ class TestThreadator(unittest.TestCase):
         threadator = ThreadManager()
         start =time.time()
         threadator.start()
-        self.assertAlmostEquals(time.time(),start,places=3)
+        self.assertAlmostEquals(time.time(),start,places=2)
         threadator.stop()
         self.assertLess(time.time(),start+3)
 
@@ -66,6 +66,10 @@ class TestThreadator(unittest.TestCase):
                 on_end=lambda :results.append(1),
                 on_success=lambda x:results.append(x)).join()
         self.assertItemsEqual(['444',1],results)
+    def testChildren(self):
+        thread=self.threadator.do_async(sleepytask)
+        self.assertItemsEqual([thread.ident],self.threadator.keys())
+        self.assertIs(thread,self.threadator[thread.ident])
 
 class TestBackgroundTasker(unittest.TestCase):
     def tearDown(self):
