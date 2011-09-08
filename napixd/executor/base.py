@@ -9,13 +9,13 @@ import os
 
 import subprocess
 from threading import Lock,current_thread
-from queue import Queue,Empty,ThrowingSubQueue
+from napixd.queue import Queue,Empty,ThrowingSubQueue
 
 from cStringIO import StringIO
 
 logger=logging.getLogger('Napix.Executor')
 
-__all__ = ['Executor','executor','popen']
+__all__ = ['Executor']
 
 class ExecutorRequest(object):
     """Request for a job to execute"""
@@ -113,8 +113,8 @@ class Executor(object):
 
     def stop(self):
         """Stop the execution of the executor"""
-        while not executor.pending_jobs.empty():
-            executor.pending_jobs.get()
+        while not self.pending_jobs.empty():
+            self.pending_jobs.get()
         self.alive = False
 
         logger.info('Kill them all, God will recognize his own')
@@ -234,17 +234,3 @@ class NullStream(object):
         return None
     def fileno(self):
         return -1
-
-executor = Executor()
-
-popen = executor.create_job
-
-def run_command(command):
-    """Run a command and return the return code"""
-    return executor.create_job(command,discard_output=True).wait()
-def run_command_or_fail(command):
-    """Run a command and throw an exception if the return code isn't 0"""
-    code = run_command(command)
-    if code != 0:
-        raise subprocess.CalledProcessException,'Oops command <%s> returned %i'%(subprocess.list2cmdline(command),code)
-

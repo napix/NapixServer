@@ -3,7 +3,7 @@
 
 from threading import Thread,Lock
 from select import select
-from napixd.executor import executor,ExecStream
+from napixd.executor.base import ExecStream
 import time
 import logging
 
@@ -83,4 +83,3 @@ class ExecManager(Thread):
                 for stream in waiting_streams:
                     stream.read()
 
-exec_manager = ExecManager(executor)

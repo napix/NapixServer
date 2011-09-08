@@ -8,7 +8,6 @@ import traceback
 from bottle import ServerAdapter
 
 from napixd.executor import executor
-from napixd.threadator import threadator
 
 __all__ = ['RocketAndExecutor']
 
@@ -25,7 +24,6 @@ class RocketAndExecutor(ServerAdapter):
                     queue_size=1)
 
             server.start(background=True)
-            threadator.start()
             executor.run()
         except (MemoryError,KeyboardInterrupt,SystemError):
             pass
@@ -35,6 +33,5 @@ class RocketAndExecutor(ServerAdapter):
             traceback.print_exception(a,b,c)
         logger.info('Ready to stop')
         server.stop()
-        threadator.stop()
         executor.stop()
 
