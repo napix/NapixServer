@@ -2,50 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import time
-import fcntl
-
 import logging
 import os
-
 import subprocess
+
 from threading import Lock,current_thread
 from napixd.queue import Queue,Empty,ThrowingSubQueue
-
-from cStringIO import StringIO
 
 logger=logging.getLogger('Napix.Executor')
 
 __all__ = ['Executor']
-
-class ExecutorRequest(object):
-    """Request for a job to execute"""
-    def __init__(self,job,return_queue,discard_output):
-        """Create the request for *job*
-        :param discard_output: boolean wich is True when you want the input to be redirected to /dev/null
-        """
-        self.job = job
-        self.discard_output = discard_output
-        self.take_ownership()
-        self.return_queue = return_queue
-        logger.debug('Thread %s requested job %s',self.owning_thread,id(self))
-
-    def take_ownership(self):
-        """Set the current thread as the owner of the process"""
-        self.owning_thread  = current_thread().ident
-
-    @property
-    def command(self):
-        """Get the executable of the process"""
-        return self.job[0]
-    @property
-    def arguments(self):
-        """Get the arguments given to the executable"""
-        return self.job[1:]
-    @property
-    def commandline(self):
-        """Get the full command line"""
-        return subprocess.list2cmdline(self.job)
-
 
 class Executor(object):
     """
@@ -64,6 +30,8 @@ class Executor(object):
         logger.debug('Registering job %s',id(job))
         request = ExecutorRequest(job,
                 ThrowingSubQueue(self.activity), discard_output)
+        return self.append_request(request)
+    def append_request(self,request):
         self.pending_jobs.put(request)
         return request.return_queue.get()
 
@@ -85,7 +53,7 @@ class Executor(object):
             except Empty:
                 return
             try:
-                handle = ExecHandle(request)
+                handle = request.handle_class(request)
                 request.return_queue.put(handle)
             except Exception,e:
                 request.return_queue.put(e)
@@ -124,8 +92,37 @@ class Executor(object):
         while not self.activity.empty():
             self.activity.get()
 
+class ExecStream(object):
+    """
+    Proxy for a process' stream and a buffer
+    Reading from the stream fill the buffer
+    """
+    def __init__(self,stream):
+        """Proxy for the stream given as an argument"""
+        self.stream = stream
+
+    def read(self):
+        """Try reading and if it success write in the buffer"""
+        try:
+            logger.debug('read stream %s',self.fileno())
+            x= self.stream.read()
+            return x
+        except IOError:
+            logger.warning('read stream %s failed',self.fileno())
+    def close(self):
+        """Close the stream"""
+        self.stream.close()
+    def fileno(self):
+        """proxy method"""
+        return self.stream.fileno()
+    def getvalue(self):
+        """Close the stream"""
+        return self.buff.getvalue()
+
 class ExecHandle(object):
     """Proxy to Popen"""
+
+    stream_class = ExecStream
     def __init__(self,request):
         """
         Create the process for the givent request
@@ -135,8 +132,8 @@ class ExecHandle(object):
         outstream = request.discard_output and open('/dev/null','w') or subprocess.PIPE
         self.process = subprocess.Popen(request.job,stderr=outstream,stdout=outstream)
         if not request.discard_output:
-            self.stdout = ExecStream(self.process.stdout)
-            self.stderr = ExecStream(self.process.stderr)
+            self.stdout = self.stream_class(self.process.stdout)
+            self.stderr = self.stream_class(self.process.stderr)
         else:
             self.stdout = NullStream()
             self.stderr = NullStream()
@@ -193,38 +190,36 @@ class ExecHandle(object):
         """ Proxy"""
         return getattr(self.process,attr)
 
-class ExecStream(object):
-    """
-    Proxy for a process' stream and a buffer
-    Reading from the stream fill the buffer
-    """
-    def __init__(self,stream):
-        """Proxy for the stream given as an argument"""
-        self.stream = stream
-        self.buff = StringIO()
+class ExecutorRequest(object):
+    handle_class = ExecHandle
+    """Request for a job to execute"""
+    def __init__(self,job,return_queue,discard_output):
+        """Create the request for *job*
+        :param discard_output: boolean wich is True when you want the input to be redirected to /dev/null
+        """
+        self.job = job
+        self.discard_output = discard_output
+        self.take_ownership()
+        self.return_queue = return_queue
+        logger.debug('Thread %s requested job %s',self.owning_thread,id(self))
 
-        fd = self.fileno()
-        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+    def take_ownership(self):
+        """Set the current thread as the owner of the process"""
+        self.owning_thread  = current_thread().ident
 
-    def read(self):
-        """Try reading and if it success write in the buffer"""
-        try:
-            logger.debug('read stream %s',self.fileno())
-            x= self.stream.read()
-            self.buff.write(x)
-            return x
-        except IOError:
-            logger.warning('read stream %s failed',self.fileno())
-    def close(self):
-        """Close the stream"""
-        self.stream.close()
-    def fileno(self):
-        """proxy method"""
-        return self.stream.fileno()
-    def getvalue(self):
-        """Close the stream"""
-        return self.buff.getvalue()
+    @property
+    def command(self):
+        """Get the executable of the process"""
+        return self.job[0]
+    @property
+    def arguments(self):
+        """Get the arguments given to the executable"""
+        return self.job[1:]
+    @property
+    def commandline(self):
+        """Get the full command line"""
+        return subprocess.list2cmdline(self.job)
+
 
 class NullStream(object):
     """Dummy stream when the output is discarded"""

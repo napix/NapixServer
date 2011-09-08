@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+import time
+import fcntl
+import logging
 from threading import Thread,Lock
 from select import select
-from napixd.executor.base import ExecStream
-import time
-import logging
+from napixd.executor.base import ExecStream,ExecutorRequest,ExecHandle
+from cStringIO import StringIO
 
 logger = logging.getLogger('Napix.ExecManager')
 
@@ -58,7 +61,8 @@ class ExecManager(Thread):
 
     def create_job(self,job):
         """Add a process to manage"""
-        handle = self.executor.create_job(job)
+        request = ManagedHandle(job)
+        handle = self.executor.append_request(request)
         self.running_handles[handle.pid] = handle
 
     def run(self):
@@ -83,3 +87,21 @@ class ExecManager(Thread):
                 for stream in waiting_streams:
                     stream.read()
 
+class ManagedStream(ExecStream):
+    def __init__(self,stream):
+        super(ManagedHandle,self).__init__(stream)
+        self.buff = StringIO()
+
+        fd = self.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+    def read(self):
+        x = super(ManagedStream,self).read()
+        self.buff.write(x)
+        return x
+
+class ManagedHandle(ExecHandle):
+    stream_class = ManagedStream
+
+class ManagedRequest(ExecutorRequest):
+    handle_class = ManagedHandle
