@@ -15,8 +15,8 @@ class TestQueue(unittest.TestCase):
 
     def testTimeOut(self):
         start=time()
-        with self.assertRaises(Empty):
-            self.main_queue.get(timeout=1)
+        self.assertRaises(Empty,
+            self.main_queue.get,timeout=1)
         self.assertAlmostEquals(start+1,time(),places=3)
 
     def testEmpty(self):
@@ -31,8 +31,8 @@ class TestQueue(unittest.TestCase):
 
     def testThrowing(self):
         self.throwing_queue.put(Exception('mpm'))
-        with self.assertRaisesRegexp(Exception,'^mpm$'):
-            self.throwing_queue.get()
+        self.assertRaises(Exception,
+            self.throwing_queue.get)
 
     def testSubQueue(self):
         self.sub_queue1.put('x')
@@ -44,10 +44,10 @@ class TestQueue(unittest.TestCase):
 
     def testThrowingSubQueue(self):
         self.throwing_sub_queue.put(Exception('mpm'))
-        with self.assertRaisesRegexp(Exception,'^mpm$'):
-            self.throwing_sub_queue.get()
+        self.assertRaises(Exception,
+            self.throwing_sub_queue.get)
         value = self.main_queue.get()
-        self.assertIsInstance(value,Exception)
+        self.assertTrue(isinstance(value,Exception))
         self.assertEqual(str(value),'mpm')
 
 if __name__ == '__main__':

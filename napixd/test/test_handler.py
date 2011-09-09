@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import unittest
+from . import unittest
 from napixd.test.mock.handler import MockHandler,MockHandlerWithAction
 from napixd.exceptions import ValidationError
 from napixd.base import check_handler,HandlerDefinitionError

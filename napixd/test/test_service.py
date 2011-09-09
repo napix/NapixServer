@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import unittest
+from . import unittest
 from napixd.test.mock.handler import MockHandler
 from napixd.test.mock.request import POST,PUT,GET,DELETE
 from napixd.services import Service

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import unittest
 import time
+import unittest
 from napixd.executor import Executor
 from threading import Thread,current_thread,Event
 
@@ -31,14 +31,18 @@ class TestExecutor(unittest.TestCase):
         process = executor.create_job(['/bin/echo','what up','dude'],discard_output=False)
         self.assertEqual(process.request.command,'/bin/echo')
         self.assertEqual(process.request.commandline,'/bin/echo "what up" dude')
-        self.assertItemsEqual(process.request.arguments,['what up','dude'])
+        expected = ['what up','dude']
+        actual = process.request.arguments
+        self.assertEqual(len(actual),len(expected))
+        for args in zip(actual,expected):
+            self.assertEqual(*args)
         process.wait()
         self.assertEqual(process.stdout.read(),'what up dude\n')
         self.assertEqual(process.stderr.read(),'')
         self.assertEqual(process.returncode,0)
     def testOSError(self):
-        with self.assertRaises(OSError):
-            executor.create_job(['something_that_does_not_exist'])
+        self.assertRaises(OSError,
+            executor.create_job,['something_that_does_not_exist'])
     def testFalse(self):
         process = executor.create_job(['/bin/false'])
         process.wait()
@@ -51,7 +55,8 @@ class TestExecutor(unittest.TestCase):
         process = executor.create_job(['sleep','3'])
         time.sleep(0.1)
         children = executor.children_of(current_thread().ident)
-        self.assertItemsEqual(children,[process])
+        self.assertEqual(len(children),1)
+        self.assertEqual(process,children[0])
         process.kill()
         time.sleep(0.1)
         children = executor.children_of(current_thread().ident)
@@ -63,5 +68,5 @@ def main():
 
 if __name__ == '__main__':
     t=Thread(target=main).start()
-    while ready.wait(1):
+    while ready.wait(1) or ready.is_set():
         executor.run()

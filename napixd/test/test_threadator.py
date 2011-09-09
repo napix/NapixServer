@@ -24,9 +24,9 @@ class TestThreadator(unittest.TestCase):
         threadator = ThreadManager()
         start =time.time()
         threadator.start()
-        self.assertAlmostEquals(time.time(),start,places=2)
+        self.assertAlmostEquals(time.time(),start,places=1)
         threadator.stop()
-        self.assertLess(time.time(),start+3)
+        self.assertTrue(time.time() < start+3)
 
     def testAttributes(self):
         thread = self.threadator.do_async(notthingtask)
@@ -40,14 +40,14 @@ class TestThreadator(unittest.TestCase):
 
     def testStatusException(self):
         thread = self.threadator.do_async(exceptiontask)
-        self.assertIsNotNone(thread)
+        self.assertTrue(thread is not None)
         CREATED,RUNNING,RETURNED,EXCEPTION,FINISHING,CLOSED = range(6)
         for x in [ CREATED, RUNNING, EXCEPTION , FINISHING, CLOSED ] :
             _,ec = thread.execution_state_queue.get()
             self.assertEqual(ec,x)
     def testStatusSuccess(self):
         thread = self.threadator.do_async(notthingtask)
-        self.assertIsNotNone(thread)
+        self.assertTrue(thread is not None)
         CREATED,RUNNING,RETURNED,EXCEPTION,FINISHING,CLOSED = range(6)
         for x in [ CREATED, RUNNING, RETURNED, FINISHING, CLOSED ] :
             _,ec = thread.execution_state_queue.get()
@@ -58,18 +58,24 @@ class TestThreadator(unittest.TestCase):
                 on_failure=lambda ex:results.append(str('ex')),
                 on_end=lambda :results.append(1),
                 on_success=lambda x:results.append(x)).join()
-        self.assertItemsEqual([555,1],results)
+        self.assertEqual(len(results),2)
+        self.assertEqual(results[0],555)
+        self.assertEqual(results[1],1)
     def testCallbackException(self):
         results=[]
         self.threadator.do_async(exceptiontask,
                 on_failure=lambda ex:results.append(str(ex)),
                 on_end=lambda :results.append(1),
                 on_success=lambda x:results.append(x)).join()
-        self.assertItemsEqual(['444',1],results)
+        self.assertEqual(len(results),2)
+        self.assertEqual(results[0],'444')
+        self.assertEqual(results[1],1)
     def testChildren(self):
         thread=self.threadator.do_async(sleepytask)
-        self.assertItemsEqual([thread.ident],self.threadator.keys())
-        self.assertIs(thread,self.threadator[thread.ident])
+        keys = self.threadator.keys()
+        self.assertEqual(len(keys),1)
+        self.assertEqual(thread.ident,keys[0])
+        self.assertTrue(thread is self.threadator[thread.ident])
 
 class TestBackgroundTasker(unittest.TestCase):
     def tearDown(self):
