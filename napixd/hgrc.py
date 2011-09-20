@@ -5,6 +5,7 @@ from ConfigParser import ConfigParser,NoSectionError
 
 from napixd.configfiles import ConfigFile,ConfigFileSection
 
+__all__ = ('HgrcFile',)
 
 class HgrcSection(ConfigFileSection):
     fields = ['section','options']
@@ -12,9 +13,6 @@ class HgrcSection(ConfigFileSection):
     def __init__(self,parent):
         self.hgrc=parent['parser']
         self.filename = parent['filename']
-
-    def get(self):
-        return { 'filename':self.filename }
 
     def list(self):
         return self.hgrc.sections()
@@ -36,10 +34,11 @@ class HgrcSection(ConfigFileSection):
 
     def delete(self,name):
         self.remove_section(name)
-        self.hgrc.write()
+        self._save()
 
     def _save(self):
-        self.hgrc.write()
+        handle = open(self.filename,'w')
+        self.hgrc.write(handle)
 
 class HgrcFile(ConfigFile):
     fields = ['filename']
