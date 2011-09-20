@@ -34,7 +34,6 @@ def make_child(real_child):
 
 class SimpleMetaCollection(type):
     def __new__(meta,name,bases,attrs):
-
         resource_class_attrs = {'_subresources':[]}
         actions = {}
         for key,value in attrs.items():
@@ -44,25 +43,11 @@ class SimpleMetaCollection(type):
             if hasattr(value,'_napix_action'):
                 actions[key] = value
 
-        collection_methods = []
-        resource_methods = []
-        if 'create' in attrs:
-            collection_methods.append('POST')
-        if 'get' in attrs:
-            collection_methods.append('GET')
         if 'child' in attrs:
             attrs['child'] = make_child(attrs['child'])
-            resource_methods.append('GET')
-        if 'delete' in attrs:
-            resource_methods.append('DELETE')
-        if 'modify' in attrs:
-            resource_methods.append('PUT')
 
         resource_class = attrs.get('resource_class',Resource)
         attrs['resource_class'] = type(name+'Resource',(resource_class,),resource_class_attrs)
-        attrs['resource_methods'] = resource_methods
-        attrs['collection_methods'] = collection_methods
-        attrs['actions'] = actions
 
         return type.__new__(meta,name,bases,attrs)
 
@@ -90,4 +75,9 @@ class SimpleCollection(Collection):
         if id ==  '':
             raise ValueError,'ID cannot be empty'
         return id
+    def get(self,ident):
+        child = self.child(ident)
+        return dict([(key,child[key])
+            for key in child
+            if key in self.fields])
 
