@@ -24,7 +24,10 @@ def action(fn):
     return fn
 
 class Collection(object):
-    pass
+    def check_id(self,id_):
+        if id_ ==  '':
+            raise ValidationError,'ID cannot be empty'
+        return id_
 
 def make_child(real_child):
     @functools.wraps(real_child)
@@ -47,23 +50,19 @@ class SimpleMetaCollection(type):
         if 'child' in attrs:
             attrs['child'] = make_child(attrs['child'])
 
-        resource_class = attrs.get('resource_class',Resource)
+        resource_class = attrs.get('resource_class',SimpleResource)
         attrs['resource_class'] = type(name+'Resource',(resource_class,),resource_class_attrs)
 
         return type.__new__(meta,name,bases,attrs)
 
-class Resource(dict):
-    def check_id(self,id_):
-        if id_ ==  '':
-            raise ValidationError,'ID cannot be empty'
-        return id_
+class SimpleResource(dict,Collection):
     def child(self,subfile):
         return getattr(self,subfile)
 
     def get(self):
         return dict(self)
 
-    def list(self,filters):
+    def list(self,filters=None):
         return self._subresources
 
 class SubResource(object):
@@ -76,10 +75,6 @@ class SubResource(object):
 
 class SimpleCollection(Collection):
     __metaclass__=SimpleMetaCollection
-    def check_id(self,id_):
-        if id_ ==  '':
-            raise ValidationError,'ID cannot be empty'
-        return id_
     def get(self,ident):
         child = self.child(ident)
         return dict([(key,child[key])
