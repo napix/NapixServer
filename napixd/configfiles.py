@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from napixd.collections import Collection,SimpleCollection
+from napixd.resources import SimpleCollection
 
 class ConfigFile(SimpleCollection):
     pass

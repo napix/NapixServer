@@ -14,8 +14,8 @@ import bottle
 from napixd import settings
 from napixd.plugins import ConversationPlugin
 from napixd.services import Service
-from napixd.executor_bottle import RocketAndExecutor
-from napixd.base import BaseHandler,check_handler
+from napixd.executor.bottle_adapter import RocketAndExecutor
+from napixd.resources import Collection
 
 logger = logging.getLogger('Napix.Server')
 
@@ -29,13 +29,13 @@ for module_name in settings.HANDLERS:
     module = sys.modules[module_name]
     logger.debug('import %s',module)
 
-    classes = [ getattr(module,x) for x in getattr(module,'__all__',dir(module))]
-    logger.debug('found %s',classes)
     istype = lambda x:isinstance(x,type)
-    ishandler = lambda x:(issubclass(x,BaseHandler))
+    ishandler = lambda x:(issubclass(x,Collection))
+    classes = [ getattr(module,x) for x in getattr(module,'__all__',dir(module))]
+    classes = [ x for x in classes if istype(x) and ishandler(x)]
+    logger.debug('found %s',classes)
 
-    for handler in filter(lambda x:(istype(x) and ishandler(x)),classes):
-        check_handler(handler)
+    for handler in classes:
         service = Service(handler)
         registry[service.url] = service
         service.setup_bottle(napixd)
