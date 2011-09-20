@@ -1,6 +1,9 @@
 import os
 
-from napixd.collections import SimpleCollection,action
+from napixd.resources import SimpleCollection,action
+from napixd.exceptions import NotFound
+
+__all__ = ('DirectoryManager',)
 
 class FileManager(SimpleCollection):
     fields = ['content','filename']
@@ -24,7 +27,7 @@ class FileManager(SimpleCollection):
         try:
             content=open(self._path(fname),'r').read()
         except IOError:
-            return None
+            raise NotFound
         return {'content':content,'filename':fname}
 
     @action
@@ -36,7 +39,7 @@ class DirectoryManager(SimpleCollection):
 
     files = FileManager
 
-    def __init__(self,root):
+    def __init__(self,root = '/'):
         if root[0] != '/':
             raise ValueError,'Root must be an absolute path name'
         self.root=root
@@ -56,7 +59,7 @@ class DirectoryManager(SimpleCollection):
     def list(self,filters):
         try:
             basedir = filters['basedir']
-        except ValueError:
+        except KeyError:
             raise ValueError(400,'This method require a "basedir" filter')
         return [os.path.join(basedir,path) for path in os.listdir(basedir)
                 if os.path.isdir(os.path.join(basedir,path))]
@@ -65,7 +68,7 @@ class DirectoryManager(SimpleCollection):
         try:
             stats=os.stat(path)
         except OSError:
-            return None
+            raise NotFound
         return {'path':path, 'name':os.path.basename(path),
                 'mode':('%o'%stats.st_mode)[-4:]}
 
