@@ -4,6 +4,7 @@
 
 import inspect
 import functools
+from napixd.exceptions import ValidationError
 
 def action(fn):
     """Decorator to declare an action method inside a handler"""
@@ -52,13 +53,17 @@ class SimpleMetaCollection(type):
         return type.__new__(meta,name,bases,attrs)
 
 class Resource(dict):
+    def check_id(self,id_):
+        if id_ ==  '':
+            raise ValidationError,'ID cannot be empty'
+        return id_
     def child(self,subfile):
         return getattr(self,subfile)
 
     def get(self):
         return dict(self)
 
-    def list(self):
+    def list(self,filters):
         return self._subresources
 
 class SubResource(object):
@@ -71,10 +76,10 @@ class SubResource(object):
 
 class SimpleCollection(Collection):
     __metaclass__=SimpleMetaCollection
-    def check_id(self,id):
-        if id ==  '':
-            raise ValueError,'ID cannot be empty'
-        return id
+    def check_id(self,id_):
+        if id_ ==  '':
+            raise ValidationError,'ID cannot be empty'
+        return id_
     def get(self,ident):
         child = self.child(ident)
         return dict([(key,child[key])

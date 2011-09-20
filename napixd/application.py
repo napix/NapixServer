@@ -23,7 +23,8 @@ print os.getpid()
 
 
 registry = {}
-napixd = bottle.app.push()
+napixd = bottle.Bottle(autojson=False)
+napixd.autojson=False
 for module_name in settings.HANDLERS:
     __import__(module_name)
     module = sys.modules[module_name]

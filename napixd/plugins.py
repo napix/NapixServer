@@ -3,7 +3,8 @@
 
 import functools
 import json
-from bottle import request
+from cStringIO import StringIO
+from bottle import request,HTTPResponse
 
 __all__ = ['ConversationPlugin']
 
@@ -21,7 +22,8 @@ class ConversationPlugin(object):
             else:
                 request.data = request.forms
             res = callback(*args,**kwargs)
-            if hasattr(res,'serialize'):
-                return res.serialize()
-            return res
+            buff = StringIO()
+            json.dump(res,buff)
+            return HTTPResponse(buff.getvalue(),
+                    header=[('Content-Type', 'application/json')])
         return inner

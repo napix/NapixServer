@@ -1,7 +1,7 @@
 import os
 
 from napixd.resources import SimpleCollection,action
-from napixd.exceptions import NotFound
+from napixd.exceptions import NotFound,ValidationError
 
 __all__ = ('DirectoryManager',)
 
@@ -12,7 +12,7 @@ class FileManager(SimpleCollection):
     def _path(self,filename):
         return os.path.join(self.path,filename)
 
-    def list(self):
+    def list(self,fitlers):
         return [path for path in os.listdir(self.path)
                 if path[0] != '.' and not os.path.isdir(path)]
     def create(self,values):
@@ -27,7 +27,7 @@ class FileManager(SimpleCollection):
         try:
             content=open(self._path(fname),'r').read()
         except IOError:
-            raise NotFound
+            raise NotFound,fname
         return {'content':content,'filename':fname}
 
     @action
@@ -39,28 +39,24 @@ class DirectoryManager(SimpleCollection):
 
     files = FileManager
 
-    def __init__(self,root = '/'):
-        if root[0] != '/':
-            raise ValueError,'Root must be an absolute path name'
-        self.root=root
-
-    def check_id(self,id):
+    def check_id(self,id_):
         """
         Check that given identifier is a absolute path
         and remove the eventual trailing slashes
         """
-        if not id.startswith(self.root):
-            raise ValueError(400,'Only children of %s are accessible'%self.root)
+        id_ = id_.replace('%2F','/')
+        if not id_.startswith('/'):
+            raise ValidationError('absolute paths must be given')
         #remove trailing /
-        while id[-1] == '/':
-            id = id[:-1]
-        return id
+        while id_[-1] == '/':
+            id_ = id_[:-1]
+        return id_
 
     def list(self,filters):
         try:
             basedir = filters['basedir']
         except KeyError:
-            raise ValueError(400,'This method require a "basedir" filter')
+            raise KeyError('basedir')
         return [os.path.join(basedir,path) for path in os.listdir(basedir)
                 if os.path.isdir(os.path.join(basedir,path))]
     def child(self,path):
@@ -68,7 +64,7 @@ class DirectoryManager(SimpleCollection):
         try:
             stats=os.stat(path)
         except OSError:
-            raise NotFound
+            raise NotFound,path
         return {'path':path, 'name':os.path.basename(path),
                 'mode':('%o'%stats.st_mode)[-4:]}
 

@@ -4,6 +4,7 @@
 from ConfigParser import ConfigParser,NoSectionError
 
 from napixd.configfiles import ConfigFile,ConfigFileSection
+from napixd.exceptions import NotFound
 
 __all__ = ('HgrcFile',)
 
@@ -14,14 +15,14 @@ class HgrcSection(ConfigFileSection):
         self.hgrc=parent['parser']
         self.filename = parent['filename']
 
-    def list(self):
+    def list(self,filters):
         return self.hgrc.sections()
 
     def child(self,name):
         try:
             return {'options':self.hgrc.items(name),'section':name}
         except NoSectionError:
-            return None
+            raise NotFound,name
 
     def create(self,values):
         section = values['section']
