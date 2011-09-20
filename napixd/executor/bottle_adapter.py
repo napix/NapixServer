@@ -6,7 +6,7 @@ import sys
 import traceback
 
 from bottle import ServerAdapter
-
+from rocket import Rocket
 from napixd.executor import executor
 
 __all__ = ['RocketAndExecutor']
@@ -17,12 +17,11 @@ class RocketAndExecutor(ServerAdapter):
     """Server adapter for bottle wich starts Rocket and start the executor"""
     def run(self,handler):
         """run the main loop"""
-        try:
-            from rocket import Rocket
-            server = Rocket((self.host, self.port),'wsgi',
-                    { 'wsgi_app' : handler }, min_threads=1, max_threads=2,
-                    queue_size=1)
+        server = Rocket((self.host, self.port),'wsgi',
+                { 'wsgi_app' : handler }, min_threads=1, max_threads=2,
+                queue_size=1)
 
+        try:
             server.start(background=True)
             executor.run()
         except (MemoryError,KeyboardInterrupt,SystemError):
