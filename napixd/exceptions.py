@@ -9,3 +9,5 @@ class ValidationError(Exception):
     pass
 class NotFound(Exception):
     pass
+class Duplicate(Exception):
+    pass

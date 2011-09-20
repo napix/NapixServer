@@ -4,8 +4,8 @@
 import itertools
 
 import bottle
-from bottle import HTTPError,request
-from napixd.exceptions import NotFound
+from bottle import HTTPError
+from napixd.exceptions import NotFound,ValidationError,Duplicate
 
 
 class Service(object):
@@ -27,12 +27,12 @@ class Service(object):
                     self._setup_bottle(app,getattr(collection.resource_class,sr),
                             '%s/:f%i'%(next_prefix,level+1),level+2)
 
-    def as_resource(self,**kw):
-        return ServiceResourceRequest(request,kw,
+    def as_resource(self,request=None,**kw):
+        return ServiceResourceRequest(request or bottle.request,kw,
                 self.collection).handle()
 
-    def as_collection(self,**kw):
-        return ServiceCollectionRequest(request,kw,
+    def as_collection(self,request=None,**kw):
+        return ServiceCollectionRequest(request or bottle.request,kw,
                 self.collection).handle()
 
 class ServiceRequest(object):
@@ -50,10 +50,11 @@ class ServiceRequest(object):
             raise StopIteration
 
     def check_datas(self,collection):
+        data = {}
         for x in self.request.data:
-            if x not in collection.fields:
-                del self.request.data[x]
-        return self.request.data
+            if x in collection.fields:
+                data[x] = self.request.data[x]
+        return data
 
     def get_collection(self,children):
         node = self.base_collection
@@ -81,10 +82,14 @@ class ServiceRequest(object):
             callback = self.get_callback(collection)
             args = self.get_args(datas)
             return callback(*args)
+        except ValidationError,e:
+            raise HTTPError(400,'%s is not a valid identifier'%str(e))
         except KeyError,e:
             raise HTTPError(400,'%s parameter is required'%str(e))
-        #except NotFound,e:
-            #raise HTTPError(404,'%s not found'%(str(e)))
+        except NotFound,e:
+            raise HTTPError(404,'%s not found'%(str(e)))
+        except Duplicate:
+            raise HTTPError(409,'%s already exists')
 
 
 class ServiceCollectionRequest(ServiceRequest):
@@ -95,7 +100,7 @@ class ServiceCollectionRequest(ServiceRequest):
     def get_args(self,datas):
         if self.method == 'GET':
             return (self.request.GET,)
-        elif request.method == 'POST':
+        elif self.method == 'POST':
             return (datas,)
         return tuple()
 
