@@ -1,69 +1,68 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from . import unittest
-from napixd.test.mock.handler import MockHandler,MockHandlerWithAction
-from napixd.exceptions import ValidationError
-from napixd.base import check_handler,HandlerDefinitionError
+import unittest
+from napixd.test.mock.handler import Words,WordsAndLetters,LettersOfWord
+from napixd.exceptions import ValidationError,NotFound,Duplicate
 
 
-class TestHandler(unittest.TestCase):
+class _TestWords:
     def setUp(self):
-        MockHandler.objects = { 0:'lol',1:'foo',2:'bar',3:'baz'}
-    def testValue(self):
-        result = MockHandler.find(0)
-        self.assertEqual(MockHandler.name.__doc__,'Name')
+        self.handler = self.klass({ 0:'lol',1:'foo',2:'bar',3:'baz'})
     def testID(self):
-        self.assertEqual(MockHandler.validate_resource_id('0'),0)
-        self.assertEqual(MockHandler.validate_resource_id('2'),2)
-        self.assertRaises(ValidationError,MockHandler.validate_resource_id,'mpm')
+        self.assertEqual(self.handler.check_id('1'),1)
+        self.assertEqual(self.handler.check_id('2'),2)
+        self.assertRaises(ValidationError,self.handler.check_id,'mpm')
     def testFind(self):
-        self.assertIsNone(MockHandler.find(9))
-        result = MockHandler.find(0)
-        self.assertEqual(result.rid,0)
-        self.assertEqual(result.name,'lol')
-        self.assertDictEqual({'rid':0,'name':'lol'},result.serialize())
+        self.assertRaises(NotFound,self.handler.get,9)
+        result = self.handler.get(0)
+        self.assertEqual(result['name'],'lol')
+        self.assertEqual(len(result),1)
     def testFindAll(self):
-        self.assertEqual(sorted(MockHandler.find_all()),[0,1,2,3])
+        self.assertEqual(sorted(self.handler.list()),[0,1,2,3])
+        self.assertEqual(sorted(self.handler.list({'max':2})),[0,1,2])
     def testCreate(self):
-        self.assertEqual(MockHandler.create({'name':'mpm'}),4)
-        self.assertIsNotNone(MockHandler.find(4))
+        new_id = self.handler.create({'name':'mpm'})
+        self.assertEqual(new_id,4)
+        result = self.handler.get(4)
+        self.assertEqual(result['name'],'mpm')
     def testDelete(self):
-        MockHandler.find(3).remove()
-        self.assertIsNone(MockHandler.find(3))
+        self.handler.delete(3)
+        self.assertRaises(NotFound,self.handler.get,3)
     def testModify(self):
-        res = MockHandler.find(2)
-        res.modify({'name':'mpm'})
-        self.assertEqual(MockHandler.find(2).name,'mpm')
-    def testMeta(self):
-        try:
-            check_handler(MockHandler)
-        except HandlerDefinitionError:
-            self.fail('Should not have been here')
+        self.handler.modify(2,{'name':'mpm'})
+        self.assertEqual(self.handler.get(2)['name'],'mpm')
 
-class TestHandlerWithAction(unittest.TestCase):
+class TestWords(_TestWords,unittest.TestCase):
+    klass=Words
+
+class TestWordsAndLettes(_TestWords,unittest.TestCase):
+    klass=WordsAndLetters
     def setUp(self):
-        MockHandlerWithAction.objects = {1:'mpm'}
-    def testActionParams(self):
-        self.assertListEqual(MockHandlerWithAction.without_args.mandatory,[])
-        self.assertDictEqual(MockHandlerWithAction.without_args.optional,{})
-        self.assertDictEqual(MockHandlerWithAction.with_args.optional,{'opt1':None,'opt2':None})
-        self.assertListEqual(MockHandlerWithAction.with_args.mandatory,['mand'])
+        super(TestWordsAndLettes,self).setUp()
+        self.resource = self.handler.child(0)
 
-    def testWithOut(self):
-        res = MockHandlerWithAction.find(1)
-        self.assertEqual(res.without_args(),909)
-        self.assertRaises(TypeError,res.without_args,dude=1)
-    def testWith(self):
-        res = MockHandlerWithAction.find(1)
-        self.assertDictEqual(
-                {'mand':'lol','opt1':'mpm','opt2':'prefork'},
-                res.with_args(mand='lol',opt1='mpm',opt2='prefork'))
-        self.assertDictEqual(
-                {'mand':'lol','opt1':None,'opt2':None},
-                res.with_args(mand='lol'))
-        self.assertRaises(TypeError,res.with_args,dude=1,mand=True)
-        self.assertRaises(TypeError,res.with_args,opt1=1,opt2=2)
+    def testSubResource(self):
+        self.assertEqual(self.resource['name'],'lol')
+
+    def testSubList(self):
+        self.assertEqual(sorted(self.resource.letters.list()),['l','o'])
+
+    def testDefaultCheckID(self):
+        self.assertRaises(ValidationError,self.resource.letters.check_id,'')
+
+    def testSubInstance(self):
+        o_in_lol = self.resource.letters.get('o')
+        self.assertEqual(o_in_lol['count'],1)
+        self.assertEqual(o_in_lol['ord'],111)
+        l_in_lol = self.resource.letters.get('l')
+        self.assertEqual(l_in_lol['count'],2)
+
+    def testCollection(self):
+        self.assertEqual(
+                self.handler.resource_class._subresources[0],'letters')
+        self.assertEqual(
+                self.handler.resource_class.letters,LettersOfWord)
 
 if __name__ == '__main__':
     unittest.main()

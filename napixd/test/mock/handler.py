@@ -1,76 +1,98 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from napixd.handler import Handler,Value,action,IntIdMixin
+from napixd.resources import Collection,SimpleCollection
+from napixd.exceptions import NotFound,ValidationError,Duplicate
 
-class MockHandler(IntIdMixin,Handler):
-    objects = {}
+class Words(Collection):
+    fields = ['name']
+    def __init__(self,objects=None):
+        self.objects = objects or { 1:'One',2:'Two'}
 
-    name = Value('Name')
-
-    @classmethod
-    def find(cls,rid):
+    def get(self,id_):
         try:
-            return cls(rid,name=cls.objects[rid])
+            return {'name':self.objects[id_]}
         except KeyError:
-            return None
-
-    @classmethod
-    def find_all(cls):
-        return cls.objects.keys()
-
-    @classmethod
-    def create(cls,values):
-        next_id =len(cls.objects)
-        cls.objects[next_id]=values['name']
-        cls.next_id = next_id
-        return next_id
-
-    def modify(self,value):
-        self.__class__.objects[self.rid] = value['name']
-
-    def remove(self):
-        del self.__class__.objects[self.rid]
-
-    def __str__(self):
-        return self.name
-
-class MockHandlerWithAction(IntIdMixin,Handler):
-    objects = {}
-
-    name = Value('Name')
-
-    @classmethod
-    def find(cls,rid):
+            raise NotFound
+    def check_id(self,id_):
         try:
-            return cls(rid,name=cls.objects[rid])
+            return int(id_)
+        except ValueError:
+            raise ValidationError('Value must be an int')
+
+    def delete(self,id_):
+        del self.objects[id_]
+
+    def modify(self,id_,values):
+        if len(values) != 1:
+            raise Exception,'Unexpected values'
+        if not id_ in self.objects:
+            raise NotFound
+        self.objects[id_] = values['name']
+
+    def create(self,values):
+        name = values['name']
+        if len(values) != 1:
+            raise Exception,'Unexpected values'
+        if name in self.objects.values():
+            raise Duplicate
+        new_id = max(self.objects)+1
+        self.objects[new_id] = name
+        return new_id
+
+    def list(self,filters=None):
+        if filters and 'max' in filters:
+            max_  = filters['max']
+            return [x for x in self.objects.keys() if x <= max_]
+        return self.objects.keys()
+
+class LettersOfWord(Collection):
+    fields = ['ord','count']
+    def __init__(self,parent):
+        self.name = parent['name']
+    def list(self,filters=None):
+        return set(self.name)
+    def get(self,id_):
+        if not id_ in self.name:
+            raise NotFound,id_
+        return {'ord':ord(id_),'count':sum([1 for x in self.name if x == id_])}
+
+class WordsAndLetters(SimpleCollection):
+    fields = ['name']
+    letters = LettersOfWord
+
+    def __init__(self,objects=None):
+        self.objects = objects or { 1:'One',2:'Two'}
+
+    def child(self,id_):
+        try:
+            return {'name':self.objects[id_]}
         except KeyError:
-            return None
+            raise NotFound
+    def check_id(self,id_):
+        try:
+            return int(id_)
+        except ValueError:
+            raise ValidationError('Value must be an int')
 
-    @classmethod
-    def find_all(cls):
-        return cls.objects.keys()
+    def delete(self,id_):
+        del self.objects[id_]
 
-    @classmethod
-    def create(cls,values):
-        next_id =len(cls.objects)
-        cls.objects[next_id]=values['name']
-        return next_id
+    def modify(self,id_,values):
+        if not id_ in self.objects:
+            raise NotFound
+        self.objects[id_] = values['name']
 
-    def modify(self,value):
-        self.__class__.objects[self.rid] = value['name']
+    def create(self,values):
+        name = values['name']
+        if name in self.objects.values():
+            raise Duplicate
+        new_id = max(self.objects)+1
+        self.objects[new_id] = name
+        return new_id
 
-    def delete(self):
-        del self.__class__.objects[self.rid]
-
-    @action
-    def without_args(self):
-        return 909
-
-    @action
-    def with_args(self,mand,opt1=None,opt2=None):
-        return {'mand':mand,'opt1':opt1,'opt2':opt2}
-
-    def __str__(self):
-        return self.name
-
+    def list(self,filters=None):
+        if filters and 'max' in filters:
+            max_  = filters['max']
+            return [x for x in self.objects.keys() if x <= max_]
+        return self.objects.keys()
