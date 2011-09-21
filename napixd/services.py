@@ -27,13 +27,22 @@ class Service(object):
                     self._setup_bottle(app,getattr(collection.resource_class,sr),
                             '%s/:f%i'%(next_prefix,level+1),level+2)
 
-    def as_resource(self,request=None,**kw):
-        return ServiceResourceRequest(request or bottle.request,kw,
+    def as_resource(self,request=None,*args,**kw):
+        path = self._get_path(args,kw)
+        return ServiceResourceRequest(request or bottle.request,path,
                 self.collection).handle()
 
-    def as_collection(self,request=None,**kw):
-        return ServiceCollectionRequest(request or bottle.request,kw,
+    def as_collection(self,request=None,*args,**kw):
+        path = self._get_path(args,kw)
+        return ServiceCollectionRequest(request or bottle.request,path,
                 self.collection).handle()
+    def _get_path(self,args,kw):
+        if args :
+            return args
+        return map(lambda x:kw[x],
+                itertools.takewhile(lambda x:x in kw,
+                    itertools.imap(lambda x:'f%i'%x,
+                        itertools.count())))
 
 class ServiceRequest(object):
     def __init__(self,request,path,collection):
@@ -42,13 +51,6 @@ class ServiceRequest(object):
         self.base_collection = collection
         self.path = path
 
-    def get_children(self,args):
-        try:
-            for x in itertools.imap(lambda x:args['f%i'%x], itertools.count()):
-                yield x
-        except KeyError:
-            raise StopIteration
-
     def check_datas(self,collection):
         data = {}
         for x in self.request.data:
@@ -56,9 +58,9 @@ class ServiceRequest(object):
                 data[x] = self.request.data[x]
         return data
 
-    def get_collection(self,children):
+    def get_collection(self):
         node = self.base_collection
-        for child in children:
+        for child in self.path:
             child_id = node.check_id(child)
             node = node.child(child_id)
         return node
@@ -76,8 +78,7 @@ class ServiceRequest(object):
 
     def handle(self):
         try:
-            children = self.get_children(self.path)
-            collection = self.get_collection(children)
+            collection = self.get_collection()
             datas =  self.check_datas(collection)
             callback = self.get_callback(collection)
             args = self.get_args(datas)
@@ -88,8 +89,8 @@ class ServiceRequest(object):
             raise HTTPError(400,'%s parameter is required'%str(e))
         except NotFound,e:
             raise HTTPError(404,'%s not found'%(str(e)))
-        except Duplicate:
-            raise HTTPError(409,'%s already exists')
+        except Duplicate,e:
+            raise HTTPError(409,'%s already exists',str(e))
 
 
 class ServiceCollectionRequest(ServiceRequest):
@@ -111,17 +112,16 @@ class ServiceResourceRequest(ServiceRequest):
             'GET':'get',
             'DELETE':'delete',
         }
+    def __init__(self,request,path,collection):
+        super(ServiceResourceRequest,self).__init__(request,path[:-1],collection)
+        self.resource_id = path[-1]
+
     def get_args(self,datas):
         if self.method == 'PUT':
             return (self.resource_id,datas)
         return (self.resource_id,)
-
-    def get_children(self,path):
-        children = list(super(ServiceResourceRequest,self).get_children(path))
-        self.resource_id = children[-1]
-        return children[:-1]
-    def get_collection(self,children):
-        collection = super(ServiceResourceRequest,self).get_collection(children)
+    def get_collection(self):
+        collection = super(ServiceResourceRequest,self).get_collection()
         self.resource_id = collection.check_id(self.resource_id)
         return collection
 
