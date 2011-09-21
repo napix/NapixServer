@@ -3,12 +3,12 @@
 
 from ConfigParser import ConfigParser,NoSectionError
 
-from napixd.configfiles import ConfigFile,ConfigFileSection
+from napixd.resources import SimpleCollection
 from napixd.exceptions import NotFound
 
 __all__ = ('HgrcFile',)
 
-class HgrcSection(ConfigFileSection):
+class HgrcSection(SimpleCollection):
     fields = ['section','options']
 
     def __init__(self,parent):
@@ -41,7 +41,7 @@ class HgrcSection(ConfigFileSection):
         handle = open(self.filename,'w')
         self.hgrc.write(handle)
 
-class HgrcFile(ConfigFile):
+class HgrcFile(SimpleCollection):
     fields = ['filename']
     resource_class = HgrcSection
 
