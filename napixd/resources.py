@@ -4,7 +4,9 @@
 
 import inspect
 import functools
-from napixd.exceptions import ValidationError
+from napixd.exceptions import ValidationError,NotFound
+
+__all__= ('actions','Collection','Resource','SimpleCollection')
 
 def action(fn):
     """Decorator to declare an action method inside a handler"""
@@ -57,7 +59,10 @@ class SimpleMetaCollection(type):
 
 class SimpleResource(dict,Collection):
     def child(self,subfile):
-        return getattr(self,subfile)
+        try:
+            return getattr(self,subfile)
+        except AttributeError:
+            raise NotFound,subfile
 
     def get(self):
         return dict(self)
