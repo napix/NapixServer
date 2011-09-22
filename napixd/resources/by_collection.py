@@ -1,35 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
-import inspect
 import functools
-from napixd.exceptions import ValidationError,NotFound
 
-__all__= ('actions','Collection','Resource','SimpleCollection')
+from napixd.exceptions import NotFound
 
-def action(fn):
-    """Decorator to declare an action method inside a handler"""
-    param = inspect.getargspec(fn)
-    args = param.args
-    #self
-    args.pop(0)
-    #default values
-    opt = param.defaults or []
-
-    #mandatory params = param list - param that have default values
-    len_mand = len(args) - len(opt)
-    fn.mandatory = args[:len_mand]
-    fn.optional = dict(zip(args[len_mand:],opt))
-    fn._napix_action=True
-
-    return fn
-
-class Collection(object):
-    def check_id(self,id_):
-        if id_ ==  '':
-            raise ValidationError,'ID cannot be empty'
-        return id_
+from . import Collection
 
 def make_child(real_child):
     @functools.wraps(real_child)

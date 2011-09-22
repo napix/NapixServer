@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from napixd.resources import Collection,SimpleCollection
+from napixd.resources import Collection
+from napixd.resources.by_collection import SimpleCollection
 from napixd.exceptions import NotFound,ValidationError,Duplicate
 
 class Words(Collection):

@@ -3,7 +3,7 @@
 
 from ConfigParser import ConfigParser,NoSectionError
 
-from napixd.resources import SimpleCollection
+from napixd.resources.by_collection import SimpleCollection
 from napixd.exceptions import NotFound
 
 __all__ = ('HgrcFile',)

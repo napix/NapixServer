@@ -1,6 +1,7 @@
 import os
 
-from napixd.resources import SimpleCollection,action
+from napixd.resources.by_collection import SimpleCollection
+from napixd.resources.action import action
 from napixd.exceptions import NotFound,ValidationError
 
 __all__ = ('DirectoryManager',)
