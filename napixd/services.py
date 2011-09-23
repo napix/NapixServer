@@ -2,11 +2,29 @@
 # -*- coding: utf-8 -*-
 
 import itertools
+import functools
 
 import bottle
 from bottle import HTTPError
 from napixd.exceptions import NotFound,ValidationError,Duplicate
 
+class ArgumentsPlugin(object):
+    name='argument'
+    api = 2
+    def apply(self,callback,route):
+        @functools.wraps(callback)
+        def inner(*args,**kw):
+            path = self._get_path(args,kw)
+            return callback(bottle.request,path)
+        return inner
+
+    def _get_path(self,args,kw):
+        if args :
+            return args
+        return map(lambda x:kw[x],
+                itertools.takewhile(lambda x:x in kw,
+                    itertools.imap(lambda x:'f%i'%x,
+                        itertools.count())))
 
 class Service(object):
     def __init__(self,collection):
@@ -17,9 +35,9 @@ class Service(object):
         self._setup_bottle(app,self.collection,'/'+self.url,0)
 
     def _setup_bottle(self,app,collection,prefix,level):
-        app.route('%s'%(prefix),method='ANY',callback=self.as_resource)
+        app.route('%s'%(prefix),method='ANY',callback=self.as_resource,apply=ArgumentsPlugin)
         next_prefix = '%s/:f%i'%(prefix,level)
-        app.route('%s/'%(prefix),method='ANY',callback=self.as_collection)
+        app.route('%s/'%(prefix),method='ANY',callback=self.as_collection,apply=ArgumentsPlugin)
         if hasattr(collection,'resource_class'):
             self._setup_bottle(app,collection.resource_class,next_prefix,level+1)
             if hasattr(collection.resource_class,'_subresources'):
@@ -27,22 +45,13 @@ class Service(object):
                     self._setup_bottle(app,getattr(collection.resource_class,sr),
                             '%s/:f%i'%(next_prefix,level+1),level+2)
 
-    def as_resource(self,request=None,*args,**kw):
-        path = self._get_path(args,kw)
-        return ServiceResourceRequest(request or bottle.request,path,
+    def as_resource(self,request,path):
+        return ServiceResourceRequest(request,path,
                 self.collection).handle()
 
-    def as_collection(self,request=None,*args,**kw):
-        path = self._get_path(args,kw)
-        return ServiceCollectionRequest(request or bottle.request,path,
+    def as_collection(self,request,path):
+        return ServiceCollectionRequest(request,path,
                 self.collection).handle()
-    def _get_path(self,args,kw):
-        if args :
-            return args
-        return map(lambda x:kw[x],
-                itertools.takewhile(lambda x:x in kw,
-                    itertools.imap(lambda x:'f%i'%x,
-                        itertools.count())))
 
 class ServiceRequest(object):
     def __init__(self,request,path,collection):
