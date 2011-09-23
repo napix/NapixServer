@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from napixd.resources import Collection
-from napixd.resources.by_collection import SimpleCollection
+from napixd.resources.by_collection import SimpleCollection,SimpleCollectionResource,SubResource
 from napixd.exceptions import NotFound,ValidationError,Duplicate
 
 class Words(Collection):
@@ -58,14 +58,17 @@ class LettersOfWord(Collection):
             raise NotFound,id_
         return {'ord':ord(id_),'count':sum([1 for x in self.name if x == id_])}
 
+class Word(SimpleCollectionResource):
+    letters = SubResource(LettersOfWord)
+
 class WordsAndLetters(SimpleCollection):
     fields = ['name']
-    letters = LettersOfWord
+    resource_class = Word
 
     def __init__(self,objects=None):
         self.objects = objects or { 1:'One',2:'Two'}
 
-    def child(self,id_):
+    def get_child(self,id_):
         try:
             return {'name':self.objects[id_]}
         except KeyError:

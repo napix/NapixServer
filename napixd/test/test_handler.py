@@ -60,8 +60,6 @@ class TestWordsAndLettes(_TestWords,unittest.TestCase):
 
     def testCollection(self):
         self.assertEqual(
-                self.handler.resource_class._subresources[0],'letters')
-        self.assertEqual(
                 self.handler.resource_class.letters,LettersOfWord)
 
 if __name__ == '__main__':

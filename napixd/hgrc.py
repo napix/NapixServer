@@ -18,7 +18,7 @@ class HgrcSection(SimpleCollection):
     def list(self,filters):
         return self.hgrc.sections()
 
-    def child(self,name):
+    def get_child(self,name):
         try:
             return {'options':self.hgrc.items(name),'section':name}
         except NoSectionError:
@@ -45,7 +45,7 @@ class HgrcFile(SimpleCollection):
     fields = ['filename']
     resource_class = HgrcSection
 
-    def child(self,filename):
+    def get_child(self,filename):
         parser = ConfigParser()
         parser.readfp(open(filename))
         return {'filename':filename,'parser':parser}

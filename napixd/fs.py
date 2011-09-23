@@ -1,6 +1,6 @@
 import os
 
-from napixd.resources.by_collection import SimpleCollection
+from napixd.resources.by_collection import SimpleCollection,SimpleCollectionResource,SubResource
 from napixd.resources.action import action
 from napixd.exceptions import NotFound,ValidationError
 
@@ -24,7 +24,7 @@ class FileManager(SimpleCollection):
         return filename
     def delete(self,fname):
         os.unlink(self._path(fname))
-    def child(self,fname):
+    def get_child(self,fname):
         try:
             content=open(self._path(fname),'r').read()
         except IOError:
@@ -35,10 +35,12 @@ class FileManager(SimpleCollection):
     def touch(self,fname):
         os.utime(self._path(self._path(fname)))
 
+class Directory(SimpleCollectionResource):
+    files = SubResource(FileManager)
+
 class DirectoryManager(SimpleCollection):
     fields =['path','mode']
-
-    files = FileManager
+    resource_class = Directory
 
     def check_id(self,id_):
         """
@@ -60,7 +62,7 @@ class DirectoryManager(SimpleCollection):
             raise KeyError('basedir')
         return [os.path.join(basedir,path) for path in os.listdir(basedir)
                 if os.path.isdir(os.path.join(basedir,path))]
-    def child(self,path):
+    def get_child(self,path):
         """"""
         try:
             stats=os.stat(path)

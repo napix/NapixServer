@@ -1,39 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import functools
-
 from napixd.exceptions import NotFound
-
 from . import Collection
 
-def make_child(real_child):
-    @functools.wraps(real_child)
-    def inner(self,values):
-        child = real_child(self,values)
-        return self.resource_class(child)
-    return inner
-
-class SimpleMetaCollection(type):
-    def __new__(meta,name,bases,attrs):
-        resource_class_attrs = {'_subresources':[]}
-        actions = {}
-        for key,value in attrs.items():
-            if isinstance(value,type) and issubclass(value,Collection) and not key == 'resource_class':
-                resource_class_attrs[key] = SubResource(value)
-                resource_class_attrs['_subresources'].append(key)
-            if hasattr(value,'_napix_action'):
-                actions[key] = value
-
-        if 'child' in attrs:
-            attrs['child'] = make_child(attrs['child'])
-
-        resource_class = attrs.get('resource_class',SimpleResource)
-        attrs['resource_class'] = type(name+'Resource',(resource_class,),resource_class_attrs)
-
-        return type.__new__(meta,name,bases,attrs)
-
-class SimpleResource(dict,Collection):
+class SimpleCollectionResource(dict,Collection):
     def child(self,subfile):
         try:
             return getattr(self,subfile)
@@ -55,10 +26,15 @@ class SubResource(object):
         return self.subclass(instance)
 
 class SimpleCollection(Collection):
-    __metaclass__=SimpleMetaCollection
+    resource_class = SimpleCollectionResource
+
     def get(self,ident):
         child = self.child(ident)
         return dict([(key,child[key])
             for key in child
             if key in self.fields])
+
+    def child(self,id_):
+        child = self.get_child(id_)
+        return self.resource_class(child)
 
