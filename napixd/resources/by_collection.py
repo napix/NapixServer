@@ -41,7 +41,13 @@ class SubResource(object):
         return self.subclass(instance)
 
 class SimpleCollection(Collection):
-    """Classe de base de la collection"""
+    """
+    Classe de base de la collection
+    Les classes qui heritent de celle-ci doivent implementer les methodes de l'interface
+     service correspondantes aux besoins.
+    SAUF child qui ne doit pas être surchargée
+    SAUF get qui peut être surchargé
+    """
 
     #class par default
     resource_class = SimpleCollectionResource

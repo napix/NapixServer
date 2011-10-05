@@ -6,6 +6,12 @@ from napixd.exceptions import ValidationError,NotFound
 from napixd.executor import executor
 import pwd
 
+
+"""
+Example de module de gestion d'utilisateurs ecrit par la resource
+"""
+
+
 class User(object):
     fields = ['uid','username','shell']
 

@@ -8,6 +8,58 @@ import bottle
 from bottle import HTTPError
 from napixd.exceptions import NotFound,ValidationError,Duplicate
 
+"""
+Services qui relient les appels HTTP à des methodes definies par l'interface du service
+
+Il est possible de n'implementer qu'une partie de l'interface du service,
+dans ce cas seule les appels aboutissant a des methode non définies retournerait une erreur HTTP 405
+Une classe definissant une des methode ci dessous doit effectivement implementer la logique correspondante.
+
+Interface Service:
+    #Propriété de classe
+    fields : [ ]
+        liste des champs déclarés par cette ressource
+
+    #methodes d'instance
+    ##requete sur la resource
+    check_id(string:id) -> object / ValidationError
+        verifie l'identifiant et un objet qui sera utilisé pour les methodes suivantes
+        check_id ne doit pas verifier si l'identifiant correspond ou non a une ressource existante.
+        jette une exception ValidationError si l'id n'est pas valide
+
+    child(objet:id) -> object / NotFound
+        retourne la resource designée par l'identifiant id pour chainer la requete
+        l'objet retourné doit implementer lui même l'interface service
+
+    get(object:id) -> dict / NotFound
+        retourne les données de la ressource identifié par id
+        id a été controllé par check_id
+        jette une erreur NotFound si l'objet n'existe pas.
+
+    modify(objet:id,dict:data) -> None / NotFound
+        modifie la resource designée par id avec les données fournies par data
+        data est filtré et ne contient que les clés qui sont dans fields
+
+    delete(objet:id) -> NotFound /NotFound
+        supprime la ressource designée par id
+
+    ##requete sur la collection
+    create(dict:data) -> string:created_id / Duplicate / KeyError
+        crée une ressource suivant le dictionnaire de données data
+        qui a été filtré pour ne contenir que les clés contenues dans fields
+
+        peut jetter une exception Duplicate si un tel objet existe deja
+        Les KeyError sont interprétées comme des paramètres obligatoires manquants
+
+        retourne l'identifiant de la clée ainsi créee
+
+    list(dict:filters) -> list(key)
+        liste les ressources accessibles par la collections
+        un dictionnaire optionnel filters contient des filtres a appliquer à la selection
+        retourne une liste des clés que l'on peut fournir a child
+
+"""
+
 class ArgumentsPlugin(object):
     """
     Plugin qui filtre les mots clés de la requête pour les passer par liste
@@ -176,7 +228,7 @@ POST    /a/     a.create()
 
 GET     /a/1    a.get(1)
 DELETE  /a/1    a.delete(1)
-PUT     /a/1    a.modifiy(1)
+PUT     /a/1    a.modify(1)
 
 GET     /a/1/   a.child(1).list()
 POST    /a/1/   a.child(1).create()

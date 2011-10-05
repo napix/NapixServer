@@ -17,9 +17,12 @@ class SimpleResource(Collection):
         for x in ('list','create','modify','delete'):
             #ajoute les propriétés implementées par la classe adaptée
             #dans cet adapteur
+            #les methodes définies par l'interaface service doivent être effectivement implementées
+            #ceci evite que les methodes non implemente par la classe adaptée soient vue par le service
             if hasattr(klass,x):
                 setattr(self,x,getattr(self,'_'+x))
         if not hasattr(klass,'get'):
+            #ajoute le get par default s'il n'est pas implementé
             self.get = self._get
         self.fields = self.klass.fields
 
