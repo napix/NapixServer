@@ -87,6 +87,7 @@ class User(SimpleCollection):
         return {'uid':user.pw_uid,'username':user.pw_name,'shell':user.pw_shell}
 
     #methode de suppression de l'instance
+    #supprime l'element designé par username
     def delete(self,username):
         command = ['/usr/bin/userdel']
         command.append(username)
