@@ -17,6 +17,7 @@ class SimpleCollectionResource(dict,Collection):
         try:
             #Les sous collections sont installées par la metaclass
             #dans cette classe
+            # FIXME Quelle metaclasse ?
             return getattr(self,subfile)
         except AttributeError:
             raise NotFound,subfile
@@ -35,7 +36,8 @@ class SubResource(object):
         """:param subclass est la sous class de la ressource"""
         self.subclass = subclass
     def __get__(self,instance,owner):
-        """retourne une instance de la sous collection pour la ressource donnée"""
+        """retourne une instance de la sous collection pour la ressource donnée
+        FIXME : on emule qqchose la, le dire."""
         if instance is None:
             return self.subclass
         return self.subclass(instance)
@@ -47,9 +49,11 @@ class SimpleCollection(Collection):
      service correspondantes aux besoins.
     SAUF child qui ne doit pas être surchargée
     SAUF get qui peut être surchargé
+    FIXME : comprends pas. Les 'sauf' ne servent a rien.
     """
 
     #class par default
+    # FIXME : super, pourquoi c'est la, ca ?
     resource_class = SimpleCollectionResource
 
     def get(self,ident):

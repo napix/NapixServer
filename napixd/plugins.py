@@ -18,7 +18,8 @@ from napixd import settings
 __all__ = ['ConversationPlugin','AAAPlugin']
 
 class ConversationPlugin(object):
-    """Plugin Bottle to convert
+    """
+    Plugin Bottle to convert
     from and to the python native objects to json
     """
     name = "conversation_plugin"
@@ -40,6 +41,8 @@ class ConversationPlugin(object):
 class AAAPlugin(object):
     """
     Authentication, Authorization and Accounting plugins
+
+    FIXME : A documenter quand ce sera arreté
     """
     name = 'authentication_plugin'
     api = 2
@@ -74,5 +77,3 @@ class AAAPlugin(object):
             if resp.status != 200:
                 return HTTPError(403,'No auth')
         return inner
-
-

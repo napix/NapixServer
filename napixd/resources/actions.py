@@ -4,7 +4,12 @@
 import inspect
 
 def action(fn):
-    """Decorator to declare an action method inside a handler"""
+    """
+    Decorator to declare an action method inside a handler
+
+    FIXME : c'est a dire ? :D
+    Quoi que ca fait, etc etc.
+    """
     param = inspect.getargspec(fn)
     args = param.args
     #self

@@ -11,9 +11,12 @@ from napixd.exceptions import NotFound,ValidationError,Duplicate
 """
 Services qui relient les appels HTTP à des methodes definies par l'interface du service
 
-Il est possible de n'implementer qu'une partie de l'interface du service,
-dans ce cas seule les appels aboutissant a des methode non définies retournerait une erreur HTTP 405
-Une classe definissant une des methode ci dessous doit effectivement implementer la logique correspondante.
+FIXME : comment les collections/services/ressources interagisse ? (ordre des couches, etc)
+
+
+Il est possible de n'implementer qu'une partie de l'interface du service, auquel cas les
+methodes non implementée retourneront une erreur HTTP 405.
+
 
 Interface Service:
     #Propriété de classe
@@ -23,22 +26,27 @@ Interface Service:
     #methodes d'instance
     ##requete sur la resource
     check_id(string:id) -> object / ValidationError
+        FIXME : comprends pas. Il manque des mots ? Si c'est un validateur, employer ce mot.
         verifie l'identifiant et un objet qui sera utilisé pour les methodes suivantes
+        FIXME : tu veux dire : check_id verifie uniquement que l'id est potentiellement valide, mais ne doit pas reporter d'erreur si la ressource n'existe pas encore ?
+        FIXME : on utilise souvent le mot "validate" pour ce genre de chose, donc renomer la fonction en accord
         check_id ne doit pas verifier si l'identifiant correspond ou non a une ressource existante.
         jette une exception ValidationError si l'id n'est pas valide
 
     child(objet:id) -> object / NotFound
+        FIXME : pourquoi forcement pour chainer ? 
         retourne la resource designée par l'identifiant id pour chainer la requete
+        FIXME : on ne peut pas recuperer une ressource comme ca ? Pourquoi ?
         l'objet retourné doit implementer lui même l'interface service
 
     get(object:id) -> dict / NotFound
-        retourne les données de la ressource identifié par id
-        id a été controllé par check_id
-        jette une erreur NotFound si l'objet n'existe pas.
+        retourne les données de la ressource identifié par id, deja validée par check_id
+        leve l'exception NotFound si l'objet n'existe pas.
 
     modify(objet:id,dict:data) -> None / NotFound
         modifie la resource designée par id avec les données fournies par data
-        data est filtré et ne contient que les clés qui sont dans fields
+        data a déjà été validé et  et ne contient que les clés qui sont dans fields
+        FIXME : dire par quoi data est validée Ressource.validator ?
 
     delete(objet:id) -> NotFound /NotFound
         supprime la ressource designée par id
@@ -47,14 +55,16 @@ Interface Service:
     create(dict:data) -> string:created_id / Duplicate / KeyError
         crée une ressource suivant le dictionnaire de données data
         qui a été filtré pour ne contenir que les clés contenues dans fields
+        FIXME : dire par quoi data est validée Ressource.validator ?
 
-        peut jetter une exception Duplicate si un tel objet existe deja
-        Les KeyError sont interprétées comme des paramètres obligatoires manquants
+        Si la methode leve une exception de type Duplicate, le framework retournera le
+        code HTTP FIXME indiquant que l'objet existe déjà.
+        Les Exceptions KeyError sont interprétées comme des paramètres obligatoires manquants
 
-        retourne l'identifiant de la clée ainsi créee
+        retourne l'identifiant de la clé ainsi créee
 
     list(dict:filters) -> list(key)
-        liste les ressources accessibles par la collections
+        liste les ressources accessibles par la collection
         un dictionnaire optionnel filters contient des filtres a appliquer à la selection
         retourne une liste des clés que l'on peut fournir a child
 
@@ -64,6 +74,9 @@ class ArgumentsPlugin(object):
     """
     Plugin qui filtre les mots clés de la requête pour les passer par liste
     Workaround du fait que bottle ne passe les arguments que par mot clé
+
+    FIXME : Quel est le cas ou cela doit servir ? Comprends pas !
+    FIXME : Si par exemple
     """
     name='argument'
     api = 2
@@ -75,6 +88,20 @@ class ArgumentsPlugin(object):
         return inner
 
     def _get_path(self,args,kw):
+        #FIXME : ca fait quoi ce truc ???
+        #FIXME : mettre un exemple.
+        #FIXME : et puis d'abord les lambdas c'est moche
+        # On remap le format interne fxxx vers un entier pour le tri (et eviter les probleme si xxx > 10)
+        # a = [ (int(k.replace("f", "")), v) for k, v in kw ]
+        # # On veut les arguments trié dans l'ordre
+        # a.sort()
+        # return [ v for k,v in a ]
+        # ou
+        # result = []
+        # for i in range(len(kw)):
+        #     try: result.append(kw["f%i"%i])
+        #     except: return result
+        # (c'est vraiment pourri comme truc pour stocker les arguments quand meme ...)
         if args :
             return args
         return map(lambda x:kw[x],
@@ -83,10 +110,12 @@ class ArgumentsPlugin(object):
                         itertools.count())))
 
 class Service(object):
-    """Class qui sert d'interface entre une application bottle et les collections"""
+    """Class qui sert d'interface entre une application bottle et les collections
+    FIXME : c'est la classe qui est déstinée a être overrider, le préciser."""
     def __init__(self,collection):
         """crée un nouveau service pour la collection donnée"""
         self.collection = collection()
+        # FIXME : ca c'est bien par defaut, mais il faut qu'on puisse le préciser dans le fichier de conf
         self.url = collection.__name__.lower()
 
     def setup_bottle(self,app):
@@ -116,11 +145,14 @@ class Service(object):
                 self.collection).handle()
 
 class ServiceRequest(object):
-    """Objet créé pour servir une requete"""
+    """Objet créé pour servir une requete
+    FIXME : cette classe appele ensuite les methode de la classe service ? Si oui
+    le préciser, dire dans quel contexte."""
     def __init__(self,request,path,collection):
         """
         Crée l'objet qui sert la requete request sur collection
         en demandant l'objet designé par path
+        FIXME : en demandant l'objet ? la ressource plutot ?
         """
         self.request = request
         self.method = request.method
@@ -128,7 +160,11 @@ class ServiceRequest(object):
         self.path = path
 
     def check_datas(self,collection):
-        """Verifie que les champs passés sont dans le les champs de la collection"""
+        """Verifie que les champs passés sont dans les champs de la collection
+        FIXME : Un validator s'appele validate_xxx :)
+        Préciser que la fonction retourne un dictionnaire épurée de tout clé
+        n'étant pas présent dans la propriété field de la collection
+        """
         data = {}
         for x in self.request.data:
             if x in collection.fields:
@@ -163,7 +199,7 @@ class ServiceRequest(object):
 
     def handle(self):
         """
-        gère l'appel
+        gère l'appel FIXME du téléphone rose ?
         """
         try:
             #obtient l'object designé

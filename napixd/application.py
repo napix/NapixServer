@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# FIXME : dire que c'est l'application a lancer avec bottle.
+# Mettre un exemple de ligne de commande
+
 import logging
 
 logging.basicConfig(filename='/tmp/napix.log', filemode='w', level=logging.DEBUG)
