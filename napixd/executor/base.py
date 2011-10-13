@@ -13,6 +13,74 @@ logger=logging.getLogger('Napix.Executor')
 
 __all__ = ['Executor']
 
+"""
+L'executor est une instance de la classe executor.
+Il ne doit etre lancé qu'une seule instance d'executor simultanement
+
+Interface Executor
+    create_job(job:list(string),discard_output:bool) -> handler
+        crée une requete de job, la depose dans la file d'attente
+        et retourne le handler correspondant
+        job:
+            liste de strings qui represente la commande a executer
+            et les arguments fournis
+        discard_output:
+            quand ce parametre est a True, la sortie standard du process
+            sera redirigée vers /dev/null
+
+    append_request(request) -> handler
+        ajoute la requete request, la depose dans la file d'attente et
+        retourne le handler
+        append_request permet de spécifier une autre classe de requetes
+
+    children_of(thread_id) -> list(wrapper)
+        retourne tout les processus instanciés par le thread ayant pour id thread_id
+
+    run()
+        lance l'executor
+        l'executor fourni deux fonctionalités: execute les requetes en attente
+        et gere les threads qui ont terminé
+        cette methode doit etre lancée dans le thread principal
+    stop()
+        termine l'executor;
+        termine tout les processus actifs
+
+Interface Handler
+    les handlers sont des wrappers autour des process lancés.
+    Ils notifient l'executor quand le process termine pour eviter les zombies
+
+    Ils surchargent les methodes suivants
+    poll() et wait()
+        notifient l'executor de la fin d'un process
+    kill()
+        termine le process d'abord avec un SIGTERM et un SIGTERM 3 secondes plus tard
+    close()
+        ferme les flux stdout et stderr
+    request
+        object Request qui a initié le process
+
+Interface Request
+    take_ownership()
+        le thread appelant cette methode devient le propriétaire du process
+    owning_thread
+        identifiant du thread qui a invoqué le process
+    command
+        retourne l'executable de la requete
+    arguments
+        retourne les arguments fournis a la fonction
+    commandline
+        retourne une chaine represetant la requete
+    stdout et stderr
+        flux d'erreur et de sortie standard
+
+    exemple
+    Request(['ls','-l','/home/user/my docs'])
+    command = ls
+    arguments = [-l,/home/user/my docs]
+    commandline = ls -l "/home/user/my docs"
+
+"""
+
 class Executor(object):
     """
     object that listen in the main thread to a queue to get jobs

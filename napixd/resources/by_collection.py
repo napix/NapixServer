@@ -4,6 +4,10 @@
 from napixd.exceptions import NotFound
 from . import Collection
 
+"""
+Classe abstraite qui permet de gérer des ressources en tant qu'ensemble
+"""
+
 class SimpleCollectionResource(dict,Collection):
     """
     dictionnaire implementant l'interface des ressource et des collections

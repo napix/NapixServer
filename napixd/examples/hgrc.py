@@ -51,4 +51,20 @@ class HgrcFile(SimpleCollection):
         return {'filename':filename,'parser':parser}
 
 
+'''
+HGRX.get('coca')
+GET  /hgrc/coca
+{
+        'filename':'coca'
+        'creaed':'16 07 1998'
+}
+HGRX.get('coca').list()
+GET  /hgrc/coca/
+    [
+    ui
+    merge
+    ]
+HGRX.get('coca').get('ui')
+GET  /hgrc/coca/ui
 
+'''

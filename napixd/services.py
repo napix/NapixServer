@@ -266,9 +266,9 @@ GET     /a/1    a.get(1)
 DELETE  /a/1    a.delete(1)
 PUT     /a/1    a.modify(1)
 
-GET     /a/1/   a.child(1).list()
-POST    /a/1/   a.child(1).create()
-PUT     /a/1/b  a.child(1).mofify(b)
-GET     /a/1/b  a.child(1).b.get()
+GET     /a/1/   a.get(1).list()
+POST    /a/1/   a.get(1).create()
+PUT     /a/1/b  a.get(1).mofify(b)
+GET     /a/1/b  a.get(1).get(b).get()
 
 """

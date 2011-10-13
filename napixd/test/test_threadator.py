@@ -4,7 +4,7 @@
 
 import unittest
 import time
-from napixd.threadator import ThreadManager,BackgroundTasker
+from napixd.thread_manager import ThreadManager,BackgroundDecorator
 
 def sleepytask(thread):
     time.sleep(1)
@@ -15,75 +15,73 @@ def exceptiontask(thread):
 
 class TestThreadator(unittest.TestCase):
     def setUp(self):
-        self.threadator = ThreadManager()
-        self.threadator.start()
+        self.thread_manager = ThreadManager()
+        self.thread_manager.start()
     def tearDown(self):
-        self.threadator.stop()
+        self.thread_manager.stop()
 
     def testStarting(self):
-        threadator = ThreadManager()
+        thread_manager = ThreadManager()
         start =time.time()
-        threadator.start()
+        thread_manager.start()
         self.assertAlmostEquals(time.time(),start,places=1)
-        threadator.stop()
+        thread_manager.stop()
         self.assertTrue(time.time() < start+3)
 
     def testAttributes(self):
-        thread = self.threadator.do_async(notthingtask)
+        thread = self.thread_manager.do_async(notthingtask)
         self.assertTrue(hasattr(thread,'execution_state'))
         self.assertTrue(hasattr(thread,'status'))
 
     def testAsync(self):
         start=time.time()
-        self.threadator.do_async(sleepytask)
+        self.thread_manager.do_async(sleepytask)
         self.assertAlmostEquals(start,time.time(),places=1)
 
     def testStatusException(self):
-        thread = self.threadator.do_async(exceptiontask)
+        thread = self.thread_manager.do_async(exceptiontask)
         self.assertTrue(thread is not None)
-        CREATED,RUNNING,RETURNED,EXCEPTION,FINISHING,CLOSED = range(6)
-        for x in [ CREATED, RUNNING, EXCEPTION , FINISHING, CLOSED ] :
+        for x in [ 'CREATED', 'RUNNING', 'EXCEPTION' , 'FINISHING', 'CLOSED' ] :
             _,ec = thread.execution_state_queue.get()
             self.assertEqual(ec,x)
     def testStatusSuccess(self):
-        thread = self.threadator.do_async(notthingtask)
+        thread = self.thread_manager.do_async(notthingtask)
         self.assertTrue(thread is not None)
-        CREATED,RUNNING,RETURNED,EXCEPTION,FINISHING,CLOSED = range(6)
-        for x in [ CREATED, RUNNING, RETURNED, FINISHING, CLOSED ] :
+        for x in [ 'CREATED', 'RUNNING', 'RETURNED', 'FINISHING', 'CLOSED' ] :
             _,ec = thread.execution_state_queue.get()
             self.assertEqual(ec,x)
     def testCallbackSucess(self):
         results=[]
-        self.threadator.do_async(notthingtask,
+        self.thread_manager.do_async(notthingtask,
                 on_failure=lambda ex:results.append(str('ex')),
-                on_end=lambda :results.append(1),
+                on_end=lambda x:results.append(1),
                 on_success=lambda x:results.append(x)).join()
         self.assertEqual(len(results),2)
         self.assertEqual(results[0],555)
         self.assertEqual(results[1],1)
     def testCallbackException(self):
         results=[]
-        self.threadator.do_async(exceptiontask,
+        self.thread_manager.do_async(exceptiontask,
                 on_failure=lambda ex:results.append(str(ex)),
-                on_end=lambda :results.append(1),
+                on_end=lambda x:results.append(1),
                 on_success=lambda x:results.append(x)).join()
         self.assertEqual(len(results),2)
         self.assertEqual(results[0],'444')
         self.assertEqual(results[1],1)
     def testChildren(self):
-        thread=self.threadator.do_async(sleepytask)
-        keys = self.threadator.keys()
+        thread=self.thread_manager.do_async(sleepytask)
+        keys = self.thread_manager.keys()
         self.assertEqual(len(keys),1)
         self.assertEqual(thread.ident,keys[0])
-        self.assertTrue(thread is self.threadator[thread.ident])
+        self.assertTrue(thread is self.thread_manager[thread.ident])
 
 class TestBackgroundTasker(unittest.TestCase):
     def tearDown(self):
-        self.threadator.stop()
+        self.thread_manager.stop()
     def setUp(self):
-        self.threadator = ThreadManager()
-        self.bgtasker = BackgroundTasker(self.threadator)
-        self.threadator.start()
+        self.thread_manager = ThreadManager()
+        self.bgtasker = BackgroundDecorator(self.thread_manager)
+        self.thread_manager.start()
 
     def testAsync(self):
         @self.bgtasker

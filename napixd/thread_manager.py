@@ -8,27 +8,61 @@ from time import time
 from threading import Thread
 
 from napixd.queue import SubQueue,Queue,Empty
-logger = logging.getLogger('threadator')
+logger = logging.getLogger('thread_manager')
 
 
-__all__ = ['threadator','thread_manager','background_task']
+__all__ = ['thread_manager','background']
 
 """
-Un object threadator et un object bacground_task relié sont créés et doivent être utilisés FIXME : il manque un bout de phrase
+Les classes ThreadManager et BackgroundDecorator ne sont pas sensées etre utilisées directement.
+Une instance de la classe ThreadManager est crée sous le nom de thread_manager. Une instance de
+la classe BackgroundDecorator utilisant ce thread_manager est crée sous le nom de background.
+Le tread_manager repose sur un thread de controle chargé de superviser les threads créés.
 
-Threadator definie un objet simple qui permet de lancer des fonctions de manière asynchrone (ie; dans un thread séparé)
+background est un décorateur permettant d'executer une fonction arbitraire dans un autre thread.
+L'appel a la fonction décorée retourne instantanement le Threadwrapper qui execute la fonction
+
+Exemple
+@background
+def send_mail(users):
+    for u in users:
+        send_mail(user)
+
+def view(request):
+    send_mail(User.objects.all()) #retourne immediatement
+
+Le decorateur background peux prendre les arguments suivants, qui doivent être imperativement passés par mot-clé :
+    give_thread:
+        le thread_manager peut envoyer l'instance du thread wrapper comme premier
+        argument de la fonction executé. par default, il est a False
+    on_success,on_failure,on_end:
+        voir do_async
+
+Exemple
+@background(give_thread=True,on_success=send_mail_ok)
+def send_mail(thread,users):
+    total = len(users)
+    for idx,u in enumerate(users):
+        thread.status = idx/total*100.
+        send_mail(user)
+
+def view(request):
+    thread = send_mail(User.objects.all()) #retourne immediatement
+    while thread.execution_state != 'CLOSED':
+        print '%d %% mail sent '% thread.status
+
+Le thread_manager permet de lancer des fonctions de manière asynchrone (ie: dans un thread séparé)
 Il est possible de définir des callbacks qui seront appelés suivant l'evolution de l'execution du thread.
-La fonction executée dispose d'une reference sur le thread et peux mettre a jour un statut.
-FIXME : La fonction éxecutée se voit passer en paramêtre le thread, lui permettant ainsi de mettre a jour un status (si c'est fait
-autrement, alors le résumer)
+La fonction recupère une reference sur le thread et peux mettre a jour un statut dont le type est laissé
+à la discretion du programmeur
 
-Interface threadator
+Interface thread_manager
     do_async(fn:callable,<params>) -> thread
     il prends un argument obligatoire
-        fn(thread,*args,**kwargs)
+        fn(thread,*fn_args,**fn_kwargs)
             callable qui sera executé de manière asynchrone
             cette fonction prends comme premier paramètre le ThreadWrapper dans lequel le thread
-            s'executera, lui permettant ainsi de mettre a jour son status via FIXME : thread.status ?
+            s'executera, lui permettant ainsi de mettre a jour son status via thread.status
     do_async peut prendre en parametre optionnels
     callbacks:
         on_success(result)
@@ -39,37 +73,28 @@ Interface threadator
             l'exception jetée.
         on_end()
             appelé quand la fonction a fini quelque soit le resultat.
-    lancement: FIXME : renomer ces parametres en fn_args et fn_kwargs ?
-        args
+    lancement:
+        fn_args
             tuple d'arguments passé a l'execution de la fonction
-        kwargs
+        fn_kwargs
             dictionnaire de mot clés passé à la fonction
 
-De plus, le threadator garde trace de l'ensemble des fonction asynchrone (ie, les threads) qui sont en train
+De plus, le thread_manager garde trace de l'ensemble des fonction asynchrone (ie, les threads) qui sont en train
 d'etre executée en emulant un dictionnaire.
-FIXME : si les thread_id sont autre chose que des pid, le dire. Si ce sont des pid_, le dire quand meme.
-Ainsi, on pourra executer :
->>> threadator[<thread_id>]
-<threadWrapper instance XXXX> FIXME : mettre le nom du veritable objet
->>> threadator.keys()
-[ "id1", "id2", ... ]
-FIXME : si cala suffit, virer la suite (moins intelligible)
+Les clés sont les identificants des threads et les valeurs sont les instance de ThreadWrapper correspondante
+>>> thread_manager[<thread_id>]
+<ThreadWrapper instance XXXX>
+>>> thread_manager.keys()
+[ id1, id2, ... ]
 
-il definit
-    [ thread_id ] -> thread
-        retourne le thread ayant l'identifiant thread_id
-    keys -> thread[]
-        retourne tout les identifiant de thread
-
-Enfin le threadator s'intègre avec les autres composant du serveur web, il definit les methodes start et stop
+Le thread manager demarre et arrete son thread de controle avec les metodes suivantes
     start()
-        demarre le threadator
+        demarre le thread_manager
     stop()
-        arrete le threadator dans la seconde qui suit. Les thread encore en cours continuent.
-        FIXME : rajouter un parametre forced qui butte tout les threads fils a off par defaut
+        arrete le thread_manager dans la seconde qui suit. Les thread encore en cours continuent.
 
 Le resultat de l'appel a do_async est un ThreadWrapper qui encapsule le thread pour lui donner accès
-a des fonctionalités de controle.
+à des fonctionalités de controle.
 Interface ThreadWrapper
     status
         sert de transport pour une valeur arbitraire fourni par la fonction asynchrone
@@ -80,7 +105,7 @@ Interface ThreadWrapper
             for idx,user in enumerate(users):
                 thread.status = idx/total*100.
                 mail(user)
-        wrapper = threadator.do_aync(mail,args=(User.objects.all(),)) # retourne immediatement
+        wrapper = thread_manager.do_aync(mail,args=(User.objects.all(),)) # retourne immediatement
         # wrapper.status va prendre le pourcentage de mails envoyés
     execution_state
         sert de transport pour l'état dans lequel le thread se trouve actulement
@@ -101,59 +126,28 @@ Interface ThreadWrapper
             CLOSED
                 le thread a fini
 
-Les objects bacgroundtasker servent de décorateur pour une fonction arbitraire
-les appels a cette fonction seront fait dans un autre thread
-FIXME : La classe BackgroundTasker est automatiquement instanciée lors de l'import
-        du module sous le nom de 'background_task'. Cet objet est ensuite à utiliser
-        comme décorateur lorsque l'on souhaite que les appel a la fonction décorée
-        soit réalisée automatiquement dans un autre thread.
-        Il est a noté que de ce fait, la fonction sera executée en background, et
-        que le code appelant ne recuperera pas ce qu'elle retourne. Si une action doit être
-        executée avec le resultat, celle ci doit être précisé dans le callback on_success.
-
-        FIXME : on ne retourne vraiment rien ? meme pas l'id du thread ?
-
-exemple
-
-@bacground_task
-def send_mail(users):
-    for u in users:
-        send_mail(user)
-
-def view(request):
-    send_mail(User.objects.all()) #retourne immediatement
-
-Le decorator bacground_task peux prendre les arguments mot-clés suivant:
-    drop_thread:
-        par default le threadator envoie l'instance du thread wrapper comme premier
-        argument de la fonction executé.
-        ce paramètre permet de supprimer ce thread pour s'interfacer de manière plus transparente.
-        Par default il est a True.
-    args,kwargs,on_success,on_failure,on_end:
-        voir do_async
-
 """
 
-class BackgroundTasker(object):
+class BackgroundDecorator(object):
     """
-    Instance of BackgroundTasker can be used to decorate
+    Instance of BackgroundDecorator can be used to decorate
     a function. When this function will be called, it will
     be in background in another thread.
 
     FIXME : remettre un exemple
     """
-    def __init__(self,threadator):
+    def __init__(self,thread_manager):
         """
-        init the background task with a threadator
-        The threadator will be used to create the threads.
+        init the background task with a thread_manager
+        The thread_manager will be used to create the threads.
         """
-        self.threadator =threadator
-    def __call__(self,fn=None,drop_thread=True,**kw):
+        self.thread_manager =thread_manager
+    def __call__(self,fn=None,give_thread=False,**kw):
         """
         function called when decorating a function
         returns a callable that will transmit its parameter
         to the function in the other thread
-        The keywords provided to the decorator will be transmitted to the threadator
+        The keywords provided to the decorator will be transmitted to the thread_manager
         ex: on_end,on_success,etc
         FIXME : reecrit ca en francais, la on ne comprends rien :)
         Dans un premier temps, decrire a quoi servent les parametres.
@@ -169,12 +163,12 @@ class BackgroundTasker(object):
         def outer(fn):
             @functools.wraps(fn)
             def inner(*args,**kwargs):
-                if drop_thread:
+                if not give_thread:
                     def droper(*args,**kwargs):
                         return fn(*args[1:],**kwargs)
                     fn = droper
                 #real function call
-                return self.threadator.do_async(fn,args,kwargs,**kw)
+                return self.thread_manager.do_async(fn,args,kwargs,**kw)
             return inner
         if fn is None:
             #if the decorator is called with keywork arguments
@@ -194,7 +188,7 @@ class ThreadManager(Thread):
     Mettre un exemple (ou plusieur) petit exemple (quitte a reprendre ceux du module en haut)
     """
     def __init__(self):
-        Thread.__init__(self,name='threadator')
+        Thread.__init__(self,name='thread_manager')
         self.active_threads = {}
         #FIXME : a quoi sert cette queue ?
         self.activity = Queue()
@@ -228,8 +222,8 @@ class ThreadManager(Thread):
         return self.active_threads[item]
 
     def stop(self):
-        FIXME : rajouter un parametre forced qui butte tout les threads fils a off par defaut
-        """ stop the threadator """
+        #FIXME : rajouter un parametre forced qui butte tout les threads fils a off par defaut
+        """ stop the thread_manager """
         self.alive = False
 
     def run(self):
@@ -241,7 +235,7 @@ class ThreadManager(Thread):
             except Empty:
                 continue
             # FIXME : pourquoi on fait cela ? 
-            if ex_state != ThreadWrapper.CLOSED:
+            if ex_state != 'CLOSED':
                 continue
             # FIXME : elle est dead la task, ou alors on est aussi dans ce cas la quand elle s'est arrete proprement ?
             logger.debug('Dead Task %s',thread.ident)
@@ -250,10 +244,8 @@ class ThreadManager(Thread):
 
 class ThreadWrapper(Thread):
     """ThreadWrapper is a proxy to the running thread"""
-    #Statuses FIXME : Y-a un interet a faire ca comme ca plutot que de maintenir un status en toute lettre ?
-    # Genre STATUS = set(["CREATED", ...]) et on verifie juste quand on le set qu'on utilise bien un truc présent dans self.STATUS ?
-    CREATED,RUNNING,RETURNED,EXCEPTION,FINISHING,CLOSED = range(6)
-    def __init__(self,activity,function,args=None,kwargs=None,on_success=None,on_failure=None,on_end=None):
+    STATUS = set(['CREATED','RUNNING','RETURNED','EXCEPTION','FINISHING','CLOSED'])
+    def __init__(self,activity,function,fn_args=None,fn_kwargs=None,on_success=None,on_failure=None,on_end=None):
         """
         FIXME : a quoi serve tout ces parametres ?
         Il y a manifestement des trucs par defaut pour _on_XXX, donc préciser le comprotement par defaut.
@@ -267,8 +259,8 @@ class ThreadWrapper(Thread):
 
         # Set user provided function to run and arguments.
         self.function = function
-        self.args = args or ()
-        self.kwargs = kwargs or {}
+        self.args = fn_args or ()
+        self.kwargs = fn_kwargs or {}
 
         # Set callbacks
         self.on_success = on_success or self._on_success
@@ -276,38 +268,37 @@ class ThreadWrapper(Thread):
         self.on_end = on_end or self._on_end
 
         #execution status initialized
-        self._set_execution_state(self.CREATED)
+        self._set_execution_state('CREATED')
         self._status=''
 
     def run(self):
         """Launch the thread"""
         self.start_time=time()
         try:
-            self.execution_state = self.RUNNING
+            self.execution_state = 'RUNNING'
             result = self.function(self,*self.args,**self.kwargs)
         except Exception,e:
-            self.execution_state = self.EXCEPTION
+            self.execution_state = 'EXCEPTION'
             #failure callback
-            self.on_failure(e)
+            tmp = self.on_failure(e)
         else:
-            self.execution_state = self.RETURNED
+            self.execution_state = 'RETURNED'
             #success callback
-            # FIXME : il pourrait être utile de recuperer l'output de on_success et de le renvoyer a on_end
-            self.on_success(result)
+            tmp = self.on_success(result)
         finally:
-            self.execution_state = self.FINISHING
+            self.execution_state = 'FINISHING'
             #end callback
-            self.on_end()
+            self.on_end(tmp)
         #finished
-        self.execution_state = self.CLOSED
-    def _on_end(self):
-        """default ending event FIXME : si cela ne fait rien, on dit "dummy""""
+        self.execution_state = 'CLOSED'
+    def _on_end(self,x):
+        """dummy event handler"""
         pass
     def _on_failure(self,e):
-        """default failure event FIXME"""
+        """dummy failure event """
         logger.warning('Thread %s Failed %s(%s)',self.ident,type(e).__name__,str(e))
     def _on_success(self,res):
-        """default success event FIXME"""
+        """dummy success event """
         logger.info('Thread %s Succeeded %s(%s)',self.ident,type(res).__name__,repr(res))
 
     def _set_execution_state(self,value):
@@ -315,7 +306,7 @@ class ThreadWrapper(Thread):
         Execution state setter
         Also send the execution_state to the activity queue
         """
-        # FIXME : je pense qu'il serait sain de verifier que "value" est correct
+        assert value in self.STATUS
         self._execution_state = value
         self.execution_state_queue.put((self,value))
         logger.info('execution_state of %s changed %s',self.ident,value)
@@ -323,29 +314,21 @@ class ThreadWrapper(Thread):
     def _get_execution_state(self):
         """ execution_state getter"""
         return self._execution_state
-    # FIXME : a quoi sert cette property ? (parametre doc="pouetpouet")
     execution_state = property(_get_execution_state,_set_execution_state)
 
     def _set_status(self,value):
         """status setter"""
         logger.debug('status of %s changed to %s',self.ident,value)
         self._status = value
-        
+
     def _get_status(self):
         """status getter"""
         return self._status
-    # FIXME : a quoi sert cette property ? (parametre doc="pouetpouet")
     status = property(_get_status,_set_status)
 
 
-# FIXME : c'est quoi ces trucs ? Ca sert a être utilisé derriere sans se prendre la tete ?
-# A priori les exemples les utiliseront, donc le mettre
-# A noter que je ne suis pas sur que ce soit tres propre comme maniere de faire :) (mais bon
-# ca osef)
 #Thread manager instance
 thread_manager = ThreadManager()
-#thread_manager alias
-threadator = thread_manager
 
 #decorator
-background_task = BackgroundTasker(threadator)
+background = BackgroundDecorator(thread_manager)
