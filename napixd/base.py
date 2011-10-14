@@ -48,3 +48,7 @@ class Collection(object):
         pass
     def delete(self):
         pass
+
+    def __iter__(self):
+        for field in self.field:
+            yield field,getattr(self,field)

@@ -4,8 +4,8 @@ class Sample(Collection):
     child_fields = []
     fields =[]
 
-    def __init__(self,path):
-        self.path = path
+    def __init__(child,that):
+        child.parent = that
 
     def list_children(self):
         #GET /that/child/
@@ -15,12 +15,16 @@ class Sample(Collection):
         #GET /that/child/
         pass
 
-    def delete_child(self,fname):
+    def delete_child(self,):
         #DELETE /that/child
         pass
 
-    def get_child(self,fname):
+    def get_child(self,id):
         #GET /that/child
+        pass
+
+    def modify_child(self,id,values):
+        #PUT /that/child
         pass
 
     @classmethod
@@ -29,7 +33,7 @@ class Sample(Collection):
         pass
 
     @classmethod
-    def get(cls,path):
+    def get(cls,id):
         #GET /that
         pass
 
@@ -39,6 +43,11 @@ class Sample(Collection):
         pass
 
     @classmethod
-    def delete(self,rep):
+    def delete(self,id):
         #DELETE /that/
+        pass
+
+    @classmethod
+    def modify(self,id,values):
+        #PUT /that/
         pass
