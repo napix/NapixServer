@@ -28,7 +28,7 @@ class HostManager(DictManager):
         except ValueError:
             #123.45.lol.99 is not an ip
             raise ValidationError
-        if any([0 < x <= 255 for x in ip_components]):
+        if not all([0 < x <= 255 for x in ip_components]):
             #123.45.67.890 is not an ip
             raise ValidationError
         #filter the useless 0 out of 123.045.012.001
