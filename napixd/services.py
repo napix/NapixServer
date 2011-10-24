@@ -18,11 +18,13 @@ It handle bottle registering, url routing and Manager configuration when needed.
 
 class ArgumentsPlugin(object):
     """
-    Plugin qui filtre les mots clés de la requête pour les passer par liste
-    Workaround du fait que bottle ne passe les arguments que par mot clé
+    Bottle only passes the arguments from the url by keyword.
 
-    FIXME : Quel est le cas ou cela doit servir ? Comprends pas !
-    FIXME : Si par exemple
+    This bottle plugin get the dict provided by bottle and get it in a tuple form
+
+    url: /plugin/:f1/:f2/:f3
+    bottle args : { f1:path1, f2:path2, f3:path3 }
+    after plugin: (path1,path2,path3)
     """
     name='argument'
     api = 2
@@ -51,18 +53,21 @@ class ArgumentsPlugin(object):
         if args :
             return args
         return map(lambda x:kw[x],
+                #limit to keywords given in the kwargs
                 itertools.takewhile(lambda x:x in kw,
+                    #infinite generator of f0,f1,f2,...
                     itertools.imap(lambda x:'f%i'%x,
+                        #infinite generator of 0,1,2,3...
                         itertools.count())))
 
 class Service(object):
     """Class qui sert d'interface entre une application bottle et les collections
     FIXME : c'est la classe qui est déstinée a être overrider, le préciser."""
-    def __init__(self,collection):
+    def __init__(self,collection,config):
         """crée un nouveau service pour la collection donnée"""
-        self.collection = collection()
-        # FIXME : ca c'est bien par defaut, mais il faut qu'on puisse le préciser dans le fichier de conf
-        self.url = collection.__name__.lower()
+        self.url = 'url' in config and config['url'] or collection.__name__.lower()
+        collection.configure(config)
+        self.collection = collection({})
 
     def setup_bottle(self,app):
         """Enregistre le service sur l'application bottle passée"""
@@ -73,12 +78,8 @@ class Service(object):
         app.route('%s'%(prefix),method='ANY',callback=self.as_resource,apply=ArgumentsPlugin)
         next_prefix = '%s/:f%i'%(prefix,level)
         app.route('%s/'%(prefix),method='ANY',callback=self.as_collection,apply=ArgumentsPlugin)
-        if hasattr(collection,'resource_class'):
+        if hasattr(collection,'managed_class'):
             self._setup_bottle(app,collection.resource_class,next_prefix,level+1)
-            if hasattr(collection.resource_class,'_subresources'):
-                for sr in collection.resource_class._subresources:
-                    self._setup_bottle(app,getattr(collection.resource_class,sr),
-                            '%s/:f%i'%(next_prefix,level+1),level+2)
 
     def as_resource(self,request,path):
         """Callback appellé pour une requete demandant une collection"""
@@ -90,15 +91,19 @@ class Service(object):
         return ServiceCollectionRequest(request,path,
                 self.collection).handle()
 
+    def as_example_resource(self,request,path):
+        return None
+
+    def as_help(self,request,path):
+        return None
+
 class ServiceRequest(object):
-    """Objet créé pour servir une requete
-    FIXME : cette classe appele ensuite les methode de la classe service ? Si oui
-    le préciser, dire dans quel contexte."""
+    """
+    ServiceRequest is an abstract class that is created to serve a single request.
+    """
     def __init__(self,request,path,collection):
         """
-        Crée l'objet qui sert la requete request sur collection
-        en demandant l'objet designé par path
-        FIXME : en demandant l'objet ? la ressource plutot ?
+        Create the object that will handle the request for the path given on the collection
         """
         self.request = request
         self.method = request.method
@@ -106,15 +111,17 @@ class ServiceRequest(object):
         self.path = path
 
     def check_datas(self,collection):
-        """Verifie que les champs passés sont dans les champs de la collection
-        FIXME : Un validator s'appele validate_xxx :)
-        Préciser que la fonction retourne un dictionnaire épurée de tout clé
-        n'étant pas présent dans la propriété field de la collection
+        """
+        Filter and check the collection fields.
+
+        Remove any field that is not in the collection's field
+        Call the validator of the collection
         """
         data = {}
         for x in self.request.data:
-            if x in collection.fields:
+            if x in collection.resource_fields:
                 data[x] = self.request.data[x]
+        data = collection.validate_resource(data)
         return data
 
     def get_collection(self):
@@ -145,7 +152,8 @@ class ServiceRequest(object):
 
     def handle(self):
         """
-        gère l'appel FIXME du téléphone rose ?
+        Actually handle the request.
+        Call a set of methods that may be overrident by subclasses
         """
         try:
             #obtient l'object designé
@@ -168,24 +176,28 @@ class ServiceRequest(object):
 
 
 class ServiceCollectionRequest(ServiceRequest):
+    """
+    ServiceCollectionRequest is an implementation of ServiceRequest specified for Collection requests (urls ending with /)
+    """
     #association de verbes HTTP aux methodes python
     METHOD_MAP = {
-        'POST':'create',
-        'GET':'list'
+        'POST':'create_resource',
+        'GET':'list_resource'
         }
     def get_args(self,datas):
-        if self.method == 'GET':
-            return (self.request.GET,)
-        elif self.method == 'POST':
+        if self.method == 'POST':
             return (datas,)
         return tuple()
 
 
 class ServiceResourceRequest(ServiceRequest):
+    """
+    ServiceResourceRequest is an implementation of ServiceRequest specified for Ressource requests (urls not ending with /)
+    """
     METHOD_MAP = {
-            'PUT':'modify',
-            'GET':'get',
-            'DELETE':'delete',
+            'PUT':'modify_resource',
+            'GET':'get_resource',
+            'DELETE':'delete_resource',
         }
     def __init__(self,request,path,collection):
         super(ServiceResourceRequest,self).__init__(request,path[:-1],collection)
