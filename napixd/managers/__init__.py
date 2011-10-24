@@ -9,7 +9,7 @@ Manager :
     - does it by defining create/delete/modify methods that act on those resources
 Ressource :
     - MUST be a dict (or an emulation thereof) that hold a set of properties
-    - They MAY
+    - They MAY have actions
 
 Manager are created by the corresponding resource
 """
@@ -36,9 +36,9 @@ class Manager(dict):
       | | the appropriate method to respond to the request is called (get_resource, create_resource, etc)
       | \ end_request is called
 
-    Subclasses  MAY set a managed_class class attribute. If set, it must be a class inheriting from
+    Subclasses MAY set a managed_class class attribute. If set, it must be a class inheriting from
     this same base class (or implementing its interface).
-    When using going up of a level in the url, children are wrapped in this class
+    When going up of a level in the url, children are wrapped in this class
 
     If it's not set, the manager does not have sub resources
 
@@ -143,6 +143,14 @@ class Manager(dict):
             example[field]= description.get('example',None)
         return example
 
+    @classmethod
+    def detect(cls):
+        """
+        Auto detection function.
+        This function is called by napixd to check if the manager is needed
+        """
+        return cls is not Manager
+
     def validate_id(self,id_):
         """
         Check that the id given as an argument is a valid ID
@@ -196,6 +204,13 @@ class Manager(dict):
                 resource_dict[key] = validator(resource_dict.get(key,None))
         return resource_dict
 
+    def is_up_to_date(self):
+        """
+        Method to check if the data contained are fresh.
+        If it's not the manager is recreated
+        """
+        return False
+
     def start_request(self,request):
         """
         place holder method that is called at the start of each HTTP request
@@ -239,10 +254,9 @@ class ManagerInterface(Manager):
         """
         Create a new managed ressource.
 
-        resource_id parameters is either the id given in the URL, if present, or the result of
-        self.new_resource_id(self, resource_dict)
+        resource_dict is a dict populated with the data sent by the user after they have been cleanned
 
-        resource_dict is a dict populated with PUT/POSTED json resource_dict.
+        This method MUST return the id of the resource created
 
         Eg:
         POST /something/[...]/mymanager/ with resource_dict { 'toto': 1 }
