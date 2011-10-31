@@ -106,7 +106,7 @@ class TestConf(TestServiceBase, unittest2.TestCase):
         self._expect_redirect(POST('/para/',text='the bird flies'),'/para/bird')
 
     def testPOSTSubCollection(self):
-        self._expect_redirect(POST('/p/cat/eats/t/', language='german', translated='isst' ),
+        self._expect_redirect(POST('/para/cat/eats/trans/', language='german', translated='isst' ),
                 '/para/cat/eats/trans/german')
 
 if __name__ == '__main__':
