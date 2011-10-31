@@ -12,102 +12,129 @@ from napixd.exceptions import NotFound,ValidationError,Duplicate
 The service class ack like a proxy between bottle and napix resource Manager Component.
 
 It handle bottle registering, url routing and Manager configuration when needed.
-
-
 """
 
-class ArgumentsPlugin(object):
-    """
-    Bottle only passes the arguments from the url by keyword.
-
-    This bottle plugin get the dict provided by bottle and get it in a tuple form
-
-    url: /plugin/:f1/:f2/:f3
-    bottle args : { f1:path1, f2:path2, f3:path3 }
-    after plugin: (path1,path2,path3)
-    """
-    name='argument'
-    api = 2
-    def apply(self,callback,route):
-        @functools.wraps(callback)
-        def inner(*args,**kw):
-            path = self._get_path(args,kw)
-            return callback(bottle.request,path)
-        return inner
-
-    def _get_path(self,args,kw):
-        #FIXME : ca fait quoi ce truc ???
-        #FIXME : mettre un exemple.
-        #FIXME : et puis d'abord les lambdas c'est moche
-        # On remap le format interne fxxx vers un entier pour le tri (et eviter les probleme si xxx > 10)
-        # a = [ (int(k.replace("f", "")), v) for k, v in kw ]
-        # # On veut les arguments trié dans l'ordre
-        # a.sort()
-        # return [ v for k,v in a ]
-        # ou
-        # result = []
-        # for i in range(len(kw)):
-        #     try: result.append(kw["f%i"%i])
-        #     except: return result
-        # (c'est vraiment pourri comme truc pour stocker les arguments quand meme ...)
-        if args :
-            return args
-        return map(lambda x:kw[x],
-                #limit to keywords given in the kwargs
-                itertools.takewhile(lambda x:x in kw,
-                    #infinite generator of f0,f1,f2,...
-                    itertools.imap(lambda x:'f%i'%x,
-                        #infinite generator of 0,1,2,3...
-                        itertools.count())))
-
 class Service(object):
-    """Class qui sert d'interface entre une application bottle et les collections
-    FIXME : c'est la classe qui est déstinée a être overrider, le préciser."""
-    def __init__(self,collection,config):
-        """crée un nouveau service pour la collection donnée"""
-        self.url = 'url' in config and config['url'] or collection.__name__.lower()
-        collection.configure(config)
-        self.collection = collection({})
+    def __init__(self,collection,configuration):
+        self.configuration = configuration
+        self.collection_services = []
+        self._create_collection_service(None,collection)
+
+
+    def _create_collection_service(self,previous_service,collection, append_url=True):
+        service = CollectionService(previous_service, collection, self.configuration, append_url)
+        self.collection_services.append(service)
+
+        if collection.managed_class != None:
+            try:
+                for managed_class in collection.managed_class:
+                    self._create_collection_service(service, managed_class, True)
+            except TypeError:
+                self._create_collection_service(service,
+                        collection.managed_class, False)
+
 
     def setup_bottle(self,app):
-        """Enregistre le service sur l'application bottle passée"""
-        self._setup_bottle(app,self.collection,'/'+self.url,0)
+        for service in self.collection_services:
+            service.setup_bottle(app)
 
-    def _setup_bottle(self,app,collection,prefix,level):
-        """Fonction récursive pour enregister une collection et ses sous-collections"""
-        app.route('%s'%(prefix),method='ANY',callback=self.as_resource,apply=ArgumentsPlugin)
-        next_prefix = '%s/:f%i'%(prefix,level)
-        app.route('%s/'%(prefix),method='ANY',callback=self.as_collection,apply=ArgumentsPlugin)
-        if hasattr(collection,'managed_class'):
-            self._setup_bottle(app,collection.resource_class,next_prefix,level+1)
+class CollectionService(object):
+    def __init__(self, previous_service, collection, config, append_url):
+        self.previous_service = previous_service
+        self.collection = collection
 
-    def as_resource(self,request,path):
-        """Callback appellé pour une requete demandant une collection"""
-        return ServiceResourceRequest(request,path,
-                self.collection).handle()
+        self.services = list(self._services_stack())
+        self.services.reverse()
 
-    def as_collection(self,request,path):
-        """Callback appellé pour une requete demandant une resource"""
-        return ServiceCollectionRequest(request,path,
-                self.collection).handle()
+        self.config= dict(config.for_manager(self.services))
 
-    def as_example_resource(self,request,path):
-        return None
+        self.url = append_url and self.config.get('url',self.get_name()) or ''
 
-    def as_help(self,request,path):
-        return None
+        base_url = '/'
+        last = len(self.services) -1
+        for i,service in enumerate(self.services):
+            base_url += service.get_prefix()
+            if i != last:
+                base_url += ':f%i/'%i
+        self.collection_url = base_url
+        self.resource_url = base_url + ':f%i' % last
+
+    def get_name(self):
+        return self.collection.get_name()
+    def get_prefix(self):
+        return self.url and self.url + '/' or ''
+    def get_token(self,path):
+        return self.get_prefix()+str(path)
+
+    def get_manager(self,path):
+        return self._generate_manager(
+                self._get_resource(path))
+
+    def _generate_manager(self,resource):
+        manager = self.collection(resource)
+        manager.configure(self.config)
+        return manager
+
+    def _get_resource(self,path):
+        if path:
+            return self.previous_service.get_manager(path[:-1]).get_resource(path[-1])
+        else:
+            return {}
+
+    def _services_stack(self):
+        serv = self
+        yield serv
+        while serv.previous_service:
+            yield serv.previous_service
+            serv = serv.previous_service
+
+    def setup_bottle(self,app):
+        """
+        app.route(self.collection_url+'_napix_resource_fields',callback=self.as_resource_fields,
+                method='GET',apply=ArgumentsPlugin)
+        app.route(self.collection_url+'_napix_help',callback=self.as_help,
+                method='GET',apply=ArgumentsPlugin)
+        app.route(self.collection_url+'_napix_new',callback=self.as_example_resource,
+                method='GET',apply=ArgumentsPlugin)
+        """
+        app.route(self.collection_url,callback=self.as_collection,
+                method='ANY',apply=ArgumentsPlugin())
+        app.route(self.resource_url,callback=self.as_resource,
+                method='ANY',apply=ArgumentsPlugin())
+
+    def _respond(self,cls,path):
+        return cls(bottle.request,path,self).handle()
+
+    def as_resource(self,path):
+        return self._respond(ServiceResourceRequest,path)
+
+    def as_collection(self,path):
+        return self._respond(ServiceCollectionRequest,path)
+
+    def as_help(self,path):
+        #not yet implemented
+        raise NotImplementedError
+
+    def as_resource_fields(self,path):
+        #not yet implemented
+        raise NotImplementedError
+
+    def as_example_resource(self,path):
+        #not yet implemented
+        raise NotImplementedError
+
 
 class ServiceRequest(object):
     """
     ServiceRequest is an abstract class that is created to serve a single request.
     """
-    def __init__(self,request,path,collection):
+    def __init__(self,request,path,service):
         """
         Create the object that will handle the request for the path given on the collection
         """
         self.request = request
         self.method = request.method
-        self.base_collection = collection
+        self.service = service
         self.path = path
 
     def check_datas(self,collection):
@@ -117,6 +144,8 @@ class ServiceRequest(object):
         Remove any field that is not in the collection's field
         Call the validator of the collection
         """
+        if self.request.method not in ('POST','PUT') :
+            return {}
         data = {}
         for x in self.request.data:
             if x in collection.resource_fields:
@@ -124,16 +153,11 @@ class ServiceRequest(object):
         data = collection.validate_resource(data)
         return data
 
-    def get_collection(self):
+    def get_manager(self):
         """
         Récupere la collection correspondante à la requete
         """
-        node = self.base_collection
-        for child in self.path:
-            #verifie l'id de la collection
-            child_id = node.check_id(child)
-            node = node.child(child_id)
-        return node
+        return self.service.get_manager(self.path)
 
     def get_callback(self,collection):
         """
@@ -157,23 +181,25 @@ class ServiceRequest(object):
         """
         try:
             #obtient l'object designé
-            collection = self.get_collection()
+            manager = self.get_manager()
+            manager.start_request(self.request)
             #recupère les données valides pour cet objet
-            datas =  self.check_datas(collection)
+            datas =  self.check_datas(manager)
             #recupère la vue qui va effectuer la requete
-            callback = self.get_callback(collection)
+            callback = self.get_callback(manager)
             #recupere les arguments a passer a cette vue
             args = self.get_args(datas)
-            return callback(*args)
+            result =  callback(*args)
+            manager.end_request(self.request)
+            return result
         except ValidationError,e:
-            raise HTTPError(400,'%s is not a valid identifier'%str(e))
+            raise HTTPError(400,str(e))
         except KeyError,e:
-            raise HTTPError(400,'%s parameter is required'%str(e))
+            raise HTTPError(400,'`%s` parameter is required'%str(e))
         except NotFound,e:
-            raise HTTPError(404,'%s not found'%(str(e)))
+            raise HTTPError(404,'`%s` not found'%str(e))
         except Duplicate,e:
-            raise HTTPError(409,'%s already exists',str(e))
-
+            raise HTTPError(409,'`%s` already exists'%str(e))
 
 class ServiceCollectionRequest(ServiceRequest):
     """
@@ -188,7 +214,15 @@ class ServiceCollectionRequest(ServiceRequest):
         if self.method == 'POST':
             return (datas,)
         return tuple()
-
+    def handle(self):
+        result = super(ServiceCollectionRequest,self).handle()
+        if not self.method == 'POST':
+            return result
+        self.path.append(result)
+        url = ''
+        for service,id_ in zip(self.service.services,self.path):
+            url += '/'+service.get_token(id_)
+        bottle.redirect(url)
 
 class ServiceResourceRequest(ServiceRequest):
     """
@@ -199,22 +233,49 @@ class ServiceResourceRequest(ServiceRequest):
             'GET':'get_resource',
             'DELETE':'delete_resource',
         }
-    def __init__(self,request,path,collection):
-        super(ServiceResourceRequest,self).__init__(request,path[:-1],collection)
-        #extrait le dernier element du path qui sera la ressource
-        self.resource_id = path[-1]
 
     def get_args(self,datas):
         if self.method == 'PUT':
             return (self.resource_id,datas)
         return (self.resource_id,)
-    def get_collection(self):
-        collection = super(ServiceResourceRequest,self).get_collection()
+    def get_manager(self):
+        #get the last path token because we may not just want to GET the resource
+        resource_id = self.path.pop()
+        manager = super(ServiceResourceRequest,self).get_manager()
         #verifie l'identifiant de la resource aussi
-        self.resource_id = collection.check_id(self.resource_id)
-        return collection
+        self.resource_id = manager.validate_id(resource_id)
+        return manager
 
 
+class ArgumentsPlugin(object):
+    """
+    Bottle only passes the arguments from the url by keyword.
+
+    This bottle plugin get the dict provided by bottle and get it in a tuple form
+
+    url: /plugin/:f1/:f2/:f3
+    bottle args : { f1:path1, f2:path2, f3:path3 }
+    after plugin: (path1,path2,path3)
+    """
+    name='argument'
+    api = 2
+    def apply(self,callback,route):
+        @functools.wraps(callback)
+        def inner(*args,**kw):
+            path = self._get_path(args,kw)
+            return callback(path)
+        return inner
+
+    def _get_path(self,args,kw):
+        if args :
+            return args
+        return map(lambda x:kw[x],
+                #limit to keywords given in the kwargs
+                itertools.takewhile(lambda x:x in kw,
+                    #infinite generator of f0,f1,f2,...
+                    itertools.imap(lambda x:'f%i'%x,
+                        #infinite generator of 0,1,2,3...
+                        itertools.count())))
 """
 
 GET     /a/     a.list()

@@ -4,6 +4,7 @@
 import sys
 import logging
 from ConfigParser import SafeConfigParser
+from .conf import Conf
 
 logger = logging.getLogger('Napix.loader')
 
@@ -45,5 +46,5 @@ default_conf.read(['/etc/napixd/settings.ini','/home/cecedille1/enix/napix/serve
 
 def load_conf(manager):
     if default_conf.has_section(manager.lower()):
-        return dict(default_conf.items(manager))
+        return Conf(default_conf.items(manager))
     return {}

@@ -63,7 +63,7 @@ class ReadOnlyDictManager(Manager):
         try:
             return self.resources[resource_id]
         except KeyError:
-            raise NotFound
+            raise NotFound,resource_id
 
     def list_resource(self):
         return self.resources.keys()
@@ -115,7 +115,7 @@ class DictManager(ReadOnlyDictManager):
         that may have altered the datas
         """
         if request.method not in ('GET','HEAD'):
-            self.save(self.resources)
+            self.save(self.parent,self.resources)
 
 
     def _set_resource(self,resource_id,resource_dict):
@@ -129,7 +129,7 @@ class DictManager(ReadOnlyDictManager):
         with self.resource_lock:
             resource = self.get_resource(resource_id)
             resource.update(resource_dict)
-            self._set_resource(resource_dict,resource_id)
+            self._set_resource(resource_id,resource_dict)
 
     def create_resource(self,resource_dict):
         with self.resource_lock:
@@ -142,7 +142,7 @@ class DictManager(ReadOnlyDictManager):
     def delete_resource(self,resource_id):
         with self.resource_lock:
             try:
-                self.resources.pop(resource_id)
+                del self.resources[resource_id]
             except KeyError:
                 raise NotFound
 
@@ -156,7 +156,7 @@ class ListManager(DictManager):
             return len(self.resources) - 1
 
     def list_resource(self):
-        return range(0,self.len(self.resources)+1)
+        return range(0,len(self.resources))
 
     def validate_id(self):
         """
@@ -221,4 +221,5 @@ def FileManager(DictManager):
         Write the content to the file stream given
         """
         raise NotImplementedError
+
 

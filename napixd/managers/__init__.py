@@ -36,11 +36,12 @@ class Manager(dict):
       | | the appropriate method to respond to the request is called (get_resource, create_resource, etc)
       | \ end_request is called
 
-    Subclasses MAY set a managed_class class attribute. If set, it must be a class inheriting from
-    this same base class (or implementing its interface).
-    When going up of a level in the url, children are wrapped in this class
+    Subclasses MAY set a managed_class class attribute.
+    If set, it must be either a class inheriting from this same base class
+    (or implementing its interface) or a iterable of thoses classes.
 
-    If it's not set, the manager does not have sub resources
+    If it's a single class, the resources are wrapper in this classe when going up a level in the URL
+    When going up of a level in the url, children are wrapped in this class
 
     example
     >>>class FirstManager(Manager):
@@ -51,9 +52,37 @@ class Manager(dict):
     >>>         return {}
 
     GET /first/second/third
-    >>>second_resource = FirstManager.get_resource('second')
-    >>>second_manager = SecondManager(second_resource)
-    >>>return second_manager.get_resource('third')
+    >>>second_resource = FirstManager().get_resource('second') #/first
+    >>>second_manager = SecondManager(second_resource)  # [..]/second
+    >>>return second_manager.get_resource('third')  # [..]/third
+
+    If it's a tuple or a list of classes, the children have multiple subressource managers attached.
+    The class in wich the children is wrapped depends on the url path
+    example
+    >>>class Main(Manager):
+    >>>     managed_class = [ManagerA,ManagerB]
+    >>>
+    >>>class ManagerA(Manager):
+    >>>     pass
+    >>>class ManagerB(Manager):
+    >>>     pass
+
+    GET /main/1
+    >>>Main().get_resource(1)
+
+    GET /main/1/
+    [ 'A', 'B' ]
+
+    GET /main/1/A/
+    >>>ManagerA(Main().get_resource(1)).list_resource()
+
+    GET /main/1/B/
+    >>>ManagerB(Main().get_resource(1)).list_resource()
+
+    GET /main/1/B/3
+    >>>ManagerB(Main().get_resource(1)).get_resource(3)
+
+    If it's not set, the manager does not have sub resources
 
     GET /first/second/third/
     404 NOT FOUND
@@ -70,6 +99,7 @@ class Manager(dict):
         -optional : if the value is optional
         -example : used for documentation and the example resource
         -description : describe the use of the resource
+        -computed : This field is computed by the service and the user CAN NOT force it
     example:
     >>>class User(Manager):
     >>>     resource_fields = {
@@ -127,6 +157,18 @@ class Manager(dict):
         self.parent = parent
 
     @classmethod
+    def get_name(cls):
+        return cls.__name__
+
+    @classmethod
+    def get_managed_classes(cls):
+        if cls.managed_class is None:
+            return []
+        try:
+            return iter(cls.managed_class)
+        except TypeError:
+            return [cls.managed_class]
+
     def configure(cls,conf):
         """
         Method called with the configuration of this class
@@ -139,7 +181,9 @@ class Manager(dict):
         Computed by the `example` of each resource field in Manager.resource_fields
         """
         example = {}
-        for field,description in self.resource_fields:
+        for field,description in self.resource_fields.items():
+            if description.get('computed',False):
+                continue
             example[field]= description.get('example',None)
         return example
 
@@ -196,7 +240,7 @@ class Manager(dict):
         Return a resource_dict.
         """
         # Create a new dict to populate with validated data
-        for key, description in self.resource_fields:
+        for key, description in self.resource_fields.items():
             if "optional" not in description and key not in resource_dict:
                 raise ValidationError("Field %s is missing in the supplied resource"%key)
             validator = getattr(self, 'validate_resource_%s'%key,None)
