@@ -28,6 +28,7 @@ class TestServiceBase(object):
             resp = self._do_the_request(request)
         except bottle.HTTPError,e:
             self.assertEqual(e.status,code)
+            return e
         else:
             self.fail('Unexpected %s'%repr(resp))
     def _expect_redirect(self,request,url):
@@ -89,6 +90,12 @@ class TestService(TestServiceBase, unittest2.TestCase):
     def testDELETEResource(self):
         self._expect_ok(DELETE('/p/mouse'))
         self.assertFalse('mouse' in STORE['paragraphs'])
+
+    def testUnsupportedMethod(self):
+        resp = self._expect_error(POST('/p/cat/eats/l/e'),405)
+        self.assertEqual(resp.headers['Allow'],'HEAD,GET')
+        resp = self._expect_error(DELETE('/p/'),405)
+        self.assertEqual(resp.headers['Allow'],'HEAD,POST,GET')
 
 class TestConf(TestServiceBase, unittest2.TestCase):
     def setUp(self):

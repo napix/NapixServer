@@ -15,7 +15,15 @@ It handle bottle registering, url routing and Manager configuration when needed.
 """
 
 class Service(object):
+    """
+    The service objects make the interface between the end user's HTTP calls and the active modules.
+    """
     def __init__(self,collection,configuration):
+        """
+        Create a base service for the given collection and its managed classes.
+        collection MUST be a Manager subclass and configuration an instance of Conf
+        for this collection
+        """
         self.configuration = configuration
         self.collection_services = []
         self._create_collection_service(None,collection)
@@ -35,53 +43,97 @@ class Service(object):
 
 
     def setup_bottle(self,app):
+        """
+        Route the managers inside the given bottle app.
+        """
         for service in self.collection_services:
             service.setup_bottle(app)
 
 class CollectionService(object):
     def __init__(self, previous_service, collection, config, append_url):
+        """
+        Serve the collection given as a managed class of the previous_service, with the config given.
+        collection is a subclass of Manager
+        previous_service is an instance of CollectionService that serve the Manager class below.
+        previous_service is None when it's the base collection being served.
+        config is the instance of Conf for this Service.
+        append_url is a boolean that add the URL token between the previous and this service.
+        """
         self.previous_service = previous_service
         self.collection = collection
 
+        #Recursive list of services.
         self.services = list(self._services_stack())
         self.services.reverse()
 
         self.config= dict(config.for_manager(self.services))
 
+        #url is added if append_url is True
         self.url = append_url and self.config.get('url',self.get_name()) or ''
 
         base_url = '/'
         last = len(self.services) -1
+        #build the prefix url with the list of previous services
         for i,service in enumerate(self.services):
             base_url += service.get_prefix()
             if i != last:
                 base_url += ':f%i/'%i
+        #collection and resource urls of this service
         self.collection_url = base_url
         self.resource_url = base_url + ':f%i' % last
 
     def get_name(self):
         return self.collection.get_name()
     def get_prefix(self):
+        """
+        Get the prefix of this service
+        if append_url was True, this service hasn't a prefix
+        else, it's the url from the configuration
+        ex:
+        >>>cs = CollectionService(ps,ManagerClass,conf,append_url=True)
+        >>>cs.get_prefix()
+            'managerclass/'
+
+        >>>cs = CollectionService(ps,ManagerClass,conf,append_url)
+        >>>cs.get_prefix()
+            ''
+        """
         return self.url and self.url + '/' or ''
     def get_token(self,path):
+        """
+        get the url bit for a resource identified by path for this collection
+        """
         return self.get_prefix()+str(path)
 
     def get_manager(self,path):
+        """
+        Get a manager of this collection with the given path.
+        """
         return self._generate_manager(
                 self._get_resource(path))
 
     def _generate_manager(self,resource):
+        """
+        instanciate a manager for the given resource
+        """
         manager = self.collection(resource)
         manager.configure(self.config)
         return manager
 
     def _get_resource(self,path):
+        """
+        Get a resource with the given path.
+        if this is the first CollectionService return {}
+        """
         if path:
             return self.previous_service.get_manager(path[:-1]).get_resource(path[-1])
         else:
             return {}
 
     def _services_stack(self):
+        """
+        return the list of services before this one
+        """
         serv = self
         yield serv
         while serv.previous_service:
@@ -90,19 +142,23 @@ class CollectionService(object):
 
     def setup_bottle(self,app):
         """
+        Register the routes of this collection inside the app
+        """
         app.route(self.collection_url+'_napix_resource_fields',callback=self.as_resource_fields,
                 method='GET',apply=ArgumentsPlugin)
         app.route(self.collection_url+'_napix_help',callback=self.as_help,
                 method='GET',apply=ArgumentsPlugin)
         app.route(self.collection_url+'_napix_new',callback=self.as_example_resource,
                 method='GET',apply=ArgumentsPlugin)
-        """
         app.route(self.collection_url,callback=self.as_collection,
                 method='ANY',apply=ArgumentsPlugin())
         app.route(self.resource_url,callback=self.as_resource,
                 method='ANY',apply=ArgumentsPlugin())
 
     def _respond(self,cls,path):
+        """
+        shortcut method to respond a ServiceRequest subclass with the path given
+        """
         return cls(bottle.request,path,self).handle()
 
     def as_resource(self,path):
@@ -167,9 +223,9 @@ class ServiceRequest(object):
         try:
             return getattr(collection,self.METHOD_MAP[self.method])
         except (AttributeError,KeyError):
-            available_methods = []
-            for meth in self.METHOD_MAP:
-                if hasattr(collection,meth):
+            available_methods = ['HEAD']
+            for meth,callback in self.METHOD_MAP.items():
+                if hasattr(collection,callback):
                     available_methods.append(meth)
             raise HTTPError(405,
                     header=[ ('allow',','.join(available_methods))])
@@ -183,10 +239,10 @@ class ServiceRequest(object):
             #obtient l'object designé
             manager = self.get_manager()
             manager.start_request(self.request)
-            #recupère les données valides pour cet objet
-            datas =  self.check_datas(manager)
             #recupère la vue qui va effectuer la requete
             callback = self.get_callback(manager)
+            #recupère les données valides pour cet objet
+            datas =  self.check_datas(manager)
             #recupere les arguments a passer a cette vue
             args = self.get_args(datas)
             result =  callback(*args)
