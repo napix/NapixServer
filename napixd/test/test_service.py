@@ -38,6 +38,9 @@ class TestServiceBase(object):
             self.assertEqual(e.headers['Location'],url)
         else:
             self.fail('Unexpected %s'%repr(resp))
+    def _expect_ok(self,request):
+        req = self._request(request)
+        self.assertTrue(req is None)
 
 class TestService(TestServiceBase, unittest2.TestCase):
     def setUp(self):
@@ -80,11 +83,12 @@ class TestService(TestServiceBase, unittest2.TestCase):
                     })
 
     def testPUTResource(self):
-        PUT('/p/mouse',text='the mouse is close')
+        self._expect_ok(PUT('/p/mouse',text='the mouse is close'))
+        self.assertDictEqual(STORE['paragraphs']['mouse'],{'text':'the mouse is close'})
 
     def testDELETEResource(self):
-        DELETE('/p/mouse')
-
+        self._expect_ok(DELETE('/p/mouse'))
+        self.assertFalse('mouse' in STORE['paragraphs'])
 
 class TestConf(TestServiceBase, unittest2.TestCase):
     def setUp(self):
