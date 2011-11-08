@@ -1,0 +1,15 @@
+{
+ "_napix_version": 1.0 ,
+ "Napix.daemon" : {
+  "host" : "127.0.0.9",
+  "port" : 8080,
+  "debug" : true
+ },
+ "Napix.managers" : {
+  "napixd.test.mock.managed_class": [ "Paragraphs" ],
+  "napixd.examples.list_manager" : [ "HostFiles" ]
+ },
+ "HostFiles" : {
+  "url":"hosts"
+ }
+}

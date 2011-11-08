@@ -1,50 +1,39 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
 import logging
-from ConfigParser import SafeConfigParser
-from .conf import Conf
-
 logger = logging.getLogger('Napix.loader')
 
-def load_path(managers_path):
-    __import__(managers_path)
-    module = sys.modules[managers_path]
+import sys
+from .conf import Conf
+from .services import Service
 
-    istype = lambda x:isinstance(x,type)
-    classes = [ getattr(module,x) for x in getattr(module,'__all__',dir(module)) if istype(x) ]
-    logger.debug('Found %s in %s',classes,managers_path)
-    return classes
+import bottle
+from .plugins import ConversationPlugin
 
 
-def load_managers(managers_pathes):
-    managers = set()
-    for managers_path in managers_pathes:
-        managers.update(load_path(managers_path))
-    return managers
-
-def load(pathes,blacklisted,forced):
-    blacklisted = set(blacklisted)
-    forced = set(forced)
-
-    for manager in load_path(pathes):
-        if manager.__name__ in blacklisted:
-            logger.debug('Ignore blacklisted %s',manager.__name__)
-            continue
-        if manager.__name__ in forced:
-            logger.debug('Propose %s',manager.__name__)
+def _load_managers():
+    managers_conf = Conf.get_default().get('Napix.managers')
+    for manager_path,managers in managers_conf.items():
+        __import__(manager_path)
+        for manager_name in managers:
+            manager = getattr(sys.modules[manager_path],manager_name)
             yield manager
-            continue
-        if hasattr(manager,'detect'):
-            if manager.detect():
-                logger.debug('Detected %s',manager.__name__)
-                yield manager
 
-default_conf = SafeConfigParser()
-default_conf.read(['/etc/napixd/settings.ini','/home/cecedille1/enix/napix/server/napixd/conf/settings.ini'])
+def _load_services():
+    for manager in _load_managers():
+        config = Conf.get_default().get(manager.get_name())
+        service = Service(manager,config)
+        yield service
 
-def load_conf(manager):
-    if default_conf.has_section(manager.lower()):
-        return Conf(default_conf.items(manager))
-    return {}
+def get_bottle_app():
+    napixd = bottle.Bottle(autojson=False)
+    napixd.autojson=False
+
+    for service in _load_services():
+        service.setup_bottle(napixd)
+
+    napixd.install(ConversationPlugin())
+
+
+

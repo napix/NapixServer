@@ -10,32 +10,21 @@ logging.basicConfig(filename='/tmp/napix.log', filemode='w', level=logging.DEBUG
 logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
 
 import bottle
-
-from napixd import settings
-from napixd.loader import load,load_conf
-from napixd.plugins import ConversationPlugin
-from napixd.services import Service
 from napixd.executor.bottle_adapter import RocketAndExecutor
-
-logger = logging.getLogger('Napix.Server')
-
-registry = {}
-napixd = bottle.Bottle(autojson=False)
-napixd.autojson=False
-
-for manager in load(settings.MANAGERS_PATH,settings.MANAGERS,settings.BLACKLIST):
-    config = load_conf(manager)
-    service = Service(manager,config)
-    registry[service.url] = service
-    service.setup_bottle(napixd)
-
-napixd.install(ConversationPlugin())
+from napixd.loader import get_bottle_app
+from napixd.conf import Conf
 
 if __name__ == '__main__':
-    bottle.debug(settings.DEBUG)
+    logger = logging.getLogger('Napix.Server')
+
+    napixd = get_bottle_app()
+    settings = dict( Conf.get_default().get('Napix.daemon'))
+
+    bottle.debug(settings.get('debug',False))
     logger.info('Starting')
-    bottle.run(napixd,
-            host=settings.HOST,port=settings.PORT,
-            server=RocketAndExecutor)
+
+    bottle.run(napixd, host=settings.get('host','127.0.0.1'),
+            port=settings.get('port',8080), server=RocketAndExecutor)
+
     logger.info('Stopping')
 
