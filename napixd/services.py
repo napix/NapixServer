@@ -84,6 +84,8 @@ class CollectionService(object):
 
     def get_name(self):
         return self.collection.get_name()
+
+
     def get_prefix(self):
         """
         Get the prefix of this service
@@ -145,11 +147,11 @@ class CollectionService(object):
         Register the routes of this collection inside the app
         """
         app.route(self.collection_url+'_napix_resource_fields',callback=self.as_resource_fields,
-                method='GET',apply=ArgumentsPlugin)
+                method='GET',apply=ArgumentsPlugin())
         app.route(self.collection_url+'_napix_help',callback=self.as_help,
-                method='GET',apply=ArgumentsPlugin)
+                method='GET',apply=ArgumentsPlugin())
         app.route(self.collection_url+'_napix_new',callback=self.as_example_resource,
-                method='GET',apply=ArgumentsPlugin)
+                method='GET',apply=ArgumentsPlugin())
         app.route(self.collection_url,callback=self.as_collection,
                 method='ANY',apply=ArgumentsPlugin())
         app.route(self.resource_url,callback=self.as_resource,
@@ -168,16 +170,22 @@ class CollectionService(object):
         return self._respond(ServiceCollectionRequest,path)
 
     def as_help(self,path):
-        #not yet implemented
-        raise NotImplementedError
+        manager = self.get_manager(path)
+        return {
+                'doc' : manager.__doc__,
+                'managed_class' : [ mc.get_name() for mc in self.collection.managed_class ],
+                'collection_methods' : ServiceCollectionRequest.available_methods(manager),
+                'resource_methods' : ServiceResourceRequest.available_methods(manager),
+                'resource_fields' : manager.resource_fields
+                }
 
     def as_resource_fields(self,path):
-        #not yet implemented
-        raise NotImplementedError
+        manager = self.get_manager(path)
+        return manager.resource_fields
 
     def as_example_resource(self,path):
-        #not yet implemented
-        raise NotImplementedError
+        manager = self.get_manager(path)
+        return manager.get_example_resource()
 
 
 class ServiceRequest(object):
@@ -192,6 +200,19 @@ class ServiceRequest(object):
         self.method = request.method
         self.service = service
         self.path = path
+
+    @classmethod
+    def available_methods(cls,manager):
+        """
+        Return the HTTP methods defined in the given manager
+        that are usable with this ServiceRequest
+        """
+        available_methods = ['HEAD']
+        for meth,callback in cls.METHOD_MAP.items():
+            if hasattr(manager,callback):
+                available_methods.append(meth)
+        return available_methods
+
 
     def check_datas(self,collection):
         """
@@ -215,20 +236,16 @@ class ServiceRequest(object):
         """
         return self.service.get_manager(self.path)
 
-    def get_callback(self,collection):
+    def get_callback(self,manager):
         """
-        recupere la callback de collection
+        recupere la callback de manager
         Si elle n'est pas disponible renvoie une erreur 405 avec les methodes possibles
         """
         try:
-            return getattr(collection,self.METHOD_MAP[self.method])
+            return getattr(manager,self.METHOD_MAP[self.method])
         except (AttributeError,KeyError):
-            available_methods = ['HEAD']
-            for meth,callback in self.METHOD_MAP.items():
-                if hasattr(collection,callback):
-                    available_methods.append(meth)
             raise HTTPError(405,
-                    header=[ ('allow',','.join(available_methods))])
+                    header=[ ('allow',','.join(self.available_methods(manager)))])
 
     def handle(self):
         """

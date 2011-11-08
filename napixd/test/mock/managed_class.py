@@ -11,10 +11,19 @@ TRANSLATION_TABLE = { 'the':'le', 'cat':'chat',
 STORE = {}
 
 class Translations(DictManager):
+    """Translation of words"""
     @classmethod
     def get_name(cls):
         return 't'
-    resource_fields = { 'translated':{}, 'language':{} }
+    resource_fields = {
+            'translated' : {
+                'description' : 'translation of a word',
+                'example' : 'aferon'
+                },
+            'language' : {
+                'description' : 'language in wich this word is translated',
+                'example' : 'esperanto'
+                } }
     def load(self,parent):
         return {
                 'french':{
@@ -27,16 +36,22 @@ class Translations(DictManager):
         STORE['translations'] = resources
 
 class Letters(ReadOnlyDictManager):
+    """Letters of each word"""
     @classmethod
     def get_name(cls):
         return 'l'
-    resource_fields = { 'letter':{}}
+    resource_fields = { 'letter':{
+        'description':'letter of a word'
+        }}
     def load(self, parent):
         return dict([(x,{'letter':x,'ord':ord(x)}) for x in parent['word']])
 
 class Words(ReadOnlyDictManager):
+    """Words of each paragrach"""
     managed_class = [Letters,Translations]
-    resource_fields = { 'word':{}}
+    resource_fields = { 'word':{
+        'description':'A word in the story',
+        }}
     @classmethod
     def get_name(cls):
         return 'w'
@@ -44,8 +59,12 @@ class Words(ReadOnlyDictManager):
         return dict([(x,{'word':x,'length':len(x)}) for x in parent['text'].split(' ') ])
 
 class Paragraphs(DictManager):
+    """Stories of pets"""
     managed_class = Words
-    resource_fields = { 'text':{}}
+    resource_fields = { 'text':{
+        'description':'Text of the story',
+        'example':'The quick brown fox jump over the lazy dog'
+        }}
 
     @classmethod
     def get_name(cls):

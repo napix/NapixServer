@@ -42,6 +42,12 @@ class TestServiceBase(object):
     def _expect_ok(self,request):
         req = self._request(request)
         self.assertTrue(req is None)
+    def _expect_405(self,request,expected_methods):
+        resp = self._expect_error(request,405)
+        expected_methods = set(expected_methods.split(','))
+        actual_methods = set(resp.headers['Allow'].split(','))
+        self.assertSetEqual(expected_methods,actual_methods)
+
 
 class TestService(TestServiceBase, unittest2.TestCase):
     def setUp(self):
@@ -92,10 +98,33 @@ class TestService(TestServiceBase, unittest2.TestCase):
         self.assertFalse('mouse' in STORE['paragraphs'])
 
     def testUnsupportedMethod(self):
-        resp = self._expect_error(POST('/p/cat/eats/l/e'),405)
-        self.assertEqual(resp.headers['Allow'],'HEAD,GET')
-        resp = self._expect_error(DELETE('/p/'),405)
-        self.assertEqual(resp.headers['Allow'],'HEAD,POST,GET')
+        self._expect_405(POST('/p/cat/eats/l/e'),'HEAD,GET')
+        self._expect_405(DELETE('/p/'),'HEAD,POST,GET')
+
+    def testDocumentation(self):
+        self._expect_dict(GET('/p/_napix_resource_fields'), {'text': {
+            'description': 'Text of the story',
+            'example': 'The quick brown fox jump over the lazy dog'}})
+
+        self._expect_dict(GET('/p/_napix_new'),
+                {'text': 'The quick brown fox jump over the lazy dog'})
+        self._expect_dict(GET('/p/cat/eats/t/_napix_new'),{
+            'language' : 'esperanto',
+            'translated' : 'aferon'
+            })
+        self._expect_dict(GET('/p/cat/_napix_help'),{
+            'collection_methods': ['HEAD', 'GET'],
+            'doc': 'Words of each paragrach',
+            'managed_class': ['l', 't'],
+            'resource_fields': {'word': {
+                'description' : 'A word in the story',
+                }},
+            'resource_methods': ['HEAD', 'GET']})
+
+    def testDocumentationError(self):
+        self._expect_405(PUT('/p/cat/_napix_resource_fields',
+                newfields={'name':'robin'}),'HEAD,GET')
+
 
 class TestConf(TestServiceBase, unittest2.TestCase):
     def setUp(self):
