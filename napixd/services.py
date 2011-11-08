@@ -178,7 +178,10 @@ class CollectionService(object):
 
     def as_managed_classes(self,path):
         manager = self.collection({})
-        return [x.get_name() for x in manager.managed_class ]
+        url = ''
+        for service,id_ in zip(self.services,path):
+            url += '/'+service.get_token(id_)
+        return ['%s/%s'%(url,x.get_name()) for x in manager.managed_class ]
 
     def as_help(self,path):
         manager = self.collection({})
@@ -300,13 +303,19 @@ class ServiceCollectionRequest(ServiceRequest):
         return tuple()
     def handle(self):
         result = super(ServiceCollectionRequest,self).handle()
-        if not self.method == 'POST':
-            return result
-        self.path.append(result)
+        if self.method == 'POST':
+            url = self.make_url(result)
+            bottle.redirect(url)
+        if self.method == 'GET':
+            return map(self.make_url,result)
+        return result
+    def make_url(self,result):
         url = ''
-        for service,id_ in zip(self.service.services,self.path):
+        path = list(self.path)
+        path.append(result)
+        for service,id_ in zip(self.service.services,path):
             url += '/'+service.get_token(id_)
-        bottle.redirect(url)
+        return url
 
 class ServiceResourceRequest(ServiceRequest):
     """

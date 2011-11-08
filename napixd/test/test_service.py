@@ -56,11 +56,12 @@ class TestService(TestServiceBase, unittest2.TestCase):
         self.service.setup_bottle(self.bottle)
 
     def testGETCollection(self):
-        self._expect_list(GET('/p/'),['mouse','cat'])
-        self._expect_list(GET('/p/mouse/'),['a','mouse','sleeps'])
-        self._expect_list(GET('/p/cat/eats/'),['l','t'])
-        self._expect_list(GET('/p/cat/eats/l/'),['e','a','t','s'])
-        self._expect_list(GET('/p/mouse/sleeps/t/'),['french'])
+        self._expect_list(GET('/p/'),['/p/mouse','/p/cat'])
+        self._expect_list(GET('/p/mouse/'),['/p/mouse/a','/p/mouse/mouse','/p/mouse/sleeps'])
+        self._expect_list(GET('/p/cat/eats/'),['/p/cat/eats/l','/p/cat/eats/t'])
+        self._expect_list(GET('/p/cat/eats/l/'),
+                ['/p/cat/eats/l/e', '/p/cat/eats/l/a', '/p/cat/eats/l/t','/p/cat/eats/l/s'])
+        self._expect_list(GET('/p/mouse/sleeps/t/'),['/p/mouse/sleeps/t/french'])
 
     def testGETResource(self):
         self._expect_dict(GET('/p/mouse'),{'text':'a mouse sleeps'})
@@ -138,10 +139,13 @@ class TestConf(TestServiceBase, unittest2.TestCase):
         self.service.setup_bottle(self.bottle)
 
     def testGETCollection(self):
-        self._expect_list(GET('/para/'),['mouse','cat'])
-        self._expect_list(GET('/para/mouse/'),['a','mouse','sleeps'])
-        self._expect_list(GET('/para/cat/eats/l/'),['e','a','t','s'])
-        self._expect_list(GET('/para/mouse/sleeps/trans/'),['french'])
+        self._expect_list(GET('/para/'),['/para/mouse','/para/cat'])
+        self._expect_list(GET('/para/mouse/'),
+                ['/para/mouse/a','/para/mouse/mouse','/para/mouse/sleeps'])
+        self._expect_list(GET('/para/cat/eats/l/'),
+                ['/para/cat/eats/l/e','/para/cat/eats/l/a','/para/cat/eats/l/t','/para/cat/eats/l/s'])
+        self._expect_list(GET('/para/mouse/sleeps/trans/'),
+                ['/para/mouse/sleeps/trans/french'])
 
     def testPOSTCollection(self):
         self._expect_redirect(POST('/para/',text='the bird flies'),'/para/bird')
