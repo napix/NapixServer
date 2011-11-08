@@ -58,6 +58,7 @@ class TestService(TestServiceBase, unittest2.TestCase):
     def testGETCollection(self):
         self._expect_list(GET('/p/'),['mouse','cat'])
         self._expect_list(GET('/p/mouse/'),['a','mouse','sleeps'])
+        self._expect_list(GET('/p/cat/eats/'),['l','t'])
         self._expect_list(GET('/p/cat/eats/l/'),['e','a','t','s'])
         self._expect_list(GET('/p/mouse/sleeps/t/'),['french'])
 
@@ -108,11 +109,11 @@ class TestService(TestServiceBase, unittest2.TestCase):
 
         self._expect_dict(GET('/p/_napix_new'),
                 {'text': 'The quick brown fox jump over the lazy dog'})
-        self._expect_dict(GET('/p/cat/eats/t/_napix_new'),{
+        self._expect_dict(GET('/p/*/*/t/_napix_new'),{
             'language' : 'esperanto',
             'translated' : 'aferon'
             })
-        self._expect_dict(GET('/p/cat/_napix_help'),{
+        self._expect_dict(GET('/p/*/_napix_help'),{
             'collection_methods': ['HEAD', 'GET'],
             'doc': 'Words of each paragrach',
             'managed_class': ['l', 't'],
@@ -122,7 +123,7 @@ class TestService(TestServiceBase, unittest2.TestCase):
             'resource_methods': ['HEAD', 'GET']})
 
     def testDocumentationError(self):
-        self._expect_405(PUT('/p/cat/_napix_resource_fields',
+        self._expect_405(PUT('/p/*/_napix_resource_fields',
                 newfields={'name':'robin'}),'HEAD,GET')
 
 

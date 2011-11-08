@@ -26,8 +26,8 @@ class Service(object):
         """
         self.configuration = configuration
         self.collection_services = []
-        self._create_collection_service(None,collection)
-
+        first_service = self._create_collection_service(None,collection)
+        self.url = first_service.url
 
     def _create_collection_service(self,previous_service,collection, append_url=True):
         service = CollectionService(previous_service, collection, self.configuration, append_url)
@@ -40,6 +40,7 @@ class Service(object):
             except TypeError:
                 self._create_collection_service(service,
                         collection.managed_class, False)
+        return service
 
 
     def setup_bottle(self,app):
@@ -156,6 +157,12 @@ class CollectionService(object):
                 method='ANY',apply=ArgumentsPlugin())
         app.route(self.resource_url,callback=self.as_resource,
                 method='ANY',apply=ArgumentsPlugin())
+        try:
+            iter(self.collection.managed_class)
+            app.route(self.resource_url+'/',
+                    callback = self.as_managed_classes , apply = ArgumentsPlugin())
+        except TypeError:
+            pass
 
     def _respond(self,cls,path):
         """
@@ -169,22 +176,26 @@ class CollectionService(object):
     def as_collection(self,path):
         return self._respond(ServiceCollectionRequest,path)
 
+    def as_managed_classes(self,path):
+        manager = self.collection({})
+        return [x.get_name() for x in manager.managed_class ]
+
     def as_help(self,path):
-        manager = self.get_manager(path)
+        manager = self.collection({})
         return {
                 'doc' : manager.__doc__,
-                'managed_class' : [ mc.get_name() for mc in self.collection.managed_class ],
+                'managed_class' : [ mc.get_name() for mc in self.collection.get_managed_classes() ],
                 'collection_methods' : ServiceCollectionRequest.available_methods(manager),
                 'resource_methods' : ServiceResourceRequest.available_methods(manager),
                 'resource_fields' : manager.resource_fields
                 }
 
     def as_resource_fields(self,path):
-        manager = self.get_manager(path)
+        manager = self.collection
         return manager.resource_fields
 
     def as_example_resource(self,path):
-        manager = self.get_manager(path)
+        manager = self.collection({})
         return manager.get_example_resource()
 
 
