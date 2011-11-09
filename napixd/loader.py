@@ -40,8 +40,16 @@ def get_bottle_app():
     @napixd.route('/')
     def slash():
         return [x.url for x in services ]
+
+    @napixd.error(404)
+    def not_found(e):
+        return bottle.HTTPResponse(status=404,header=[('Content-type','text/plain')])
+
+    @napixd.error(400)
+    def bad_request(e):
+        return bottle.HTTPResponse(e.output,
+                status=404,header=[('Content-type','text/plain')])
+
+
     napixd.install(ConversationPlugin())
     return napixd
-
-
-

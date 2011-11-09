@@ -28,7 +28,10 @@ class ConversationPlugin(object):
         @functools.wraps(callback)
         def inner(*args,**kwargs):
             if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
-                request.data = json.load(request.body)
+                try:
+                    request.data = json.load(request.body)
+                except ValueError:
+                    raise HTTPError(400,'Unable to load JSON object')
             else:
                 request.data = request.forms
             res = callback(*args,**kwargs)
