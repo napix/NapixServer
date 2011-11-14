@@ -39,7 +39,7 @@ def get_bottle_app():
 
     @napixd.route('/')
     def slash():
-        return [x.url for x in services ]
+        return ['/'+x.url for x in services ]
 
     @napixd.error(404)
     def not_found(e):

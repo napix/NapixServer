@@ -76,4 +76,5 @@ class HostFiles(ReadOnlyDictManager):
     managed_class = HostManager
     resource_fields = {'file': {'example':'/etc/hosts','description':'Path of the hosts file'}}
     def load(self,parent):
-        return [{'file':'/tmp/hosts1'},{'file':'/tmp/hosts2'}]
+        return { '1' : {'file':'/tmp/hosts1'},
+                '2' : {'file':'/tmp/hosts2'} }
