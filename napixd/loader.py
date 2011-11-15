@@ -9,24 +9,28 @@ from .conf import Conf
 from .services import Service
 
 import bottle
-from .plugins import ConversationPlugin
+from .plugins import ConversationPlugin,ExceptionsCatcher
 
 
 def get_bottle_app():
     napixd = NapixdBottle()
+    napixd.setup_bottle()
     napixd.install(ConversationPlugin())
     return napixd
 
 
 class NapixdBottle(bottle.Bottle):
-    def __init__(self):
+    def __init__(self,services=None):
         super(NapixdBottle,self).__init__(autojson=False)#,catchall=False)
-        self.services = list(self._load_services())
+        self.services = services or list(self._load_services())
+
+    def setup_bottle(self):
         for service in self.services:
             service.setup_bottle(self)
         self.route('/',callback=self.slash)
-        self.error(404)(self.not_found)
-        self.error(400)(self.bad_request)
+        self.error(404)(lambda x:self.not_found(x))
+        self.error(400)(lambda x:self.bad_request(x))
+        self.install(ExceptionsCatcher())
 
     def _load_managers(self):
         managers_conf = Conf.get_default().get('Napix.managers')

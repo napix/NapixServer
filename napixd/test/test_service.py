@@ -6,6 +6,7 @@ from napixd.test.mock.managed_class import Paragraphs,STORE
 from napixd.test.mock.request import POST,PUT,GET,DELETE
 from napixd.conf import Conf
 from napixd.services import Service
+from napixd.loader import NapixdBottle
 import bottle
 
 class TestServiceBase(object):
@@ -51,9 +52,8 @@ class TestServiceBase(object):
 
 class TestService(TestServiceBase, unittest2.TestCase):
     def setUp(self):
-        self.bottle = bottle.Bottle(autojson=False)
-        self.service = Service(Paragraphs,Conf({}))
-        self.service.setup_bottle(self.bottle)
+        self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ])
+        self.bottle.setup_bottle()
 
     def testGETCollection(self):
         self._expect_list(GET('/p/'),['/p/mouse','/p/cat'])
@@ -130,13 +130,13 @@ class TestService(TestServiceBase, unittest2.TestCase):
 
 class TestConf(TestServiceBase, unittest2.TestCase):
     def setUp(self):
-        self.bottle = bottle.Bottle(autojson=False)
-        self.service = Service(Paragraphs,Conf({
-            'url':'para',
-            'w.url':'words',
-            'w.t.url':'trans'
-            }))
-        self.service.setup_bottle(self.bottle)
+        self.bottle = NapixdBottle([
+            Service(Paragraphs,Conf({
+                'url':'para',
+                'w.url':'words',
+                'w.t.url':'trans'
+                })) ])
+        self.bottle.setup_bottle()
 
     def testGETCollection(self):
         self._expect_list(GET('/para/'),['/para/mouse','/para/cat'])
@@ -153,6 +153,25 @@ class TestConf(TestServiceBase, unittest2.TestCase):
     def testPOSTSubCollection(self):
         self._expect_redirect(POST('/para/cat/eats/trans/', language='german', translated='isst' ),
                 '/para/cat/eats/trans/german')
+
+class TestErrors(TestServiceBase, unittest2.TestCase):
+    def setUp(self):
+        self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ])
+        self.bottle.setup_bottle()
+
+    def testSlash(self):
+        self._expect_list(GET('/'), ['/p'])
+
+    def testException(self):
+        resp = self._expect_error(GET('/p/cat/cat/t/french'),500)
+        self.assertDictEqual(resp.output,{
+            'error_text' : 'I don\'t like cats',
+            'error_class': 'ValueError',
+            'line' : 40,
+            'filename': '/home/cecedille1/enix/napix6/lib/python2.6/site-packages/napixd/test/mock/managed_class.py'
+            })
+
+
 
 if __name__ == '__main__':
     unittest2.main()

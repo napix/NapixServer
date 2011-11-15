@@ -35,6 +35,11 @@ class Translations(DictManager):
     def save(self,parent,resources):
         STORE['translations'] = resources
 
+    def get_resource( self, id_):
+        if self.parent['word'] == 'cat':
+            raise ValueError, 'I don\'t like cats'
+        return super(Translations,self).get_resource(id_)
+
 class Letters(ReadOnlyDictManager):
     """Letters of each word"""
     @classmethod

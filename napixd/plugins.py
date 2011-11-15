@@ -37,24 +37,40 @@ class ConversationPlugin(object):
             else:
                 request.data = request.forms
             try:
-                res = callback(*args,**kwargs)
-                status = 200
+                result = callback(*args,**kwargs)
+                response = HTTPResponse(result)
             except HTTPError,e:
-                return e
+                response = e
+            response.output = self._json_encode(response.output)
+            response.header['Content-Type'] = 'application/json'
+            return response
+        return inner
+
+    def _json_encode(self,res):
+        buff = StringIO()
+        json.dump(res,buff)
+        return buff.getvalue()
+
+class ExceptionsCatcher(object):
+    name = 'exceptions_catchet'
+    api = 2
+    def apply(self,callback,route):
+        @functools.wraps(callback)
+        def inner(*args,**kwargs):
+            try:
+                return callback(*args,**kwargs)
+            except HTTPResponse :
+                raise
             except Exception,e:
                 a, b, last_traceback = sys.exc_info()
-                filename, lineno, function_name, text = traceback.extract_tb(last_traceback,1)[0]
+                filename, lineno, function_name, text = traceback.extract_tb(last_traceback)[-1]
                 res = {
-                        'oops': str(e),
+                        'error_text': str(e),
                         'error_class': e.__class__.__name__,
                         'filename': filename,
                         'line': lineno,
                         }
-                status = 500
-            buff = StringIO()
-            json.dump(res,buff)
-            return HTTPResponse(buff.getvalue(), status= status,
-                    header=[('Content-Type', 'application/json')])
+                raise HTTPError(500,res)
         return inner
 
 class AAAPlugin(object):
