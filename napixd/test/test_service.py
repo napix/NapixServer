@@ -13,7 +13,7 @@ class TestServiceBase(object):
     def _do_the_request(self,request):
         bottle.request = request
         app,args = self.bottle.match(request.environ)
-        return app(**args)
+        return app.call(**args)
     def _request(self,request):
         try:
             return self._do_the_request(request)
@@ -170,8 +170,6 @@ class TestErrors(TestServiceBase, unittest2.TestCase):
             'line' : 40,
             'filename': '/home/cecedille1/enix/napix6/lib/python2.6/site-packages/napixd/test/mock/managed_class.py'
             })
-
-
 
 if __name__ == '__main__':
     unittest2.main()

@@ -37,13 +37,14 @@ class ConversationPlugin(object):
             else:
                 request.data = request.forms
             try:
-                result = callback(*args,**kwargs)
-                response = HTTPResponse(result)
+                result = callback(*args,**kwargs) #Conv
+                status = 200
             except HTTPError,e:
-                response = e
-            response.output = self._json_encode(response.output)
-            response.header['Content-Type'] = 'application/json'
-            return response
+                result = e.output
+                status = e.status
+            resp = HTTPResponse(self._json_encode(result), status,
+                    header=[('Content-type', 'application/json')])
+            return resp
         return inner
 
     def _json_encode(self,res):
@@ -58,12 +59,13 @@ class ExceptionsCatcher(object):
         @functools.wraps(callback)
         def inner(*args,**kwargs):
             try:
-                return callback(*args,**kwargs)
+                return callback(*args,**kwargs) #Exception
             except HTTPResponse :
                 raise
             except Exception,e:
                 a, b, last_traceback = sys.exc_info()
                 filename, lineno, function_name, text = traceback.extract_tb(last_traceback)[-1]
+                #traceback.print_tb(last_traceback)
                 res = {
                         'error_text': str(e),
                         'error_class': e.__class__.__name__,
