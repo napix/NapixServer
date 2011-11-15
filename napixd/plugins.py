@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
+import traceback
 import functools
 import json
 import logging
@@ -34,10 +36,24 @@ class ConversationPlugin(object):
                     raise HTTPError(400,'Unable to load JSON object')
             else:
                 request.data = request.forms
-            res = callback(*args,**kwargs)
+            try:
+                res = callback(*args,**kwargs)
+                status = 200
+            except HTTPError,e:
+                return e
+            except Exception,e:
+                a, b, last_traceback = sys.exc_info()
+                filename, lineno, function_name, text = traceback.extract_tb(last_traceback,1)[0]
+                res = {
+                        'oops': str(e),
+                        'error_class': e.__class__.__name__,
+                        'filename': filename,
+                        'line': lineno,
+                        }
+                status = 500
             buff = StringIO()
             json.dump(res,buff)
-            return HTTPResponse(buff.getvalue(),
+            return HTTPResponse(buff.getvalue(), status= status,
                     header=[('Content-Type', 'application/json')])
         return inner
 
