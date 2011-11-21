@@ -17,12 +17,15 @@ from napixd.conf import Conf
 if __name__ == '__main__':
     logger = logging.getLogger('Napix.Server')
 
+    #Get the napix bottle
     napixd = get_bottle_app()
+    #get the settings of the daemon
     settings = dict( Conf.get_default().get('Napix.daemon'))
 
     bottle.debug(settings.get('debug',False))
     logger.info('Starting')
 
+    #run the daemon
     bottle.run(napixd, host=settings.get('host','127.0.0.1'),
             port=settings.get('port',8080), server=RocketAndExecutor)
 

@@ -22,15 +22,15 @@ class HostManager(DictManager):
         ip_components = proposed_ip.split('.')
         if len(ip_components) != 4:
             # 123.45.67 is not an ip
-            raise ValidationError, 'Not an ip'
+            raise ValidationError, 'Not an ip 1'
         try:
             ip_components = map(int,ip_components)
         except ValueError:
             #123.45.lol.99 is not an ip
-            raise ValidationError, 'Not an ip'
-        if not all([0 < x <= 255 for x in ip_components]):
+            raise ValidationError, 'Not an ip 2'
+        if not all([0 <= x <= 255 for x in ip_components]):
             #123.45.67.890 is not an ip
-            raise ValidationError, 'Not an ip'
+            raise ValidationError, 'Not an ip 3'
         #filter the useless 0 out of 123.045.012.001
         return '.'.join(map(str,ip_components))
 

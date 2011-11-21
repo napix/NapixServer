@@ -17,18 +17,21 @@ from bottle import request,HTTPResponse,HTTPError
 
 from napixd import settings
 
-__all__ = ['ConversationPlugin','AAAPlugin']
+__all__ = ['ExceptionsCatcher', 'ConversationPlugin', 'AAAPlugin']
 
 class ConversationPlugin(object):
     """
     Plugin Bottle to convert
     from and to the python native objects to json
+
+    This plugins ensure all the responses are made in JSON, even the error messages
     """
     name = "conversation_plugin"
     api = 2
     def apply(self,callback,route):
         @functools.wraps(callback)
         def inner(*args,**kwargs):
+            #unserialize the request
             if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
                 try:
                     request.data = json.load(request.body)
@@ -40,6 +43,7 @@ class ConversationPlugin(object):
             try:
                 result = callback(*args,**kwargs) #Conv
                 status = 200
+                #result OK
             except HTTPError,e:
                 result = e.output
                 status = e.status
@@ -56,9 +60,14 @@ class ConversationPlugin(object):
         return buff.getvalue()
 
 class ExceptionsCatcher(object):
-    name = 'exceptions_catchet'
+    name = 'exceptions_catcher'
     api = 2
     def apply(self,callback,route):
+        """
+        This plugin run the view and catch the exception that are not HTTPResponse.
+        The HTTPResponse are legit response, sent to the ConversationPlugin, the rest are errors.
+        For this error, it send a dict containing the file, line and details of the exception
+        """
         @functools.wraps(callback)
         def inner(*args,**kwargs):
             try:
