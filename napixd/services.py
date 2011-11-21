@@ -305,7 +305,8 @@ class ServiceCollectionRequest(ServiceRequest):
         result = super(ServiceCollectionRequest,self).handle()
         if self.method == 'POST':
             url = self.make_url(result)
-            bottle.redirect(url)
+            raise bottle.HTTPError(202, None, header={
+                'Location': url} )
         if self.method == 'GET':
             return map(self.make_url,result)
         return result

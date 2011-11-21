@@ -32,11 +32,11 @@ class TestServiceBase(object):
             return e
         else:
             self.fail('Unexpected %s'%repr(resp))
-    def _expect_redirect(self,request,url):
+    def _expect_created(self,request,url):
         try:
             resp = self._do_the_request(request)
         except bottle.HTTPResponse,e:
-            self.assertEqual(e.status, 303)
+            self.assertEqual(e.status, 202)
             self.assertEqual(e.headers['Location'],url)
         else:
             self.fail('Unexpected %s'%repr(resp))
@@ -80,11 +80,11 @@ class TestService(TestServiceBase, unittest2.TestCase):
         self._expect_error(POST('/p/',text='that mouse is black'),409)
 
     def testPOSTCollection(self):
-        self._expect_redirect(POST('/p/',text='the bird flies'),'/p/bird')
+        self._expect_created(POST('/p/',text='the bird flies'),'/p/bird')
         self.assertDictEqual(STORE['paragraphs']['bird'],{'text':'the bird flies'})
 
     def testPOSTSubCollection(self):
-        self._expect_redirect(POST('/p/cat/eats/t/', language='german', translated='isst' ),
+        self._expect_created(POST('/p/cat/eats/t/', language='german', translated='isst' ),
                 '/p/cat/eats/t/german')
         self.assertDictEqual(STORE['translations'], {
                     'french':{ 'translated':'mange', 'language':'french'},
@@ -148,10 +148,12 @@ class TestConf(TestServiceBase, unittest2.TestCase):
                 ['/para/mouse/sleeps/trans/french'])
 
     def testPOSTCollection(self):
-        self._expect_redirect(POST('/para/',text='the bird flies'),'/para/bird')
+        self._expect_created(POST('/para/',text='the bird flies'),
+                '/para/bird')
 
     def testPOSTSubCollection(self):
-        self._expect_redirect(POST('/para/cat/eats/trans/', language='german', translated='isst' ),
+        self._expect_created(POST('/para/cat/eats/trans/',
+            language='german', translated='isst' ),
                 '/para/cat/eats/trans/german')
 
 class TestErrors(TestServiceBase, unittest2.TestCase):

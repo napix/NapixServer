@@ -36,14 +36,17 @@ class ConversationPlugin(object):
                     raise HTTPError(400,'Unable to load JSON object')
             else:
                 request.data = request.forms
+            headers = [('Content-type', 'application/json')]
             try:
                 result = callback(*args,**kwargs) #Conv
                 status = 200
             except HTTPError,e:
                 result = e.output
                 status = e.status
-            resp = HTTPResponse(self._json_encode(result), status,
-                    header=[('Content-type', 'application/json')])
+                if e.headers != None:
+                    headers.extend(e.headers.iteritems())
+            resp = HTTPResponse(result and self._json_encode(result) or None,
+                    status, header=headers)
             return resp
         return inner
 

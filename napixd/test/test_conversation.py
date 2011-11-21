@@ -9,9 +9,12 @@ from napixd.services import Service
 from napixd.loader import NapixdBottle
 from napixd.test.mock.managed_class import Paragraphs
 
+import bottle
+
 class TestConversationPlugin(unittest2.TestCase):
     def setUp(self):
         self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ])
+        bottle.DEBUG = True
         self.bottle.install(ConversationPlugin())
         self.bottle.setup_bottle()
 
@@ -22,6 +25,7 @@ class TestConversationPlugin(unittest2.TestCase):
             body_.seek(0)
         return {
                 'wsgi.input' :body_,
+                'wsgi.errors' : open('/dev/null','w'),
                 'PATH_INFO': url,
                 'HTTP_HOST': 'napix.test',
                 'REQUEST_METHOD': method,
@@ -39,12 +43,12 @@ class TestConversationPlugin(unittest2.TestCase):
         code,_,status = self.status_line.partition(' ')
         return int(code), dict(self.headers), ''.join(resp)
 
-    def testRedirect(self):
+    def testCreated(self):
         env = self._make_env('POST','/p/','{"text":"The bird flies"}')
         code, headers, result = self._do_request(env)
-        self.assertEqual( code, 303)
+        self.assertEqual( code, 202)
         self.assertEqual( headers['Content-Length'], '0')
-        self.assertEqual( headers['Location'], 'http://napix.test/p/bird')
+        self.assertEqual( headers['Location'], '/p/bird')
         self.assertEqual( result, '')
 
     def testSerializeList(self):
