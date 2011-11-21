@@ -83,10 +83,10 @@ class Paragraphs(DictManager):
                 }
     def save(self,parent,resource):
         STORE['paragraphs'] = resource
-    def clean_text(self,word):
-        if ' ' in word:
-            raise ValidationError
-        return word
+    def validate_resource_text(self,text):
+        if len(text.split(' ')) <= 3 :
+            raise ValidationError, 'Not enough words'
+        return text
     def validate_id(self,id_):
         if not id_ in self.PETS:
             raise ValidationError,'Story must be constructed about a pet'

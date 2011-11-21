@@ -52,7 +52,8 @@ class TestServiceBase(object):
 
 class TestService(TestServiceBase, unittest2.TestCase):
     def setUp(self):
-        self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ])
+        self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ],
+                no_conversation=True)
         self.bottle.setup_bottle()
 
     def testGETCollection(self):
@@ -79,10 +80,11 @@ class TestService(TestServiceBase, unittest2.TestCase):
         self._expect_error(POST('/p/',text='that car is fast'),400)
         self._expect_error(POST('/p/',flip='this bird is far'),400)
         self._expect_error(POST('/p/',text='that mouse is black'),409)
+        self._expect_error(POST('/p/',text='that bird '),400)
 
     def testPOSTCollection(self):
-        self._expect_created(POST('/p/',text='the bird flies'),'/p/bird')
-        self.assertDictEqual(STORE['paragraphs']['bird'],{'text':'the bird flies'})
+        self._expect_created(POST('/p/',text='the bird flies high'),'/p/bird')
+        self.assertDictEqual(STORE['paragraphs']['bird'],{'text':'the bird flies high'})
 
     def testPOSTSubCollection(self):
         self._expect_created(POST('/p/cat/eats/t/', language='german', translated='isst' ),
@@ -136,7 +138,7 @@ class TestConf(TestServiceBase, unittest2.TestCase):
                 'url':'para',
                 'w.url':'words',
                 'w.t.url':'trans'
-                })) ])
+                })) ], no_conversation = True)
         self.bottle.setup_bottle()
 
     def testGETCollection(self):
@@ -149,7 +151,7 @@ class TestConf(TestServiceBase, unittest2.TestCase):
                 ['/para/mouse/sleeps/trans/french'])
 
     def testPOSTCollection(self):
-        self._expect_created(POST('/para/',text='the bird flies'),
+        self._expect_created(POST('/para/',text='the bird flies in the sky'),
                 '/para/bird')
 
     def testPOSTSubCollection(self):
@@ -159,7 +161,8 @@ class TestConf(TestServiceBase, unittest2.TestCase):
 
 class TestErrors(TestServiceBase, unittest2.TestCase):
     def setUp(self):
-        self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ])
+        self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ],
+                no_conversation = True)
         self.bottle.setup_bottle()
 
     def testSlash(self):

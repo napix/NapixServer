@@ -3,19 +3,15 @@
 
 import unittest2
 from cStringIO import StringIO
-from napixd.plugins import ConversationPlugin
 from napixd.conf import Conf
 from napixd.services import Service
 from napixd.loader import NapixdBottle
 from napixd.test.mock.managed_class import Paragraphs
 
-import bottle
 
 class TestConversationPlugin(unittest2.TestCase):
     def setUp(self):
         self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ])
-        bottle.DEBUG = True
-        self.bottle.install(ConversationPlugin())
         self.bottle.setup_bottle()
 
     def _make_env(self,method,url,body=None):
@@ -44,7 +40,7 @@ class TestConversationPlugin(unittest2.TestCase):
         return int(code), dict(self.headers), ''.join(resp)
 
     def testCreated(self):
-        env = self._make_env('POST','/p/','{"text":"The bird flies"}')
+        env = self._make_env('POST','/p/','{"text":"The bird flies in the sky"}')
         code, headers, result = self._do_request(env)
         self.assertEqual( code, 202)
         self.assertEqual( headers['Content-Length'], '0')

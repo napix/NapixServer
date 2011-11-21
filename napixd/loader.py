@@ -15,14 +15,16 @@ from .plugins import ConversationPlugin,ExceptionsCatcher
 def get_bottle_app():
     napixd = NapixdBottle()
     napixd.setup_bottle()
-    napixd.install(ConversationPlugin())
     return napixd
 
 
 class NapixdBottle(bottle.Bottle):
-    def __init__(self,services=None):
+    def __init__(self, services=None, no_conversation=False):
         super(NapixdBottle,self).__init__(autojson=False)#,catchall=False)
         self.services = services or list(self._load_services())
+        if not no_conversation :
+            self.install(ConversationPlugin())
+        self.install(ExceptionsCatcher())
 
     def setup_bottle(self):
         for service in self.services:
@@ -30,7 +32,6 @@ class NapixdBottle(bottle.Bottle):
         self.route('/',callback=self.slash)
         self.error(404)(lambda x:self.not_found(x))
         self.error(400)(lambda x:self.bad_request(x))
-        self.install(ExceptionsCatcher())
 
     def _load_managers(self):
         managers_conf = Conf.get_default().get('Napix.managers')
