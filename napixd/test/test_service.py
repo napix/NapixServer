@@ -56,6 +56,7 @@ class TestService(TestServiceBase, unittest2.TestCase):
         self.bottle.setup_bottle()
 
     def testGETCollection(self):
+        self._expect_ok(GET('/p'))
         self._expect_list(GET('/p/'),['/p/mouse','/p/cat'])
         self._expect_list(GET('/p/mouse/'),['/p/mouse/a','/p/mouse/mouse','/p/mouse/sleeps'])
         self._expect_list(GET('/p/cat/eats/'),['/p/cat/eats/l','/p/cat/eats/t'])

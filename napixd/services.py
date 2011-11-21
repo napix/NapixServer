@@ -42,11 +42,14 @@ class Service(object):
                         collection.managed_class, False)
         return service
 
+    def noop(self):
+        return None
 
     def setup_bottle(self,app):
         """
         Route the managers inside the given bottle app.
         """
+        app.route( '/'+self.url, callback = self.noop)
         for service in self.collection_services:
             service.setup_bottle(app)
 
