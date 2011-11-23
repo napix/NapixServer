@@ -26,6 +26,6 @@ class Conf(dict):
     def get(self,section_id):
         try:
             return Conf( self[section_id] )
-        except KeyError:
+        except (KeyError,ValueError):
             return Conf()
 

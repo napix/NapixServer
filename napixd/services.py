@@ -224,7 +224,7 @@ class ServiceRequest(object):
         Return the HTTP methods defined in the given manager
         that are usable with this ServiceRequest
         """
-        available_methods = ['HEAD']
+        available_methods = []
         for meth,callback in cls.METHOD_MAP.items():
             if hasattr(manager,callback):
                 available_methods.append(meth)
@@ -298,7 +298,8 @@ class ServiceCollectionRequest(ServiceRequest):
     #association de verbes HTTP aux methodes python
     METHOD_MAP = {
         'POST':'create_resource',
-        'GET':'list_resource'
+        'GET':'list_resource',
+        'HEAD' : 'list_resource'
         }
     def get_args(self,datas):
         if self.method == 'POST':
@@ -328,6 +329,7 @@ class ServiceResourceRequest(ServiceRequest):
     METHOD_MAP = {
             'PUT':'modify_resource',
             'GET':'get_resource',
+            'HEAD' : 'get_resource',
             'DELETE':'delete_resource',
         }
 

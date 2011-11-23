@@ -42,15 +42,21 @@ class ConversationPlugin(object):
             else :
                 request.data = {}
             headers = [('Content-type', 'application/json')]
+            exception = None
             try:
                 result = callback(*args,**kwargs) #Conv
                 status = 200
                 #result OK
+                if isinstance(result,HTTPResponse):
+                    exception = result
             except HTTPError,e:
-                result = e.output
-                status = e.status
-                if e.headers != None:
-                    headers.extend(e.headers.iteritems())
+                exception = e
+
+            if exception is not None:
+                result = exception.output
+                status = exception.status
+                if exception.headers != None:
+                    headers.extend(exception.headers.iteritems())
 
             if status != 200 and isinstance(result,(str,unicode)):
                 headers.append(('Content-type','text/plain'))
@@ -105,7 +111,7 @@ class AAAPlugin(object):
     logger = logging.getLogger('AAA')
     def __init__( self, conf= None, client= None):
         self.http_client = client or Http()
-        self.settings = conf
+        self.settings = dict(conf)
 
     def apply(self,callback,route):
         @functools.wraps(callback)

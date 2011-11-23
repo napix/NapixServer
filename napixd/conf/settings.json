@@ -10,7 +10,7 @@
   "napixd.examples.list_manager" : [ "HostFiles" ]
  },
  "Napix.auth" : {
-     "auth_url" : "http://auth.napix.local/auth/authorization",
+     "auth_url" : "http://auth.napix.local/auth/authorization/",
      "service" : "ws.napix.local"
  },
  "HostFiles" : {
