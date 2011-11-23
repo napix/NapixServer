@@ -15,7 +15,6 @@ from urllib import urlencode
 import bottle
 from bottle import request,HTTPResponse,HTTPError
 
-from napixd import settings
 
 __all__ = ['ExceptionsCatcher', 'ConversationPlugin', 'AAAPlugin']
 
@@ -32,13 +31,16 @@ class ConversationPlugin(object):
         @functools.wraps(callback)
         def inner(*args,**kwargs):
             #unserialize the request
-            if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
-                try:
-                    request.data = json.load(request.body)
-                except ValueError:
-                    raise HTTPError(400,'Unable to load JSON object')
-            else:
-                request.data = request.forms
+            if int(request.get('CONTENT_LENGTH',0)) != 0:
+                if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
+                    try:
+                        request.data = json.load(request.body)
+                    except ValueError:
+                        raise HTTPError(400,'Unable to load JSON object')
+                else:
+                    request.data = request.forms
+            else :
+                request.data = {}
             headers = [('Content-type', 'application/json')]
             try:
                 result = callback(*args,**kwargs) #Conv
@@ -49,8 +51,13 @@ class ConversationPlugin(object):
                 status = e.status
                 if e.headers != None:
                     headers.extend(e.headers.iteritems())
-            resp = HTTPResponse(result and self._json_encode(result) or None,
-                    status, header=headers)
+
+            if status != 200 and isinstance(result,(str,unicode)):
+                headers.append(('Content-type','text/plain'))
+            else:
+                result = result and self._json_encode(result) or None,
+
+            resp = HTTPResponse( result, status, header=headers)
             return resp
         return inner
 
@@ -96,33 +103,41 @@ class AAAPlugin(object):
     name = 'authentication_plugin'
     api = 2
     logger = logging.getLogger('AAA')
+    def __init__( self, conf= None, client= None):
+        self.http_client = client or Http()
+        self.settings = conf
+
     def apply(self,callback,route):
         @functools.wraps(callback)
         def inner(*args,**kwargs):
             if bottle.DEBUG and 'authok' in request.GET:
                 return None
-            if not 'HTTP_AUTHORIZATION' in request.META:
-                raise HTTPError(401)
-            msg,l,signature = request.headers['HTTP_AUTHORIZATION'].rpartition(':')
+            if not 'Authorization' in request.headers:
+                raise HTTPError(401, 'You need to sign your request')
+            msg,l,signature = request.headers['Authorization'].rpartition(':')
             if l != ':':
                 self.logger.info('Rejecting request of %s',request.headers['REMOTE_HOST'])
-                raise HTTPError(401,'Need moar authentication')
+                raise HTTPError(401, 'Incorrect NAPIX Authentication')
             content = parse_qs(msg)
             for x in content:
                 content[x] = content[x][0]
             try:
-                if content['host'] != settings.SERVICE:
-                    raise HTTPError(400,'Bad host')
+                if content.get('host') != self.settings.get('service'):
+                    raise HTTPError(403, 'Bad host')
             except AttributeError:
-                raise HTTPError(400,'No host')
+                raise HTTPError(403, 'No host')
             content['msg'] = msg
             content['signature'] = signature
             self.logger.debug(msg)
-            h=Http()
             headers = { 'Accept':'application/json',
                     'Content-type':'application/x-www-form-urlencoded', }
             body = urlencode(content)
-            resp,content = h.request(settings.AUTH_URL,'POST',body=body,headers=headers)
-            if resp.status != 200:
-                return HTTPError(403,'No auth')
+            resp,content = self.http_client.request(self.settings.get('auth_url'),'POST',body=body,headers=headers)
+            if resp.status == 403:
+                raise HTTPError(403,'Access Denied')
+            elif resp.status != 200:
+                raise HTTPError(500, 'Auth server responded unexpected %s code'%resp.status)
+
+            # actually run the callback
+            return callback(*args,**kwargs)
         return inner

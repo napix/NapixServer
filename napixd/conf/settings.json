@@ -9,6 +9,10 @@
   "napixd.test.mock.managed_class": [ "Paragraphs" ],
   "napixd.examples.list_manager" : [ "HostFiles" ]
  },
+ "Napix.auth" : {
+     "auth_url" : "http://auth.napix.local/auth/authorization",
+     "service" : "ws.napix.local"
+ },
  "HostFiles" : {
   "url":"hosts"
  }

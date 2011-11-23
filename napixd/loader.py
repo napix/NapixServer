@@ -9,8 +9,9 @@ from .conf import Conf
 from .services import Service
 
 import bottle
-from .plugins import ConversationPlugin,ExceptionsCatcher
+from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin
 
+bottle.DEBUG = True
 
 def get_bottle_app():
     """
@@ -18,6 +19,11 @@ def get_bottle_app():
     """
     napixd = NapixdBottle()
     napixd.setup_bottle()
+    conf =  Conf.get_default().get('Napix.auth')
+    if conf :
+        napixd.install(AAAPlugin( conf))
+    else:
+        logger.warning('No authentification configuration found.')
     return napixd
 
 
@@ -52,8 +58,9 @@ class NapixdBottle(bottle.Bottle):
         #/ route, give the services
         self.route('/',callback=self.slash)
         #Error handling for not found and invalid
-        self.error(404)(lambda x:self.not_found(x))
-        self.error(400)(lambda x:self.bad_request(x))
+        self.error(404)(self._error_handler_factory(404))
+        self.error(400)(self._error_handler_factory(400))
+        self.error(500)(self._error_handler_factory(500))
 
     def _load_managers(self):
         """
@@ -85,12 +92,10 @@ class NapixdBottle(bottle.Bottle):
         /  view; return the list of the first level services of the app.
         """
         return ['/'+x.url for x in self.services ]
-    def not_found(self,e):
-        """ 404 view """
-        return bottle.HTTPResponse(e.output,
-                status=404,header=[('Content-type','text/plain')])
-    def bad_request(self,e):
-        """ 400 view """
-        return bottle.HTTPResponse(e.output,
-                status=400,header=[('Content-type','text/plain')])
 
+    def _error_handler_factory(self,code):
+        """ 404 view """
+        def inner(exception):
+            return bottle.HTTPResponse(exception.output,
+                    status=code, header=[('Content-type','text/plain')])
+        return inner

@@ -4,53 +4,12 @@
 import unittest2
 from napixd.test.mock.managed_class import Paragraphs,STORE
 from napixd.test.mock.request import POST,PUT,GET,DELETE
+from napixd.test.bases import TestServiceBase
 from napixd.conf import Conf
 from napixd.services import Service
 from napixd.loader import NapixdBottle
-import bottle
 
-class TestServiceBase(object):
-    def _do_the_request(self,request):
-        bottle.request = request
-        app,args = self.bottle.match(request.environ)
-        return app.call(**args)
-    def _request(self,request):
-        try:
-            return self._do_the_request(request)
-        except bottle.HTTPError,e:
-            self.fail(repr(e))
-    def _expect_list(self,request,lst):
-        self.assertListEqual(sorted(self._request(request)),sorted(lst))
-    def _expect_dict(self,request,dct):
-        resp = self._request(request)
-        self.assertDictEqual(resp,dct)
-    def _expect_error(self,request,code):
-        try:
-            resp = self._do_the_request(request)
-        except bottle.HTTPError,e:
-            self.assertEqual(e.status,code)
-            return e
-        else:
-            self.fail('Unexpected %s'%repr(resp))
-    def _expect_created(self,request,url):
-        try:
-            resp = self._do_the_request(request)
-        except bottle.HTTPResponse,e:
-            self.assertEqual(e.status, 202)
-            self.assertEqual(e.headers['Location'],url)
-        else:
-            self.fail('Unexpected %s'%repr(resp))
-    def _expect_ok(self,request):
-        req = self._request(request)
-        self.assertTrue(req is None)
-    def _expect_405(self,request,expected_methods):
-        resp = self._expect_error(request,405)
-        expected_methods = set(expected_methods.split(','))
-        actual_methods = set(resp.headers['Allow'].split(','))
-        self.assertSetEqual(expected_methods,actual_methods)
-
-
-class TestService(TestServiceBase, unittest2.TestCase):
+class TestService(TestServiceBase):
     def setUp(self):
         self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ],
                 no_conversation=True)
@@ -131,7 +90,7 @@ class TestService(TestServiceBase, unittest2.TestCase):
                 newfields={'name':'robin'}),'HEAD,GET')
 
 
-class TestConf(TestServiceBase, unittest2.TestCase):
+class TestConf(TestServiceBase):
     def setUp(self):
         self.bottle = NapixdBottle([
             Service(Paragraphs,Conf({
@@ -159,7 +118,7 @@ class TestConf(TestServiceBase, unittest2.TestCase):
             language='german', translated='isst' ),
                 '/para/cat/eats/trans/german')
 
-class TestErrors(TestServiceBase, unittest2.TestCase):
+class TestErrors(TestServiceBase):
     def setUp(self):
         self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ],
                 no_conversation = True)
