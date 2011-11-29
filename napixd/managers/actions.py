@@ -17,7 +17,7 @@ def action(fn):
     fn.all_parameters = set(args)
     #mandatory params = param list - param that have default values
     len_mand = len(args) - len(opt)
-    fn.mandatory = set(args[:len_mand])
+    fn.mandatory = args[:len_mand]
     fn.optional = dict(zip(args[len_mand:],opt))
     fn._napix_action=True
 

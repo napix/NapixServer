@@ -66,18 +66,29 @@ class Words(ReadOnlyDictManager):
 
     @action
     def reverse( self, resource):
+        """Reverse the word"""
         return { 'reversed' : ''.join(reversed(resource['word'])) }
 
     @action
     def hash(self, resource, function):
-        """
-        Return the word hashed with the given function
-        """
+        """Return the word hashed with the given function"""
         import hashlib
         try:
             return { 'hashed': hashlib.new(function,resource['word']).hexdigest()}
         except ValueError:
             raise ValidationError, 'invalid hash function'
+
+    @action
+    def split(self, resource, start, end=None):
+        """Extract the start from a string"""
+        try:
+            start = int(start)
+            end = end and int(end)
+        except ValueError:
+            raise ValidationError, 'start and end must be integers'
+        return { 'extract' : resource['word'][slice(start,end)] ,
+                'from' : [ start, end or len(resource['word'])]
+                }
 
 class Paragraphs(DictManager):
     """Stories of pets"""

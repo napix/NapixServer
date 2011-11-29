@@ -168,6 +168,9 @@ class CollectionService(object):
         app.route(self.collection_url+'_napix_new',callback=self.as_example_resource,
                 method='GET',apply=ArgumentsPlugin())
         for action in self.all_actions:
+            app.route( self.resource_url+'/'+action.__name__, method='GET',
+                    callback = self.as_help_action_factory(action),
+                    apply = ArgumentsPlugin())
             app.route( self.resource_url+'/'+action.__name__, method='POST',
                     callback = self.as_action_factory(action.__name__ ),
                     apply = ArgumentsPlugin())
@@ -199,6 +202,16 @@ class CollectionService(object):
             return ServiceActionRequest(bottle.request, path, self, action_name).handle()
         return as_action
 
+    def as_help_action_factory(self,action):
+        def as_help_action(path):
+            return {
+                    'name': action.__name__,
+                    'doc' : action.__doc__,
+                    'mandatory': action.mandatory,
+                    'optional' : action.optional
+                    }
+        return as_help_action
+
     def as_managed_classes(self,path):
         manager = self.collection({})
         url = ''
@@ -214,6 +227,7 @@ class CollectionService(object):
         return {
                 'doc' : manager.__doc__,
                 'managed_class' : [ mc.get_name() for mc in self.collection.get_managed_classes() ],
+                'actions' : [ action.__name__ for action in self.all_actions ],
                 'collection_methods' : ServiceCollectionRequest.available_methods(manager),
                 'resource_methods' : ServiceResourceRequest.available_methods(manager),
                 'resource_fields' : manager.resource_fields
@@ -392,9 +406,9 @@ class ServiceActionRequest(ServiceResourceRequest):
     def check_datas(self, manager):
         callback = getattr(manager, self.action_name)
         supplied = set(self.request.data.keys())
-        if not supplied.issubset(callback.mandatory):
+        if not supplied.issuperset(callback.mandatory):
             raise ValidationError, 'missing mandatory parameters %s'%(
-                    ','.join(callback.mandatory.difference(supplied)))
+                    ','.join(set(callback.mandatory ).difference( supplied)))
         data = {}
         for key in callback.all_parameters.intersection(supplied):
             data[key] = self.request.data[key]

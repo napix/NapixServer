@@ -78,6 +78,7 @@ class TestService(TestServiceBase):
             'translated' : 'aferon'
             })
         self._expect_dict(GET('/p/*/_napix_help'),{
+            'actions' : ['hash', 'reverse'],
             'collection_methods': ['HEAD', 'GET'],
             'doc': 'Words of each paragrach',
             'managed_class': ['l', 't'],
