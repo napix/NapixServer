@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import time
-import unittest
+import sys
+import unittest2
 from napixd.executor import Executor
 from threading import Thread,current_thread,Event
 
 ready = Event()
+
 
 class ExecutorProxy(object):
     def __init__(self):
@@ -19,7 +21,8 @@ class ExecutorProxy(object):
 
 executor = ExecutorProxy()
 
-class TestExecutor(unittest.TestCase):
+@unittest2.skipIf(__name__ != '__main__', 'This test must be launched directly')
+class TestExecutor(unittest2.TestCase):
     def tearDown(self):
         ready.clear()
         executor.stop()
@@ -64,7 +67,7 @@ class TestExecutor(unittest.TestCase):
 
 
 def main():
-    unittest.main()
+    unittest2.main()
 
 if __name__ == '__main__':
     t=Thread(target=main).start()

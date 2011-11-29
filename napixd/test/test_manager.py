@@ -45,5 +45,9 @@ class TestManager(unittest2.TestCase):
         self.assertDictEqual(self.manager.get_resource(3),
                 {'name':'drei','letter_count':4,'first_letter':'d'})
 
+class TestAction(unittest2.TestCase):
+    def setUp(self):
+        self.manager = Words({'words':zip(xrange(1,4),['one','two','three'])})
+
 if __name__ == '__main__':
     unittest2.main()

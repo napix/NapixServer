@@ -38,6 +38,14 @@ class WSGITester(unittest2.TestCase):
         return int(code), dict(self.headers), ''.join(resp)
 
 class TestServiceBase(unittest2.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.old_request = bottle.request
+
+    @classmethod
+    def tearDownClass(cls):
+        bottle.request = cls.old_request
+
     def _do_the_request(self,request):
         bottle.request = request
         app,args = self.bottle.match(request.environ)

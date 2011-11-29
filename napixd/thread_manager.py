@@ -8,8 +8,7 @@ from time import time
 from threading import Thread
 
 from napixd.queue import SubQueue,Queue,Empty
-logger = logging.getLogger('thread_manager')
-
+logger = logging.getLogger('Napix.thread_manager')
 
 __all__ = ['thread_manager','background']
 

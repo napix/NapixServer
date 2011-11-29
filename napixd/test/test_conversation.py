@@ -43,7 +43,7 @@ class TestConversationPlugin(WSGITester):
         env = self._make_env('GET', '/p/cat/cat/t/french')
         code, headers, result = self._do_request(env)
         self.assertEqual( code, 500)
-        self.assertEqual( result, '{"line": 40, "error_class": "ValueError",'
+        self.assertEqual( result, '{"line": 41, "error_class": "ValueError",'
                 ' "error_text": "I don\'t like cats", "filename": '
                 '"/home/cecedille1/enix/napix6/lib/python2.6/s'
                 'ite-packages/napixd/test/mock/managed_class.py"}')

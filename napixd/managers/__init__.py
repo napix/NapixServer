@@ -14,7 +14,7 @@ Ressource :
 Manager are created by the corresponding resource
 """
 
-class Manager(dict):
+class Manager(object):
     """
     Base class of the managers
 

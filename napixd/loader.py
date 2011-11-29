@@ -43,7 +43,7 @@ class NapixdBottle(bottle.Bottle):
 
         the no_conversation parameter may be set to True to disable the ConversationPlugin.
         """
-        super(NapixdBottle,self).__init__(autojson=False)#,catchall=False)
+        super(NapixdBottle,self).__init__(autojson=False)
         self.services = services or list(self._load_services())
         if not no_conversation :
             self.install(ConversationPlugin())
@@ -96,6 +96,7 @@ class NapixdBottle(bottle.Bottle):
     def _error_handler_factory(self,code):
         """ 404 view """
         def inner(exception):
-            return bottle.HTTPResponse(exception.output,
-                    status=code, header=[('Content-type','text/plain')])
+            bottle.response.status = code
+            bottle.response['Content-Type'] = 'text/plain'
+            return exception.output
         return inner

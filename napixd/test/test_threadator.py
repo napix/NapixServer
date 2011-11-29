@@ -6,6 +6,11 @@ import unittest
 import time
 from napixd.thread_manager import ThreadManager,BackgroundDecorator
 
+def setUpModule():
+    import logging
+    logging.getLogger('Napix.thread_manager').addHandler(
+            logging.StreamHandler(strm=open('/dev/null','w')))
+
 def sleepytask(thread):
     time.sleep(1)
 def notthingtask(thread):
