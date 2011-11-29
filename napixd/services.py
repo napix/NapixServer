@@ -86,9 +86,20 @@ class CollectionService(object):
         self.collection_url = base_url
         self.resource_url = base_url + ':f%i' % last
 
+        self.all_actions = list(self._all_actions())
+
     def get_name(self):
         return self.collection.get_name()
 
+
+    def _all_actions(self):
+        for attribute_name in dir(self.collection):
+            if attribute_name[0] == '_':
+                continue
+            attribute = getattr(self.collection,attribute_name)
+            if (hasattr(attribute,'_napix_action') and attribute._napix_action
+                    and callable(attribute)):
+                yield attribute
 
     def get_prefix(self):
         """
@@ -156,6 +167,10 @@ class CollectionService(object):
                 method='GET',apply=ArgumentsPlugin())
         app.route(self.collection_url+'_napix_new',callback=self.as_example_resource,
                 method='GET',apply=ArgumentsPlugin())
+        for action in self.all_actions:
+            app.route( self.resource_url+'/'+action.__name__, method='POST',
+                    callback = self.as_action_factory(action.__name__ ),
+                    apply = ArgumentsPlugin())
         app.route(self.collection_url,callback=self.as_collection,
                 method='ANY',apply=ArgumentsPlugin())
         app.route(self.resource_url,callback=self.as_resource,
@@ -179,12 +194,20 @@ class CollectionService(object):
     def as_collection(self,path):
         return self._respond(ServiceCollectionRequest,path)
 
+    def as_action_factory(self,action_name):
+        def as_action(path):
+            return ServiceActionRequest(bottle.request, path, self, action_name).handle()
+        return as_action
+
     def as_managed_classes(self,path):
         manager = self.collection({})
         url = ''
         for service,id_ in zip(self.services,path):
             url += '/'+service.get_token(id_)
-        return ['%s/%s'%(url,x.get_name()) for x in manager.managed_class ]
+        all_urls = list(x.get_name() for x in manager.managed_class)
+        all_urls.extend( x.__name__ for x in self.all_actions )
+
+        return [ '%s/%s'%(url,name) for name in all_urls ]
 
     def as_help(self,path):
         manager = self.collection({})
@@ -203,7 +226,6 @@ class CollectionService(object):
     def as_example_resource(self,path):
         manager = self.collection({})
         return manager.get_example_resource()
-
 
 class ServiceRequest(object):
     """
@@ -263,6 +285,8 @@ class ServiceRequest(object):
         except (AttributeError,KeyError):
             raise HTTPError(405,
                     header=[ ('allow',','.join(self.available_methods(manager)))])
+    def call(self,callback,args):
+        return callback(*args)
 
     def handle(self):
         """
@@ -279,7 +303,7 @@ class ServiceRequest(object):
             datas =  self.check_datas(manager)
             #recupere les arguments a passer a cette vue
             args = self.get_args(datas)
-            result =  callback(*args)
+            result = self.call(callback,args)
             manager.end_request(self.request)
             return result
         except ValidationError,e:
@@ -344,6 +368,41 @@ class ServiceResourceRequest(ServiceRequest):
         #verifie l'identifiant de la resource aussi
         self.resource_id = manager.validate_id(resource_id)
         return manager
+
+class ServiceActionRequest(ServiceResourceRequest):
+    METHOD_MAP = {
+            'POST' : 'get_resource',
+        }
+    def __init__(self, request, path, service, action_name):
+        self.action_name = action_name
+        super(ServiceActionRequest,self).__init__(request, path, service)
+
+    def get_manager(self):
+        manager = super(ServiceActionRequest,self).get_manager()
+        return manager
+
+    def get_args(self,data):
+        return (self.resource_id, data)
+
+    def get_callback(self, manager):
+        self.resource = manager.get_resource(self.resource_id)
+        callback = getattr(manager, self.action_name)
+        return callback
+
+    def check_datas(self, manager):
+        callback = getattr(manager, self.action_name)
+        supplied = set(self.request.data.keys())
+        if not supplied.issubset(callback.mandatory):
+            raise ValidationError, 'missing mandatory parameters %s'%(
+                    ','.join(callback.mandatory.difference(supplied)))
+        data = {}
+        for key in callback.all_parameters.intersection(supplied):
+            data[key] = self.request.data[key]
+        return data
+
+    def call(self, callback, data):
+        resource_id, action_args = data
+        return callback(self.resource, **action_args)
 
 
 class ArgumentsPlugin(object):

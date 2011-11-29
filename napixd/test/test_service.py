@@ -19,7 +19,8 @@ class TestService(TestServiceBase):
         self._expect_ok(GET('/p'))
         self._expect_list(GET('/p/'),['/p/mouse','/p/cat'])
         self._expect_list(GET('/p/mouse/'),['/p/mouse/a','/p/mouse/mouse','/p/mouse/sleeps'])
-        self._expect_list(GET('/p/cat/eats/'),['/p/cat/eats/l','/p/cat/eats/t'])
+        self._expect_list(GET('/p/cat/eats/'),
+                ['/p/cat/eats/l', '/p/cat/eats/t', '/p/cat/eats/reverse', '/p/cat/eats/hash' ])
         self._expect_list(GET('/p/cat/eats/l/'),
                 ['/p/cat/eats/l/e', '/p/cat/eats/l/a', '/p/cat/eats/l/t','/p/cat/eats/l/s'])
         self._expect_list(GET('/p/mouse/sleeps/t/'),['/p/mouse/sleeps/t/french'])
@@ -132,7 +133,7 @@ class TestErrors(TestServiceBase):
         self.assertDictEqual(resp.output,{
             'error_text' : 'I don\'t like cats',
             'error_class': 'ValueError',
-            'line' : 40,
+            'line' : 41,
             'filename': '/home/cecedille1/enix/napix6/lib/python2.6/site-packages/napixd/test/mock/managed_class.py'
             })
 

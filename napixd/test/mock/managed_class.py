@@ -3,6 +3,7 @@
 
 from napixd.exceptions import ValidationError
 from napixd.managers.default import DictManager, ReadOnlyDictManager
+from napixd.managers.actions import action
 
 TRANSLATION_TABLE = { 'the':'le', 'cat':'chat',
 'eats':'mange', 'a':'une','mouse':'souris',
@@ -62,6 +63,21 @@ class Words(ReadOnlyDictManager):
         return 'w'
     def load(self, parent):
         return dict([(x,{'word':x,'length':len(x)}) for x in parent['text'].split(' ') ])
+
+    @action
+    def reverse( self, resource):
+        return { 'reversed' : ''.join(reversed(resource['word'])) }
+
+    @action
+    def hash(self, resource, function):
+        """
+        Return the word hashed with the given function
+        """
+        import hashlib
+        try:
+            return { 'hashed': hashlib.new(function,resource['word']).hexdigest()}
+        except ValueError:
+            raise ValidationError, 'invalid hash function'
 
 class Paragraphs(DictManager):
     """Stories of pets"""
