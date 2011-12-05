@@ -128,9 +128,9 @@ class AAAPlugin(object):
             for x in content:
                 content[x] = content[x][0]
             try:
-                if content.get('host') != self.settings.get('service'):
+                if content['host'] != self.settings.get('service'):
                     raise HTTPError(403, 'Bad host')
-            except AttributeError:
+            except KeyError:
                 raise HTTPError(403, 'No host')
             content['msg'] = msg
             content['signature'] = signature

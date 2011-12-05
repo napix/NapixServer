@@ -39,13 +39,13 @@ class TestAAAPluginSuccess(WSGITester):
         status, headers, result = self._do_request(
                 self._make_env('GET', '/test', auth='host=:sign' ))
         self.assertEqual( status, 403)
-        self.assertEqual( result, 'Bad host')
+        self.assertEqual( result, 'No host')
 
     def testNoHost(self):
         status, headers, result = self._do_request(
                 self._make_env('GET', '/test', auth='hast=napix.test:sign' ))
         self.assertEqual( status, 403)
-        self.assertEqual( result, 'Bad host')
+        self.assertEqual( result, 'No host')
 
     def testNoAuth(self):
         status, headers, result = self._do_request(
