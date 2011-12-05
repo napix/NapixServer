@@ -20,7 +20,8 @@ class TestService(TestServiceBase):
         self._expect_list(GET('/p/'),['/p/mouse','/p/cat'])
         self._expect_list(GET('/p/mouse/'),['/p/mouse/a','/p/mouse/mouse','/p/mouse/sleeps'])
         self._expect_list(GET('/p/cat/eats/'),
-                ['/p/cat/eats/l', '/p/cat/eats/t', '/p/cat/eats/reverse', '/p/cat/eats/hash' ])
+                ['/p/cat/eats/l', '/p/cat/eats/t',
+                    '/p/cat/eats/reverse', '/p/cat/eats/hash', '/p/cat/eats/split' ])
         self._expect_list(GET('/p/cat/eats/l/'),
                 ['/p/cat/eats/l/e', '/p/cat/eats/l/a', '/p/cat/eats/l/t','/p/cat/eats/l/s'])
         self._expect_list(GET('/p/mouse/sleeps/t/'),['/p/mouse/sleeps/t/french'])
@@ -78,7 +79,7 @@ class TestService(TestServiceBase):
             'translated' : 'aferon'
             })
         self._expect_dict(GET('/p/*/_napix_help'),{
-            'actions' : ['hash', 'reverse'],
+            'actions' : ['hash', 'reverse', 'split' ],
             'collection_methods': ['HEAD', 'GET'],
             'doc': 'Words of each paragrach',
             'managed_class': ['l', 't'],

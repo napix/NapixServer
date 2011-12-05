@@ -17,12 +17,12 @@ class TestAction(TestServiceBase):
         self.bottle.setup_bottle()
 
     def testDiscovery(self):
-        self._expect_dict(GET('/p/cat/eats/reverse'),
+        self._expect_dict(GET('/p/cat/eats/reverse/_napix_action'),
                 {'doc': 'Reverse the word' , 'mandatory': [], 'name': 'reverse', 'optional': {}})
-        self._expect_dict(GET('/p/cat/eats/hash'),
+        self._expect_dict(GET('/p/cat/eats/hash/_napix_action'),
                 {'doc': 'Return the word hashed with the given function',
                     'mandatory': ['function'], 'name': 'hash', 'optional': {}})
-        self._expect_dict(GET('/p/cat/eats/split'),
+        self._expect_dict(GET('/p/cat/eats/split/_napix_action'),
                 {'doc': 'Extract the start from a string',
                     'mandatory': ['start'], 'name': 'split', 'optional': {'end': None}})
 

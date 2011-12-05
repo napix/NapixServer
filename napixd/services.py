@@ -168,7 +168,7 @@ class CollectionService(object):
         app.route(self.collection_url+'_napix_new',callback=self.as_example_resource,
                 method='GET',apply=ArgumentsPlugin())
         for action in self.all_actions:
-            app.route( self.resource_url+'/'+action.__name__, method='GET',
+            app.route( self.resource_url+'/'+action.__name__+'/_napix_action', method='GET',
                     callback = self.as_help_action_factory(action),
                     apply = ArgumentsPlugin())
             app.route( self.resource_url+'/'+action.__name__, method='POST',
