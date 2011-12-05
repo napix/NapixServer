@@ -34,6 +34,9 @@ class TestQueue(unittest.TestCase):
         self.assertRaises(Exception,
             self.throwing_queue.get)
 
+        self.throwing_queue.put('Normal stuff')
+        self.assertEqual(self.throwing_queue.get(), 'Normal stuff')
+
     def testSubQueue(self):
         self.sub_queue1.put('x')
         self.sub_queue2.put('y')
