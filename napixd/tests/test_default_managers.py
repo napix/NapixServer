@@ -3,7 +3,7 @@
 
 import unittest2
 from napixd.exceptions import NotFound,Duplicate
-from napixd.test.mock.default_managers import MockReadOnlyDictManager,MockDictManager,MockListManager
+from napixd.tests.mock.default_managers import MockReadOnlyDictManager,MockDictManager,MockListManager
 
 class TestReadOnlyDict(unittest2.TestCase):
     def setUp(self):

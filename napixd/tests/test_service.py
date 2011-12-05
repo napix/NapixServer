@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import unittest2
-from napixd.test.mock.managed_class import Paragraphs,STORE
-from napixd.test.mock.request import POST,PUT,GET,DELETE
+from napixd.tests.mock.managed_class import Paragraphs,STORE
+from napixd.tests.mock.request import POST,PUT,GET,DELETE
 from napixd.test.bases import TestServiceBase
 from napixd.conf import Conf
 from napixd.services import Service
@@ -136,7 +136,7 @@ class TestErrors(TestServiceBase):
             'error_text' : 'I don\'t like cats',
             'error_class': 'ValueError',
             'line' : 41,
-            'filename': '/home/cecedille1/enix/napix6/lib/python2.6/site-packages/napixd/test/mock/managed_class.py'
+            'filename': '/home/cecedille1/enix/napix6/lib/python2.6/site-packages/napixd/tests/mock/managed_class.py'
             })
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest2
-from napixd.test.mock.manager import Words,ValidationError,NotFound
+from napixd.tests.mock.manager import Words,ValidationError,NotFound
 
 class TestManager(unittest2.TestCase):
     def setUp(self):

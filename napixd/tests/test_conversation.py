@@ -5,7 +5,7 @@ import unittest2
 from napixd.conf import Conf
 from napixd.services import Service
 from napixd.loader import NapixdBottle
-from napixd.test.mock.managed_class import Paragraphs
+from napixd.tests.mock.managed_class import Paragraphs
 from napixd.test.bases import WSGITester
 
 class TestConversationPlugin(WSGITester):
@@ -46,7 +46,7 @@ class TestConversationPlugin(WSGITester):
         self.assertEqual( result, '{"line": 41, "error_class": "ValueError",'
                 ' "error_text": "I don\'t like cats", "filename": '
                 '"/home/cecedille1/enix/napix6/lib/python2.6/s'
-                'ite-packages/napixd/test/mock/managed_class.py"}')
+                'ite-packages/napixd/tests/mock/managed_class.py"}')
         self.assertEqual( headers['Content-Type'], 'application/json')
 
     def testBadRequest(self):

@@ -4,8 +4,8 @@
 
 import unittest2
 from napixd.services import Service
-from napixd.test.mock.managed_class import Paragraphs
-from napixd.test.mock.request import POST,PUT,GET
+from napixd.tests.mock.managed_class import Paragraphs
+from napixd.tests.mock.request import POST,PUT,GET
 from napixd.conf import Conf
 from napixd.loader import NapixdBottle
 from napixd.test.bases import TestServiceBase

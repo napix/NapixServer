@@ -4,7 +4,7 @@
 
 import unittest2
 from napixd.plugins import AAAPlugin
-from napixd.test.mock.http_client import MockHTTPClient
+from napixd.tests.mock.http_client import MockHTTPClient
 from napixd.loader import NapixdBottle
 from napixd.test.bases import WSGITester
 
