@@ -6,7 +6,7 @@
   "debug" : true
  },
  "Napix.managers" : {
-  "napixd.test.mock.managed_class": [ "Paragraphs" ],
+  "napixd.tests.mock.managed_class": [ "Paragraphs" ],
   "napixd.examples.list_manager" : [ "HostFiles" ]
  },
  "Napix.auth" : {

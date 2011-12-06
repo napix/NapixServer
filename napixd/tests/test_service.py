@@ -4,7 +4,7 @@
 import unittest2
 from napixd.tests.mock.managed_class import Paragraphs,STORE
 from napixd.tests.mock.request import POST,PUT,GET,DELETE
-from napixd.test.bases import TestServiceBase
+from napixd.tests.bases import TestServiceBase
 from napixd.conf import Conf
 from napixd.services import Service
 from napixd.loader import NapixdBottle
@@ -20,8 +20,9 @@ class TestService(TestServiceBase):
         self._expect_list(GET('/p/'),['/p/mouse','/p/cat'])
         self._expect_list(GET('/p/mouse/'),['/p/mouse/a','/p/mouse/mouse','/p/mouse/sleeps'])
         self._expect_list(GET('/p/cat/eats/'),
-                ['/p/cat/eats/l', '/p/cat/eats/t',
-                    '/p/cat/eats/reverse', '/p/cat/eats/hash', '/p/cat/eats/split' ])
+                ['/p/cat/eats/l', '/p/cat/eats/t', '/p/cat/eats/_napix_all_actions' ])
+        self._expect_list(GET('/p/cat/eats/_napix_all_actions'),
+                [ 'split', 'reverse', 'hash' ])
         self._expect_list(GET('/p/cat/eats/l/'),
                 ['/p/cat/eats/l/e', '/p/cat/eats/l/a', '/p/cat/eats/l/t','/p/cat/eats/l/s'])
         self._expect_list(GET('/p/mouse/sleeps/t/'),['/p/mouse/sleeps/t/french'])

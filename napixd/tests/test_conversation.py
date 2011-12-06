@@ -6,7 +6,7 @@ from napixd.conf import Conf
 from napixd.services import Service
 from napixd.loader import NapixdBottle
 from napixd.tests.mock.managed_class import Paragraphs
-from napixd.test.bases import WSGITester
+from napixd.tests.bases import WSGITester
 
 class TestConversationPlugin(WSGITester):
     def setUp(self):

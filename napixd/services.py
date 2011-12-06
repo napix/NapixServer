@@ -165,13 +165,17 @@ class CollectionService(object):
                 method='GET',apply=ArgumentsPlugin())
         app.route(self.collection_url+'_napix_help',callback=self.as_help,
                 method='GET',apply=ArgumentsPlugin())
-        app.route(self.collection_url+'_napix_new',callback=self.as_example_resource,
-                method='GET',apply=ArgumentsPlugin())
+        if hasattr(self.collection, 'create_resource'):
+            app.route(self.collection_url+'_napix_new',callback=self.as_example_resource,
+                    method='GET',apply=ArgumentsPlugin())
+        if self.all_actions:
+            app.route(self.resource_url+'/_napix_all_actions',callback=self.as_list_actions,
+                    method='GET',apply=ArgumentsPlugin())
         for action in self.all_actions:
-            app.route( self.resource_url+'/'+action.__name__+'/_napix_action', method='GET',
-                    callback = self.as_help_action_factory(action),
+            app.route( self.resource_url+'/_napix_action/'+action.__name__ +'/_napix_help',
+                    method='GET', callback = self.as_help_action_factory(action),
                     apply = ArgumentsPlugin())
-            app.route( self.resource_url+'/'+action.__name__, method='POST',
+            app.route( self.resource_url+'/_napix_action/'+action.__name__ , method='POST',
                     callback = self.as_action_factory(action.__name__ ),
                     apply = ArgumentsPlugin())
         app.route(self.collection_url,callback=self.as_collection,
@@ -205,22 +209,28 @@ class CollectionService(object):
     def as_help_action_factory(self,action):
         def as_help_action(path):
             return {
-                    'name': action.__name__,
+                    'resource_fields' : action.resource_fields,
                     'doc' : action.__doc__,
                     'mandatory': action.mandatory,
                     'optional' : action.optional
                     }
         return as_help_action
 
-    def as_managed_classes(self,path):
-        manager = self.collection({})
+    def _make_urls(self, path, all_urls):
         url = ''
         for service,id_ in zip(self.services,path):
             url += '/'+service.get_token(id_)
-        all_urls = list(x.get_name() for x in manager.managed_class)
-        all_urls.extend( x.__name__ for x in self.all_actions )
-
         return [ '%s/%s'%(url,name) for name in all_urls ]
+
+    def as_list_actions(self,path):
+        return [ x.__name__ for x in self.all_actions ]
+
+    def as_managed_classes(self,path):
+        manager = self.collection({})
+        all_urls = list(x.get_name() for x in manager.managed_class)
+        if self.all_actions:
+            all_urls.append('_napix_all_actions')
+        return self._make_urls(path, all_urls)
 
     def as_help(self,path):
         manager = self.collection({})
