@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os.path
+
 
 _default = None
 
@@ -11,7 +13,8 @@ class Conf(dict):
     def get_default(cls):
         if not cls._default:
             cls._default = Conf(json.load(
-                    open('/home/cecedille1/enix/napix/server/napixd/conf/settings.json','r')))
+                open(os.path.join( os.path.dirname(__file__),
+                    'conf','settings.json'),'r')))
         return cls._default
 
     def for_manager(self,stack):

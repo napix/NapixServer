@@ -72,19 +72,28 @@ class CollectionService(object):
 
         self.config= dict(config.for_manager(self.services))
 
+        try:
+            iter(self.collection.managed_class)
+            self.direct_plug = False
+        except TypeError:
+            self.direct_plug = self.collection.managed_class and True or None
         #url is added if append_url is True
         self.url = append_url and self.config.get('url',self.get_name()) or ''
 
         base_url = '/'
+        absolute_url = '/'
         last = len(self.services) -1
         #build the prefix url with the list of previous services
         for i,service in enumerate(self.services):
             base_url += service.get_prefix()
+            absolute_url += service.get_prefix() + '*'
             if i != last:
                 base_url += ':f%i/'%i
+                absolute_url += '/'
         #collection and resource urls of this service
         self.collection_url = base_url
         self.resource_url = base_url + ':f%i' % last
+        self.absolute_url = absolute_url
 
         self.all_actions = list(self._all_actions())
 
@@ -160,6 +169,16 @@ class CollectionService(object):
     def setup_bottle(self,app):
         """
         Register the routes of this collection inside the app
+        collection/                         list the collection
+        collection/_napix_new               New object template
+        collection/_napix_help              collection complete documentation
+        collection/_napix_resource_fields   collection resource files documentation
+
+        collection/resource                         Get the specified resource
+        collection/resource/_napix_all_actions      All actions of the resource
+
+        collection/resource/_napix_action/action                Call the action on the resource
+        collection/resource/_napix_action/action/_napix_help    documentation of the action
         """
         app.route(self.collection_url+'_napix_resource_fields',callback=self.as_resource_fields,
                 method='GET',apply=ArgumentsPlugin())
@@ -182,12 +201,10 @@ class CollectionService(object):
                 method='ANY',apply=ArgumentsPlugin())
         app.route(self.resource_url,callback=self.as_resource,
                 method='ANY',apply=ArgumentsPlugin())
-        try:
-            iter(self.collection.managed_class)
+
+        if self.direct_plug == False:
             app.route(self.resource_url+'/',
                     callback = self.as_managed_classes , apply = ArgumentsPlugin())
-        except TypeError:
-            pass
 
     def _respond(self,cls,path):
         """
@@ -227,15 +244,17 @@ class CollectionService(object):
 
     def as_managed_classes(self,path):
         manager = self.collection({})
-        all_urls = list(x.get_name() for x in manager.managed_class)
+        all_urls = list(x.get_name() for x in manager.get_managed_classes())
         if self.all_actions:
             all_urls.append('_napix_all_actions')
         return self._make_urls(path, all_urls)
 
-    def as_help(self,path):
+    def as_help( self, path):
         manager = self.collection({})
         return {
                 'doc' : manager.__doc__,
+                'direct_plug' : self.direct_plug,
+                'absolute_url' : self.absolute_url,
                 'managed_class' : [ mc.get_name() for mc in self.collection.get_managed_classes() ],
                 'actions' : [ action.__name__ for action in self.all_actions ],
                 'collection_methods' : ServiceCollectionRequest.available_methods(manager),

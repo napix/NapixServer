@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     #run the daemon
     bottle.run(napixd, host=settings.get('host','127.0.0.1'),
-            port=settings.get('port',8080), server=RocketAndExecutor)
+            port=settings.get('port',8002), server=RocketAndExecutor)
 
     logger.info('Stopping')
 

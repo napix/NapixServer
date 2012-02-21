@@ -80,9 +80,11 @@ class TestService(TestServiceBase):
             'translated' : 'aferon'
             })
         self._expect_dict(GET('/p/*/_napix_help'),{
+            'absolute_url' : '/p/*/*',
             'actions' : ['hash', 'reverse', 'split' ],
             'collection_methods': ['HEAD', 'GET'],
             'doc': 'Words of each paragrach',
+            'direct_plug' : False,
             'managed_class': ['l', 't'],
             'resource_fields': {'word': {
                 'description' : 'A word in the story',
@@ -133,11 +135,12 @@ class TestErrors(TestServiceBase):
 
     def testException(self):
         resp = self._expect_error(GET('/p/cat/cat/t/french'),500)
+        filename = resp.output.pop('filename')
+        self.assertTrue( filename.endswith( 'napixd/tests/mock/managed_class.py' ))
         self.assertDictEqual(resp.output,{
             'error_text' : 'I don\'t like cats',
             'error_class': 'ValueError',
             'line' : 41,
-            'filename': '/home/cecedille1/enix/napix6/lib/python2.6/site-packages/napixd/tests/mock/managed_class.py'
             })
 
 if __name__ == '__main__':

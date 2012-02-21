@@ -5,6 +5,9 @@ from napixd.exceptions import ValidationError
 from napixd.managers.default import ReadOnlyDictManager,DictManager
 
 class HostManager(DictManager):
+    """
+    Hosts manager
+    """
     resource_fields = {
             'hostnames':{
                 'description':'List of hostname resolving to that IP',
@@ -73,6 +76,9 @@ class HostManager(DictManager):
             file_.write('\n')
 
 class HostFiles(ReadOnlyDictManager):
+    """
+    Host Files manager
+    """
     managed_class = HostManager
     resource_fields = {'file': {'example':'/etc/hosts','description':'Path of the hosts file'}}
     def load(self,parent):
