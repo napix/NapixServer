@@ -117,7 +117,8 @@ class AAAPlugin(object):
         @functools.wraps(callback)
         def inner(*args,**kwargs):
             if bottle.DEBUG and 'authok' in request.GET:
-                return None
+                return callback(*args,**kwargs)
+
             if not 'Authorization' in request.headers:
                 raise HTTPError(401, 'You need to sign your request')
             msg,l,signature = request.headers['Authorization'].rpartition(':')
