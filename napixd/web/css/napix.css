@@ -1,0 +1,145 @@
+#console-body {
+    min-height : 380px;
+    overflow: auto;
+}
+.explorer-content {
+    padding-left : 10px;
+}
+.selected {
+  font-weight: bold;
+}
+/*
+#console-body, #explorer-body {
+    height:380px;
+    overflow: auto;
+}
+.panel {
+    clear : left;
+    min-height: 400px;
+    min-width: 800px;
+}
+.popup-close {
+    float : right;
+}
+#explorer-errors-body {
+    color: red;
+}
+.popup {
+    position: absolute;
+    padding : 10px;
+    margin : 50px;
+    background : white;
+    border: 1px solid black;
+    min-width : 300px;
+}
+#explorer-panels {
+    clear : left;
+}
+#explorer .selected {
+    color : red;
+    border: 0;
+ }
+.explorer-panel {
+    float: left;
+    min-width : 400px;
+    min-height : 300px;
+}
+#console, #connections, #explorer {
+    float : left;
+    border : 1px solid black;
+}
+#console-body {
+    margin: 0 10px;
+}
+pre.console-entry-text {
+    margin: 0;
+}
+.console-entry-query {
+    color: green;
+}
+.selected {
+    border-bottom: 1px dotted black;
+}
+.label:hover a {
+    color : black;
+}
+.label {
+    float:left;
+}
+.label a {
+    color : gray;
+}
+#connections-servers, #connections-credentials {
+    overflow: auto;
+    width : 180px;
+    height: 200px;
+}
+#connections-servers ul, #connections-credentials ul {
+    padding : 0;
+}
+#connections-servers li, #connections-credentials li {
+    list-style: none;
+}
+*/
+.json ul {
+    margin:0;
+    padding:0;
+    margin-left: 5px;
+}
+.json dl , .json dd {
+    margin : 0;
+}
+.json dt {
+    font-weight : normal;
+    margin-left: 5px;
+    border-left: 1px dotted;
+    padding: 4px;
+}
+.json li {
+    list-style: none;
+}
+.json label {
+    display : inline;
+}
+.json-key {
+    color : red;
+}
+.json-simple {
+    color: blue;
+}
+.json-mte > button {
+    display: none;
+}
+.json-mte > button.selected {
+    display: inline;
+}
+.json-mte:hover > button {
+    display: inline;
+}
+.json-edit-body textarea {
+    width : 300px;
+    height: 150px;
+}
+/*
+#explorer-object-actions {
+    height : 20px;
+}
+#explorer-object > .json-object{
+    min-height : 280px;
+}
+#explorer-object-actions div {
+    float: left;
+    margin: 0 4px;
+}
+
+#explorer-action-call h3 {
+    margin: 0.5em 0;
+}
+#explorer-action-call h4 {
+    color : red;
+    margin: 0;
+}
+.validate-button {
+    border : 1px dotted black;
+}
+*/
