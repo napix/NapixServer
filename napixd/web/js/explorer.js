@@ -113,7 +113,10 @@
                           this.$('.deploy').first().addClass( force ? 'icon-plus' :'icon-minus');
                       } else {
                           var shown = this.$('.explorer-content').first().toggle().css('display') == 'none';
-                          this.$('.deploy').first().addClass( shown ? 'icon-plus' :'icon-minus');
+                          this.$('.deploy')
+                          .first()
+                          .addClass( shown ? 'icon-plus' :'icon-minus')
+                          .removeClass( shown ? 'icon-minus' :'icon-plus');
                       }
                   },
                   refire : function( view) {
@@ -172,7 +175,6 @@
                   goToPath : function( path) {
                       this.deploy();
                       var goToContent = function( views) {
-                          console.log( views);
                           _.any( views, function(view, key) {
                                   if (path.search( key) == 0) {
                                       view.goToPath( path);
@@ -350,8 +352,9 @@
                   insideView : JSONCreateView,
               });
           var ActionCallView = Backbone.View.extend({
+                  className : 'alert alert-info',
                   initialize : function( path, action) {
-                      this.setElement( $( '#explorer-action-call-body'));
+                      //this.setElement( $( '#explorer-action-call-body'));
                       this.path = path;
                       this.action = action;
                       this.actionUrl = this.path + '/_napix_action/' + this.action
@@ -363,7 +366,8 @@
                           this.gotActionMetaData.bind( this) );
                       this.$el
                       .empty()
-                      .append( $('<h3 >', { text : this.path +' - '+ this.action }));
+                      .append( $('<h3 >', { text : this.path +' - '+ this.action }))
+                      .append( $('<a />', { 'class' : 'close' , 'data-dismiss' : 'alert', 'text': 'X'}));
                       return this;
                   },
                   gotActionMetaData : function( metaData ) {
@@ -371,32 +375,31 @@
                               acc[ value ] = '';
                               return acc;
                           }, {} );
-                      this.$el.addClass('json-edit');
+                      var el = $('<div />', { 'class' : 'content json' });
                       if ( ! _.isEmpty( mandatory) ) {
                           this.mandatoryView = new JSONEditView.defaultView( mandatory).disableAddKey();
-                          this.$el
+                          el
                           .append( $('<h4 />', { 'text' : 'Mandatory parameters' }))
                           .append( this.mandatoryView.render().el);
                       }
                       if ( ! _.isEmpty( metaData.optional)) {
                           this.optionnalView = new JSONEditView.defaultView( metaData.optional).disableAddKey();
-                          this.$el
+                          el
                           .append( $('<h4 />', { 'text' : 'Optionnal parameters' }))
                           .append( this.optionnalView.render().el);
                       }
-                      this.$el.append(
-                          $('<div />')
-                          .append( $( '<input />', { 'value' : 'Valider' , 'class' : 'validate-button'  }))
+                      el.append(
+                          $( '<button />', { 'text' : 'Valider' , 'class' : 'btn validate'  })
                           .click( this.validate.bind(this) )
                       );
-                      $('#explorer-action-call').show();
-                      this.$('input').first().focus();
+                      this.$el.append( el);
+                      this.$('input,button.validate').first().focus();
                   },
                   validate : function() {
                       Client.POST( this.actionUrl , this.getValue(), this.gotResult.bind( this) );
                   },
                   gotResult : function( result ) {
-                      this.$el
+                      this.$('.content')
                       .empty()
                       .append( new JSONView( result).render().el );
                   },
@@ -510,14 +513,25 @@
                       console.log( 'object', object);
                       Client.POST( path + '/', object,  function() {
                               this.currentView.refreshContent() ;
+                              this.alertOk();
+                              this.object.show();
                           }.bind(this) );
                   },
                   sendDELETE : function( path ) {
                       Client.DELETE( path,
                           _.bind( this.goToPath, this, path.split('/').slice(0,-1).join('/') ));
                   },
+                  alertOk : function() {
+                      $('<div />', { 'class' : 'alert alert-block alert-info' })
+                      .append( $('<a />', { 'class' : 'close' , 'data-dismiss' : 'alert', 'text': 'X'}))
+                      .append( $('<h4 />', { 'text' : 'Done' } ))
+                      .prependTo(this.el);
+                  },
                   callAction : function( action, path) {
-                      var view = new ActionCallView( path, action).render();
+                      new ActionCallView( path, action)
+                      .render()
+                      .$el
+                      .prependTo( this.el);
                   }
               });
           return ExplorerView;
