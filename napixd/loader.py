@@ -58,6 +58,8 @@ class NapixdBottle(bottle.Bottle):
             service.setup_bottle(self)
         #/ route, give the services
         self.route('/',callback=self.slash)
+        self.route('/_napix_js/', callback= self.static,
+                skip = [ 'authentication_plugin', 'conversation_plugin' ] )
         self.route('/_napix_js/<filename:path>', callback= self.static,
                 skip = [ 'authentication_plugin', 'conversation_plugin' ] )
         #Error handling for not found and invalid
@@ -65,7 +67,7 @@ class NapixdBottle(bottle.Bottle):
         self.error(400)(self._error_handler_factory(400))
         self.error(500)(self._error_handler_factory(500))
 
-    def static(self, filename):
+    def static(self, filename = 'index.html' ):
         return bottle.static_file( filename, root = os.path.join( os.path.dirname( __file__),'web'))
 
     def _load_managers(self):
