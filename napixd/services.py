@@ -180,31 +180,32 @@ class CollectionService(object):
         collection/resource/_napix_action/action                Call the action on the resource
         collection/resource/_napix_action/action/_napix_help    documentation of the action
         """
+        arguments_plugin = ArgumentsPlugin()
         app.route(self.collection_url+'_napix_resource_fields',callback=self.as_resource_fields,
-                method='GET',apply=ArgumentsPlugin())
+                method='GET',apply=arguments_plugin)
         app.route(self.collection_url+'_napix_help',callback=self.as_help,
-                method='GET',apply=ArgumentsPlugin())
+                method='GET',apply=arguments_plugin)
         if hasattr(self.collection, 'create_resource'):
             app.route(self.collection_url+'_napix_new',callback=self.as_example_resource,
-                    method='GET',apply=ArgumentsPlugin())
+                    method='GET',apply=arguments_plugin)
         if self.all_actions:
             app.route(self.resource_url+'/_napix_all_actions',callback=self.as_list_actions,
-                    method='GET',apply=ArgumentsPlugin())
+                    method='GET',apply=arguments_plugin)
         for action in self.all_actions:
             app.route( self.resource_url+'/_napix_action/'+action.__name__ +'/_napix_help',
                     method='GET', callback = self.as_help_action_factory(action),
-                    apply = ArgumentsPlugin())
+                    apply = arguments_plugin)
             app.route( self.resource_url+'/_napix_action/'+action.__name__ , method='POST',
                     callback = self.as_action_factory(action.__name__ ),
-                    apply = ArgumentsPlugin())
+                    apply = arguments_plugin)
         app.route(self.collection_url,callback=self.as_collection,
-                method='ANY',apply=ArgumentsPlugin())
+                method='ANY',apply=arguments_plugin)
         app.route(self.resource_url,callback=self.as_resource,
-                method='ANY',apply=ArgumentsPlugin())
+                method='ANY',apply=arguments_plugin)
 
         if self.direct_plug == False:
             app.route(self.resource_url+'/',
-                    callback = self.as_managed_classes , apply = ArgumentsPlugin())
+                    callback = self.as_managed_classes , apply = arguments_plugin)
 
     def _respond(self,cls,path):
         """
