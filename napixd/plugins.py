@@ -41,7 +41,8 @@ class ConversationPlugin(object):
                     request.data = request.forms
             else :
                 request.data = {}
-            headers = [('Content-type', 'application/json')]
+            headers = []
+            content_type = ''
             exception = None
             try:
                 result = callback(*args,**kwargs) #Conv
@@ -57,12 +58,17 @@ class ConversationPlugin(object):
                 status = exception.status
                 if exception.headers != None:
                     headers.extend(exception.headers.iteritems())
+                    if 'content-type' in exception.headers :
+                        content_type = exception.headers['content-type']
 
-            if status != 200 and isinstance(result,(str,unicode)):
-                headers.append(('Content-type','text/plain'))
+            if status != 200 and isinstance( result, basestring):
+                if not content_type :
+                    content_type = 'text/plain'
             else:
-                result = result and self._json_encode(result) or None,
+                content_type = 'application/json'
+                result = result and self._json_encode(result) or None
 
+            headers.append( ('Content-Type', content_type))
             resp = HTTPResponse( result, status, header=headers)
             return resp
         return inner
@@ -120,11 +126,17 @@ class AAAPlugin(object):
                 return callback(*args,**kwargs)
 
             if not 'Authorization' in request.headers:
+                if not request.headers.get('user_agent', '' ).startswith('Mozilla'):
+                    raise HTTPError( 401, 'You need to sign your request')
                 raise HTTPError(401, '''
-You need to sign your request
-Maybe you wish to visit the web interface at http://%s/_napix_js/
-Or you prefer going to the documentation at http://%s/_napix_js/help/high_level.html
-''' % (self.settings.get('service'),self.settings.get('service')) )
+<html><head><title>Request Not authorized</title></head><body>
+<h1> You need to sign your request</h1>
+Maybe you wish to visit <a href="http://%s/_napix_js/">the web interface</a><br />
+Or you prefer going to the <a href="http://%s/_napix_js/help/high_level.html">the doc</a>
+</body></html>''' % (
+                    self.settings.get('service'),self.settings.get('service')),
+                    header = [ ( 'CONTENT_TYPE', 'text/html' ) ]
+                )
             msg,l,signature = request.headers['Authorization'].rpartition(':')
             if l != ':':
                 self.logger.info('Rejecting request of %s',request.headers['REMOTE_HOST'])
