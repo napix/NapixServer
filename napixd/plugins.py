@@ -120,7 +120,11 @@ class AAAPlugin(object):
                 return callback(*args,**kwargs)
 
             if not 'Authorization' in request.headers:
-                raise HTTPError(401, 'You need to sign your request')
+                raise HTTPError(401, '''
+You need to sign your request
+Maybe you wish to visit the web interface at http://%s/_napix_js/
+Or you prefer going to the documentation at http://%s/_napix_js/help/high_level.html
+''' % (self.settings.get('service'),self.settings.get('service')) )
             msg,l,signature = request.headers['Authorization'].rpartition(':')
             if l != ':':
                 self.logger.info('Rejecting request of %s',request.headers['REMOTE_HOST'])
