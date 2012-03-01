@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Napix Web Help</title>
+        <link href="../css/napix.min.css" rel="stylesheet"/>
+        <style>
+            body {
+                margin-top: 100px;
+                margin-bottom: 200px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container-fluid">
+                    <a href="." class="brand" >Napix Help</a>
+                    <ul class="nav">
+                        <li> <a href="high_level.html">Writing a Napix module</a> </li>
+                        <li> <a href="low_level.html">Low level interface</a> </li>
+                        <li> <a href="deploy.html">Deployment</a> </li>
+                        <li> <a href="executor.html">Deployment</a> </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <h1>Howto write a Napix module with the low level interface</h1>
+            <p>
+            The <a href="high_level.html">Napix module howto</a> teach about writing and setting up a Napix module
+            that get and serialise a list of resources.
+            When the list become too big or is slow or difficult to save, you may choose to get the resources one by one
+            using the low-level interface.
+            </p>
+            <p>
+            The base manager of Napix does not require any method to be implemented.
+            It proposes five methods that correspond to the HTTP actions:
+            </p>
+            <table class="table table-striped" >
+                <thead>
+                    <tr>
+                        <th>method</th>
+                        <th>HTTP call</th>
+                        <th>action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>list_resource() -&gt; id_list</td>
+                        <td>GET /manager/</td>
+                        <td>List the id of the managed resources</td>
+                    </tr>
+                    <tr>
+                        <td>get_resource( <em>id</em> ) -&gt; data_dict</td>
+                        <td>GET /manager/resource</td>
+                        <td>Get the resource content for the given id</td>
+                    </tr>
+                    <tr>
+                        <td>create_resource( <em>data_dict</em> ) -&gt; id </td>
+                        <td>POST /manager/</td>
+                        <td>Create a new resource and return the id</td>
+                    </tr>
+                    <tr>
+                        <td>modify_resource( <em>id</em>, <em>data_dict</em> )</td>
+                        <td>PUT /manager/resource</td>
+                        <td>Modify the resource at the given id with the given new data_dict</td>
+                    </tr>
+                    <tr>
+                        <td>delete_resource( <em>id</em> )</td>
+                        <td>DELETE /manager/resource</td>
+                        <td>Delete the resource having the given id</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>
+            Each method implemented will enable the HTTP call in the documentation and metadata of the manager.
+            None is required. You may write a manager that can get a resource, modify it
+            but neither delete, nor create, nor list them.
+            </p>
+            <p>
+            For this howto, we will take the example of a LVM volume manager.
+            </p>
+            <h2>First steps</h2>
+            <h3>Napix Class</h3>
+            <p>
+            The class we will be using is the base manager of Napix.
+            The doctstring is used by napix to document the service.
+            </p>
+            <div class="highlight"><pre><span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="kn">from</span> <span class="nn">napix.manager</span> <span class="kn">import</span> <span class="n">Manager</span>
+
+
+<span class="k">class</span> <span class="nc">LVMManager</span><span class="p">(</span> <span class="n">Manager</span> <span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    LVM logical volumes manager</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+            <p>
+            The next step is to fill the <em>resource_fields</em> attribute with the fields
+            we will export in our service.
+            </p>
+            <p>
+            The service will export the name of the logical volume, its size and the group it belongs to.
+            </p>
+            <div class="highlight"><pre>    <span class="n">resource_fields</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;lv_name&#39;</span> <span class="p">:</span> <span class="p">{</span>
+                <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                <span class="s">&#39;example&#39;</span> <span class="p">:</span> <span class="s">&#39;lv_home&#39;</span>
+                <span class="p">},</span>
+            <span class="s">&#39;group&#39;</span> <span class="p">:</span> <span class="p">{</span>
+                <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                <span class="s">&#39;example&#39;</span> <span class="p">:</span> <span class="s">&#39;lv_home&#39;</span>
+                <span class="p">},</span>
+            <span class="s">&#39;size&#39;</span> <span class="p">:</span> <span class="p">{</span>
+                <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;Total size of the logical volume in Mo&#39;</span><span class="p">,</span>
+                <span class="s">&#39;example&#39;</span> <span class="p">:</span> <span class="s">&#39;20000&#39;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+</pre></div>
+            <h3>List the resources</h3>
+            </p>
+            The list_resource method return the list of the possible ID.
+            <p>
+            <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">list_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">):</span>
+        <span class="c">#run the command that spit the UUID line by line</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span>
+                <span class="p">[</span><span class="s">&#39;sudo&#39;</span><span class="p">,</span><span class="s">&#39;lvm&#39;</span><span class="p">,</span><span class="s">&#39;lvs&#39;</span><span class="p">,</span><span class="s">&#39;--nosuffix&#39;</span><span class="p">,</span> <span class="s">&#39;--noheading&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;--separator&#39;</span><span class="p">,</span><span class="s">&#39;;&#39;</span><span class="p">,</span><span class="s">&#39;-o&#39;</span><span class="p">,</span><span class="s">&#39;lv_uuid&#39;</span><span class="p">],</span> <span class="n">discard_output</span><span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="c">#if the command fail it raises an exception</span>
+        <span class="c"># that will be catched by napix and will return a 500 error</span>
+        <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessException</span><span class="p">(</span>
+                <span class="s">&#39;The command exited with a non 0 return code&#39;</span><span class="o">+</span>
+                <span class="n">process</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="nb">filter</span><span class="p">(</span> <span class="nb">bool</span><span class="p">,</span>
+                <span class="nb">map</span><span class="p">(</span> <span class="nb">str</span><span class="o">.</span><span class="n">strip</span><span class="p">,</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)))</span>
+</pre></div>
+            <p>
+            We choose to use the uuid of the LVM volume as the identifier of the resource.
+            </p>
+            <div class="alert">
+                We use the executor to run the processes. The executor needs to have its control thread running
+                in order to work.
+            </div>
+            <h3>Get a resource</h3>
+            <p>
+            The get_resource method is called with the desired id.
+            This id has already been cleaned by the <a href="high_level.html#valid-id">validate_id</a> method.
+            If there is nothing corresponding to the id, the method must raise a NotFound exception.
+            </p>
+            <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">_lv_list</span><span class="p">(</span> <span class="bp">self</span><span class="p">):</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span>
+                <span class="p">[</span><span class="s">&#39;sudo&#39;</span><span class="p">,</span><span class="s">&#39;lvm&#39;</span><span class="p">,</span><span class="s">&#39;lvs&#39;</span><span class="p">,</span><span class="s">&#39;--nosuffix&#39;</span><span class="p">,</span> <span class="s">&#39;--noheading&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;--separator&#39;</span><span class="p">,</span><span class="s">&#39;;&#39;</span><span class="p">,</span><span class="s">&#39;-o&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;lv_uuid,lv_size,lv_name,vg_name&#39;</span> <span class="p">],</span> <span class="n">discard_output</span><span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessException</span><span class="p">(</span>
+                <span class="s">&#39;The command exited with a non 0 return code&#39;</span><span class="o">+</span>
+                <span class="n">process</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">lv</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span> <span class="nb">str</span><span class="o">.</span><span class="n">strip</span><span class="p">,</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">lv</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">lv</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;;&#39;</span><span class="p">)</span>
+</pre></div>
+            <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">uuid</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">lv_uuid</span><span class="p">,</span> <span class="n">lv_size</span><span class="p">,</span> <span class="n">lv_name</span><span class="p">,</span> <span class="n">vg_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lv_list</span><span class="p">()</span> <span class="p">:</span>
+            <span class="k">if</span> <span class="n">uuid</span> <span class="o">==</span> <span class="n">lv_uuid</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span>
+                        <span class="s">&#39;name&#39;</span> <span class="p">:</span> <span class="n">lv_name</span><span class="p">,</span>
+                        <span class="s">&#39;size&#39;</span> <span class="p">:</span> <span class="nb">float</span><span class="p">(</span> <span class="n">lv_size</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span><span class="s">&#39;.&#39;</span><span class="p">)),</span>
+                        <span class="s">&#39;group&#39;</span> <span class="p">:</span> <span class="n">vg_name</span>
+                        <span class="p">}</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">uuid</span>
+</pre></div>
+<h3>Validate the input</h3>
+<p>
+The modify and create method get a data_dict argument.
+It is cleaned by the validate_resource for the whole resource and
+each field individually by the the validate_resource_<em>field_name</em> methods.
+</p>
+<p>
+The arguments given to the modify and create must be cleaned,
+to check that the value have the right type and do not contain harmful values,
+such as '..' in a filename, quotes, or \n, etc.
+</p>
+<p>
+More detail on the validation process <a href="high_level.html#valid-input">here</a>.
+</p>
+<p>
+We write these validation method in order to ensure that the next methods we will write run safely.
+</p>
+<div class="highlight"><pre>
+    <span class="k">def</span> <span class="nf">_vg_list</span><span class="p">(</span> <span class="bp">self</span><span class="p">):</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">([</span><span class="s">&#39;sudo&#39;</span><span class="p">,</span><span class="s">&#39;lvm&#39;</span><span class="p">,</span><span class="s">&#39;vgs&#39;</span><span class="p">,</span><span class="s">&#39;--noheading&#39;</span><span class="p">,</span><span class="s">&#39;-o&#39;</span><span class="p">,</span><span class="s">&#39;vg_name&#39;</span><span class="p">])</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">map</span><span class="p">(</span> <span class="nb">str</span><span class="o">.</span><span class="n">strip</span><span class="p">,</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">validate_resource_name</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s">&#39;/&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Name cannot contain /&#39;</span>
+        <span class="k">return</span> <span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">validate_resource_group</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+        <span class="n">vg_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vg_list</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">group</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">vg_list</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Group must be one of </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">vg_list</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">group</span>
+
+    <span class="k">def</span> <span class="nf">validate_resource_size</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">size</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">size</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;size must be a positive number&#39;</span>
+</pre></div>
+<h3>Create a resource</h3>
+<p>
+The create_resource method takes the cleaned data_dict as argument and must return the id of the object it created.
+If there is a conflict with an existing resource, it may throw a <em>Duplicate</em> exception.
+</p>
+<div class="highlight"><pre>    <span class="k">def</span> <span class="nf">create_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">data_dict</span><span class="p">):</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span> <span class="p">[</span><span class="s">&#39;sudo&#39;</span><span class="p">,</span> <span class="s">&#39;lvcreate&#39;</span><span class="p">,</span>
+            <span class="s">&#39;--size&#39;</span><span class="p">,</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s">m&#39;</span> <span class="o">%</span> <span class="n">data_dict</span><span class="p">[</span><span class="s">&#39;size&#39;</span><span class="p">],</span>
+            <span class="s">&#39;--name&#39;</span><span class="p">,</span> <span class="n">data_dict</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span>
+            <span class="n">data_dict</span><span class="p">[</span><span class="s">&#39;group&#39;</span><span class="p">]</span>
+            <span class="p">])</span>
+        <span class="n">code</span><span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">,</span> <span class="s">&#39;command finished with code </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">code</span>
+
+        <span class="k">for</span> <span class="n">lv_uuid</span><span class="p">,</span> <span class="n">lv_size</span><span class="p">,</span> <span class="n">lv_name</span><span class="p">,</span> <span class="n">vg_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lv_list</span><span class="p">()</span> <span class="p">:</span>
+            <span class="k">if</span> <span class="n">lv_name</span> <span class="o">==</span> <span class="n">data_dict</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">vg_name</span> <span class="o">==</span> <span class="n">data_dict</span><span class="p">[</span><span class="s">&#39;group&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">lv_uuid</span>
+</pre></div>
+<h3>Delete a resource</h3>
+<p>
+The delete_resource get the id of the resource to delete.
+</p>
+<div class="highlight"><pre>    <span class="k">def</span> <span class="nf">delete_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">uuid</span><span class="p">):</span>
+        <span class="n">lv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span> <span class="n">uuid</span><span class="p">)</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span> <span class="p">[</span> <span class="s">&#39;sudo&#39;</span><span class="p">,</span> <span class="s">&#39;lvremove&#39;</span><span class="p">,</span>
+            <span class="s">&#39;</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span> <span class="p">(</span> <span class="n">lv</span><span class="p">[</span><span class="s">&#39;group&#39;</span><span class="p">],</span> <span class="n">lv</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">])</span> <span class="p">]</span> <span class="p">)</span>
+
+        <span class="n">code</span><span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">,</span> <span class="s">&#39;command finished with code </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">code</span>
+</pre></div>
+<h2>Resulting file</h2>
+<div class="highlight"><pre><span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="kn">from</span> <span class="nn">napix.manager</span> <span class="kn">import</span> <span class="n">Manager</span>
+<span class="kn">from</span> <span class="nn">napix.executor</span> <span class="kn">import</span> <span class="n">run_comman_or_fail</span><span class="p">,</span> <span class="n">executor</span>
+<span class="kn">from</span> <span class="nn">napix.exceptions</span> <span class="kn">import</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="n">Duplicate</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+
+<span class="k">class</span> <span class="nc">LVMManager</span><span class="p">(</span> <span class="n">Manager</span> <span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    LVM logical volumes manager</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">resource_fields</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;name&#39;</span> <span class="p">:</span> <span class="p">{</span>
+                <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                <span class="s">&#39;example&#39;</span> <span class="p">:</span> <span class="s">&#39;lv_home&#39;</span>
+                <span class="p">},</span>
+            <span class="s">&#39;group&#39;</span> <span class="p">:</span> <span class="p">{</span>
+                <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+                <span class="s">&#39;example&#39;</span> <span class="p">:</span> <span class="s">&#39;lv_home&#39;</span>
+                <span class="p">},</span>
+            <span class="s">&#39;size&#39;</span> <span class="p">:</span> <span class="p">{</span>
+                <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;Total size of the logical volume in Mo&#39;</span><span class="p">,</span>
+                <span class="s">&#39;example&#39;</span> <span class="p">:</span> <span class="s">&#39;20000&#39;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_lv_list</span><span class="p">(</span> <span class="bp">self</span><span class="p">):</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span>
+                <span class="p">[</span><span class="s">&#39;sudo&#39;</span><span class="p">,</span><span class="s">&#39;lvm&#39;</span><span class="p">,</span><span class="s">&#39;lvs&#39;</span><span class="p">,</span><span class="s">&#39;--nosuffix&#39;</span><span class="p">,</span> <span class="s">&#39;--noheading&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;--separator&#39;</span><span class="p">,</span><span class="s">&#39;;&#39;</span><span class="p">,</span><span class="s">&#39;-o&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;lv_uuid,lv_size,lv_name,vg_name&#39;</span> <span class="p">],</span> <span class="n">discard_output</span><span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessException</span><span class="p">(</span>
+                <span class="s">&#39;The command exited with a non 0 return code&#39;</span><span class="o">+</span>
+                <span class="n">process</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">lv</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span> <span class="nb">str</span><span class="o">.</span><span class="n">strip</span><span class="p">,</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">lv</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">lv</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;;&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_vg_list</span><span class="p">(</span> <span class="bp">self</span><span class="p">):</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">([</span><span class="s">&#39;sudo&#39;</span><span class="p">,</span><span class="s">&#39;lvm&#39;</span><span class="p">,</span><span class="s">&#39;vgs&#39;</span><span class="p">,</span><span class="s">&#39;--noheading&#39;</span><span class="p">,</span><span class="s">&#39;-o&#39;</span><span class="p">,</span><span class="s">&#39;vg_name&#39;</span><span class="p">])</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">map</span><span class="p">(</span> <span class="nb">str</span><span class="o">.</span><span class="n">strip</span><span class="p">,</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">list_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">):</span>
+        <span class="c">#run the command that spit the UUID line by line</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span>
+                <span class="p">[</span><span class="s">&#39;sudo&#39;</span><span class="p">,</span><span class="s">&#39;lvm&#39;</span><span class="p">,</span><span class="s">&#39;lvs&#39;</span><span class="p">,</span><span class="s">&#39;--nosuffix&#39;</span><span class="p">,</span> <span class="s">&#39;--noheading&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;--separator&#39;</span><span class="p">,</span><span class="s">&#39;;&#39;</span><span class="p">,</span><span class="s">&#39;-o&#39;</span><span class="p">,</span><span class="s">&#39;lv_uuid&#39;</span><span class="p">],</span> <span class="n">discard_output</span><span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="c">#if the command fail it raises an exception</span>
+        <span class="c"># that will be catched by napix and will return a 500 error</span>
+        <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessException</span><span class="p">(</span>
+                <span class="s">&#39;The command exited with a non 0 return code&#39;</span><span class="o">+</span>
+                <span class="n">process</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="nb">filter</span><span class="p">(</span> <span class="nb">bool</span><span class="p">,</span>
+                <span class="nb">map</span><span class="p">(</span> <span class="nb">str</span><span class="o">.</span><span class="n">strip</span><span class="p">,</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">get_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">uuid</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">lv_uuid</span><span class="p">,</span> <span class="n">lv_size</span><span class="p">,</span> <span class="n">lv_name</span><span class="p">,</span> <span class="n">vg_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lv_list</span><span class="p">()</span> <span class="p">:</span>
+            <span class="k">if</span> <span class="n">uuid</span> <span class="o">==</span> <span class="n">lv_uuid</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span>
+                        <span class="s">&#39;name&#39;</span> <span class="p">:</span> <span class="n">lv_name</span><span class="p">,</span>
+                        <span class="s">&#39;size&#39;</span> <span class="p">:</span> <span class="nb">float</span><span class="p">(</span> <span class="n">lv_size</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span><span class="s">&#39;.&#39;</span><span class="p">)),</span>
+                        <span class="s">&#39;group&#39;</span> <span class="p">:</span> <span class="n">vg_name</span>
+                        <span class="p">}</span>
+        <span class="k">raise</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">uuid</span>
+
+    <span class="k">def</span> <span class="nf">validate_resource_name</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s">&#39;/&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Name cannot contain /&#39;</span>
+        <span class="k">return</span> <span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">validate_resource_group</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+        <span class="n">vg_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vg_list</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">group</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">vg_list</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Group must be one of </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">vg_list</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">group</span>
+
+    <span class="k">def</span> <span class="nf">validate_resource_size</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span> <span class="n">size</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">size</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;size must be a positive number&#39;</span>
+
+    <span class="k">def</span> <span class="nf">create_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">data_dict</span><span class="p">):</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span> <span class="p">[</span><span class="s">&#39;sudo&#39;</span><span class="p">,</span> <span class="s">&#39;lvcreate&#39;</span><span class="p">,</span>
+            <span class="s">&#39;--size&#39;</span><span class="p">,</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s">m&#39;</span> <span class="o">%</span> <span class="n">data_dict</span><span class="p">[</span><span class="s">&#39;size&#39;</span><span class="p">],</span>
+            <span class="s">&#39;--name&#39;</span><span class="p">,</span> <span class="n">data_dict</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span>
+            <span class="n">data_dict</span><span class="p">[</span><span class="s">&#39;group&#39;</span><span class="p">]</span>
+            <span class="p">])</span>
+        <span class="n">code</span><span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">,</span> <span class="s">&#39;command finished with code </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">code</span>
+
+        <span class="k">for</span> <span class="n">lv_uuid</span><span class="p">,</span> <span class="n">lv_size</span><span class="p">,</span> <span class="n">lv_name</span><span class="p">,</span> <span class="n">vg_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lv_list</span><span class="p">()</span> <span class="p">:</span>
+            <span class="k">if</span> <span class="n">lv_name</span> <span class="o">==</span> <span class="n">data_dict</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">vg_name</span> <span class="o">==</span> <span class="n">data_dict</span><span class="p">[</span><span class="s">&#39;group&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">lv_uuid</span>
+
+    <span class="k">def</span> <span class="nf">delete_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">uuid</span><span class="p">):</span>
+        <span class="n">lv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span> <span class="n">uuid</span><span class="p">)</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span> <span class="p">[</span> <span class="s">&#39;sudo&#39;</span><span class="p">,</span> <span class="s">&#39;lvremove&#39;</span><span class="p">,</span>
+            <span class="s">&#39;</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span> <span class="p">(</span> <span class="n">lv</span><span class="p">[</span><span class="s">&#39;group&#39;</span><span class="p">],</span> <span class="n">lv</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">])</span> <span class="p">]</span> <span class="p">)</span>
+
+        <span class="n">code</span><span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">,</span> <span class="s">&#39;command finished with code </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">code</span>
+</pre></div>
+</div>
+    </body>
+</html>

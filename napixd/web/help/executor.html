@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Napix Web Help</title>
+        <link href="../css/napix.min.css" rel="stylesheet"/>
+        <style>
+            body {
+                margin-top: 100px;
+                margin-bottom: 200px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container-fluid">
+                    <a href="." class="brand" >Napix Help</a>
+                    <ul class="nav">
+                        <li> <a href="high_level.html">Writing a Napix module</a> </li>
+                        <li> <a href="low_level.html">Low level interface</a> </li>
+                        <li> <a href="deploy.html">Deployment</a> </li>
+                        <li> <a href="executor.html">Deployment</a> </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <h1>Running background threads and processes</h1>
+            <p>
+            The Napix server provides tools to run and manage processes and theads.
+            </p>
+            <h2>Executor</h2>
+            <h3>Executor</h3>
+            The <strong>executor</strong> is a wrapper around subprocess that manages the running processes.
+            The process is remove from the list once it has terminated.
+            </p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">napixd.executor</span> <span class="kn">import</span> <span class="n">executor</span>
+</pre></div>
+            <p>
+            The executor provide a method <strong>create_job</strong>( <em>command</em>, <em>discard_output</em> ).
+            This method returns a wrapper of the subprocess.Popen that notifies the executor when it closes.
+            </p>
+            <p>
+            This method takes an argument <em>command</em> which is a sequence of the programs and arguments.
+            For instance, in order to run ls -l /home, you have to use ['ls', '-l', '/home'].
+            </p>
+<div class="highlight"><pre><span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span> <span class="p">[</span><span class="s">&quot;ls&quot;</span><span class="p">,</span> <span class="s">&quot;-l&quot;</span><span class="p">,</span> <span class="s">&quot;/home&quot;</span><span class="p">],</span> <span class="n">discard_output</span><span class="o">=</span> <span class="bp">False</span> <span class="p">)</span>
+</pre></div>
+<div class="highlight"><pre><span class="n">executor</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span> <span class="p">[</span><span class="s">&quot;lvcreate&quot;</span><span class="p">,</span> <span class="s">&quot;-n&quot;</span><span class="p">,</span> <span class="s">&quot;lv00&quot;</span><span class="p">,</span> <span class="s">&quot;-l&quot;</span><span class="p">,</span> <span class="s">&quot;20G&quot;</span><span class="p">,</span> <span class="s">&quot;vg00&quot;</span><span class="p">],</span> <span class="n">discard_output</span><span class="o">=</span> <span class="bp">True</span> <span class="p">)</span>
+</pre></div>
+            <p>
+            The other argument <em>discard_output</em> is a boolean, which tell to the executor if
+            it redirects the output to /dev/null, or keep it readable.
+            </p>
+            <h3>exec_manager</h3>
+            <p>
+            The exec_manager is a tools used with the executor.
+            It manages the process it was given, even after they finish.
+            It allows to make a background task, where the state is available through a web request.
+            </p>
+            <p>
+            The interface of the exec_manager is the same that the executor, the method <strong>create_job</strong>
+            </p>
+            <div class="highlight"><pre><span class="kn">from</span> <span class="nn">napixd.executor</span> <span class="kn">import</span> <span class="n">exec_manager</span>
+</pre></div>
+            <p>
+            In order to avoid the filling of the output buffer,
+            the exec_manager read periodically the output stream of the process and keeps its own buffer.
+            </p>
+<div class="highlight"><pre><span class="n">handle</span> <span class="o">=</span> <span class="n">exec_manager</span><span class="o">.</span><span class="n">create_job</span><span class="p">(</span> <span class="p">[</span><span class="s">&quot;resize2fs&quot;</span><span class="p">,</span> <span class="s">&quot;/dev/mapper/homes&quot;</span><span class="p">,</span> <span class="s">&quot;50G&quot;</span><span class="p">],</span> <span class="n">discard_output</span><span class="o">=</span> <span class="bp">True</span> <span class="p">)</span>
+<span class="n">exec_manager</span><span class="p">[</span><span class="n">handle</span><span class="o">.</span><span class="n">pid</span><span class="p">]</span>
+</pre></div>
+            <h2>Thread manager</h2>
+            <h3>thread_manager</h3>
+            <p>
+            The thread manager is a tool that manages thread activity in background.
+            </p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">napixd.thread_manager</span> <span class="kn">import</span> <span class="n">thread_manager</span>
+</pre></div>
+            <p>
+            It provides a method <strong>do_async</strong> which run a python function in another thread.
+            This method is called with the function, its arguments, and three callbacks.
+            </p>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>argument name</th>
+                        <th>argument value</th>
+                        <th>example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>function</td>
+                        <td>mandatory<br />The callback that will be run in the new thread</td>
+                        <td>
+                            <div class="highlight"><pre><span class="k">def</span> <span class="nf">deploy_file</span><span class="p">(</span> <span class="nb">file</span><span class="p">,</span> <span class="n">servers</span><span class="p">,</span> <span class="n">login</span><span class="o">=</span><span class="s">&#39;root&#39;</span><span class="p">,</span> <span class="n">ssh_key</span><span class="o">=</span><span class="bp">None</span> <span class="p">):</span>
+	<span class="o">...</span>
+</pre></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>fn_args</td>
+                        <td>an optional sequence of arguments that will be given to the function</td>
+                        <td>[ '/etc/hosts', ['server1','server2']]</td>
+                    </tr>
+                    <tr>
+                        <td>fn_kwargs</td>
+                        <td>an optional dict of arguments that will be given to the function</td>
+                        <td>{ 'ssh_key' : '/var/lib/napix/id_rsa.pub' } </td>
+                    </tr>
+                    <tr>
+                        <td>on_success</td>
+                        <td>a callback that will be called with the result of the function if it returns
+                            without exception</td>
+                        <td>
+                            <div class="highlight"><pre><span class="k">def</span> <span class="nf">send_mail_ok</span><span class="p">(</span> <span class="n">servers</span><span class="p">):</span>
+	<span class="o">...</span>
+</pre></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>on_fail</td>
+                        <td>a callback that will be called with the exception that the function have thrown</td>
+                        <td>
+                            <div class="highlight"><pre><span class="k">def</span> <span class="nf">send_mail_fail</span><span class="p">(</span> <span class="n">exception</span><span class="p">):</span>
+	<span class="o">...</span>
+</pre></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>on_end</td>
+                        <td>a callback that will be called once the thread ends whatever happened</td>
+                        <td>
+                            <div class="highlight"><pre><span class="k">def</span> <span class="nf">clean_temp_files</span><span class="p">(</span><span class="p">):</span>
+	<span class="o">...</span>
+</pre></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>
+            Every thread has an attribute named <strong>status</strong>, so that the thread can describe how much progress has been done.
+            </p>
+            <p>
+            The thread also has an attribute <strong>execution_state</strong> which is one of 'CREATED','RUNNING','RETURNED','EXCEPTION','FINISHING','CLOSED'.
+            The thread starts in CREATED, goes on RUNNING while the function is called then either
+            goes in RETURNED if it returned without exception, during the execution of on_success
+            or goes in EXCEPTION during the execution of on_fail
+            and then gets by FINISHING during on_end and finish by FINISHING.
+            </p>
+            <p>
+            The execution_state_queue attribute of the tread is a queue that notifies when a thread change of state.
+            </p>
+            <h3>background</h3>
+            <p>
+            The background object is a decorator that will run the decorated function in another thread.
+            </p>
+<div class="highlight"><pre><span class="nd">@background</span><span class="p">(</span><span class="n">give_thread</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">on_success</span><span class="o">=</span><span class="n">send_mail_ok</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">send_mail</span><span class="p">(</span><span class="n">thread</span><span class="p">,</span><span class="n">users</span><span class="p">):</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">users</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">u</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">users</span><span class="p">):</span>
+        <span class="n">thread</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">idx</span><span class="o">/</span><span class="n">total</span><span class="o">*</span><span class="mf">100.</span>
+        <span class="n">send_mail</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+</pre></div>
+            <p>
+            The decorator takes some arguments: those from thread_manager.so_async, plus <em>give_thread</em>.
+            The give_thread argument is a boolean that tell to the decorator if the thread is given to
+            the decorated function when it's called.
+            By default it is set to False.
+            Thus a function can be decorated without changing its interface.
+            </p>
+<div class="highlight"><pre><span class="k">class</span> <span class="nc">Service</span><span class="p">(</span> <span class="n">Manager</span><span class="p">):</span>
+
+    <span class="nd">@background</span>
+    <span class="k">def</span> <span class="nf">generate_statistics</span><span class="p">(</span><span class="bp">self</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expensive_calculation</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">create_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">data_dict</span> <span class="p">):</span>
+        <span class="n">new_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_object</span><span class="p">(</span> <span class="n">data_dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_statistics</span><span class="p">()</span> <span class="c">#return directly</span>
+        <span class="k">return</span> <span class="n">new_id</span>
+</pre></div>
+        </div>
+    </body>
+</html>
