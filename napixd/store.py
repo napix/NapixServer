@@ -4,7 +4,6 @@
 from UserDict import IterableUserDict
 import os
 import cPickle as pickle
-import redis
 from .conf import Conf
 
 class FileStore( IterableUserDict):
@@ -26,16 +25,19 @@ class FileStore( IterableUserDict):
         return Conf.get_default().get( 'Napix.Store' ).get( 'path') or '/var/lib/napix'
 
 
-class RedisStore( IterableUserDict):
-    def get_default_options( self):
-        return Conf.get_default().get( 'Napix.Store').get('redis') or {}
-    def __init__( self, collection, options= None):
-        options = options != None and options or self.get_default_options()
-        self.redis = redis.Redis( **options )
-        self.collection = collection
-        data = self.redis.get( collection)
-        self.data = pickle.loads( data ) if data else {}
+try:
+    import redis
+    class RedisStore( IterableUserDict):
+        def get_default_options( self):
+            return Conf.get_default().get( 'Napix.Store').get('redis') or {}
+        def __init__( self, collection, options= None):
+            options = options != None and options or self.get_default_options()
+            self.redis = redis.Redis( **options )
+            self.collection = collection
+            data = self.redis.get( collection)
+            self.data = pickle.loads( data ) if data else {}
 
-    def save( self):
-        self.redis.set( self.collection, pickle.dumps( self.data ))
-
+        def save( self):
+            self.redis.set( self.collection, pickle.dumps( self.data ))
+except ImportError:
+    pass
