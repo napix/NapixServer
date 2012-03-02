@@ -1,7 +1,7 @@
 {
  "_napix_version": 1.0 ,
  "Napix.daemon" : {
-  "host" : "0.0.0.0",
+  "host" : "127.0.0.1",
   "port" : 8002,
   "debug" : true
  },
@@ -17,7 +17,7 @@
  },
  "Napix.auth" : {
      "auth_url" : "http://auth.napix.nx/auth/authorization/",
-     "service" : "server.napix.nx:8002"
+     "service" : "localhost:8002"
  },
  "HostFiles" : {
   "url":"hosts"
