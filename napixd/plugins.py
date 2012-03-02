@@ -131,10 +131,9 @@ class AAAPlugin(object):
                 raise HTTPError(401, '''
 <html><head><title>Request Not authorized</title></head><body>
 <h1> You need to sign your request</h1>
-Maybe you wish to visit <a href="http://%s/_napix_js/">the web interface</a><br />
-Or you prefer going to the <a href="http://%s/_napix_js/help/high_level.html">the doc</a>
-</body></html>''' % (
-                    self.settings.get('service'),self.settings.get('service')),
+Maybe you wish to visit <a href="/_napix_js/">the web interface</a><br />
+Or you prefer going to the <a href="/_napix_js/help/high_level.html">the doc</a>
+</body></html>''',
                     header = [ ( 'CONTENT_TYPE', 'text/html' ) ]
                 )
             msg,l,signature = request.headers['Authorization'].rpartition(':')
