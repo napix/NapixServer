@@ -1,10 +1,14 @@
-hg clone ssh://hg@the-book.enix.org/NapixServer
-virtualenv --no-site-package napix
-. napix/bin/activate
-pip install django
-pip install django-piston
-cd NapixServer/napixd
-python manage.py runserver
 
 
-Then install the json plugin for ffox.
+Dependencies
+---------------------
+
+Rocket==1.2
+bottle==0.10
+httplib2==0.7
+
+
+Launching the application
+---------------------
+
+python ./application.py
