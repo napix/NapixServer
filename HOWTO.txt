@@ -8,7 +8,17 @@ bottle==0.10
 httplib2==0.7
 
 
-Launching the application
+Configuration in conf/settings.json
 ---------------------
 
+Set the authentication URL in Napix.Auth/auth_url
+and the service name (this server's hostname) in Napix.Auth/service
+
+
+
+Launching the application
+---------------------
 python ./application.py
+
+You can now connect to this server with the command line at localhost:8002
+or use the web interface at http://localhost:8002/_napix_js/
