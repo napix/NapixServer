@@ -135,7 +135,7 @@ class DictManager(ReadOnlyDictManager):
         with self.resource_lock:
             resource_id = self.generate_new_id(resource_dict)
             if resource_id in self.resources:
-                raise Duplicate
+                raise Duplicate, resource_id
             self._set_resource(resource_id,resource_dict)
             return resource_id
 
