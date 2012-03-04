@@ -43,10 +43,13 @@ class HostManager(DictManager):
 
         return a dict of IP keys and list of hostnames values
         """
-        file_ = open(parent['file'],'r')
-        lines = [ line.replace('\t',' ').split(' ')
-                for line in map(str.strip,file_.readlines())
-                if line and line[0] != '#' ]
+        try:
+            file_ = open(parent['file'],'r')
+            lines = [ line.replace('\t',' ').split(' ')
+                    for line in map(str.strip,file_.readlines())
+                    if line and line[0] != '#' ]
+        except IOError:
+            lines = []
 
         hosts = {}
         for line in lines:
