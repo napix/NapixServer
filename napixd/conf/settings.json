@@ -12,7 +12,6 @@
      }
  },
  "Napix.managers" : {
-  "napixd.tests.mock.managed_class": [ "Paragraphs" ],
   "napixd.examples.list_manager" : [ "HostFiles" ]
  },
  "Napix.auth" : {
@@ -20,6 +19,6 @@
      "service" : "localhost:8002"
  },
  "HostFiles" : {
-  "url":"hosts"
+  "url":"sample"
  }
 }
