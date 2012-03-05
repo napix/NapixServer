@@ -134,6 +134,8 @@ class DictManager(ReadOnlyDictManager):
     def create_resource(self,resource_dict):
         with self.resource_lock:
             resource_id = self.generate_new_id(resource_dict)
+            if resource_id == '127.0.1.0' and False :
+                raise ValueError, 'pwah'
             if resource_id in self.resources:
                 raise Duplicate, resource_id
             self._set_resource(resource_id,resource_dict)
@@ -144,7 +146,7 @@ class DictManager(ReadOnlyDictManager):
             try:
                 del self.resources[resource_id]
             except KeyError:
-                raise NotFound
+                raise NotFound, resource_id
 
 class ListManager(DictManager):
     """
