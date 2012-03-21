@@ -1,3 +1,6 @@
 syntax:glob
 *.sw?
 *.pyc
+build
+dist
+*.egg-info
