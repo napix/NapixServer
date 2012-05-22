@@ -3,11 +3,12 @@
 
 import json
 import os.path
+import UserDict
 
 
 _default = None
 
-class Conf(dict):
+class Conf(UserDict.UserDict):
     _default = None
     @classmethod
     def get_default(cls):
@@ -17,16 +18,14 @@ class Conf(dict):
                     'conf','settings.json'),'r')))
         return cls._default
 
-    def for_manager(self,stack):
-        prefix = self._get_prefix(stack)
-        for key,value in self.items():
-            if key.startswith(prefix):
-                yield key[len(prefix):],value
+    def __getitem__( self, item):
+        if '.' in item :
+            prefix, x, suffix = item.rpartition('.')
+            return self.get(prefix)[suffix]
+        else:
+            return self.data[item]
 
-    def _get_prefix(self,stack):
-        return len(stack) > 1 and '.'.join(map(lambda x:x.get_name(),stack[1:]))+'.' or ''
-
-    def get(self,section_id):
+    def get( self, section_id):
         try:
             return Conf( self[section_id] )
         except (KeyError,ValueError):

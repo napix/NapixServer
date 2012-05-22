@@ -1,24 +1,28 @@
 {
- "_napix_version": 1.0 ,
- "Napix.daemon" : {
-  "host" : "127.0.0.1",
-  "port" : 8002,
-  "debug" : true
- },
- "Napix.Store" : {
-     "path" : "/tmp/napix",
-     "redis" : {
-         "host" : "redis.napix.nx"
-     }
- },
- "Napix.managers" : {
-  "napixd.examples.list_manager" : [ "HostFiles" ]
- },
- "Napix.auth" : {
-     "auth_url" : "http://auth.napix.nx/auth/authorization/",
-     "service" : "localhost:8002"
- },
- "HostFiles" : {
-  "url":"sample"
- }
+  "_napix_version": 1.0 ,
+  "Napix" : {
+    "daemon" : {
+      "host" : "127.0.0.1",
+      "port" : 8002,
+      "debug" : true
+    },
+    "storage" : {
+      "file" : {
+        "path" : "/tmp/napix"
+      },
+      "redis" : {
+        "host" : "redis.napix.nx"
+      }
+    },
+    "auth" : {
+      "auth_url" : "http://auth.napix.nx/auth/authorization/",
+      "service" : "localhost:8002"
+    },
+    "managers" : {
+      "hostfiles" : "napixd.examples.list_manager.HostFiles"
+    }
+  },
+  "hostfiles" : {
+    "url":"sample"
+  }
 }
