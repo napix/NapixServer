@@ -101,9 +101,14 @@ class TestConf(TestServiceBase):
         self.bottle = NapixdBottle([
             Service(Paragraphs,Conf({
                 'url':'para',
-                'w.url':'words',
-                'w.t.url':'trans'
-                })) ], no_conversation = True)
+                'w' : {
+                    'url':'words',
+                    't' : {
+                        'url':'trans'
+                        }
+                    }
+                }))
+            ], no_conversation = True)
         self.bottle.setup_bottle()
 
     def testGETCollection(self):

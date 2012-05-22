@@ -76,23 +76,23 @@ class NapixdBottle(bottle.Bottle):
         return a list of Manager subclasses
         """
         managers_conf = Conf.get_default().get('Napix.managers')
-        for manager_path,managers in managers_conf.items():
-            __import__(manager_path)
-            logger.debug('import %s',manager_path)
-            for manager_name in managers:
-                manager = getattr(sys.modules[manager_path],manager_name)
-                logger.debug('load %s',manager_name)
-                yield manager
+        for alias, manager_path in managers_conf.items():
+            module_path, x, manager_name = manager_path.rpartition('.')
+            logger.debug('import %s', module_path)
+            __import__(module_path)
+            logger.debug('load %s',manager_name)
+            manager = getattr( sys.modules[module_path], manager_name)
+            yield alias, manager
 
     def _load_services(self):
         """
         Load the services with the managers found
         return a list of Services instances
         """
-        for manager in self._load_managers():
-            config = Conf.get_default().get(manager.get_name())
-            service = Service(manager,config)
-            logger.debug('service %s',service.url)
+        for alias, manager in self._load_managers():
+            config = Conf.get_default().get( alias )
+            service = Service( manager, config )
+            logger.debug('service %s', service.url)
             yield service
 
     def slash(self):

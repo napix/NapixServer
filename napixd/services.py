@@ -70,7 +70,9 @@ class CollectionService(object):
         self.services = list(self._services_stack())
         self.services.reverse()
 
-        self.config= dict(config.for_manager(self.services))
+        self.config = dict( config
+                if len( self.services) == 1
+                else config.get(self._get_services_prefix()) )
 
         try:
             iter(self.collection.managed_class)
@@ -78,7 +80,7 @@ class CollectionService(object):
         except TypeError:
             self.direct_plug = self.collection.managed_class and True or None
         #url is added if append_url is True
-        self.url = append_url and self.config.get('url',self.get_name()) or ''
+        self.url = append_url and self.config.get('url', self.get_name()) or ''
 
         base_url = '/'
         absolute_url = '/'
@@ -96,6 +98,9 @@ class CollectionService(object):
         self.absolute_url = absolute_url
 
         self.all_actions = list(self._all_actions())
+
+    def _get_services_prefix(self):
+        return '.'.join( x.get_name() for x in self.services[1:]) or ''
 
     def get_name(self):
         return self.collection.get_name()

@@ -46,7 +46,7 @@ class TestConversationPlugin(WSGITester):
         self.assertEqual( headers['Content-Type'], 'application/json')
         self.assertEqual( result, '{"line": 41, "error_class": "ValueError",'
                 ' "error_text": "I don\'t like cats", "filename": '
-                '"/home/cecedille1/enix/napix6/lib/python2.6/s'
+                '"/home/napix/napix/lib/python2.6/s'
                 'ite-packages/napixd/tests/mock/managed_class.py"}')
 
     def testBadRequest(self):
