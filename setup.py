@@ -24,6 +24,27 @@ setup(name="napixd",
         ],
     data_files=[
         ('napixd/conf', ['napixd/conf/settings.json']),
-        ('napixd/web', find_data('napixd/web')),
-        ],
-        )
+        ('napixd/web', [ 'napixd/web/index.html' ]),
+        ('napixd/web/help', [
+            'napixd/web/help/executor.html',
+            'napixd/web/help/deploy.html',
+            'napixd/web/help/low_level.html',
+            'napixd/web/help/high_level.html'
+            ]),
+        ('napixd/web/css', [
+            'napixd/web/css/index.css',
+            'napixd/web/css/help.css'
+            ]),
+        ('napixd/web/js', [
+            'napixd/web/js/firstrun.js',
+            'napixd/web/js/main.js'
+            ]),
+        ('napixd/web/js/libs', [
+            'napixd/web/js/libs/require.js'
+            ]),
+        ('napixd/web/img', [
+            'napixd/web/img/glyphicons-halflings-white.png',
+            'napixd/web/img/glyphicons-halflings.png'
+            ]),
+        ]
+    )
