@@ -193,7 +193,7 @@ class Manager(object):
         Auto detection function.
         This function is called by napixd to check if the manager is needed
         """
-        return cls is not Manager
+        return not cls.__module__.startswith('napixd.managers')
 
     def validate_id(self,id_):
         """

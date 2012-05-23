@@ -105,11 +105,12 @@ class NapixdBottle(bottle.Bottle):
             if not dot or py != 'py':
                 continue
             module = self._import(module_name)
-            content = getattr( module, '__all__', False) or dir( module_name )
+            content = getattr( module, '__all__', False) or dir( module)
             for attr in content:
-                obj = getattr(module_name, attr)
+                obj = getattr(module, attr)
                 if isinstance( obj, type) and issubclass( obj, Manager):
-                    yield obj.get_name(), obj
+                    if obj.detect():
+                        yield obj.get_name(), obj
 
 
     def _load_services(self):
