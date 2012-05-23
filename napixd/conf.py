@@ -1,22 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import logging
 import json
 import os.path
 import UserDict
 
 
-_default = None
+logger = logging.getLogger()
 
 class Conf(UserDict.UserDict):
     _default = None
+
+    paths = [ '/etc/napixd/', os.path.join( os.path.dirname(__file__), 'conf') ]
+
     @classmethod
     def get_default(cls):
         if not cls._default:
-            cls._default = Conf(json.load(
-                open(os.path.join( os.path.dirname(__file__),
-                    'conf','settings.json'),'r')))
+            cls._make_default()
         return cls._default
+
+    @classmethod
+    def _make_default(cls):
+        for path in cls.paths :
+            path = os.path.join( path, 'settings.json')
+            if os.path.isfile( path):
+                conf = json.load( open( path, 'r' ))
+                cls._default = cls(conf)
+                return
+        logger.warning( 'Did not find any configuration ')
+        return cls( {} )
 
     def __getitem__( self, item):
         if '.' in item :

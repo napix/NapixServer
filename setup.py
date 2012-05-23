@@ -23,7 +23,7 @@ setup(name="napixd",
         'bin/napixd'
         ],
     data_files=[
-        ('napixd/conf', ['napixd/conf/settings.json']),
+        ('/etc/napixd/', ['napixd/conf/settings.json']),
         ('napixd/web', [ 'napixd/web/index.html' ]),
         ('napixd/web/help', [
             'napixd/web/help/executor.html',
