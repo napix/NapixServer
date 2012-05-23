@@ -2,7 +2,7 @@
 <html>
     <head>
         <title>Napix Web Help</title>
-        <link href="../css/napix.min.css" rel="stylesheet"/>
+        <link href="../css/help.css" rel="stylesheet"/>
         <script data-main="js/help" src="js/libs/require/require.js" ></script>
         <style>
             body {
@@ -19,7 +19,7 @@
                         <li> <a href="high_level.html">Writing a Napix module</a> </li>
                         <li> <a href="low_level.html">Low level interface</a> </li>
                         <li> <a href="deploy.html">Deployment</a> </li>
-                        <li> <a href="executor.html">Deployment</a> </li>
+                        <li> <a href="executor.html">Process and threads</a> </li>
                     </ul>
                 </div>
             </div>
@@ -29,10 +29,13 @@
             <p>
             In this howto you will learn to write a quick Napix module.
             In order to write this module you have to write a <strong>manager</strong>
-            and install it in the Napix server
+            and install it in the Napix server.
+            A Napix module may be in every place that is accessible in the python path.
+            However it is recommended to keep them in <strong>/usr/local/lib/napix/</strong>.
             </p>
             <p>
             For this example we will be write a manager for the hosts file.
+            So we create the file sample1.py in /usr/local/lib/napix.
             </p>
             <h2 id="writing" >Writing the module</h2>
             <h3 id="writing-class">Napix Class</h3>
@@ -490,11 +493,15 @@
             </p>
             <p>
             The key <em>Napix.Manager</em> hold a dictionary of the activated modules.
-            The key of this dict is the path of the module and the value is an array of class names.
+            The key of this dict is the alias of the module, and the value is the path to the module.
+            </p>
+            <p>
+            Mutliple aliases may refer to the same class, then it will launch multiples instances of the manager.
+            It may be useful for example to load multiple hosts managers for differents hosts files.
             </p>
 <div class="highlight"><pre><span class="p">{</span>
     <span class="s2">&quot;Napix.Manager&quot;</span> <span class="o">:</span> <span class="p">{</span>
-        <span class="s2">&quot;sample1&quot;</span> <span class="o">:</span> <span class="p">[</span> <span class="s2">&quot;HostManager&quot;</span> <span class="p">]</span>
+        <span class="s2">&quot;hosts&quot;</span> <span class="o">:</span> <span class="s2">&quot;sample1.HostManager&quot;</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
@@ -512,9 +519,9 @@
             </p>
 <div class="highlight"><pre><span class="p">{</span>
     <span class="s2">&quot;Napix.Manager&quot;</span> <span class="o">:</span> <span class="p">{</span>
-        <span class="s2">&quot;sample1&quot;</span> <span class="o">:</span> <span class="p">[</span> <span class="s2">&quot;HostManager&quot;</span> <span class="p">]</span>
+        <span class="s2">&quot;hosts&quot;</span> <span class="o">:</span> <span class="s2">&quot;sample1.HostManager&quot;</span>
     <span class="p">}</span>
-    <span class="s2">&quot;HostManager&quot;</span> <span class="o">:</span> <span class="p">{</span>
+    <span class="s2">&quot;hosts&quot;</span> <span class="o">:</span> <span class="p">{</span>
         <span class="s2">&quot;url&quot;</span> <span class="o">:</span> <span class="s2">&quot;hosts&quot;</span><span class="p">,</span>
         <span class="s2">&quot;file_path&quot;</span> <span class="o">:</span> <span class="s2">&quot;/usr/etc/hosts&quot;</span>
     <span class="p">}</span>
