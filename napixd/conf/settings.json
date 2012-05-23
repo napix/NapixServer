@@ -2,7 +2,7 @@
   "_napix_version": 1.0 ,
   "Napix" : {
     "daemon" : {
-      "host" : "127.0.0.1",
+      "host" : "0.0.0.0",
       "port" : 8002,
       "debug" : true
     },
@@ -14,7 +14,7 @@
         "host" : "redis.napix.nx"
       }
     },
-    "auth" : {
+    "auth_" : {
       "auth_url" : "http://auth.napix.nx/auth/authorization/",
       "service" : "localhost:8002"
     },
