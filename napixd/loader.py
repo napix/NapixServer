@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger('Napix.loader')
 
 import sys
-import os.path
+import os
 from .conf import Conf
 from .services import Service
 from .managers import Manager
@@ -97,15 +97,15 @@ class NapixdBottle(bottle.Bottle):
         return sys.modules[module_path]
 
     def _load_auto_detect( self ):
-        sys.path.app( AUTO_DETECT_PATH )
-        for filename in os.path.listdir( AUTO_DETECT_PATH ):
+        sys.path.append( AUTO_DETECT_PATH )
+        for filename in os.listdir( AUTO_DETECT_PATH ):
             if filename.startswith('.'):
                 continue
             module_name, dot, py = filename.rpartition('.')
             if not dot or py != 'py':
                 continue
             module = self._import(module_name)
-            content = getattr( module, '__all__') or dir( module_name )
+            content = getattr( module, '__all__', False) or dir( module_name )
             for attr in content:
                 obj = getattr(module_name, attr)
                 if isinstance( obj, type) and issubclass( obj, Manager):
