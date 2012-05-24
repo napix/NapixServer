@@ -8,11 +8,13 @@ import sys
 import os.path
 from .conf import Conf
 from .services import Service
+from .managers import Manager
 
 import bottle
 from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin
 
 bottle.DEBUG = True
+AUTO_DETECT_PATH = '/var/lib/napix/auto'
 
 def get_bottle_app():
     """
@@ -70,7 +72,13 @@ class NapixdBottle(bottle.Bottle):
     def static(self, filename = 'index.html' ):
         return bottle.static_file( filename, root = os.path.join( os.path.dirname( __file__),'web'))
 
-    def _load_managers(self):
+    def _load_managers( self):
+        for manager in self._load_conf_managers():
+            yield manager
+        for manager in self._load_auto_detect():
+            yield manager
+
+    def _load_conf_managers(self):
         """
         Load the managers with the conf
         return a list of Manager subclasses
@@ -78,11 +86,31 @@ class NapixdBottle(bottle.Bottle):
         managers_conf = Conf.get_default().get('Napix.managers')
         for alias, manager_path in managers_conf.items():
             module_path, x, manager_name = manager_path.rpartition('.')
-            logger.debug('import %s', module_path)
-            __import__(module_path)
+            module = self._import( module_path )
             logger.debug('load %s',manager_name)
-            manager = getattr( sys.modules[module_path], manager_name)
+            manager = getattr( module, manager_name)
             yield alias, manager
+
+    def _import( self, module_path ):
+        logger.debug('import %s', module_path)
+        __import__(module_path)
+        return sys.modules[module_path]
+
+    def _load_auto_detect( self ):
+        sys.path.app( AUTO_DETECT_PATH )
+        for filename in os.path.listdir( AUTO_DETECT_PATH ):
+            if filename.startswith('.'):
+                continue
+            module_name, dot, py = filename.rpartition('.')
+            if not dot or py != 'py':
+                continue
+            module = self._import(module_name)
+            content = getattr( module, '__all__') or dir( module_name )
+            for attr in content:
+                obj = getattr(module_name, attr)
+                if isinstance( obj, type) and issubclass( obj, Manager):
+                    yield obj.get_name(), obj
+
 
     def _load_services(self):
         """
