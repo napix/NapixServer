@@ -31,7 +31,10 @@
             In order to write this module you have to write a <strong>manager</strong>
             and install it in the Napix server.
             A Napix module may be in every place that is accessible in the python path.
-            However it is recommended to keep them in <strong>/var/lib/napix/auto</strong>.
+            Napix adds /var/lib/napix/ in the python path, and it automatically tries to load every module in /var/lib/napix/auto.
+            </p>
+            <p>
+            For more details about the loading of modules inside Napix, see <a href="deploy.html">the deployment page</a>
             </p>
             <p>
             For this example we will be write a manager for the hosts file.

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Napix Web Help</title>
+        <link href="../css/help.css" rel="stylesheet"/>
+        <script data-main="js/help" src="js/libs/require/require.js" ></script>
+        <style>
+            body {
+                margin-top: 100px;
+                margin-bottom: 200px;
+            }
+        </style>
+    </head>
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container-fluid">
+                    <a href="." class="brand" >Napix Help</a>
+                    <ul class="nav">
+                        <li> <a href="high_level.html">Writing a Napix module</a> </li>
+                        <li> <a href="low_level.html">Low level interface</a> </li>
+                        <li> <a href="deploy.html">Deployment</a> </li>
+                        <li> <a href="executor.html">Process and threads</a> </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="container" >
+            <h1>Fist steps guide</h1>
+            <h2>Installation</h2>
+            <h3>Prerequisite</h3>
+            <p>
+            Fist, install the needed libs within your distribution.
+            You will need python with a version of at least 2.6, mercurial and pip.
+            You may use a virutal env.
+            </p>
+            <p>
+            For example in Debian, you may launch
+            <pre>
+# apt-get install python python-pip python-virtualenv mercurial
+</pre>
+            </p>
+            <h3>Copy of the repository</h3>
+            <p>
+            The Napix source code is hosted on a mercurial repository: <code>ssh://hg@the-book.enix.org/NapixServer</code>.
+            You need to get a local copy of the source repository:
+            <pre>
+$ hg clone ssh://hg@the-book.enix.org/NapixServer
+</pre>
+            <h3>Dependencies</h3>
+            Then you may setup the environement by installing the required libs.
+            You can either use a virtual env as single user
+            <pre>
+$ virtualenv napix
+$ source napix/bin/activate
+(napix)$ pip install -r NapixServer/requirements.txt
+</pre>
+            Or install the libs for the whole system as root
+            <pre>
+# pip install -r NapixServer/requirements.txt
+</pre>
+            </p>
+            <h3>Installation</h3>
+            <p>
+            In order to install Napix, you have two choices.
+            Either you install it, if you want to run it as a end user, or you want to develop a module.
+            </p>
+            <h4>Installation in the system</h4>
+            <p class="alert">
+            With this mode of installation, you will have to rerun NapixServer/setup.py after you update the code.
+            </p>
+            <p>
+            If you want to install it in production mode, you have to run
+            <pre>
+in the virtual env
+(napix)$ ./setup.py install
+
+for the whole system, as root
+# ./setup.py install
+</pre>
+            The configuration file may be put in either <code>/etc/napix/settings.json</code> or <code>~/.napix/settings.json</code>.
+            <pre>
+in the virtual env
+(napix)$ mkdir ~/.napix
+(napix)$ cp NapixServer/conf/settings.json ~/.napix/
+
+
+for the whole system, as root
+# mkdir /etc/napixd
+# cp NapixServer/conf/settings.json /etc/napixd/
+</pre>
+            Once napix is installed, you can run the daemon by launching napixd
+            <pre>
+in the virtual env
+(napixd)$ napid
+
+for the whole system, as root
+# napixd
+or as a simple user
+$ napixd
+</pre>
+
+            <h4>Using from the sources</h4>
+            In you want to develop with napix, you can use it directly from the sources.
+            In this case, the configuration file is <code>NapixServer/conf/settings.json</code>
+            <pre>
+for the whole system, as root or as a simple user
+$ NapixServer/bin/napixd
+
+inside a virtual environement
+(napix)$ NapixServer/bin/napixd
+</pre>
+            </p>
+            <h3>TL; DR</h3>
+            <h4>Developer setup</h4>
+            <p>
+            Set the configuration in <code>NapixServer/conf/settings.json</code> and put the autoloaded modules in <code>NapixServer/auto</code>
+            </p>
+            <pre>
+sudo apt-get install python python-pip python-virtualenv mercurial
+hg clone ssh://hg@the-book.enix.org/NapixServer
+virtualenv napix
+source napix/bin/activate
+pip install -r NapixServer/requirements.txt
+NapixServer/bin/napixd
+</pre>
+            <h4>Production setup</h4>
+            <p>
+            Set the configuration in <code>/etc/napixd/settings.json</code> and put the autoloaded modules in <code>/var/lib/napix/auto</code>
+            </p>
+            <pre>
+sudo apt-get install python python-pip python-virtualenv mercurial
+hg clone ssh://hg@the-book.enix.org/NapixServer
+virtualenv napix
+source napix/bin/activate
+NapixServer/setup install
+mkdir -p /var/lib/napix/auto
+mkdir /etc/napixd/
+cp NapixServer/conf/settings.json /etc/napixd/
+napixd
+</pre>
+            <h2>Usage</h2>
+            <p>
+            When the napixd is up and running, it is accessible by http protocol,
+            by default, on all the running interfaces at port 8002.
+            </p>
+            <h3>HTTP interface</h3>
+            <p>
+            You can connect at http://localhost:8002/ if the daemon is running on the same machine.
+            It is possible to check the see the content of the napix.
+            For your convenience, when the system is in debug mode (in the conf Napix.DEBUG is True),
+            the requests don't need to be signed, and an authentication server is not needed as long as
+            <strong>authok</strong> is passed as a GET paramater
+            </p>
+            <pre>
+$ curl 'http://localhost:8002/'
+You need to sign your request
+$ curl 'http://localhost:8002/?authok'
+["/sample"]
+</pre>
+            <h3>Web interface</h3>
+            <p>
+            A copy of the Napix Web interface is embedded in the Napix daemon.
+            It is accessible at <code>/_napi_js/</code>.
+            </p>
+            <h3>CLI interface</h3>
+            <p>
+            ...
+            </p>
+            <h2>Development</h2>
+            <p>
+            In order to write a Napix component and to add it in the Napix server,
+            you have to write a subclass of <strong>napixd.managers.Manager</strong> and load it into the server.
+            </p>
+            <h3>Write a module</h3>
+            <p>
+            This topic is covered in <a href="high_level.html">this page for the quick and easy way to do it</a>,
+            and in <a href="low_level.html">this page for the deeper way</a>.
+            </p>
+            <h3>Load the module into Napix</h3>
+            <p>
+            In order to load a module in Napix, there is two ways, which are described in <a href="deploy.html">this page</a>.
+            Keep in mind that the module are not auto-reloaded, and that a modification requires a restart of the server.
+            </p>
+        </div>
+    </div>
+</html>

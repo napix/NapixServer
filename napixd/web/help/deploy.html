@@ -92,6 +92,60 @@ Listening on http://0.0.0.0:8002/
 Hit Ctrl-C to quit.
 </pre></div>
             </p>
+            <h2>Modules Loading</h2>
+            <h3>Loading by the configuration</h3>
+            <p>
+            The configuration object <strong>Napix.managers</strong> is a hashmap
+            where the keys are an alias and the value is the dotted python path to a Manager.
+            Multiple instance of a single manager class can be loaded, with different aliases.
+            The detect (cf <em>Auto-loading</em>) classmethod is not called.
+            </p>
+            <p>
+            In order to specify the configuration for an instance of a Manager,
+            you can add a value in the root object of the configuration.
+            </p>
+            <div class="highlight"><pre><span class="p">{</span>
+    <span class="s2">&quot;Napix&quot;</span> <span class="o">:</span> <span class="p">{</span>
+        <span class="s2">&quot;managers&quot;</span> <span class="o">:</span> <span class="p">{</span>
+            <span class="s2">&quot;router1&quot;</span> <span class="o">:</span> <span class="s2">&quot;enix.managers.routers.ManagerForX480&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;router2&quot;</span> <span class="o">:</span> <span class="s2">&quot;enix.managers.routers.ManagerForX480&quot;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;router1&quot;</span> <span class="o">:</span> <span class="p">{</span>
+        <span class="s2">&quot;ip&quot;</span> <span class="o">:</span> <span class="s2">&quot;10.20.40.254&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;login&quot;</span> <span class="o">:</span> <span class="s2">&quot;root&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;password&quot;</span> <span class="o">:</span> <span class="s2">&quot;wE%RZ34$mm&quot;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;router2&quot;</span> <span class="o">:</span> <span class="p">{</span>
+        <span class="s2">&quot;ip&quot;</span> <span class="o">:</span> <span class="s2">&quot;10.20.45.254&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;login&quot;</span> <span class="o">:</span> <span class="s2">&quot;root&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;password&quot;</span> <span class="o">:</span> <span class="s2">&quot;mp2*SD16$p&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+            <p>
+            In this example, two X480 are managed by this Napix server, they use the same manager, and different IP and credentials.
+            </p>
+            <h3>Auto-loading</h3>
+            <p>
+            If there is a file ending by <strong>.py</strong> in a auto-detect folder
+            of the napix setup (/var/lib/napix/auto or NapixServer/auto),
+            the Napix loader will import this python file and add all the subclasses of Manager in the available managers.
+            The auto loaded managers may override the classmethod <strong>detect</strong>
+            that return if the managers should be loaded.
+            By default detect return True when the class is not a base method defined inside Napix.
+            </p>
+            <div class="highlight"><pre><span class="kn">import</span> <span class="nn">platform</span>
+<span class="kn">from</span> <span class="nn">napixd.managers</span> <span class="kn">import</span> <span class="n">Manager</span>
+
+<span class="k">class</span> <span class="nc">AvailableOnLinuxOnly</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">detect</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">platform</span><span class="o">.</span><span class="n">platform</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;Linux&#39;</span>
+</pre></div>
+            <p>
+            This feature does not allow multiple loading of the same manager neither the configuration.
+            </p>
         </div>
     </body>
 </html>
