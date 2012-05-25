@@ -11,7 +11,7 @@ from .services import Service
 from .managers import Manager
 
 import bottle
-from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin
+from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
 
 bottle.DEBUG = True
 
@@ -26,6 +26,7 @@ def get_bottle_app():
         napixd.install(AAAPlugin( conf))
     else:
         logger.warning('No authentification configuration found.')
+    napixd.install( UserAgentDetector() )
     return napixd
 
 class Loader( object):

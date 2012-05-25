@@ -16,7 +16,7 @@ import bottle
 from bottle import request,HTTPResponse,HTTPError
 
 
-__all__ = ['ExceptionsCatcher', 'ConversationPlugin', 'AAAPlugin']
+__all__ = ['ExceptionsCatcher', 'ConversationPlugin', 'AAAPlugin', 'UserAgentDetector']
 
 class ConversationPlugin(object):
     """
@@ -106,6 +106,26 @@ class ExceptionsCatcher(object):
                 raise HTTPError(500,res)
         return inner
 
+class UserAgentDetector( object ):
+    """
+    Display a human readable message when a browser is detected
+    """
+    name = 'user_agent_detector'
+    def apply( self, callback, route):
+        @functools.wraps( callback)
+        def inner( *args, **kwargs):
+            try:
+                return callback( *args, **kwargs)
+            except HTTPError, e:
+                if e.status == 401 and request.headers.get('user_agent', '' ).startswith('Mozilla'):
+                    raise HTTPError(401, '''
+<html><head><title>Request Not authorized</title></head><body>
+<h1> You need to sign your request</h1>
+Maybe you wish to visit <a href="/_napix_js/">the web interface</a><br />
+Or you prefer going to the <a href="/_napix_js/help/high_level.html">the doc</a>
+</body></html>''',
+                    header = [ ( 'CONTENT_TYPE', 'text/html' ) ])
+
 class AAAPlugin(object):
     """
     Authentication, Authorization and Accounting plugins
@@ -124,18 +144,8 @@ class AAAPlugin(object):
         def inner(*args,**kwargs):
             if bottle.DEBUG and 'authok' in request.GET:
                 return callback(*args,**kwargs)
-
             if not 'Authorization' in request.headers:
-                if not request.headers.get('user_agent', '' ).startswith('Mozilla'):
-                    raise HTTPError( 401, 'You need to sign your request')
-                raise HTTPError(401, '''
-<html><head><title>Request Not authorized</title></head><body>
-<h1> You need to sign your request</h1>
-Maybe you wish to visit <a href="/_napix_js/">the web interface</a><br />
-Or you prefer going to the <a href="/_napix_js/help/high_level.html">the doc</a>
-</body></html>''',
-                    header = [ ( 'CONTENT_TYPE', 'text/html' ) ]
-                )
+                raise HTTPError( 401, 'You need to sign your request')
             msg,l,signature = request.headers['Authorization'].rpartition(':')
             if l != ':':
                 self.logger.info('Rejecting request of %s',request.headers['REMOTE_HOST'])
