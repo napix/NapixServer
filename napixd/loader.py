@@ -42,6 +42,8 @@ class Loader( object):
         """
         for alias, manager in self.find_managers():
             config = Conf.get_default().get( alias )
+            if alias and not config.get('url'):
+                config['url'] = alias
             service = Service( manager, config )
             logger.debug('service %s', service.url)
             yield service
@@ -139,6 +141,8 @@ class NapixdBottle(bottle.Bottle):
         self.error(500)(self._error_handler_factory(500))
 
     def static(self, filename = 'index.html' ):
+        if filename.endswith('/'):
+            filename += 'index.html'
         return bottle.static_file( filename, root = os.path.join( os.path.dirname( __file__),'web'))
 
     def slash(self):
