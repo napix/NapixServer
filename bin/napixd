@@ -9,6 +9,12 @@ import logging
 logging.basicConfig(filename='/tmp/napix.log', filemode='w', level=logging.DEBUG)
 logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
 
+try:
+    import napixd
+except ImportError:
+    import sys, os
+    sys.path.append( os.path.realpath( os.path.join( os.path.dirname(__file__), '..' )))
+
 import bottle
 from napixd.executor.bottle_adapter import RocketAndExecutor
 from napixd.loader import get_bottle_app
@@ -18,7 +24,7 @@ if __name__ == '__main__':
     logger = logging.getLogger('Napix.Server')
 
     #Get the napix bottle
-    napixd = get_bottle_app()
+    napixapp = get_bottle_app()
     #get the settings of the daemon
     settings = dict( Conf.get_default().get('Napix.daemon'))
 
@@ -26,7 +32,7 @@ if __name__ == '__main__':
     logger.info('Starting')
 
     #run the daemon
-    bottle.run(napixd, host=settings.get('host','127.0.0.1'),
+    bottle.run(napixapp, host=settings.get('host','127.0.0.1'),
             port=settings.get('port',8002), server=RocketAndExecutor)
 
     logger.info('Stopping')
