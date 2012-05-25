@@ -122,8 +122,15 @@ class UserAgentDetector( object ):
                     raise HTTPError(401, '''
 <html><head><title>Request Not authorized</title></head><body>
 <h1> You need to sign your request</h1>
-Maybe you wish to visit <a href="/_napix_js/">the web interface</a><br />
+<p>
+Maybe you wish to visit <a href="/_napix_js/">the web interface</a>
+</p>
+<p>
 Or you prefer going to the <a href="/_napix_js/help/high_level.html">the doc</a>
+</p>
+<p>
+Anyway if you just want to explore the Napix server when it's in DEBUG mode, use the <a href="?authok">?authok GET parameter</a>
+</p>
 </body></html>''',
                     header = [ ( 'CONTENT_TYPE', 'text/html' ) ])
                 raise
