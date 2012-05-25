@@ -111,6 +111,7 @@ class UserAgentDetector( object ):
     Display a human readable message when a browser is detected
     """
     name = 'user_agent_detector'
+    api = 2
     def apply( self, callback, route):
         @functools.wraps( callback)
         def inner( *args, **kwargs):
@@ -125,6 +126,8 @@ Maybe you wish to visit <a href="/_napix_js/">the web interface</a><br />
 Or you prefer going to the <a href="/_napix_js/help/high_level.html">the doc</a>
 </body></html>''',
                     header = [ ( 'CONTENT_TYPE', 'text/html' ) ])
+                raise
+        return inner
 
 class AAAPlugin(object):
     """
