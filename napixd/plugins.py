@@ -144,7 +144,7 @@ class AAAPlugin(object):
     """
     name = 'authentication_plugin'
     api = 2
-    logger = logging.getLogger('AAA')
+    logger = logging.getLogger('Napix.AAA')
     def __init__( self, conf= None, client= None):
         self.http_client = client or Http()
         self.settings = dict(conf)
