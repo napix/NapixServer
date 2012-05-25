@@ -14,7 +14,6 @@ import bottle
 from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin
 
 bottle.DEBUG = True
-AUTO_DETECT_PATH = '/var/lib/napix/auto'
 
 def get_bottle_app():
     """
@@ -29,12 +28,81 @@ def get_bottle_app():
         logger.warning('No authentification configuration found.')
     return napixd
 
+class Loader( object):
+    AUTO_DETECT_PATH = '/var/lib/napix/auto'
+
+    def __iter__(self):
+        return self.find_services()
+
+    def find_services(self):
+        """
+        Load the services with the managers found
+        return a list of Services instances
+        """
+        for alias, manager in self.find_managers():
+            config = Conf.get_default().get( alias )
+            service = Service( manager, config )
+            logger.debug('service %s', service.url)
+            yield service
+
+    def find_managers( self):
+        for manager in self.find_managers_from_conf():
+            yield manager
+        for manager in self.find_managers_auto():
+            yield manager
+
+    def find_managers_from_conf(self):
+        """
+        Load the managers with the conf
+        return a list of Manager subclasses
+        """
+        managers_conf = Conf.get_default().get('Napix.managers')
+        for alias, manager_path in managers_conf.items():
+            module_path, x, manager_name = manager_path.rpartition('.')
+            module = self._import( module_path )
+            logger.debug('load %s from conf', manager_path)
+            manager = getattr( module, manager_name)
+            yield alias, manager
+
+    def find_managers_auto( self):
+        paths = [
+                self.AUTO_DETECT_PATH,
+                os.path.join( os.path.dirname( __file__ ), '..', 'auto')
+                ]
+        for path in paths :
+            if os.path.isdir( path):
+                for x in self._load_auto_detect(path):
+                    yield x
+
+    def _load_auto_detect( self, path ):
+        logger.debug( 'inspecting %s', path)
+        sys.path.append(path)
+        for filename in os.listdir(path):
+            if filename.startswith('.'):
+                continue
+            module_name, dot, py = filename.rpartition('.')
+            if not dot or py != 'py':
+                continue
+            module = self._import(module_name)
+            content = getattr( module, '__all__', False) or dir( module)
+            for attr in content:
+                obj = getattr(module, attr)
+                if isinstance( obj, type) and issubclass( obj, Manager):
+                    if obj.detect():
+                        yield obj.get_name(), obj
+
+    def _import( self, module_path ):
+        logger.debug('import %s', module_path)
+        __import__(module_path)
+        return sys.modules[module_path]
 
 class NapixdBottle(bottle.Bottle):
     """
     Napix bottle application.
     This bottle contains the automatic detection of services.
     """
+    loader_class = Loader
+
     def __init__(self, services=None, no_conversation=False):
         """
         Create a new bottle app.
@@ -47,7 +115,7 @@ class NapixdBottle(bottle.Bottle):
         the no_conversation parameter may be set to True to disable the ConversationPlugin.
         """
         super(NapixdBottle,self).__init__(autojson=False)
-        self.services = services or list(self._load_services())
+        self.services = services or list( self.loader_class() )
         if not no_conversation :
             self.install(ConversationPlugin())
         self.install(ExceptionsCatcher())
@@ -72,58 +140,6 @@ class NapixdBottle(bottle.Bottle):
     def static(self, filename = 'index.html' ):
         return bottle.static_file( filename, root = os.path.join( os.path.dirname( __file__),'web'))
 
-    def _load_managers( self):
-        for manager in self._load_conf_managers():
-            yield manager
-        for manager in self._load_auto_detect():
-            yield manager
-
-    def _load_conf_managers(self):
-        """
-        Load the managers with the conf
-        return a list of Manager subclasses
-        """
-        managers_conf = Conf.get_default().get('Napix.managers')
-        for alias, manager_path in managers_conf.items():
-            module_path, x, manager_name = manager_path.rpartition('.')
-            module = self._import( module_path )
-            logger.debug('load %s',manager_name)
-            manager = getattr( module, manager_name)
-            yield alias, manager
-
-    def _import( self, module_path ):
-        logger.debug('import %s', module_path)
-        __import__(module_path)
-        return sys.modules[module_path]
-
-    def _load_auto_detect( self ):
-        sys.path.append( AUTO_DETECT_PATH )
-        for filename in os.listdir( AUTO_DETECT_PATH ):
-            if filename.startswith('.'):
-                continue
-            module_name, dot, py = filename.rpartition('.')
-            if not dot or py != 'py':
-                continue
-            module = self._import(module_name)
-            content = getattr( module, '__all__', False) or dir( module)
-            for attr in content:
-                obj = getattr(module, attr)
-                if isinstance( obj, type) and issubclass( obj, Manager):
-                    if obj.detect():
-                        yield obj.get_name(), obj
-
-
-    def _load_services(self):
-        """
-        Load the services with the managers found
-        return a list of Services instances
-        """
-        for alias, manager in self._load_managers():
-            config = Conf.get_default().get( alias )
-            service = Service( manager, config )
-            logger.debug('service %s', service.url)
-            yield service
-
     def slash(self):
         """
         /  view; return the list of the first level services of the app.
@@ -137,3 +153,4 @@ class NapixdBottle(bottle.Bottle):
             bottle.response['Content-Type'] = 'text/plain'
             return exception.output
         return inner
+
