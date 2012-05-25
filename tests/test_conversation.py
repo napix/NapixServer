@@ -2,11 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import unittest2
+import json
+
 from napixd.conf import Conf
 from napixd.services import Service
 from napixd.loader import NapixdBottle
-from napixd.tests.mock.managed_class import Paragraphs
-from napixd.tests.bases import WSGITester
+
+from mock.managed_class import Paragraphs
+from bases import WSGITester
 
 class TestConversationPlugin(WSGITester):
     def setUp(self):
@@ -44,10 +47,11 @@ class TestConversationPlugin(WSGITester):
         code, headers, result = self._do_request(env)
         self.assertEqual( code, 500)
         self.assertEqual( headers['Content-Type'], 'application/json')
-        self.assertEqual( result, '{"line": 41, "error_class": "ValueError",'
-                ' "error_text": "I don\'t like cats", "filename": '
-                '"/home/napix/napix/lib/python2.6/s'
-                'ite-packages/napixd/tests/mock/managed_class.py"}')
+        res = json.loads(result)
+        self.assertEqual( res['line'], 41)
+        self.assertEqual( res['error_class'], 'ValueError')
+        self.assertEqual( res['error_text'], "I don't like cats")
+        self.assertTrue( isinstance( res['traceback'], list))
 
     def testBadRequest(self):
         env = self._make_env('GET', '/p/lol')

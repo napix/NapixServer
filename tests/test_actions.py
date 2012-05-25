@@ -3,12 +3,14 @@
 
 
 import unittest2
-from napixd.services import Service
-from napixd.tests.mock.managed_class import Paragraphs
-from napixd.tests.mock.request import POST,PUT,GET
+
+from bases import TestServiceBase
+from mock.managed_class import Paragraphs
+from mock.request import POST,PUT,GET
+
 from napixd.conf import Conf
 from napixd.loader import NapixdBottle
-from napixd.tests.bases import TestServiceBase
+from napixd.services import Service
 
 class TestAction(TestServiceBase):
     def setUp(self):

@@ -6,7 +6,6 @@ import json
 import os.path
 import UserDict
 
-
 logger = logging.getLogger('Napix.conf')
 
 class Conf(UserDict.UserDict):

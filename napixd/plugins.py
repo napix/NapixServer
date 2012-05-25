@@ -65,9 +65,12 @@ class ConversationPlugin(object):
             if status != 200 and isinstance( result, basestring):
                 if not content_type :
                     content_type = 'text/plain'
-            else:
+            elif result:
                 content_type = 'application/json'
-                result = self._json_encode(result) if result else 'null'
+                result = self._json_encode(result)
+            else:
+                content_type = ''
+                result = None
 
             headers.append( ('Content-Type', content_type))
             resp = HTTPResponse( result, status, header=headers)

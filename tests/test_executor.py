@@ -4,8 +4,9 @@
 import time
 import sys
 import unittest2
-from napixd.executor import Executor
 from threading import Thread,current_thread,Event
+
+from napixd.executor import Executor
 
 ready = Event()
 

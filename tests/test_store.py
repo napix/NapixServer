@@ -5,7 +5,11 @@
 import unittest2
 import os
 import shutil
-from redis import Redis
+try:
+    from redis import Redis
+except ImportError:
+    Redis = False
+
 from napixd.store import FileStore, RedisStore
 
 class BaseTestStore(object):
@@ -40,6 +44,7 @@ class TestFileStore( BaseTestStore, unittest2.TestCase):
         self.assertEqual( len( collection), 0)
         collection.save()
 
+unittest2.skipIf( not Redis, 'There is not Redis libs available')
 class TestRedisStore( BaseTestStore, unittest2.TestCase):
     store_class = RedisStore
     @classmethod

@@ -3,10 +3,12 @@
 
 
 import unittest2
+
+from mock.http_client import MockHTTPClient
+from bases import WSGITester
+
 from napixd.plugins import AAAPlugin
-from napixd.tests.mock.http_client import MockHTTPClient
 from napixd.loader import NapixdBottle
-from napixd.tests.bases import WSGITester
 
 class MockService(object):
     def __init__(self,url = ''):

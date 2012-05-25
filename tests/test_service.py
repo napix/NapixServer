@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import unittest2
-from napixd.tests.mock.managed_class import Paragraphs,STORE
-from napixd.tests.mock.request import POST,PUT,GET,DELETE
-from napixd.tests.bases import TestServiceBase
+
+from mock.managed_class import Paragraphs,STORE
+from mock.request import POST,PUT,GET,DELETE
+from bases import TestServiceBase
+
 from napixd.conf import Conf
 from napixd.services import Service
 from napixd.loader import NapixdBottle
@@ -141,11 +143,13 @@ class TestErrors(TestServiceBase):
     def testException(self):
         resp = self._expect_error(GET('/p/cat/cat/t/french'),500)
         filename = resp.output.pop('filename')
-        self.assertTrue( filename.endswith( 'napixd/tests/mock/managed_class.py' ))
-        self.assertDictEqual(resp.output,{
+        traceback = resp.output.pop('traceback')
+        self.assertTrue( filename.endswith( 'mock/managed_class.py' ))
+        self.assertDictEqual(resp.output, {
             'error_text' : 'I don\'t like cats',
             'error_class': 'ValueError',
             'line' : 41,
+            'request' : { 'method' : 'GET', 'path' : '/p/cat/cat/t/french'}
             })
 
 if __name__ == '__main__':

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from napixd.queue import ThrowingSubQueue,ThrowingQueue,SubQueue,Queue,Empty
 import unittest
 from time import time
+
+from napixd.queue import ThrowingSubQueue,ThrowingQueue,SubQueue,Queue,Empty
 
 class TestQueue(unittest.TestCase):
     def setUp(self):

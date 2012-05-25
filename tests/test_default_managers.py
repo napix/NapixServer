@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import unittest2
+
+from mock.default_managers import MockReadOnlyDictManager,MockDictManager,MockListManager
+
 from napixd.exceptions import NotFound,Duplicate
-from napixd.tests.mock.default_managers import MockReadOnlyDictManager,MockDictManager,MockListManager
 
 class TestReadOnlyDict(unittest2.TestCase):
     def setUp(self):

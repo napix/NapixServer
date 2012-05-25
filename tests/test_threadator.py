@@ -4,6 +4,7 @@
 
 import unittest
 import time
+
 from napixd.thread_manager import ThreadManager,BackgroundDecorator
 
 def setUpModule():

@@ -7,6 +7,7 @@ class _Request(object):
         self.url = url
         self.method = self.__class__.__name__
         self.data = data
+        self.path = url
         self.environ = {'PATH_INFO':self.url,
                 'REQUEST_METHOD':self.method,
                 'SERVER_PROTOCOL' : 'HTTP/1.1'
