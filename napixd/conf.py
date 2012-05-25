@@ -20,24 +20,27 @@ class Conf(UserDict.UserDict):
     @classmethod
     def get_default(cls):
         if not cls._default:
-            cls._make_default()
+            cls.make_default()
         return cls._default
 
     @classmethod
-    def _make_default(cls):
+    def make_default(cls):
         conf = None
         for path in cls.paths :
             path = os.path.join( path, 'settings.json')
-            if os.path.isfile( path):
+            try:
+                handle = open( path, 'r' )
                 if conf:
                     logger.warning('Stumbled upon configuration file candidate %s,'+
                             ' but conf is already loaded', path)
                     continue
                 logger.info( 'Using %s configuration file', path)
-                try:
-                    conf = json.load( open( path, 'r' ))
-                except ValueError:
-                    logger.error('Configuration file contains a bad JSON object')
+                conf = json.load( handle )
+            except ValueError:
+                logger.error('Configuration file contains a bad JSON object')
+            except IOError:
+                pass
+
         if not conf:
             logger.warning( 'Did not find any configuration, trying default conf')
             try:
@@ -58,7 +61,9 @@ class Conf(UserDict.UserDict):
 
     def get( self, section_id):
         try:
-            return Conf( self[section_id] )
+            value = self[section_id]
         except (KeyError,ValueError):
             return Conf()
-
+        if isinstance( value, dict):
+            return Conf(value)
+        return value
