@@ -35,8 +35,12 @@ class Conf(UserDict.UserDict):
                 except ValueError:
                     logger.error('Configuration file contains a bad JSON object')
         if not conf:
-            logger.warning( 'Did not find any configuration')
-            conf = {}
+            logger.warning( 'Did not find any configuration, trying default conf')
+            try:
+                conf = json.load( open( 'default_conf/settings.json'))
+            except IOError:
+                logger.error( 'Did not find any configuration at all')
+                conf = {}
 
         cls._default = cls( conf )
         return cls._default
