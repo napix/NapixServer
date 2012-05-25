@@ -14,8 +14,8 @@
         "host" : "redis.napix.nx"
       }
     },
-    "auth_" : {
-      "auth_url" : "http://auth.napix.nx/auth/authorization/",
+    "auth" : {
+      "auth_url" : "http://localhost:8003/auth/authorization/",
       "service" : "localhost:8002"
     },
     "managers" : {
