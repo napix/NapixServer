@@ -22,11 +22,11 @@ def get_bottle_app():
     napixd = NapixdBottle()
     napixd.setup_bottle()
     conf =  Conf.get_default().get('Napix.auth')
+    napixd.install( UserAgentDetector() )
     if conf :
         napixd.install(AAAPlugin( conf))
     else:
         logger.warning('No authentification configuration found.')
-    napixd.install( UserAgentDetector() )
     return napixd
 
 class Loader( object):
