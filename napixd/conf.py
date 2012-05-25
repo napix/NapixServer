@@ -11,7 +11,11 @@ logger = logging.getLogger('Napix.conf')
 class Conf(UserDict.UserDict):
     _default = None
 
-    paths = [ '/etc/napixd/', os.path.realpath( os.path.join( os.path.dirname(__file__), '..', 'conf')) ]
+    paths = [
+            '/etc/napixd/',
+            os.path.realpath( os.path.join( os.path.dirname(__file__), '..', 'conf')),
+            os.path.join( os.path.expanduser('~'), '.napix')
+            ]
 
     @classmethod
     def get_default(cls):
