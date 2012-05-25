@@ -6,8 +6,21 @@
 
 import logging
 
-logging.basicConfig(filename='/tmp/napix.log', filemode='w', level=logging.DEBUG)
+formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
+
+file_handler = logging.FileHandler( '/tmp/napix.log', mode='a')
+file_handler.setLevel( logging.DEBUG)
+file_handler.setFormatter( formatter)
+
+console_handler = logging.StreamHandler( )
+console_handler.setLevel( logging.WARNING )
+console_handler.setFormatter( formatter)
+
+logging.getLogger('Rocket').addHandler( file_handler)
 logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
+logging.getLogger('Napix').setLevel( logging.DEBUG )
+logging.getLogger('Napix').addHandler( console_handler )
+logging.getLogger('Napix').addHandler( file_handler )
 
 try:
     import napixd
