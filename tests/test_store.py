@@ -7,10 +7,11 @@ import os
 import shutil
 try:
     from redis import Redis
+    from napixd.store import RedisStore
 except ImportError:
     Redis = False
 
-from napixd.store import FileStore, RedisStore
+from napixd.store import FileStore
 
 class BaseTestStore(object):
     def setUp( self):
