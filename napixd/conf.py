@@ -19,7 +19,7 @@ class Conf(UserDict.UserDict):
 
     @classmethod
     def get_default(cls):
-        if not cls._default:
+        if cls._default is None:
             cls.make_default()
         return cls._default
 
@@ -37,7 +37,7 @@ class Conf(UserDict.UserDict):
                 logger.info( 'Using %s configuration file', path)
                 conf = json.load( handle )
             except ValueError:
-                logger.error('Configuration file contains a bad JSON object')
+                logger.error('Configuration file %s contains a bad JSON object', path)
             except IOError:
                 pass
 

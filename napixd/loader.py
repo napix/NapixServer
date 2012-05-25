@@ -5,7 +5,9 @@ import logging
 logger = logging.getLogger('Napix.loader')
 
 import sys
+import time
 import os
+import signal
 from .conf import Conf
 from .services import Service
 from .managers import Manager
@@ -13,13 +15,13 @@ from .managers import Manager
 import bottle
 from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
 
-bottle.DEBUG = True
-
 def get_bottle_app():
     """
     Return the bottle application for the napixd server.
     """
     napixd = NapixdBottle()
+    signal.signal( signal.SIGHUP, napixd.on_sighup)
+
     napixd.setup_bottle()
     conf =  Conf.get_default().get('Napix.auth')
     napixd.install( UserAgentDetector() )
@@ -32,7 +34,11 @@ def get_bottle_app():
 class Loader( object):
     AUTO_DETECT_PATH = '/var/lib/napix/auto'
 
+    def __init__( self):
+        self.timestamp = 0
+
     def __iter__(self):
+        logger.debug('Start loading since %s', self.timestamp)
         return self.find_services()
 
     def find_services(self):
@@ -45,8 +51,10 @@ class Loader( object):
             if alias and not config.get('url'):
                 config['url'] = alias
             service = Service( manager, config )
-            logger.debug('service %s', service.url)
+            logger.debug('Creating service %s', service.url)
             yield service
+        #reset the timestamp
+        self.timestamp = time.time()
 
     def find_managers( self):
         for manager in self.find_managers_from_conf():
@@ -95,9 +103,24 @@ class Loader( object):
                         yield obj.get_name(), obj
 
     def _import( self, module_path ):
-        logger.debug('import %s', module_path)
-        __import__(module_path)
-        return sys.modules[module_path]
+        if not module_path in sys.modules:
+            #first module import
+            logger.debug('import %s', module_path)
+            __import__(module_path)
+            return sys.modules[module_path]
+
+        module = sys.modules[module_path]
+        try:
+            last_modif = os.stat(module.__file__).st_mtime
+            logger.debug( 'Module %s last modified at %s', module_path, last_modif)
+        except OSError:
+            raise ImportError, 'Module does not exists anymore'
+
+        if last_modif > self.timestamp:
+            #modified since last access
+            logger.debug( 'Reloading module %s', module_path)
+            reload( module)
+        return module
 
 class NapixdBottle(bottle.Bottle):
     """
@@ -118,19 +141,29 @@ class NapixdBottle(bottle.Bottle):
         the no_conversation parameter may be set to True to disable the ConversationPlugin.
         """
         super(NapixdBottle,self).__init__(autojson=False)
-        self.services = services or list( self.loader_class() )
+        self.loader = services or self.loader_class()
+        self._start()
         if not no_conversation :
             self.install(ConversationPlugin())
         self.install(ExceptionsCatcher())
+
+    def _start( self):
+        Conf.make_default()
+        bottle.DEBUG = Conf.get_default().get('Napix.debug')
+        self.services = list(self.loader)
+
+    def _setup_bottle_services(self):
+        for service in self.services:
+            service.setup_bottle(self)
 
     def setup_bottle(self):
         """
         Register the services into the app
         """
-        for service in self.services:
-            service.setup_bottle(self)
+        self._setup_bottle_services()
         #/ route, give the services
         self.route('/',callback=self.slash)
+        self.route('/_napix_reload',callback=self.reload)
         self.route('/_napix_js/', callback= self.static,
                 skip = [ 'authentication_plugin', 'conversation_plugin' ] )
         self.route('/_napix_js/<filename:path>', callback= self.static,
@@ -139,6 +172,18 @@ class NapixdBottle(bottle.Bottle):
         self.error(404)(self._error_handler_factory(404))
         self.error(400)(self._error_handler_factory(400))
         self.error(500)(self._error_handler_factory(500))
+
+    def on_sighup(self, signum, frame):
+        self._reload()
+
+    def reload( self):
+        if not Conf.get_default().get('Napix.debug'):
+            raise bottle.HTTPError( 403, 'Not in debug mode, HTTP reloading is not possible')
+        self._reload()
+
+    def _reload(self):
+        self._start()
+        self._setup_bottle_services()
 
     def static(self, filename = 'index.html' ):
         if filename.endswith('/'):

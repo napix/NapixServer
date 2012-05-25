@@ -1,10 +1,10 @@
 {
   "_napix_version": 1.0 ,
   "Napix" : {
+    "debug" : true,
     "daemon" : {
       "host" : "0.0.0.0",
-      "port" : 8002,
-      "debug" : true
+      "port" : 8002
     },
     "storage" : {
       "file" : {
