@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import os.path
 import traceback
 import functools
 import json
@@ -66,7 +67,7 @@ class ConversationPlugin(object):
                     content_type = 'text/plain'
             else:
                 content_type = 'application/json'
-                result = result and self._json_encode(result) or None
+                result = self._json_encode(result) if result else 'null'
 
             headers.append( ('Content-Type', content_type))
             resp = HTTPResponse( result, status, header=headers)
@@ -81,6 +82,7 @@ class ConversationPlugin(object):
 class ExceptionsCatcher(object):
     name = 'exceptions_catcher'
     api = 2
+    logger = logging.getLogger('Napix.Errors')
     def apply(self,callback,route):
         """
         This plugin run the view and catch the exception that are not HTTPResponse.
@@ -94,14 +96,27 @@ class ExceptionsCatcher(object):
             except HTTPResponse :
                 raise
             except Exception,e:
+                method = bottle.request.method
+                path = bottle.request.path
                 a, b, last_traceback = sys.exc_info()
                 filename, lineno, function_name, text = traceback.extract_tb(last_traceback)[-1]
                 #traceback.print_tb(last_traceback)
+                napix_path = os.path.realpath( os.path.join( os.path.dirname( __file__)))
+                all_tb = [ dict( zip( ('filename', 'line', 'in', 'call'), x))
+                        for x in traceback.extract_tb( last_traceback )
+                        if not x[0].startswith(napix_path) ]
+                self.logger.error('%s on %s failed with %s (%s)',  method, path,
+                        e.__class__.__name__, str(e) )
                 res = {
+                        'request' : {
+                            'method' : method,
+                            'path' : path
+                            },
                         'error_text': str(e),
                         'error_class': e.__class__.__name__,
                         'filename': filename,
                         'line': lineno,
+                        'traceback' : all_tb
                         }
                 raise HTTPError(500,res)
         return inner
