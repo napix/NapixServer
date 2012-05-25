@@ -7,12 +7,12 @@ import os.path
 import UserDict
 
 
-logger = logging.getLogger()
+logger = logging.getLogger('Napix.conf')
 
 class Conf(UserDict.UserDict):
     _default = None
 
-    paths = [ '/etc/napixd/', os.path.join( os.path.dirname(__file__), '..', 'conf') ]
+    paths = [ '/etc/napixd/', os.path.realpath( os.path.join( os.path.dirname(__file__), '..', 'conf')) ]
 
     @classmethod
     def get_default(cls):
@@ -22,14 +22,25 @@ class Conf(UserDict.UserDict):
 
     @classmethod
     def _make_default(cls):
+        conf = None
         for path in cls.paths :
             path = os.path.join( path, 'settings.json')
             if os.path.isfile( path):
-                conf = json.load( open( path, 'r' ))
-                cls._default = cls(conf)
-                return
-        logger.warning( 'Did not find any configuration ')
-        return cls( {} )
+                if conf:
+                    logger.warning('Stumbled upon configuration file candidate %s,'+
+                            ' but conf is already loaded', path)
+                    continue
+                logger.info( 'Using %s configuration file', path)
+                try:
+                    conf = json.load( open( path, 'r' ))
+                except ValueError:
+                    logger.error('Configuration file contains a bad JSON object')
+        if not conf:
+            logger.warning( 'Did not find any configuration')
+            conf = {}
+
+        cls._default = cls( conf )
+        return cls._default
 
     def __getitem__( self, item):
         if '.' in item :
