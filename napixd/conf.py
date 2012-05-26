@@ -18,10 +18,13 @@ class Conf(UserDict.UserDict):
             ]
 
     @classmethod
-    def get_default(cls):
+    def get_default(cls, value = None):
         if cls._default is None:
             cls.make_default()
-        return cls._default
+        if value is None:
+            return cls._default
+        else:
+            return cls._default.get(value)
 
     @classmethod
     def make_default(cls):

@@ -88,5 +88,14 @@ class TestConfLoader( unittest2.TestCase ):
         conf = Conf.make_default()
         self.assertTrue( 'v' in conf['json'])
 
+    def test_get_default(self):
+        self.filesystem = {
+                '/etc/napixd/settings.json': self.good_json1,
+                 self.conf_file : self.good_json2
+                }
+        self.assertEqual( Conf.get_default(), { 'json' : { 'v' : 1} } )
+        self.assertEqual( Conf.get_default('json'), { 'v' : 1} )
+        self.assertEqual( Conf.get_default('json.v'), 1)
+
 if __name__ == '__main__':
     unittest2.main()
