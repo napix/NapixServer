@@ -31,6 +31,7 @@ class RocketAndExecutor(ServerAdapter):
             a,b,c = sys.exc_info()
             traceback.print_exception(a,b,c)
         logger.info('Ready to stop')
+        handler.stop()
         server.stop()
         executor.stop()
 

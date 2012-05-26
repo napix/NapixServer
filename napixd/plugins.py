@@ -16,6 +16,8 @@ from urllib import urlencode
 import bottle
 from bottle import request,HTTPResponse,HTTPError
 
+from .conf import Conf
+
 
 __all__ = ['ExceptionsCatcher', 'ConversationPlugin', 'AAAPlugin', 'UserAgentDetector']
 
@@ -170,7 +172,7 @@ class AAAPlugin(object):
     def apply(self,callback,route):
         @functools.wraps(callback)
         def inner(*args,**kwargs):
-            if bottle.DEBUG and 'authok' in request.GET:
+            if Conf.get_default('Napix.debug') and 'authok' in request.GET:
                 return callback(*args,**kwargs)
             if not 'Authorization' in request.headers:
                 raise HTTPError( 401, 'You need to sign your request')

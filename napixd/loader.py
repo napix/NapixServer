@@ -8,6 +8,13 @@ import sys
 import time
 import os
 import signal
+
+try:
+    import pyinotify
+    has_inotify = True
+except ImportError:
+    has_inotify = False
+
 from .conf import Conf
 from .services import Service
 from .managers import Manager
@@ -20,15 +27,17 @@ def get_bottle_app():
     Return the bottle application for the napixd server.
     """
     napixd = NapixdBottle()
-    signal.signal( signal.SIGHUP, napixd.on_sighup)
-
     napixd.setup_bottle()
-    conf =  Conf.get_default().get('Napix.auth')
+
+    conf =  Conf.get_default('Napix.auth')
     napixd.install( UserAgentDetector() )
     if conf :
         napixd.install(AAAPlugin( conf))
     else:
         logger.warning('No authentification configuration found.')
+
+    #attach autoreloaders
+    napixd.launch_autoreloader()
     return napixd
 
 class Loader( object):
@@ -36,6 +45,10 @@ class Loader( object):
 
     def __init__( self):
         self.timestamp = 0
+        self.paths = [
+                self.AUTO_DETECT_PATH,
+                os.path.join( os.path.dirname( __file__ ), '..', 'auto')
+                ]
 
     def __iter__(self):
         logger.debug('Start loading since %s', self.timestamp)
@@ -76,11 +89,7 @@ class Loader( object):
             yield alias, manager
 
     def find_managers_auto( self):
-        paths = [
-                self.AUTO_DETECT_PATH,
-                os.path.join( os.path.dirname( __file__ ), '..', 'auto')
-                ]
-        for path in paths :
+        for path in self.paths :
             if os.path.isdir( path):
                 for x in self._load_auto_detect(path):
                     yield x
@@ -111,7 +120,12 @@ class Loader( object):
 
         module = sys.modules[module_path]
         try:
-            last_modif = os.stat(module.__file__).st_mtime
+            if module.__file__.endswith('pyc'):
+                module_file = module.__file__[:-1]
+            else:
+                module_file = module.__file__
+
+            last_modif = os.stat(module_file).st_mtime
             logger.debug( 'Module %s last modified at %s', module_path, last_modif)
         except OSError:
             raise ImportError, 'Module does not exists anymore'
@@ -146,10 +160,23 @@ class NapixdBottle(bottle.Bottle):
         if not no_conversation :
             self.install(ConversationPlugin())
         self.install(ExceptionsCatcher())
+        self.notify_thread = False
+
+    def launch_autoreloader(self):
+        signal.signal( signal.SIGHUP, self.on_sighup)
+
+        if has_inotify and Conf.get_default('Napix.loader.autoreload'):
+            logger.info( 'Launch Napix autoreloader')
+            watch_manager = pyinotify.WatchManager()
+            for path in self.loader.paths:
+                watch_manager.add_watch( path, pyinotify.IN_CLOSE_WRITE)
+
+            self.notify_thread = pyinotify.ThreadedNotifier( watch_manager, self.on_file_change)
+            self.notify_thread.start()
 
     def _start( self):
         Conf.make_default()
-        bottle.DEBUG = Conf.get_default().get('Napix.debug')
+        bottle.DEBUG = Conf.get_default('Napix.debug')
         self.services = list(self.loader)
 
     def _setup_bottle_services(self):
@@ -174,11 +201,19 @@ class NapixdBottle(bottle.Bottle):
         self.error(500)(self._error_handler_factory(500))
 
     def on_sighup(self, signum, frame):
+        logger.info('Caught SIGHUP, reloading')
+        self._reload()
+
+    def on_file_change( self, event):
+        if ( event.dir or not event.name.endswith('.py')):
+            return
+        logger.info('Caught file change, reloading')
         self._reload()
 
     def reload( self):
         if not Conf.get_default().get('Napix.debug'):
             raise bottle.HTTPError( 403, 'Not in debug mode, HTTP reloading is not possible')
+        logger.info('Asked to do so, reloading')
         self._reload()
 
     def _reload(self):
@@ -195,6 +230,10 @@ class NapixdBottle(bottle.Bottle):
         /  view; return the list of the first level services of the app.
         """
         return ['/'+x.url for x in self.services ]
+
+    def stop(self):
+        if self.notify_thread:
+            self.notify_thread.stop()
 
     def _error_handler_factory(self,code):
         """ 404 view """
