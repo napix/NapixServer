@@ -132,7 +132,7 @@ Hit Ctrl-C to quit.
             of the napix setup (/var/lib/napix/auto or NapixServer/auto),
             the Napix loader will import this python file and add all the subclasses of Manager in the available managers.
             The auto loaded managers may override the classmethod <strong>detect</strong>
-            that return if the managers should be loaded.
+            which tells if the managers should be loaded.
             By default detect return True when the class is not a base method defined inside Napix.
             </p>
             <div class="highlight"><pre><span class="kn">import</span> <span class="nn">platform</span>
@@ -144,7 +144,7 @@ Hit Ctrl-C to quit.
         <span class="k">return</span> <span class="n">platform</span><span class="o">.</span><span class="n">platform</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;Linux&#39;</span>
 </pre></div>
             <p>
-            This feature does not allow multiple loading of the same manager neither the configuration.
+            This feature does not allow neither multiple loading of the same manager nor the configuration.
             </p>
         </div>
     </body>
