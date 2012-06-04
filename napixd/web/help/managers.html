@@ -1,0 +1,522 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Manager &mdash; Napix 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Napix 0.1 documentation" href="index.html" />
+    <link rel="next" title="Default Managers" href="managers.default.html" />
+    <link rel="prev" title="Install and deploy Napix" href="deployment.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="managers.default.html" title="Default Managers"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="deployment.html" title="Install and deploy Napix"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="module-managers"></span><div class="section" id="manager">
+<h1>Manager<a class="headerlink" href="#manager" title="Permalink to this headline">¶</a></h1>
+<p>The Manager class is the base class for all managers.</p>
+<dl class="docutils">
+<dt>Manager :</dt>
+<dd><ul class="first last simple">
+<li>manages a set of resources</li>
+<li>does it by defining create/delete/modify methods that act on those resources</li>
+</ul>
+</dd>
+<dt>Ressource :</dt>
+<dd><ul class="first last simple">
+<li>MUST be a dict (or an emulation thereof) that hold a set of properties</li>
+<li>They MAY have actions</li>
+</ul>
+</dd>
+</dl>
+<p>Manager are created by the corresponding resource</p>
+<dl class="class">
+<dt id="managers.Manager">
+<em class="property">class </em><tt class="descclassname">managers.</tt><tt class="descname">Manager</tt><a class="headerlink" href="#managers.Manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class of the managers</p>
+<p>Managers are objects created to serve requests on a resource for its sub resources
+example:</p>
+<div class="highlight-none"><div class="highlight"><pre>GET /physics/constants/c
+</pre></div>
+</div>
+<p>A manager is created of the resource <em>physics</em>, this resource is asked for its child <em>constants</em>,
+a manager for this resource <em>constant</em> is created, and this manager is asked for its child <em>c</em>.
+The resource got is serialized and sent back to the user</p>
+<p>Managers cycle of life MAY contains multiple request, that MAY be executed simultaneously.</p>
+<p>The cycle of life is :</p>
+<ul>
+<li><p class="first">Class creation</p>
+</li>
+<li><p class="first">Insertion into the application inside the root manager or through a parent manager</p>
+</li>
+<li><p class="first">Manager.configure is called with the settings of this class</p>
+</li>
+<li><dl class="first docutils">
+<dt>An instance is generated for a resource</dt>
+<dd><ul class="first last simple">
+<li>start_request is called</li>
+<li>the appropriate method to respond to the request is called (get_resource, create_resource, etc)</li>
+<li>end_request is called</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Subclasses MAY set a <a class="reference internal" href="#managers.Manager.managed_class" title="managers.Manager.managed_class"><tt class="xref py py-attr docutils literal"><span class="pre">managed_class</span></tt></a> class attribute.
+If set, it must be either a class inheriting from this same base class
+(or implementing its interface) or a iterable of those classes.</p>
+<p>If it&#8217;s a single class, the resources are wrapper in this class when going up a level in the URL.
+When going up of a level in the url, children are wrapped in this class</p>
+<p>examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">FirstManager</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+    <span class="n">managed_class</span> <span class="o">=</span> <span class="n">SecondManager</span>
+
+<span class="k">class</span> <span class="nc">SecondManager</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">list_resource</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+<span class="c">#GET /first/second/third</span>
+<span class="n">second_resource</span> <span class="o">=</span> <span class="n">FirstManager</span><span class="p">()</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="s">&#39;second&#39;</span><span class="p">)</span> <span class="c">#/first</span>
+<span class="n">second_manager</span> <span class="o">=</span> <span class="n">SecondManager</span><span class="p">(</span><span class="n">second_resource</span><span class="p">)</span>  <span class="c"># [..]/second</span>
+<span class="k">return</span> <span class="n">second_manager</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="s">&#39;third&#39;</span><span class="p">)</span>  <span class="c"># [..]/third</span>
+</pre></div>
+</div>
+<p>If it&#8217;s a tuple or a list of classes, the children have multiple subressource managers attached.
+The class in wich the children is wrapped depends on the url path
+example</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Main</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+     <span class="n">managed_class</span> <span class="o">=</span> <span class="p">[</span><span class="n">ManagerA</span><span class="p">,</span><span class="n">ManagerB</span><span class="p">]</span>
+<span class="k">class</span> <span class="nc">ManagerA</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+     <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">ManagerB</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+     <span class="k">pass</span>
+
+<span class="c">#GET /main/1</span>
+<span class="n">Main</span><span class="p">()</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c">#GET /main/1/</span>
+<span class="p">[</span> <span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="s">&#39;B&#39;</span> <span class="p">]</span>
+
+<span class="c">#GET /main/1/A/</span>
+<span class="n">ManagerA</span><span class="p">(</span><span class="n">Main</span><span class="p">()</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">list_resource</span><span class="p">()</span>
+
+<span class="c">#GET /main/1/B/</span>
+<span class="n">ManagerB</span><span class="p">(</span><span class="n">Main</span><span class="p">()</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">list_resource</span><span class="p">()</span>
+
+<span class="c">#GET /main/1/B/3</span>
+<span class="n">ManagerB</span><span class="p">(</span><span class="n">Main</span><span class="p">()</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If it&#8217;s not set, the manager does not have sub resources</p>
+<div class="highlight-none"><div class="highlight"><pre>#GET /first/second/third/
+404 NOT FOUND
+
+#GET /first/second/third/fourth
+404 NOT FOUND
+</pre></div>
+</div>
+<p>The resources may contains some fields that are not in the class&#8217; resource_fields.
+When the resource are serialized to be send in json,
+only the fields in resource_fields are extracted.</p>
+<p>This behavior may be usefull to pass privates values to the next managers.
+exemple</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">SectionManager</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Manages each of the section of a configuration file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">list_resource</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="s">&#39;parser&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_sections</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">File</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Manages a list of configuration files inside /etc</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+     <span class="n">managed_class</span> <span class="o">=</span> <span class="n">SectionManager</span>
+     <span class="n">resource_fields</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;path&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;file path&#39;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+     <span class="k">def</span> <span class="nf">get_resource</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">id</span><span class="p">):</span>
+         <span class="k">return</span> <span class="p">{</span><span class="s">&#39;parser&#39;</span><span class="p">:</span><span class="n">Parser</span><span class="p">(</span><span class="s">&#39;/etc/&#39;</span><span class="o">+</span><span class="nb">id</span><span class="p">),</span><span class="s">&#39;path&#39;</span><span class="p">:</span><span class="s">&#39;/etc&#39;</span><span class="o">+</span><span class="nb">id</span><span class="p">}</span>
+
+<span class="n">GET</span> <span class="o">/</span><span class="nb">file</span><span class="o">/</span><span class="n">file1</span>
+<span class="p">{</span> <span class="s">&quot;path&quot;</span> <span class="p">:</span> <span class="s">&quot;/etc/file1&quot;</span> <span class="p">}</span>
+<span class="c">#No parser field sent</span>
+
+<span class="n">GET</span> <span class="o">/</span><span class="nb">file</span><span class="o">/</span><span class="n">file1</span><span class="o">/</span>
+<span class="p">[</span> <span class="s">&quot;section1&quot;</span> <span class="p">,</span> <span class="s">&quot;section2&quot;</span><span class="p">]</span>
+<span class="c">#Parser was passed to list_resource through parent</span>
+</pre></div>
+</div>
+<dl class="attribute">
+<dt id="managers.Manager.managed_class">
+<tt class="descname">managed_class</tt><a class="headerlink" href="#managers.Manager.managed_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class wraping the children</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>parent</em><big>)</big><a class="headerlink" href="#managers.Manager.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>intialize the Manager with the parent resource creating it</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">FirstManager</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+     <span class="n">managed_class</span> <span class="o">=</span> <span class="n">SecondManager</span>
+
+<span class="k">class</span> <span class="nc">SecondManager</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+     <span class="k">def</span> <span class="nf">list_resource</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+         <span class="k">return</span> <span class="p">{}</span>
+
+<span class="c">#GET /first/second/</span>
+<span class="n">SecondManager</span><span class="p">(</span><span class="n">FirstManager</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="s">&#39;second&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">list_resource</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="managers.Manager.detect">
+<em class="property">classmethod </em><tt class="descname">detect</tt><big>(</big><big>)</big> &rarr; Boolean<a class="headerlink" href="#managers.Manager.detect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auto detection function.
+This function is called by napixd to check if the manager is needed,
+when it is loaded by autodetection.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">platform</span>
+
+<span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="nf">detect</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+    <span class="c">#Activate the manager only if the host is Linux</span>
+    <span class="k">return</span> <span class="n">platform</span><span class="o">.</span><span class="n">platform</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;Linux&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="managers.Manager.configure">
+<em class="property">classmethod </em><tt class="descname">configure</tt><big>(</big><em>conf</em><big>)</big><a class="headerlink" href="#managers.Manager.configure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method called with the configuration of this class</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.is_up_to_date">
+<tt class="descname">is_up_to_date</tt><big>(</big><big>)</big><a class="headerlink" href="#managers.Manager.is_up_to_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to check if the data contained are fresh.
+If it&#8217;s not the manager is recreated</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.start_request">
+<tt class="descname">start_request</tt><big>(</big><em>request</em><big>)</big><a class="headerlink" href="#managers.Manager.start_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>place holder method that is called at the start of each HTTP request</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.end_request">
+<tt class="descname">end_request</tt><big>(</big><em>request</em><big>)</big><a class="headerlink" href="#managers.Manager.end_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>place holder method that is called at the end of each HTTP request</p>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="auto-documentation">
+<h2>Auto documentation<a class="headerlink" href="#auto-documentation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt>
+<em class="property">class </em><tt class="descclassname">managers.</tt><tt class="descname">Manager</tt></dt>
+<dd><dl class="classmethod">
+<dt id="managers.Manager.get_name">
+<em class="property">classmethod </em><tt class="descname">get_name</tt><big>(</big><big>)</big> &rarr; name<a class="headerlink" href="#managers.Manager.get_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the manager.
+By default it&#8217;s the class name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.get_example_resource">
+<tt class="descname">get_example_resource</tt><big>(</big><big>)</big> &rarr; resource_dict<a class="headerlink" href="#managers.Manager.get_example_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate an example of the resources managed by this manager
+Computed by the <em>example</em> of each resource field in <a class="reference internal" href="#managers.Manager.resource_fields" title="managers.Manager.resource_fields"><tt class="xref py py-attr docutils literal"><span class="pre">resource_fields</span></tt></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="managers.Manager.resource_fields">
+<tt class="descname">resource_fields</tt><a class="headerlink" href="#managers.Manager.resource_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of the fields publicly available with their properties</p>
+<p>Subclasses of this class MUST define their own list of fields
+in the class attribute resource_fields.</p>
+<p>This attribute is a dict where the keys are the fields names and the values are
+the descriptions of those fields</p>
+<p>Properties includes:</p>
+<blockquote>
+<div><ul class="simple">
+<li>optional : if the value is optional</li>
+<li>example : used for documentation and the example resource</li>
+<li>description : describe the use of the resource</li>
+<li>computed : This field is computed by the service and the user CAN NOT force it</li>
+</ul>
+</div></blockquote>
+<p>example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+    <span class="n">resource_fields</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;username&#39;</span><span class="p">:{</span><span class="s">&#39;description&#39;</span><span class="p">:</span><span class="s">&#39;POSIX username of the system account&#39;</span><span class="p">,</span> <span class="s">&#39;example&#39;</span><span class="p">:</span><span class="s">&#39;dritchie&#39;</span><span class="p">},</span>
+        <span class="s">&#39;uid&#39;</span><span class="p">:{</span><span class="s">&#39;description&#39;</span><span class="p">:</span><span class="s">&#39;Unique identifier, will be generated if not given&#39;</span><span class="p">,</span><span class="s">&#39;optional&#39;</span><span class="p">:</span><span class="bp">True</span><span class="p">},</span>
+        <span class="s">&#39;gecos&#39;</span><span class="p">:{</span><span class="s">&#39;description&#39;</span><span class="p">:</span><span class="s">&#39;Comment on the user name&#39;</span><span class="p">,</span><span class="n">example</span><span class="p">:</span><span class="s">&#39;Dennis M. Ritchie&#39;</span><span class="p">}</span>
+        <span class="p">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="validation">
+<span id="id1"></span><h2>Validation<a class="headerlink" href="#validation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt>
+<em class="property">class </em><tt class="descclassname">managers.</tt><tt class="descname">Manager</tt></dt>
+<dd><p>The validation methods of the Manager class take the proposed user input and either return the correct value even if unchanged
+or raise a <a class="reference internal" href="exceptions.html#exceptions.ValidationError" title="exceptions.ValidationError"><tt class="xref py py-exc docutils literal"><span class="pre">ValidationError</span></tt></a>.</p>
+<p>It may change the type of the variable,
+for example to convert number to strings to integer values,
+to query integer indexed values in a list.</p>
+<dl class="method">
+<dt id="managers.Manager.validate_id">
+<tt class="descname">validate_id</tt><big>(</big><em>id</em><big>)</big> &rarr; id<a class="headerlink" href="#managers.Manager.validate_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that the id given as an argument is a valid ID</p>
+<p>The id is always a string extracted from the url.</p>
+<p>If the id is not valid, raises a <a class="reference internal" href="exceptions.html#exceptions.ValidationError" title="exceptions.ValidationError"><tt class="xref py py-exc docutils literal"><span class="pre">ValidationError</span></tt></a>.
+If necessary, modify the id
+this method MUST return the ID even if it wasn&#8217;t modified.</p>
+<p>This method shoud not check if the id correspond to an existing value.
+It shoud just verify that the id does not contains anything that can harm the next methods,
+<cite>delete_resource</cite>, <cite>get_resource</cite> or <cite>modify_resource</cite>.
+Else, it could lead to 400 errors instead of 404 errors.</p>
+<p>example:</p>
+<p>If the id must be an int</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">IntID</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">validate_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">id_</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">id_</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span>
+</pre></div>
+</div>
+<p>If the id must be a string containing at least 3 charcters</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MinLength</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+     <span class="k">def</span> <span class="nf">validate_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">id_</span><span class="p">):</span>
+         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">id_</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+             <span class="k">raise</span> <span class="n">ValidationError</span>
+         <span class="c">#always return the id</span>
+         <span class="k">return</span> <span class="n">id_</span>
+</pre></div>
+</div>
+<p>By default, this method checks if the id is not an empty string</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.validate_resource_FIELDNAME">
+<tt class="descname">validate_resource_FIELDNAME</tt><big>(</big><em>value</em><big>)</big><a class="headerlink" href="#managers.Manager.validate_resource_FIELDNAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>If a Manager defines a field <cite>x</cite> and a method <cite>validate_resource_x</cite>,
+this method will be used to validate this field.</p>
+<p>Like <a class="reference internal" href="#managers.Manager.validate_id" title="managers.Manager.validate_id"><tt class="xref py py-meth docutils literal"><span class="pre">validate_id()</span></tt></a>, it must return the correct value, even if it was not changed
+or throw a <a class="reference internal" href="exceptions.html#exceptions.ValidationError" title="exceptions.ValidationError"><tt class="xref py py-exc docutils literal"><span class="pre">ValidationError</span></tt></a> if the value is incorrect.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.validate_resource">
+<tt class="descname">validate_resource</tt><big>(</big><em>resource_dict</em><big>)</big> &rarr; resource_dict<a class="headerlink" href="#managers.Manager.validate_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validate a resource_dict (which can be directly a dict or an object emulating a dict) by
+checking that every mandatory field specified in self.resource_fields is defined.</p>
+<p>If the current object implement self.validate_resource_**key** method, it&#8217;ll be called with
+the value of resource_dict[<strong>key</strong>] as parameter.</p>
+<p>It shoud raise a <a class="reference internal" href="exceptions.html#exceptions.ValidationError" title="exceptions.ValidationError"><tt class="xref py py-exc docutils literal"><span class="pre">ValidationError</span></tt></a> if the data isn&#8217;t valid, else it must return a valid value</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="collection-and-resources-methods">
+<h2>Collection and resources methods<a class="headerlink" href="#collection-and-resources-methods" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt>
+<em class="property">class </em><tt class="descclassname">managers.</tt><tt class="descname">Manager</tt></dt>
+<dd><p>The <a class="reference internal" href="#managers.Manager" title="managers.Manager"><tt class="xref py py-class docutils literal"><span class="pre">Manager</span></tt></a> class does not implements any of these.</p>
+<p>The Manager subclasses <em>MAY</em> implement all or only a part of the methods below.</p>
+<p>The not implemented methods will be answered by a 405 METHOD NOT ALLOWED response
+with the list of the authorized methods computed from to the existing methods.</p>
+<p>If a Manager subclass implements a method or define an attribute with one of those names,
+the corresponding feature will be considered being implemented.</p>
+<p>The manager MUST NOT define a method with a raise NotImplementedError
+to mean that the method is not supported.</p>
+<p>All the <strong>resource_id</strong> and <strong>resource_dict</strong> given to the following methods have been cleaned with
+<a class="reference internal" href="#managers.Manager.validate_id" title="managers.Manager.validate_id"><tt class="xref py py-meth docutils literal"><span class="pre">validate_id()</span></tt></a> and <a class="reference internal" href="#managers.Manager.validate_resource" title="managers.Manager.validate_resource"><tt class="xref py py-meth docutils literal"><span class="pre">validate_resource()</span></tt></a> respectively.</p>
+<dl class="method">
+<dt id="managers.Manager.delete_resource">
+<tt class="descname">delete_resource</tt><big>(</big><em>resource_id</em><big>)</big><a class="headerlink" href="#managers.Manager.delete_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a managed ressource.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#DELETE /something/[...]/mymanager/42</span>
+<span class="n">mymanager</span><span class="o">.</span><span class="n">delete_resource</span><span class="p">(</span><span class="s">&#39;42&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.create_resource">
+<tt class="descname">create_resource</tt><big>(</big><em>resource_dict</em><big>)</big> &rarr; id<a class="headerlink" href="#managers.Manager.create_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new managed ressource.</p>
+<p>resource_dict is a dict populated with the data sent by the user after they have been cleaned.</p>
+<p>This method MUST return the id of the resource created</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#POST /something/[...]/mymanager/ with resource_dict { &#39;toto&#39;: 1 }</span>
+<span class="n">mymanager</span><span class="o">.</span><span class="n">create_resource</span><span class="p">({</span> <span class="s">&#39;toto&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.get_resource">
+<tt class="descname">get_resource</tt><big>(</big><em>resource_id</em><big>)</big> &rarr; resource_dict<a class="headerlink" href="#managers.Manager.get_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the ressource object corresponding to resource_id.</p>
+<p>This object must be a dict or emulate it, as the nAPIxd will convert this dict
+to a json object to build his response.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#GET /somehting/[...]/mymanager/42</span>
+<span class="n">mymanager</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;42&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.modify_resource">
+<tt class="descname">modify_resource</tt><big>(</big><em>resource_id</em>, <em>resource_dict</em><big>)</big><a class="headerlink" href="#managers.Manager.modify_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modify the ressource designed by resource_id by updating it with resource_dict
+defined values.</p>
+<p>If modify_resource is not defined, it&#8217;s emulated by calling delete/create sequentially.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#PUT /something/[...]/mymanager/42</span>
+<span class="n">mymanager</span><span class="o">.</span><span class="n">modify_resource</span><span class="p">(</span><span class="s">&#39;42&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="s">&#39;toto&#39;</span><span class="p">:</span> <span class="mi">4242</span> <span class="p">})</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.list_resource">
+<tt class="descname">list_resource</tt><big>(</big><big>)</big> &rarr; list<a class="headerlink" href="#managers.Manager.list_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the ids list of all managed resource. The result can be of 2 form : either a direct list
+of string, representing each id, or a list of dict, defining at least &#8216;_id&#8217; and &#8216;_desc&#8217; as key.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#GET /something/[...]/mymanager/</span>
+<span class="n">mymanager</span><span class="o">.</span><span class="n">list_resource_id</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>After processing, the Napix daemon will always convert the list in a list of dict, and add
+the _uri key with appropriate value (based on baseurl + _id).</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Manager</a><ul>
+<li><a class="reference internal" href="#auto-documentation">Auto documentation</a></li>
+<li><a class="reference internal" href="#validation">Validation</a></li>
+<li><a class="reference internal" href="#collection-and-resources-methods">Collection and resources methods</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="deployment.html"
+                        title="previous chapter">Install and deploy Napix</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="managers.default.html"
+                        title="next chapter">Default Managers</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/managers.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="managers.default.html" title="Default Managers"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="deployment.html" title="Install and deploy Napix"
+             >previous</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Grégoire ROCHER.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

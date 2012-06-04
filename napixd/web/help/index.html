@@ -1,186 +1,154 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Napix Web Help</title>
-        <link href="../css/help.css" rel="stylesheet"/>
-        <script data-main="js/help" src="js/libs/require/require.js" ></script>
-        <style>
-            body {
-                margin-top: 100px;
-                margin-bottom: 200px;
-            }
-        </style>
-    </head>
-        <div class="navbar navbar-fixed-top">
-            <div class="navbar-inner">
-                <div class="container-fluid">
-                    <a href="." class="brand" >Napix Help</a>
-                    <ul class="nav">
-                        <li> <a href="high_level.html">Writing a Napix module</a> </li>
-                        <li> <a href="low_level.html">Low level interface</a> </li>
-                        <li> <a href="deploy.html">Deployment</a> </li>
-                        <li> <a href="executor.html">Process and threads</a> </li>
-                    </ul>
-                </div>
-            </div>
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to Napix’s documentation! &mdash; Napix 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Napix 0.1 documentation" href="#" />
+    <link rel="next" title="Howto write Napix modules" href="high_level.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="high_level.html" title="Howto write Napix modules"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="welcome-to-napix-s-documentation">
+<h1>Welcome to Napix&#8217;s documentation!<a class="headerlink" href="#welcome-to-napix-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="high_level.html">Howto write Napix modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="high_level.html#writing-the-module">Writing the module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="high_level.html#validation">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="high_level.html#deployment-and-configuration">Deployment and configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="high_level.html#test-case">Test case</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="low_level.html">Howto write a Napix module with the low level interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="low_level.html#first-steps">First steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="low_level.html#resulting-file">Resulting file</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Install and deploy Napix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#modules-loading">Modules Loading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="managers.html">Manager</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="managers.html#auto-documentation">Auto documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="managers.html#validation">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="managers.html#collection-and-resources-methods">Collection and resources methods</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="managers.default.html">Default Managers</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
         </div>
-        <div class="container" >
-            <h1>First steps guide</h1>
-            <h2>Installation</h2>
-            <h3>Prerequisite</h3>
-            <p>
-            Fist, install the needed libs within your distribution.
-            You will need python with a version of at least 2.6, mercurial and pip.
-            You may use a virtual env.
-            </p>
-            <p>
-            For example in Debian, you may launch
-            <pre>
-# apt-get install python python-pip python-virtualenv mercurial
-</pre>
-            </p>
-            <h3>Copy of the repository</h3>
-            <p>
-            The Napix source code is hosted on a mercurial repository: <code>ssh://hg@the-book.enix.org/NapixServer</code>.
-            You need to get a local copy of the source repository:
-            <pre>
-$ hg clone ssh://hg@the-book.enix.org/NapixServer
-</pre>
-            <h3>Dependencies</h3>
-            Then you may setup the environment by installing the required libs.
-            You can either use a virtual env as single user
-            <pre>
-$ virtualenv napix
-$ source napix/bin/activate
-(napix)$ pip install -r NapixServer/requirements.txt
-</pre>
-            Or install the libs for the whole system as root
-            <pre>
-# pip install -r NapixServer/requirements.txt
-</pre>
-            </p>
-            <h3>Installation</h3>
-            <p>
-            In order to install Napix, you have two choices.
-            Either you install it, if you want to run it as a end user, or you want to develop a module.
-            </p>
-            <h4>Installation in the system</h4>
-            <p class="alert">
-            With this mode of installation, you will have to rerun NapixServer/setup.py after you update the code.
-            </p>
-            <p>
-            If you want to install it in production mode, you have to run
-            <pre>
-in the virtual env
-(napix)$ ./setup.py install
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to Napix&#8217;s documentation!</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
 
-for the whole system, as root
-# ./setup.py install
-</pre>
-            The configuration file may be put in either <code>/etc/napix/settings.json</code> or <code>~/.napix/settings.json</code>.
-            <pre>
-in the virtual env
-(napix)$ mkdir ~/.napix
-(napix)$ cp NapixServer/conf/settings.json ~/.napix/
-
-
-for the whole system, as root
-# mkdir /etc/napixd
-# cp NapixServer/conf/settings.json /etc/napixd/
-</pre>
-            Once napix is installed, you can run the daemon by launching napixd
-            <pre>
-in the virtual env
-(napixd)$ napid
-
-for the whole system, as root
-# napixd
-or as a simple user
-$ napixd
-</pre>
-
-            <h4>Using from the sources</h4>
-            In you want to develop with napix, you can use it directly from the sources.
-            In this case, the configuration file is <code>NapixServer/conf/settings.json</code>
-            <pre>
-for the whole system, as root or as a simple user
-$ NapixServer/bin/napixd
-
-inside a virtual environment
-(napix)$ NapixServer/bin/napixd
-</pre>
-            </p>
-            <h3>TL; DR</h3>
-            <h4>Developer setup</h4>
-            <p>
-            Set the configuration in <code>NapixServer/conf/settings.json</code> and put the autoloaded modules in <code>NapixServer/auto</code>
-            </p>
-            <pre>
-sudo apt-get install python python-pip python-virtualenv mercurial
-hg clone ssh://hg@the-book.enix.org/NapixServer
-virtualenv napix
-source napix/bin/activate
-pip install -r NapixServer/requirements.txt
-NapixServer/bin/napixd
-</pre>
-            <h4>Production setup</h4>
-            <p>
-            Set the configuration in <code>/etc/napixd/settings.json</code> and put the autoloaded modules in <code>/var/lib/napix/auto</code>
-            </p>
-            <pre>
-sudo apt-get install python python-pip python-virtualenv mercurial
-hg clone ssh://hg@the-book.enix.org/NapixServer
-virtualenv napix
-source napix/bin/activate
-NapixServer/setup.py install
-mkdir -p /var/lib/napix/auto
-mkdir /etc/napixd/
-cp NapixServer/conf/settings.json /etc/napixd/
-napixd
-</pre>
-            <h2>Usage</h2>
-            <p>
-            When the napixd is up and running, it is accessible by http protocol,
-            by default, on all the running interfaces at port 8002.
-            </p>
-            <h3>HTTP interface</h3>
-            <p>
-            You can connect at http://localhost:8002/ if the daemon is running on the same machine.
-            It is possible to check the see the content of the napix.
-            For your convenience, when the system is in debug mode (in the conf Napix.DEBUG is True),
-            the requests don't need to be signed, and an authentication server is not needed as long as
-            <strong>authok</strong> is passed as a GET parameter
-            </p>
-            <pre>
-$ curl 'http://localhost:8002/'
-You need to sign your request
-$ curl 'http://localhost:8002/?authok'
-["/sample"]
-</pre>
-            <h3>Web interface</h3>
-            <p>
-            A copy of the Napix Web interface is embedded in the Napix daemon.
-            It is accessible at <code>/_napi_js/</code>.
-            </p>
-            <h3>CLI interface</h3>
-            <p>
-            ...
-            </p>
-            <h2>Development</h2>
-            <p>
-            In order to write a Napix component and to add it in the Napix server,
-            you have to write a subclass of <strong>napixd.managers.Manager</strong> and load it into the server.
-            </p>
-            <h3>Write a module</h3>
-            <p>
-            This topic is covered in <a href="high_level.html">this page for the quick and easy way to do it</a>,
-            and in <a href="low_level.html">this page for the deeper way</a>.
-            </p>
-            <h3>Load the module into Napix</h3>
-            <p>
-            In order to load a module in Napix, there is two ways, which are described in <a href="deploy.html">this page</a>.
-            Keep in mind that the module are not auto-reloaded, and that a modification requires a restart of the server.
-            </p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="high_level.html"
+                        title="next chapter">Howto write Napix modules</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
+      </div>
+      <div class="clearer"></div>
     </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="high_level.html" title="Howto write Napix modules"
+             >next</a> |</li>
+        <li><a href="#">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Grégoire ROCHER.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
 </html>
