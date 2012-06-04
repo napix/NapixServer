@@ -162,6 +162,8 @@ class NapixdBottle(bottle.Bottle):
         self.install(ExceptionsCatcher())
         self.notify_thread = False
 
+        self.on_stop = []
+
     def launch_autoreloader(self):
         signal.signal( signal.SIGHUP, self.on_sighup)
 
@@ -173,6 +175,7 @@ class NapixdBottle(bottle.Bottle):
 
             self.notify_thread = pyinotify.ThreadedNotifier( watch_manager, self.on_file_change)
             self.notify_thread.start()
+            self.on_stop.append( self.notify_thread.stop )
 
     def _start( self):
         Conf.make_default()
@@ -232,8 +235,8 @@ class NapixdBottle(bottle.Bottle):
         return ['/'+x.url for x in self.services ]
 
     def stop(self):
-        if self.notify_thread:
-            self.notify_thread.stop()
+        for stop in self.on_stop:
+            stop()
 
     def _error_handler_factory(self,code):
         """ 404 view """
