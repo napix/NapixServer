@@ -1,0 +1,145 @@
+.. py:module:: thread_manager
+
+Thread manager
+==============
+
+The thread manager is a tool that manages thread activity in background.
+
+.. py:data:: thread_manager
+
+    The thread_manager module instantiate the class ThreadManager in an module-level object thread_manager.
+
+
+.. py:class:: ThreadManager
+
+    .. py:method:: do_async( function, fn_args, fn_kwargs, on_success, on_fail, on_end) -> ThreadWrapper
+
+        Runs the given function with the eventual given parameters in a background thread.
+
+        :param function: The callback that will be run in the new thread
+        :param fn_args: An optional sequence of arguments that will be given to the function
+        :param fn_kwargs: An optional dict of arguments that will be given to the function
+
+        The function is called with the thread instance as first argument.
+
+        .. code-block:: python
+
+            def deploy_file( thread, file, *servers, login='root', ssh_key='~/.ssh/id_rsa'):
+                for server in servers:
+                    #***
+
+            thread_manager.do_async( deploy_file,
+                fn_args = [ '/var/http/static/background.png', 'host1.example.net', 'host2.example.net' ],
+                fn_kwargs = { 'ssh_key' : '~/ssh_deploy_key' }  ):
+
+        :param on_fail: A callback that will be called with the exception that the function have thrown
+        :param on_success: A callback that will be called with the result of the function if it returns without exception
+        :param on_end: A callback that will be called once the thread ends whatever happened
+
+        These 3 methods are called depending on the life cycle of the function.
+        ``on_success`` is called when the function returns.
+        ``on_fail`` is called when it throws an exception.
+        ``on_end`` is called after the previous methods in both cases.
+
+
+        .. code-block :: python
+
+            def update_server( servers, on_success=restart_services, on_fail=mail_admins, on_end=clean_temp ):
+                if not control_network.is_up():
+                    raise Exception, 'Network is down'
+                #...
+                return services_to_restart
+
+        The ``clean_temp`` method runs whatever the update_server returns,
+        ``restart_service`` is called with the ``services_to_restart`` value returned by ``update_server``.
+        If the network is down, the ``mail_admins`` is called with the exception raised, here Exception('Network is down')
+
+        This method returns a :py:class:`ThreadWrapper` instance.
+
+.. py:class:: ThreadWrapper
+
+    .. py:attribute:: status
+
+        The progress of the thread.
+
+        The thread can notify the other threads how much progress it has done.
+        The max an min values and the direction of the progression ( 0 to 1, 100 to 0, an arbitrary value to 0)
+        is let to the choice of the users.
+
+        Example: this snippet computes the values in 2 threads and show their progress.
+
+        .. code-block :: python
+
+            def expensive_computation( thread, lines ):
+                total = len( lines )
+                for idx, line in enumerate(lines):
+                    #...
+                    thread.status =  idx / float(idx)
+
+            comp1 = thread_manager.do_async( expensive_computation, set_of_lines1)
+            comp2 = thread_manager.do_async( expensive_computation, set_of_lines2)
+
+            while comp1.execution_state == 'RUNNING' and comp2.execution_state == 'RUNNING':
+                print 'thread 1 at {0}%, thread 2 at {1}%'.format( comp1.status * 100, comp2.status * 100)
+                time.sleep( 1000 )
+
+    .. py:attribute:: execution_state
+
+        One of ``CREATED``, ``RUNNING``, ``RETURNED``, ``EXCEPTION``, ``FINISHING``, ``CLOSED``,
+        shows at wich step of the process, the thread is running.
+
+        It starts in CREATED, goes on RUNNING while the function is called then either
+        goes in RETURNED if it returned without exception, during the execution of on_success
+        or goes in EXCEPTION during the execution of on_fail
+        and then gets by FINISHING during on_end and finish by FINISHING.
+
+    .. py:attribute:: execution_state_queue
+
+        This queue is notified at each time the thread changes of state.
+
+
+Background
+==========
+
+The background object is a decorator that will run the decorated function in another thread.
+
+.. py:decorator:: background( function, give_thread, on_fail, on_success, on_end )
+
+    Instance of :py:class:`BackgroundDecorator` created with the default :py:data:`thread_manager`.
+
+    The parameters are the same as those from :py:class:`ThreadManager.do_async` except give_thread and fn_args et fn_kwargs.
+    fn_args, and fn_kwargs are the arguments given the decorated function is called.
+    ``give_thread`` is a boolean which remove the thread instance from the arguments.
+    It lets the user decorate a function without changing its interface.
+    It's false by default so the threads are not given to the called function.
+
+    .. code-block:: python
+
+        @background( give_thread = True, on_end=clean_temp)
+        def send_mail( thread, mail, users ):
+            count = len( users )
+            for user in users:
+                count -= 1
+                thread.status = count
+
+                mail.to = user.email
+                mail.send()
+
+        @background
+        def filter_logs():
+            for log in _get_all_logs():
+                log.filter()
+
+        def create_resource( resource_dict ):
+            send_mail( self.warning_mail, resource_dict['people'] ) #returns immediately
+            #...
+            filter_logs() #returns immediately
+            #...
+
+
+.. py:class:: BackgroundDecorator( thread_manager)
+
+    Decorator that will run the decorated function in a background thread.
+
+    The instance is constructed with a :py:class:`ThreadManager` instance that will be used to create the threads.
+

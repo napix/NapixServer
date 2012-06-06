@@ -1,0 +1,1 @@
+define(["Backbone","libs/backbone/localstorage"],function(a,b){var c=a.Model.extend({defaults:{command:""}}),d=a.Collection.extend({model:c,localStorage:new b("history"),hasMore:function(a){return this.length>=a+2},push:function(a){this.create({command:a},{at:0})}});return new d})

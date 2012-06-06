@@ -1,0 +1,165 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Executor &mdash; Napix 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Napix 0.1 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="module-executor"></span><div class="section" id="executor">
+<h1>Executor<a class="headerlink" href="#executor" title="Permalink to this headline">¶</a></h1>
+<p>The Napix server provides tools to run and manage processes and threads.</p>
+<p>According to the posix standard, it is not recommended to launch processes from a thread which is not the main thread.
+In order to work around this limitation Napix provides a tool that runs in the main thread,
+wait for requests from other threads, launches the process and return the handler.
+The tool also keeps a trace of running processes.</p>
+<dl class="data">
+<dt id="executor.executor">
+<tt class="descclassname">executor.</tt><tt class="descname">executor</tt><a class="headerlink" href="#executor.executor" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <a class="reference internal" href="#module-executor" title="executor"><tt class="xref py py-data docutils literal"><span class="pre">executor</span></tt></a> attribute of <a class="reference internal" href="#module-executor" title="executor"><tt class="xref py py-mod docutils literal"><span class="pre">executor</span></tt></a> is an instance of <a class="reference internal" href="#executor.Executor" title="executor.Executor"><tt class="xref py py-class docutils literal"><span class="pre">Executor</span></tt></a>.
+The <a class="reference internal" href="#executor.Executor" title="executor.Executor"><tt class="xref py py-class docutils literal"><span class="pre">Executor</span></tt></a> class should not be instantiated, and this instance should be used instead.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="executor.Executor">
+<em class="property">class </em><tt class="descclassname">executor.</tt><tt class="descname">Executor</tt><a class="headerlink" href="#executor.Executor" title="Permalink to this definition">¶</a></dt>
+<dd><p>The executor is a wrapper around subprocess that manages the running processes.
+The process is removed from the list once it has terminated.</p>
+<dl class="method">
+<dt id="executor.Executor.create_process">
+<tt class="descname">create_process</tt><big>(</big><em>command</em>, <em>discard_output=True</em><big>)</big> &rarr; handler<a class="headerlink" href="#executor.Executor.create_process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a new process in the queue, and wait for it to be processed.</p>
+<p>The <cite>command</cite> is a list starting with the target executable
+followed by the list of the arguments of this target.
+This is comparable with the standard library <tt class="xref py py-mod docutils literal"><span class="pre">subprocess</span></tt> module.</p>
+<p>When the <cite>discard_output</cite> is set to true, the stdout and stderr of the running process
+are sent to /dev/null.</p>
+<p>This method returns a <a class="reference internal" href="#executor.ExecHandle" title="executor.ExecHandle"><tt class="xref py py-class docutils literal"><span class="pre">ExecHandle</span></tt></a> object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="executor.Executor.run">
+<tt class="descname">run</tt><big>(</big><big>)</big><a class="headerlink" href="#executor.Executor.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Launch the executor.</p>
+<p>When the executor is running, it listens to an internal queue for job requests,
+it launch the process and returns by a async queue the handle.</p>
+<p>This method is blocking and returns after <a class="reference internal" href="#executor.Executor.stop" title="executor.Executor.stop"><tt class="xref py py-meth docutils literal"><span class="pre">stop()</span></tt></a> has been called.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="executor.Executor.stop">
+<tt class="descname">stop</tt><big>(</big><big>)</big><a class="headerlink" href="#executor.Executor.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ask to the control thread of the executor.</p>
+<p>It will stop all the processes running.</p>
+<p>This method returns immediately and actual stopping will run in another thread asynchronously.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="executor.ExecHandle">
+<em class="property">class </em><tt class="descclassname">executor.</tt><tt class="descname">ExecHandle</tt><a class="headerlink" href="#executor.ExecHandle" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>The handlers objects are a wrapper around subprocess.Popen.</p>
+<p>The main added feature is the notification of the executor.
+Because the executor keeps a trace of all running processes, the wrapper has to notify the executor
+via an asynchronous queue when it ended.</p>
+<p>It proxies the Popen object and has the same properties return_code, wait, poll, etc.</p>
+</div></blockquote>
+<dl class="method">
+<dt id="executor.ExecHandle.kill">
+<tt class="descname">kill</tt><big>(</big><big>)</big><a class="headerlink" href="#executor.ExecHandle.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kills the process.</p>
+<p>It sends the process a SIGTERM, waits for 3 seconds for the process to stop, then it send a SIGKILL and returns.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/executor.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Grégoire ROCHER.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

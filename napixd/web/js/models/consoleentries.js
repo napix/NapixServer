@@ -1,0 +1,1 @@
+define(["Backbone","libs/backbone/localstorage"],function(a,b){var c=a.Model.extend({defaults:{text:"",level:"info"}}),d=a.Collection.extend({model:c,localStorage:new b("console")});return new d})

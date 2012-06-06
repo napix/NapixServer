@@ -1,0 +1,1 @@
+define("jQuery",["libs/jquery/jquery"],function(){var a=jQuery.noConflict();return a.fn.orDefault=function(b){return this.length&&this||a(b)},a})

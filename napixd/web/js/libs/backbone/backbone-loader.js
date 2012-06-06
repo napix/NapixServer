@@ -1,0 +1,1 @@
+define("Backbone",["libs/backbone/backbone","jQuery"],function(a,b){return Backbone.setDomLibrary(b),Backbone.noConflict()})
