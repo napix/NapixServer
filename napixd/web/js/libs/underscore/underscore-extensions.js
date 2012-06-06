@@ -1,1 +1,1 @@
-define("underscore",["libs/underscore/underscore"],function(){var a=window._;return a.mixin({objectify:function(b){return a.reduce(b,function(a,b){return a[b[0]]=b[1],a},{})}}),a})
+define(["underscore"],function(a){a.mixin({objectify:function(b){return a.reduce(b,function(a,b){return a[b[0]]=b[1],a},{})}})})
