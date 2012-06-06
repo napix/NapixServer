@@ -83,7 +83,11 @@ class Loader( object):
         managers_conf = Conf.get_default().get('Napix.managers')
         for alias, manager_path in managers_conf.items():
             module_path, x, manager_name = manager_path.rpartition('.')
-            module = self._import( module_path )
+            try:
+                module = self._import( module_path )
+            except ImportError as e:
+                logger.error( 'Failed to import %s from conf: %s', module_path, str(e))
+                raise
             logger.debug('load %s from conf', manager_path)
             manager = getattr( module, manager_name)
             yield alias, manager
@@ -96,14 +100,20 @@ class Loader( object):
 
     def _load_auto_detect( self, path ):
         logger.debug( 'inspecting %s', path)
-        sys.path.append(path)
+        if not path in sys.path:
+            sys.path.append(path)
         for filename in os.listdir(path):
             if filename.startswith('.'):
                 continue
             module_name, dot, py = filename.rpartition('.')
             if not dot or py != 'py':
                 continue
-            module = self._import(module_name)
+            try:
+                module = self._import(module_name)
+            except ImportError as e:
+                logger.error( 'Failed to import %s from autoload: %s', module_name, str(e))
+                continue
+
             content = getattr( module, '__all__', False) or dir( module)
             for attr in content:
                 obj = getattr(module, attr)
@@ -115,7 +125,12 @@ class Loader( object):
         if not module_path in sys.modules:
             #first module import
             logger.debug('import %s', module_path)
-            __import__(module_path)
+            try:
+                __import__(module_path)
+            except ImportError:
+                raise
+            except Exception as e:
+                raise ImportError, repr(e)
             return sys.modules[module_path]
 
         module = sys.modules[module_path]
@@ -133,8 +148,14 @@ class Loader( object):
         if last_modif > self.timestamp:
             #modified since last access
             logger.debug( 'Reloading module %s', module_path)
-            reload( module)
+            try:
+                reload( module)
+            except ImportError as e:
+                raise
+            except Exception as e:
+                raise ImportError, repr(e)
         return module
+
 
 class NapixdBottle(bottle.Bottle):
     """
