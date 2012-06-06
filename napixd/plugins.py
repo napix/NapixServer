@@ -135,11 +135,9 @@ class UserAgentDetector( object ):
     def apply( self, callback, route):
         @functools.wraps( callback)
         def inner( *args, **kwargs):
-            try:
-                return callback( *args, **kwargs)
-            except HTTPError, e:
-                if e.status == 401 and request.headers.get('user_agent', '' ).startswith('Mozilla'):
-                    raise HTTPError(401, '''
+            if ( request.headers.get('user_agent', '' ).startswith('Mozilla') and
+                    not 'authok' in request.GET):
+                raise HTTPError(401, '''
 <html><head><title>Request Not authorized</title></head><body>
 <h1> You need to sign your request</h1>
 <p>
@@ -151,9 +149,9 @@ Or you prefer going to the <a href="/_napix_js/help/high_level.html">the doc</a>
 <p>
 Anyway if you just want to explore the Napix server when it's in DEBUG mode, use the <a href="?authok">?authok GET parameter</a>
 </p>
-</body></html>''',
-                    header = [ ( 'CONTENT_TYPE', 'text/html' ) ])
-                raise
+</body></html>''', header = [ ( 'CONTENT_TYPE', 'text/html' ) ])
+            else:
+                return callback( *args, **kwargs)
         return inner
 
 class AAAPlugin(object):
