@@ -3,6 +3,7 @@
 
 import itertools
 import functools
+import logging
 
 import bottle
 from bottle import HTTPError
@@ -13,6 +14,7 @@ The service class ack like a proxy between bottle and napix resource Manager Com
 
 It handle bottle registering, url routing and Manager configuration when needed.
 """
+logger = logging.getLogger('Napix.service')
 
 class Service(object):
     """
@@ -49,6 +51,7 @@ class Service(object):
         """
         Route the managers inside the given bottle app.
         """
+        logger.debug( 'Setting %s', self.url )
         app.route( '/'+self.url, callback = self.noop)
         for service in self.collection_services:
             service.setup_bottle(app)

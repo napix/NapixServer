@@ -5,6 +5,7 @@
 # Mettre un exemple de ligne de commande
 
 import logging
+import os
 
 formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
 
@@ -17,16 +18,21 @@ console_handler.setLevel( logging.WARNING )
 console_handler.setFormatter( formatter)
 
 logging.getLogger('Rocket').addHandler( file_handler)
+logging.getLogger('Rocket').setLevel( logging.DEBUG )
 logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
-logging.getLogger('Napix').setLevel( logging.DEBUG )
+logging.getLogger('Napix').setLevel( logging.INFO )
 logging.getLogger('Napix').addHandler( console_handler )
 logging.getLogger('Napix').addHandler( file_handler )
+
+logging.getLogger('Napix.console').setLevel( logging.INFO )
+logging.getLogger('Napix.console').addHandler( logging.StreamHandler() )
 
 try:
     import napixd
 except ImportError:
-    import sys, os
+    import sys
     sys.path.append( os.path.realpath( os.path.join( os.path.dirname(__file__), '..' )))
+    import napixd
 
 import bottle
 from napixd.executor.bottle_adapter import RocketAndExecutor
@@ -35,6 +41,7 @@ from napixd.conf import Conf
 
 if __name__ == '__main__':
     logger = logging.getLogger('Napix.Server')
+    console = logging.getLogger('Napix.console')
 
     #Get the napix bottle
     napixapp = get_bottle_app()
@@ -44,6 +51,8 @@ if __name__ == '__main__':
     bottle.debug(settings.get('debug',False))
     logger.info('Starting')
 
+    console.info( 'Starting process %s', os.getpid())
+    console.info( 'Found napixd home at %s',os.path.dirname( napixd.__file__))
     #run the daemon
     bottle.run(napixapp, host=settings.get('host','127.0.0.1'),
             port=settings.get('port',8002), server=RocketAndExecutor)
