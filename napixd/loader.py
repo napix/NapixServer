@@ -27,7 +27,6 @@ def get_bottle_app():
     Return the bottle application for the napixd server.
     """
     napixd = NapixdBottle()
-    napixd.setup_bottle()
 
     conf =  Conf.get_default('Napix.auth')
     napixd.install( UserAgentDetector() )
@@ -49,25 +48,42 @@ class Loader( object):
                 self.AUTO_DETECT_PATH,
                 os.path.join( os.path.dirname( __file__ ), '..', 'auto')
                 ]
+        self._loading = None
+
+    def load( self):
+        self._loading = Loading( self.timestamp, self.paths, self._loading)
+        self.timestamp = time.time()
+        return self._loading
+
+class Loading(object):
+    def __init__( self, start, paths, previous = None):
+        self.paths = paths
+        self.timestamp = start
+        self.errors = {}
+
+        #every managers that we found
+        self.managers = set( self.find_managers())
+
+        #Every manager that we did not find
+        if previous is not None:
+            self.new_managers = self.managers - previous.managers
+            self.old_managers = previous.managers - self.managers
+        else:
+            self.new_managers = self.managers
+            self.old_managers = set()
+
+        self.error_managers = list()
+        if self.errors:
+            for alias, manager in self.old_managers:
+                if manager.__module__ in self.errors:
+                    self.error_managers.append( ( alias, manager, self.errors[ manager.__module__ ] ))
+            if previous and previous.error_managers:
+                for alias, manager, cause in previous.error_managers:
+                    if manager.__module__ in self.errors:
+                        self.error_managers.append( ( alias, manager, self.errors[ manager.__module__ ] ))
 
     def __iter__(self):
-        logger.debug('Start loading since %s', self.timestamp)
-        return self.find_services()
-
-    def find_services(self):
-        """
-        Load the services with the managers found
-        return a list of Services instances
-        """
-        for alias, manager in self.find_managers():
-            config = Conf.get_default().get( alias )
-            if alias and not config.get('url'):
-                config['url'] = alias
-            service = Service( manager, config )
-            logger.debug('Creating service %s', service.url)
-            yield service
-        #reset the timestamp
-        self.timestamp = time.time()
+        return iter( self.managers )
 
     def find_managers( self):
         for manager in self.find_managers_from_conf():
@@ -87,7 +103,8 @@ class Loader( object):
                 module = self._import( module_path )
             except ImportError as e:
                 logger.error( 'Failed to import %s from conf: %s', module_path, str(e))
-                raise
+                self.errors[ module_path ] = e
+                continue
             logger.debug('load %s from conf', manager_path)
             manager = getattr( module, manager_name)
             yield alias, manager
@@ -112,6 +129,7 @@ class Loader( object):
                 module = self._import(module_name)
             except ImportError as e:
                 logger.error( 'Failed to import %s from autoload: %s', module_name, str(e))
+                self.errors[ module_name ] = e
                 continue
 
             content = getattr( module, '__all__', False) or dir( module)
@@ -119,7 +137,7 @@ class Loader( object):
                 obj = getattr(module, attr)
                 if isinstance( obj, type) and issubclass( obj, Manager):
                     if obj.detect():
-                        yield obj.get_name(), obj
+                        yield obj.get_name().lower(), obj
 
     def _import( self, module_path ):
         if not module_path in sys.modules:
@@ -176,42 +194,79 @@ class NapixdBottle(bottle.Bottle):
         the no_conversation parameter may be set to True to disable the ConversationPlugin.
         """
         super(NapixdBottle,self).__init__(autojson=False)
-        self.loader = services or self.loader_class()
         self._start()
+        self.root_urls = set()
+
+        self.loader = None
+        if services is None:
+            self.loader = self.loader_class()
+            services = self.make_services( self.loader.load() )
+        else:
+            self.root_urls.update( s.url for s in services )
+            for service in services:
+                service.setup_bottle( self)
+
         if not no_conversation :
             self.install(ConversationPlugin())
         self.install(ExceptionsCatcher())
         self.notify_thread = False
 
         self.on_stop = []
+        self.setup_bottle()
 
-    def launch_autoreloader(self):
-        signal.signal( signal.SIGHUP, self.on_sighup)
+    def make_services( self, managers):
+        for service in self._make_services( managers ):
+            #add new routes
+            service.setup_bottle( self)
+            self.root_urls.add( service.url )
 
-        if has_inotify and Conf.get_default('Napix.loader.autoreload'):
-            logger.info( 'Launch Napix autoreloader')
-            watch_manager = pyinotify.WatchManager()
-            for path in self.loader.paths:
-                watch_manager.add_watch( path, pyinotify.IN_CLOSE_WRITE)
-
-            self.notify_thread = pyinotify.ThreadedNotifier( watch_manager, self.on_file_change)
-            self.notify_thread.start()
-            self.on_stop.append( self.notify_thread.stop )
+    def _make_services( self, managers ):
+        """
+        Load the services with the managers found
+        return a list of Services instances
+        """
+        for alias, manager in managers:
+            config = Conf.get_default().get( alias )
+            if alias and not config.get('url'):
+                config['url'] = alias
+            service = Service( manager, config )
+            logger.debug('Creating service %s', service.url)
+            yield service
 
     def _start( self):
         Conf.make_default()
         bottle.DEBUG = Conf.get_default('Napix.debug')
-        self.services = list(self.loader)
+        #self.services = list(self.loader)
 
-    def _setup_bottle_services(self):
-        for service in self.services:
-            service.setup_bottle(self)
+    def _reload(self):
+        if self.loader is None:
+            return
+        self._start()
+        load = self.loader.load()
+
+        self.make_services( load.new_managers )
+        #remove old routes
+        for alias,manager in load.old_managers:
+            prefix = '/' + alias
+            self.routes = [ r for r in self.routes if not r.rule.startswith(prefix) ]
+            self.root_urls.discard( alias )
+
+        #reset the router
+        self.router = bottle.Router()
+        for route in self.routes:
+            self.router.add(route.rule, route.method, route, name=route.name)
+
+        #add errord routes
+        for alias, manager, cause in load.error_managers:
+            self.route( '/%s<catch_all:path>'%alias,
+                    callback=self._error_service_factory( cause ))
+            self.root_urls.add( alias )
+
 
     def setup_bottle(self):
         """
         Register the services into the app
         """
-        self._setup_bottle_services()
         #/ route, give the services
         self.route('/',callback=self.slash)
         self.route('/_napix_reload',callback=self.reload)
@@ -223,6 +278,20 @@ class NapixdBottle(bottle.Bottle):
         self.error(404)(self._error_handler_factory(404))
         self.error(400)(self._error_handler_factory(400))
         self.error(500)(self._error_handler_factory(500))
+
+    def launch_autoreloader(self):
+        signal.signal( signal.SIGHUP, self.on_sighup)
+
+        if ( self.loader is not None and has_inotify and
+                Conf.get_default('Napix.loader.autoreload')):
+            logger.info( 'Launch Napix autoreloader')
+            watch_manager = pyinotify.WatchManager()
+            for path in self.loader.paths:
+                watch_manager.add_watch( path, pyinotify.IN_CLOSE_WRITE)
+
+            self.notify_thread = pyinotify.ThreadedNotifier( watch_manager, self.on_file_change)
+            self.notify_thread.start()
+            self.on_stop.append( self.notify_thread.stop )
 
     def on_sighup(self, signum, frame):
         logger.info('Caught SIGHUP, reloading')
@@ -240,10 +309,6 @@ class NapixdBottle(bottle.Bottle):
         logger.info('Asked to do so, reloading')
         self._reload()
 
-    def _reload(self):
-        self._start()
-        self._setup_bottle_services()
-
     def static(self, filename = 'index.html' ):
         if filename.endswith('/'):
             filename += 'index.html'
@@ -253,7 +318,7 @@ class NapixdBottle(bottle.Bottle):
         """
         /  view; return the list of the first level services of the app.
         """
-        return ['/'+x.url for x in self.services ]
+        return ['/'+x for x in self.root_urls ]
 
     def stop(self):
         for stop in self.on_stop:
@@ -265,5 +330,10 @@ class NapixdBottle(bottle.Bottle):
             bottle.response.status = code
             bottle.response['Content-Type'] = 'text/plain'
             return exception.output
+        return inner
+
+    def _error_service_factory( self, cause):
+        def inner( catch_all ):
+            raise cause
         return inner
 
