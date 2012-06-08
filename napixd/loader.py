@@ -271,9 +271,9 @@ class NapixdBottle(bottle.Bottle):
         self.route('/',callback=self.slash)
         self.route('/_napix_reload',callback=self.reload)
         self.route('/_napix_js/', callback= self.static,
-                skip = [ 'authentication_plugin', 'conversation_plugin' ] )
+                skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
         self.route('/_napix_js/<filename:path>', callback= self.static,
-                skip = [ 'authentication_plugin', 'conversation_plugin' ] )
+                skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
         #Error handling for not found and invalid
         self.error(404)(self._error_handler_factory(404))
         self.error(400)(self._error_handler_factory(400))
