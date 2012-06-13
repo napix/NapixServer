@@ -24,9 +24,9 @@ class BasicPasswordFileManager(DictManager):
         # Read the file
         content =  file(self.FILE_PATH).read()
         # split the file in line
-        userpass = content.split("\n")
+        lines = content.split("\n")
         # split each line in a tuple and build the corresponding resource dict list
-        userpass = [ i.split(":", 1) for i in userpass ]
+        userpass = [ line.split(":", 1) for line in lines if ":" in line]
         resources = [ { "username": user, "password": password }
                       for user, password in userpass ]
         # Then we transform the list in a dict, indexing ressource with and uniq id
