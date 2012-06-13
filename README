@@ -22,7 +22,7 @@ and the service name (this server's hostname) in Napix.Auth/service.
 Launching the application
 -------------------------
 
-python ./application.py
+bin/napixd
 
 You can now connect to this server with the command line at localhost:8002
 or use the web interface at http://localhost:8002/_napix_js/
