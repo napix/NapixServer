@@ -243,7 +243,7 @@ class CollectionService(object):
     def as_help( self, path):
         manager = self.collection({})
         if 'human' in bottle.request.GET:
-            bottle.redirect( self.as_help_human() )
+            bottle.redirect( self.as_help_human_path() )
         return {
                 'human' : self.as_help_human_path(),
                 'doc' : manager.__doc__,
@@ -257,7 +257,7 @@ class CollectionService(object):
                 }
     def as_help_human_path( self):
         if self.previous_service:
-            return self.previous_service.as_help_human()
+            return self.previous_service.as_help_human_path()
         else:
             return '/_napix_autodoc/%s.html' % self.url
 
