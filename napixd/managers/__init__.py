@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 from napixd.exceptions import ValidationError
 
 """
@@ -161,13 +162,48 @@ class Manager(object):
         return cls.__name__
 
     @classmethod
+    def direct_plug( self ):
+        try:
+            iter( self.managed_class)
+        except TypeError:
+            return False
+        else:
+            return True if self.managed_class else None
+
+    @classmethod
     def get_managed_classes(cls):
         if cls.managed_class is None:
-            return []
-        try:
-            return iter(cls.managed_class)
-        except TypeError:
-            return [cls.managed_class]
+            cls._managed_classes_cache = []
+        elif not hasattr( cls, '_managed_classes_cache'):
+            cls._managed_classes_cache = list( cls._get_managed_classes() )
+        return cls._managed_classes_cache
+
+    @classmethod
+    def _get_managed_classes(cls):
+        for managed in ( [cls.managed_class] if not cls.direct_plug() else cls.managed_class ) :
+            if isinstance( managed, type):
+                yield managed
+            elif isinstance( managed, basestring):
+                if '.' in managed:
+                    module, dot, managed = managed.rpartition('.')
+                    __import__(module)
+                else:
+                    module =  cls.__module__
+                yield getattr( sys.modules[ module ], managed)
+            else:
+                raise ValueError, 'managed class is a or a list of strings or manager subclasses'
+
+    @classmethod
+    def get_all_actions(self):
+        for attribute_name in dir(self):
+            if attribute_name[0] == '_':
+                continue
+            attribute = getattr(self,attribute_name)
+            if (hasattr(attribute,'_napix_action') and attribute._napix_action
+                    and callable(attribute)):
+                yield attribute
+
+
 
     def configure(cls,conf):
         """
@@ -266,7 +302,7 @@ class Manager(object):
         """
         pass
 
-class ManagerInterface(Manager):
+class ManagerInterface(object):
     """
     HTTP calls map
 

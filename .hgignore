@@ -3,4 +3,6 @@ syntax:glob
 *.pyc
 build
 dist
+auto
+doc/build/
 *.egg-info

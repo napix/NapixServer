@@ -36,12 +36,8 @@ class Service(object):
         self.collection_services.append(service)
 
         if collection.managed_class != None:
-            try:
-                for managed_class in collection.managed_class:
-                    self._create_collection_service(service, managed_class, True)
-            except TypeError:
-                self._create_collection_service(service,
-                        collection.managed_class, False)
+            for managed_class in collection.get_managed_classes():
+                self._create_collection_service(service, managed_class, collection.direct_plug())
         return service
 
     def noop(self):
@@ -77,11 +73,7 @@ class CollectionService(object):
                 if len( self.services) == 1
                 else config.get(self._get_services_prefix()) )
 
-        try:
-            iter(self.collection.managed_class)
-            self.direct_plug = False
-        except TypeError:
-            self.direct_plug = self.collection.managed_class and True or None
+        self.direct_plug = self.collection.direct_plug()
         #url is added if append_url is True
         self.url = append_url and self.config.get('url', self.get_name()) or ''
 
@@ -100,23 +92,13 @@ class CollectionService(object):
         self.resource_url = base_url + ':f%i' % last
         self.absolute_url = absolute_url
 
-        self.all_actions = list(self._all_actions())
+        self.all_actions = list(self.collection.get_all_actions())
 
     def _get_services_prefix(self):
         return '.'.join( x.get_name() for x in self.services[1:]) or ''
 
     def get_name(self):
         return self.collection.get_name()
-
-
-    def _all_actions(self):
-        for attribute_name in dir(self.collection):
-            if attribute_name[0] == '_':
-                continue
-            attribute = getattr(self.collection,attribute_name)
-            if (hasattr(attribute,'_napix_action') and attribute._napix_action
-                    and callable(attribute)):
-                yield attribute
 
     def get_prefix(self):
         """
@@ -260,7 +242,10 @@ class CollectionService(object):
 
     def as_help( self, path):
         manager = self.collection({})
+        if 'human' in bottle.request.GET:
+            bottle.redirect( self.as_help_human() )
         return {
+                'human' : self.as_help_human_path(),
                 'doc' : manager.__doc__,
                 'direct_plug' : self.direct_plug,
                 'absolute_url' : self.absolute_url,
@@ -270,6 +255,11 @@ class CollectionService(object):
                 'resource_methods' : ServiceResourceRequest.available_methods(manager),
                 'resource_fields' : manager.resource_fields
                 }
+    def as_help_human_path( self):
+        if self.previous_service:
+            return self.previous_service.as_help_human()
+        else:
+            return '/_napix_autodoc/%s.html' % self.url
 
     def as_resource_fields(self,path):
         manager = self.collection

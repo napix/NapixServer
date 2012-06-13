@@ -9,7 +9,8 @@ import os
 
 formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
 
-file_handler = logging.FileHandler( '/tmp/napix.log', mode='a')
+LOG_FILE =  '/tmp/napix.log'
+file_handler = logging.FileHandler( LOG_FILE, mode='a')
 file_handler.setLevel( logging.DEBUG)
 file_handler.setFormatter( formatter)
 
@@ -29,10 +30,13 @@ logging.getLogger('Napix.console').addHandler( logging.StreamHandler() )
 
 try:
     import napixd
+    napixd.HOME = os.environ.get('NAPIXHOME','')
 except ImportError:
     import sys
-    sys.path.append( os.path.realpath( os.path.join( os.path.dirname(__file__), '..' )))
+    path = os.path.realpath( os.path.join( os.path.dirname(__file__), '..' ))
+    sys.path.append(path)
     import napixd
+    napixd.HOME = path
 
 import bottle
 from napixd.executor.bottle_adapter import RocketAndExecutor
@@ -53,6 +57,7 @@ if __name__ == '__main__':
 
     console.info( 'Starting process %s', os.getpid())
     console.info( 'Found napixd home at %s',os.path.dirname( napixd.__file__))
+    console.info( 'Logging activity in %s', LOG_FILE )
     #run the daemon
     bottle.run(napixapp, host=settings.get('host','127.0.0.1'),
             port=settings.get('port',8002), server=RocketAndExecutor)

@@ -5,6 +5,7 @@ import logging
 import json
 import os.path
 import UserDict
+import napixd
 
 logger = logging.getLogger('Napix.conf')
 
@@ -13,7 +14,7 @@ class Conf(UserDict.UserDict):
 
     paths = [
             '/etc/napixd/',
-            os.path.realpath( os.path.join( os.path.dirname(__file__), '..', 'conf')),
+            os.path.realpath( os.path.join( napixd.HOME, 'conf')),
             os.path.join( os.path.expanduser('~'), '.napix')
             ]
 
