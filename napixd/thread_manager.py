@@ -244,7 +244,9 @@ class ThreadManager(Thread):
 class ThreadWrapper(Thread):
     """ThreadWrapper is a proxy to the running thread"""
     STATUS = set(['CREATED','RUNNING','RETURNED','EXCEPTION','FINISHING','CLOSED'])
-    def __init__(self,activity,function,fn_args=None,fn_kwargs=None,on_success=None,on_failure=None,on_end=None):
+    def __init__(self,activity,
+            function,fn_args=None,fn_kwargs=None,give_thread=False,
+            on_success=None,on_failure=None,on_end=None):
         """
         FIXME : a quoi serve tout ces parametres ?
         Il y a manifestement des trucs par defaut pour _on_XXX, donc préciser le comprotement par defaut.
@@ -259,6 +261,8 @@ class ThreadWrapper(Thread):
         # Set user provided function to run and arguments.
         self.function = function
         self.args = fn_args or ()
+        if give_thread:
+            self.args = ( self, ) + self.args
         self.kwargs = fn_kwargs or {}
 
         # Set callbacks
@@ -275,7 +279,7 @@ class ThreadWrapper(Thread):
         self.start_time=time()
         try:
             self.execution_state = 'RUNNING'
-            result = self.function(self,*self.args,**self.kwargs)
+            result = self.function(*self.args,**self.kwargs)
         except Exception,e:
             self.execution_state = 'EXCEPTION'
             #failure callback
