@@ -6,12 +6,10 @@ import logging
 import os
 from napixd import HOME
 from napixd.managers import Manager
-from napixd.thread_manager import thread_manager
 
 try:
     from sphinx.application import Sphinx
 except ImportError, e:
-    print e
     Sphinx = None
 
 logger = logging.getLogger('Napix.autodoc')
