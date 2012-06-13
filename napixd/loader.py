@@ -15,9 +15,12 @@ try:
 except ImportError:
     has_inotify = False
 
+from napixd import HOME
 from .conf import Conf
 from .services import Service
 from .managers import Manager
+from .autodoc import Autodocument
+from .thread_manager import thread_manager
 
 import bottle
 from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
@@ -46,7 +49,7 @@ class Loader( object):
         self.timestamp = 0
         self.paths = [
                 self.AUTO_DETECT_PATH,
-                os.path.join( os.path.dirname( __file__ ), '..', 'auto')
+                os.path.join( HOME, 'auto')
                 ]
         self._loading = None
 
@@ -200,7 +203,11 @@ class NapixdBottle(bottle.Bottle):
         self.loader = None
         if services is None:
             self.loader = self.loader_class()
-            services = self.make_services( self.loader.load() )
+            load =  self.loader.load()
+            services = self.make_services( load.managers )
+            doc = Autodocument()
+            thread_manager.do_async( doc.generate_doc, fn_args=(load.managers,),
+                    give_thread=False, on_success=self.doc_set_root)
         else:
             self.root_urls.update( s.url for s in services )
             for service in services:
@@ -213,6 +220,11 @@ class NapixdBottle(bottle.Bottle):
 
         self.on_stop = []
         self.setup_bottle()
+
+    def doc_set_root(self, root):
+        self.route('/_napix_autodoc<filename:path>',
+                callback= self.static_factory(root ),
+                skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
 
     def make_services( self, managers):
         for service in self._make_services( managers ):
@@ -239,10 +251,12 @@ class NapixdBottle(bottle.Bottle):
         #self.services = list(self.loader)
 
     def _reload(self):
+        console = logging.getLogger( 'Napix.console')
         if self.loader is None:
             return
         self._start()
         load = self.loader.load()
+        console.info( 'Reloading')
 
         self.make_services( load.new_managers )
         #remove old routes
@@ -270,9 +284,8 @@ class NapixdBottle(bottle.Bottle):
         #/ route, give the services
         self.route('/',callback=self.slash)
         self.route('/_napix_reload',callback=self.reload)
-        self.route('/_napix_js/', callback= self.static,
-                skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
-        self.route('/_napix_js/<filename:path>', callback= self.static,
+        self.route('/_napix_js<filename:path>',
+                callback=self.static_factory( os.path.join( os.path.dirname( __file__),'web') ),
                 skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
         #Error handling for not found and invalid
         self.error(404)(self._error_handler_factory(404))
@@ -292,6 +305,8 @@ class NapixdBottle(bottle.Bottle):
             self.notify_thread = pyinotify.ThreadedNotifier( watch_manager, self.on_file_change)
             self.notify_thread.start()
             self.on_stop.append( self.notify_thread.stop )
+        elif not has_inotify:
+            logger.info('Did not find pyinotify, reload on file change support disabled')
 
     def on_sighup(self, signum, frame):
         logger.info('Caught SIGHUP, reloading')
@@ -309,10 +324,12 @@ class NapixdBottle(bottle.Bottle):
         logger.info('Asked to do so, reloading')
         self._reload()
 
-    def static(self, filename = 'index.html' ):
-        if filename.endswith('/'):
-            filename += 'index.html'
-        return bottle.static_file( filename, root = os.path.join( os.path.dirname( __file__),'web'))
+    def static_factory(self, root):
+        def static( filename = 'index.html' ):
+            if filename.endswith('/'):
+                filename += 'index.html'
+            return bottle.static_file( filename, root =  root )
+        return static
 
     def slash(self):
         """
