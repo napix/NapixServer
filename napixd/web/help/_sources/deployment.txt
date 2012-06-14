@@ -3,8 +3,19 @@
 Install and deploy Napix
 ========================
 
-Dependencies
+.. _installation:
+
+Installation
 ============
+
+The Napix daemon is hosted in a Mercurial repo at ssh://hg@the-book.enix.org/NapixServer.
+
+.. code-block:: bash
+
+    $ hg clone ssh://hg@the-book.enix.org/NapixServer
+
+Dependencies
+^^^^^^^^^^^^
 
 The napix daemon needs
 
@@ -20,6 +31,17 @@ unittest2 (optional)
     Test framework (for the unit tests)
 pyinotify (optional)
     Detection of file modification (automatic reloading of modified source files)
+sphinx (optional)
+    Autogeneration of the documentation
+
+.. code-block:: bash
+
+    # apt-get install python python-virtualenv python-pip
+    $ virtualenv napix
+    $ source napix/bin/activate
+    (napix)$ pip install -r NapixServer/requirements.txt
+    (napix)$ NapixServer/bin/napixd
+
 
 Configuration
 =============
@@ -110,6 +132,7 @@ Sending a SIGHUP to the server will cause it to reload.
 Use inotify
 ...........
 
-When inotify is available, it will listen on the filesystem to check if the auto-loaded directories changed,
+When inotify is available through ``pyinotify``,
+it will listen on the filesystem changes to check if the auto-loaded directories changed,
 and it will then issue a reload.
 

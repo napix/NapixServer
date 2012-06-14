@@ -1,0 +1,275 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>First steps in the writing of a manager &mdash; Napix 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Napix 0.1 documentation" href="index.html" />
+    <link rel="next" title="Howto write Napix modules" href="high_level.html" />
+    <link rel="prev" title="Resources, collections and ids" href="resources.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="high_level.html" title="Howto write Napix modules"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="resources.html" title="Resources, collections and ids"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="first-steps-in-the-writing-of-a-manager">
+<h1>First steps in the writing of a manager<a class="headerlink" href="#first-steps-in-the-writing-of-a-manager" title="Permalink to this headline">¶</a></h1>
+<p>In Napix, managers behaves like collection and have the logic
+to maintain a set of resources.</p>
+<p>Napix uses the REST approach: an URI defines a resource and HTTP verbs ( GET, PUT, POST, etc) defines the action on it.
+PUT /htaccess/toto is used to modify the resource identified by /htaccess/toto with the data given in the request body.
+GET /htaccess/toto is used to retrieve the same resource.
+GET /htaccess/tata retrieves another resource.</p>
+<p>Napix uses <a class="reference internal" href="managers.html#managers.Manager" title="managers.Manager"><tt class="xref py py-class docutils literal"><span class="pre">Manager</span></tt></a> subclasses to handle the collections logic.
+Each Manager instance represents a collection and provides methods to manage the collection.</p>
+<div class="section" id="launch">
+<h2>Launch<a class="headerlink" href="#launch" title="Permalink to this headline">¶</a></h2>
+<p>The first step is to launch the server as described in <a class="reference internal" href="deployment.html#installation"><em>Installation</em></a>.
+Install pyinotify to enable the auto-reloading.</p>
+<div class="highlight-none"><div class="highlight"><pre>(napix)$ pip install pyinotify
+</pre></div>
+</div>
+<p>When launching the napixd daemon, it shows its PID (Starting process xx),
+its root directory (Found napixd home at /xxx),
+the log file ( Logging activity in /xxx),
+the socket on which it is listening ( Listening on <a class="reference external" href="http://xxx:xxx/">http://xxx:xxx/</a>).</p>
+<p>The server can be stopped by hitting Ctrl+c, and it may take up to 3 seconds to stop.</p>
+<div class="highlight-none"><div class="highlight"><pre>(napix)$ bin/napixd
+Starting process 1482
+Found napixd home at /home/user/NapixServer
+Logging activity in /tmp/napix.log
+Bottle server starting up (using RocketAndExecutor())...
+Listening on http://0.0.0.0:8002/
+Hit Ctrl-C to quit.
+</pre></div>
+</div>
+<p>You can check that the server is up and responding by poking it with curl.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">curl</span></tt></dt>
+<dd>A classic command line HTTP client.</dd>
+<dt><tt class="docutils literal"><span class="pre">-D</span> <span class="pre">/dev/stderr</span></tt></dt>
+<dd>Tells to curl to show the HTTP headers.</dd>
+<dt><tt class="docutils literal"><span class="pre">-X</span> <span class="pre">GET</span></tt></dt>
+<dd>Sends a GET request</dd>
+<dt><tt class="docutils literal"><span class="pre">&quot;localhost:8002/?authok&quot;</span></tt></dt>
+<dd>The host and url on which curl will send its request.
+The authok GET parameter is a bypass of the napix authentication, while Napix run in debug mode.</dd>
+<dt><tt class="docutils literal"><span class="pre">-s</span></tt></dt>
+<dd>tells to curl to be silent and thus avoids the progress bar.</dd>
+<dt><tt class="docutils literal"><span class="pre">|</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">json.tool</span></tt></dt>
+<dd>Formats the output as a human readable json object.</dd>
+</dl>
+</div></blockquote>
+<div class="highlight-none"><div class="highlight"><pre>$ curl -D /dev/stderr -X GET &quot;localhost:8002/?authok&quot; -s | python -m json.tool
+HTTP/1.1 200 OK
+Content-Length: 54
+Content-Type: application/json
+Date: Thu, 14 Jun 2012 10:26:43 GMT
+Server: Rocket 1.2.4 Python/2.6.6
+Connection: keep-alive
+
+[ ]
+</pre></div>
+</div>
+</div>
+<div class="section" id="write-a-manager">
+<h2>Write a manager<a class="headerlink" href="#write-a-manager" title="Permalink to this headline">¶</a></h2>
+<p>The auto-loader directory is the auto-folder inside the root directory.
+Here it is /home/user/NapixServer/auto.</p>
+<p>Launch your favorite editor with and open a file in the auto-load directory <tt class="file docutils literal"><span class="pre">vim</span> <span class="pre">/home/user/NapixServer/auto/password.py</span></tt>.
+Write the headers and save.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#!/usr/bin/env python</span>
+<span class="c"># -*- coding: utf-8 -*-</span>
+</pre></div>
+</div>
+<p>The autoloader will detect the filesystem operation and launch a reload.
+A line <tt class="docutils literal"><span class="pre">Reloading</span></tt> will appear in the log of the napixd daemon console.</p>
+<div class="highlight-none"><div class="highlight"><pre>(napix)$ bin/napixd
+Starting process 1482
+Found napixd home at /home/user/NapixServer
+Logging activity in /tmp/napix.log
+Bottle server starting up (using RocketAndExecutor())...
+Listening on http://0.0.0.0:8002/
+Hit Ctrl-C to quit.
+
+Reloading
+</pre></div>
+</div>
+<p>A curl request will still show an empty array, because there isn&#8217;t a Manager yet to be loaded.</p>
+<p>Continue writing in the previously opened file.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">napixd.managers.default</span> <span class="kn">import</span> <span class="n">DictManager</span>
+</pre></div>
+</div>
+<p>The <a class="reference internal" href="managers.default.html#managers.default.DictManager" title="managers.default.DictManager"><tt class="xref py py-class docutils literal"><span class="pre">DictManager</span></tt></a> class is a subclass of <a class="reference internal" href="managers.html#managers.Manager" title="managers.Manager"><tt class="xref py py-class docutils literal"><span class="pre">Manager</span></tt></a>
+which simplifies the way of writing a Manager.
+Instead of writing a method to make a modification, retrieve a resource, create it, etc,
+the DictManager instance store an internal dict of all its resource indexed by id.
+The DictManager implements the method to modify, create, list, etc and does the operation on the internal dict.</p>
+<p>Append the following lines in the password.py file.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">BasicPasswordFileManager</span><span class="p">(</span><span class="n">DictManager</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Napix server to edit a password file in the user:password format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>When you save the file, the daemon will reload the managers and find the one you created.
+A curl GET request will show you it.</p>
+<div class="highlight-none"><div class="highlight"><pre>$ curl -X GET &quot;localhost:8002/?authok&quot; -s | python -m json.tool
+[
+    &quot;/basicpasswordfilemanager&quot;
+]
+</pre></div>
+</div>
+<p>An attempt to list the resources (using GET /<tt class="docutils literal"><span class="pre">name</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">manager</span></tt>/) fails with a <tt class="xref py py-exc docutils literal"><span class="pre">NotImplementedError</span></tt>
+because the load method that the developer must override is not yet written.</p>
+<div class="highlight-none"><div class="highlight"><pre>$ curl -X GET &quot;localhost:8002/basicpasswordfilemanager/?authok&quot; -s | python -m json.tool
+HTTP/1.1 500 Internal Server Error
+Content-Length: 219
+Content-Type: application/json
+Date: Thu, 14 Jun 2012 12:49:23 GMT
+Server: Rocket 1.2.4 Python/2.6.6
+Connection: keep-alive
+
+{
+    &quot;error_class&quot;: &quot;NotImplementedError&quot;,
+    &quot;error_text&quot;: &quot;&quot;,
+    &quot;filename&quot;: &quot;/home/napix/NapixServer/napixd/managers/default.py&quot;,
+    &quot;line&quot;: 51,
+    &quot;request&quot;: {
+        &quot;method&quot;: &quot;GET&quot;,
+        &quot;path&quot;: &quot;/basicpasswordfilemanager/&quot;
+    },
+    &quot;traceback&quot;: []
+}
+</pre></div>
+</div>
+<p>You can here observe here the comportment of Napix when an uncaught exception is raised.
+It returns a 500 error, with the description of the exceptions serialized in JSON.</p>
+<p>The developer still have to write the metadatas of the manager (its documentation and the field of the resources it manages),
+the methods to load and persist the internal dict and a method to tell what is the id of a newly created resource.</p>
+<div class="section" id="the-metadata">
+<h3>The metadata<a class="headerlink" href="#the-metadata" title="Permalink to this headline">¶</a></h3>
+<p>The metadatas of the Manager are composed of the docstring of the module
+which should describe what kind of resources it manages, and the <a class="reference internal" href="managers.html#managers.Manager.resource_fields" title="managers.Manager.resource_fields"><tt class="xref py py-attr docutils literal"><span class="pre">resource_fields</span></tt></a> attribute
+which documents the names of the attributes of the managed resources and metadatas about them.</p>
+<p>The metadatas of the managers have two main goals.
+They take part in the auto-documentation of the manager and for the filtering of the input and output.
+The resources that are sent to the user are stripped of the fields that are not in the <cite>resource_fields</cite>
+and the resource_dict given to the creation and modification method contains only fields in resource_fields.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">First steps in the writing of a manager</a><ul>
+<li><a class="reference internal" href="#launch">Launch</a></li>
+<li><a class="reference internal" href="#write-a-manager">Write a manager</a><ul>
+<li><a class="reference internal" href="#the-metadata">The metadata</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="resources.html"
+                        title="previous chapter">Resources, collections and ids</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="high_level.html"
+                        title="next chapter">Howto write Napix modules</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/first_step.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="high_level.html" title="Howto write Napix modules"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="resources.html" title="Resources, collections and ids"
+             >previous</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Grégoire ROCHER.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

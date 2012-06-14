@@ -56,7 +56,7 @@ if __name__ == '__main__':
     logger.info('Starting')
 
     console.info( 'Starting process %s', os.getpid())
-    console.info( 'Found napixd home at %s',os.path.dirname( napixd.__file__))
+    console.info( 'Found napixd home at %s', napixd.HOME)
     console.info( 'Logging activity in %s', LOG_FILE )
     #run the daemon
     bottle.run(napixapp, host=settings.get('host','127.0.0.1'),

@@ -19,6 +19,7 @@ The thread manager is a tool that manages thread activity in background.
         :param function: The callback that will be run in the new thread
         :param fn_args: An optional sequence of arguments that will be given to the function
         :param fn_kwargs: An optional dict of arguments that will be given to the function
+        :param give_thread: A boolean that tell to the thread manager to pass itself to the function, False by default
 
         The function is called with the thread instance as first argument.
 
@@ -30,7 +31,7 @@ The thread manager is a tool that manages thread activity in background.
 
             thread_manager.do_async( deploy_file,
                 fn_args = [ '/var/http/static/background.png', 'host1.example.net', 'host2.example.net' ],
-                fn_kwargs = { 'ssh_key' : '~/ssh_deploy_key' }  ):
+                fn_kwargs = { 'ssh_key' : '~/ssh_deploy_key' }, give_thread=True )
 
         :param on_fail: A callback that will be called with the exception that the function have thrown
         :param on_success: A callback that will be called with the result of the function if it returns without exception

@@ -11,11 +11,16 @@ Contents:
 .. toctree::
     :maxdepth: 2
 
+    deployment
+    resources
+    first_step
     high_level
     low_level
-    deployment
     managers
     managers.default
+    managers.action
+    thread_manager
+    executor
 
 
 Indices and tables

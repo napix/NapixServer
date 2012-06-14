@@ -26,8 +26,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Napix 0.1 documentation" href="index.html" />
-    <link rel="next" title="Manager" href="managers.html" />
-    <link rel="prev" title="Howto write a Napix module with the low level interface" href="low_level.html" /> 
+    <link rel="next" title="Resources, collections and ids" href="resources.html" />
+    <link rel="prev" title="Welcome to Napix’s documentation!" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -40,10 +40,10 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="managers.html" title="Manager"
+          <a href="resources.html" title="Resources, collections and ids"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="low_level.html" title="Howto write a Napix module with the low level interface"
+          <a href="index.html" title="Welcome to Napix’s documentation!"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>
@@ -56,8 +56,14 @@
             
   <div class="section" id="install-and-deploy-napix">
 <h1>Install and deploy Napix<a class="headerlink" href="#install-and-deploy-napix" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation">
+<span id="id1"></span><h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>The Napix daemon is hosted in a Mercurial repo at <a class="reference external" href="ssh://hg&#64;the-book.enix.org/NapixServer">ssh://hg&#64;the-book.enix.org/NapixServer</a>.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>hg clone ssh://hg@the-book.enix.org/NapixServer
+</pre></div>
+</div>
 <div class="section" id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h3>
 <p>The napix daemon needs</p>
 <dl class="docutils">
 <dt>bottle &gt; 0.10</dt>
@@ -72,7 +78,17 @@
 <dd>Test framework (for the unit tests)</dd>
 <dt>pyinotify (optional)</dt>
 <dd>Detection of file modification (automatic reloading of modified source files)</dd>
+<dt>sphinx (optional)</dt>
+<dd>Autogeneration of the documentation</dd>
 </dl>
+<div class="highlight-bash"><div class="highlight"><pre><span class="c"># apt-get install python python-virtualenv python-pip</span>
+<span class="nv">$ </span>virtualenv napix
+<span class="nv">$ </span><span class="nb">source </span>napix/bin/activate
+<span class="o">(</span>napix<span class="o">)</span><span class="nv">$ </span>pip install -r NapixServer/requirements.txt
+<span class="o">(</span>napix<span class="o">)</span><span class="nv">$ </span>NapixServer/bin/napixd
+</pre></div>
+</div>
+</div>
 </div>
 <div class="section" id="configuration">
 <h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
@@ -156,7 +172,7 @@ you can add a value in the root object of the configuration.</p>
 </div>
 </div>
 <div class="section" id="auto-loading">
-<span id="id1"></span><h3>Auto-loading<a class="headerlink" href="#auto-loading" title="Permalink to this headline">¶</a></h3>
+<span id="id2"></span><h3>Auto-loading<a class="headerlink" href="#auto-loading" title="Permalink to this headline">¶</a></h3>
 <p>If there is a file ending by <strong>.py</strong> in a auto-detect folder
 of the Napix setup (/var/lib/napix/auto or NapixServer/auto),
 the Napix loader will import this python file and add all the subclasses of <a class="reference internal" href="managers.html#managers.Manager" title="managers.Manager"><tt class="xref py py-class docutils literal"><span class="pre">managers.Manager</span></tt></a> in the available managers.
@@ -187,7 +203,8 @@ $ kill -HUP 13651
 </div>
 <div class="section" id="use-inotify">
 <h4>Use inotify<a class="headerlink" href="#use-inotify" title="Permalink to this headline">¶</a></h4>
-<p>When inotify is available, it will listen on the filesystem to check if the auto-loaded directories changed,
+<p>When inotify is available through <tt class="docutils literal"><span class="pre">pyinotify</span></tt>,
+it will listen on the filesystem changes to check if the auto-loaded directories changed,
 and it will then issue a reload.</p>
 </div>
 </div>
@@ -203,7 +220,10 @@ and it will then issue a reload.</p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Install and deploy Napix</a><ul>
+<li><a class="reference internal" href="#installation">Installation</a><ul>
 <li><a class="reference internal" href="#dependencies">Dependencies</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#configuration">Configuration</a><ul>
 <li><a class="reference internal" href="#napix-daemon">Napix.daemon</a></li>
 <li><a class="reference internal" href="#napix-auth">Napix.auth</a></li>
@@ -225,11 +245,11 @@ and it will then issue a reload.</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="low_level.html"
-                        title="previous chapter">Howto write a Napix module with the low level interface</a></p>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to Napix&#8217;s documentation!</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="managers.html"
-                        title="next chapter">Manager</a></p>
+  <p class="topless"><a href="resources.html"
+                        title="next chapter">Resources, collections and ids</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/deployment.txt"
@@ -262,10 +282,10 @@ and it will then issue a reload.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="managers.html" title="Manager"
+          <a href="resources.html" title="Resources, collections and ids"
              >next</a> |</li>
         <li class="right" >
-          <a href="low_level.html" title="Howto write a Napix module with the low level interface"
+          <a href="index.html" title="Welcome to Napix’s documentation!"
              >previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>

@@ -1,0 +1,172 @@
+=======================================
+First steps in the writing of a manager
+=======================================
+
+In Napix, managers behaves like collection and have the logic
+to maintain a set of resources.
+
+Napix uses the REST approach: an URI defines a resource and HTTP verbs ( GET, PUT, POST, etc) defines the action on it.
+PUT /htaccess/toto is used to modify the resource identified by /htaccess/toto with the data given in the request body.
+GET /htaccess/toto is used to retrieve the same resource.
+GET /htaccess/tata retrieves another resource.
+
+Napix uses :py:class:`~managers.Manager` subclasses to handle the collections logic.
+Each Manager instance represents a collection and provides methods to manage the collection.
+
+Launch
+======
+
+The first step is to launch the server as described in :ref:`installation`.
+Install pyinotify to enable the auto-reloading.
+
+.. code-block:: none
+
+    (napix)$ pip install pyinotify
+
+When launching the napixd daemon, it shows its PID (Starting process xx),
+its root directory (Found napixd home at /xxx),
+the log file ( Logging activity in /xxx),
+the socket on which it is listening ( Listening on http://xxx:xxx/).
+
+The server can be stopped by hitting Ctrl+c, and it may take up to 3 seconds to stop.
+
+.. code-block:: none
+
+    (napix)$ bin/napixd
+    Starting process 1482
+    Found napixd home at /home/user/NapixServer
+    Logging activity in /tmp/napix.log
+    Bottle server starting up (using RocketAndExecutor())...
+    Listening on http://0.0.0.0:8002/
+    Hit Ctrl-C to quit.
+
+You can check that the server is up and responding by poking it with curl.
+
+    ``curl``
+        A classic command line HTTP client.
+    ``-D /dev/stderr``
+        Tells to curl to show the HTTP headers.
+    ``-X GET``
+        Sends a GET request
+    ``"localhost:8002/?authok"``
+        The host and url on which curl will send its request.
+        The authok GET parameter is a bypass of the napix authentication, while Napix run in debug mode.
+    ``-s``
+        tells to curl to be silent and thus avoids the progress bar.
+    ``| python -m json.tool``
+        Formats the output as a human readable json object.
+
+.. code-block:: none
+
+    $ curl -D /dev/stderr -X GET "localhost:8002/?authok" -s | python -m json.tool
+    HTTP/1.1 200 OK
+    Content-Length: 54
+    Content-Type: application/json
+    Date: Thu, 14 Jun 2012 10:26:43 GMT
+    Server: Rocket 1.2.4 Python/2.6.6
+    Connection: keep-alive
+
+    [ ]
+
+Write a manager
+===============
+
+The auto-loader directory is the auto-folder inside the root directory.
+Here it is /home/user/NapixServer/auto.
+
+Launch your favorite editor with and open a file in the auto-load directory :file:`vim /home/user/NapixServer/auto/password.py`.
+Write the headers and save.
+
+.. literalinclude:: /samples/basicpasswordfile.py
+    :language: python
+    :lines: 1-2
+
+The autoloader will detect the filesystem operation and launch a reload.
+A line ``Reloading`` will appear in the log of the napixd daemon console.
+
+.. code-block:: none
+
+    (napix)$ bin/napixd
+    Starting process 1482
+    Found napixd home at /home/user/NapixServer
+    Logging activity in /tmp/napix.log
+    Bottle server starting up (using RocketAndExecutor())...
+    Listening on http://0.0.0.0:8002/
+    Hit Ctrl-C to quit.
+
+    Reloading
+
+A curl request will still show an empty array, because there isn't a Manager yet to be loaded.
+
+Continue writing in the previously opened file.
+
+.. literalinclude:: /samples/basicpasswordfile.py
+    :language: python
+    :lines: 5
+
+The :py:class:`~managers.default.DictManager` class is a subclass of :py:class:`~managers.Manager`
+which simplifies the way of writing a Manager.
+Instead of writing a method to make a modification, retrieve a resource, create it, etc,
+the DictManager instance store an internal dict of all its resource indexed by id.
+The DictManager implements the method to modify, create, list, etc and does the operation on the internal dict.
+
+Append the following lines in the password.py file.
+
+.. literalinclude:: /samples/basicpasswordfile.py
+    :language: python
+    :lines: 7-10
+
+When you save the file, the daemon will reload the managers and find the one you created.
+A curl GET request will show you it.
+
+.. code-block:: none
+
+    $ curl -X GET "localhost:8002/?authok" -s | python -m json.tool
+    [
+        "/basicpasswordfilemanager"
+    ]
+
+An attempt to list the resources (using GET /``name of the manager``/) fails with a :py:exc:`NotImplementedError`
+because the load method that the developer must override is not yet written.
+
+.. code-block:: none
+
+    $ curl -X GET "localhost:8002/basicpasswordfilemanager/?authok" -s | python -m json.tool
+    HTTP/1.1 500 Internal Server Error
+    Content-Length: 219
+    Content-Type: application/json
+    Date: Thu, 14 Jun 2012 12:49:23 GMT
+    Server: Rocket 1.2.4 Python/2.6.6
+    Connection: keep-alive
+
+    {
+        "error_class": "NotImplementedError",
+        "error_text": "",
+        "filename": "/home/napix/NapixServer/napixd/managers/default.py",
+        "line": 51,
+        "request": {
+            "method": "GET",
+            "path": "/basicpasswordfilemanager/"
+        },
+        "traceback": []
+    }
+
+You can here observe here the comportment of Napix when an uncaught exception is raised.
+It returns a 500 error, with the description of the exceptions serialized in JSON.
+
+The developer still have to write the metadatas of the manager (its documentation and the field of the resources it manages),
+the methods to load and persist the internal dict and a method to tell what is the id of a newly created resource.
+
+The metadata
+------------
+
+The metadatas of the Manager are composed of the docstring of the module
+which should describe what kind of resources it manages, and the :py:attr:`~managers.Manager.resource_fields` attribute
+which documents the names of the attributes of the managed resources and metadatas about them.
+
+The metadatas of the managers have two main goals.
+They take part in the auto-documentation of the manager and for the filtering of the input and output.
+The resources that are sent to the user are stripped of the fields that are not in the `resource_fields`
+and the resource_dict given to the creation and modification method contains only fields in resource_fields.
+
+

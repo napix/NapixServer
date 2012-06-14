@@ -27,7 +27,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Napix 0.1 documentation" href="index.html" />
     <link rel="next" title="Default Managers" href="managers.default.html" />
-    <link rel="prev" title="Install and deploy Napix" href="deployment.html" /> 
+    <link rel="prev" title="Howto write a Napix module with the low level interface" href="low_level.html" /> 
   </head>
   <body>
     <div class="related">
@@ -43,7 +43,7 @@
           <a href="managers.default.html" title="Default Managers"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="deployment.html" title="Install and deploy Napix"
+          <a href="low_level.html" title="Howto write a Napix module with the low level interface"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>
@@ -414,8 +414,10 @@ to mean that the method is not supported.</p>
 <dt id="managers.Manager.get_resource">
 <tt class="descname">get_resource</tt><big>(</big><em>resource_id</em><big>)</big> &rarr; resource_dict<a class="headerlink" href="#managers.Manager.get_resource" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the ressource object corresponding to resource_id.</p>
-<p>This object must be a dict or emulate it, as the nAPIxd will convert this dict
+<p>This object must be a dict or emulate it, as Napix will convert this dict
 to a json object to build his response.</p>
+<p>If an object define keys that are not in the <a class="reference internal" href="#managers.Manager.resource_fields" title="managers.Manager.resource_fields"><tt class="xref py py-attr docutils literal"><span class="pre">resource_fields</span></tt></a>,
+they will be stripped.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="c">#GET /somehting/[...]/mymanager/42</span>
 <span class="n">mymanager</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;42&#39;</span><span class="p">)</span>
 </pre></div>
@@ -469,8 +471,8 @@ the _uri key with appropriate value (based on baseurl + _id).</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="deployment.html"
-                        title="previous chapter">Install and deploy Napix</a></p>
+  <p class="topless"><a href="low_level.html"
+                        title="previous chapter">Howto write a Napix module with the low level interface</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="managers.default.html"
                         title="next chapter">Default Managers</a></p>
@@ -509,7 +511,7 @@ the _uri key with appropriate value (based on baseurl + _id).</p>
           <a href="managers.default.html" title="Default Managers"
              >next</a> |</li>
         <li class="right" >
-          <a href="deployment.html" title="Install and deploy Napix"
+          <a href="low_level.html" title="Howto write a Napix module with the low level interface"
              >previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>

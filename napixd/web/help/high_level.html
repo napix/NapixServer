@@ -27,7 +27,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Napix 0.1 documentation" href="index.html" />
     <link rel="next" title="Howto write a Napix module with the low level interface" href="low_level.html" />
-    <link rel="prev" title="Welcome to Napix’s documentation!" href="index.html" /> 
+    <link rel="prev" title="First steps in the writing of a manager" href="first_step.html" /> 
   </head>
   <body>
     <div class="related">
@@ -43,7 +43,7 @@
           <a href="low_level.html" title="Howto write a Napix module with the low level interface"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to Napix’s documentation!"
+          <a href="first_step.html" title="First steps in the writing of a manager"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>
@@ -72,14 +72,16 @@ It defines how the collection find, modify and make operations on its resources.
 <p>For convenience, some subclasses of <a class="reference internal" href="managers.html#managers.Manager" title="managers.Manager"><tt class="xref py py-class docutils literal"><span class="pre">Manager</span></tt></a> are defined in
 <a class="reference internal" href="managers.default.html#module-managers.default" title="managers.default"><tt class="xref py py-mod docutils literal"><span class="pre">managers.default</span></tt></a> that ease the creation of a manager at the expense of higher consumption
 of CPU and RAM.</p>
-<p><a class="reference internal" href="managers.default.html#managers.default.DictManager" title="managers.default.DictManager"><tt class="xref py py-class docutils literal"><span class="pre">DictManager</span></tt></a> is the base class of the manager we will be writing.</p>
+<p><a class="reference internal" href="managers.default.html#managers.default.DictManager" title="managers.default.DictManager"><tt class="xref py py-class docutils literal"><span class="pre">DictManager</span></tt></a> is the base class of the manager we will be writing.
+It&#8217;s a subclass of <a class="reference internal" href="managers.html#managers.Manager" title="managers.Manager"><tt class="xref py py-class docutils literal"><span class="pre">managers.Manager</span></tt></a> witch implements higher level construct:
+with this implementation, it is just needed to make a dict of resource by ID from a persisted data source and to save it back.</p>
 <p>For the hosts example, we will write an implementation of this class.
 We add a docstring for our class.
 It will be used by Napix to document the service.</p>
 </div>
 <div class="section" id="writing-the-meta-datas">
 <h3>Writing the meta-datas<a class="headerlink" href="#writing-the-meta-datas" title="Permalink to this headline">¶</a></h3>
-<p>First you need to write the resource_fields attribute that describes the resource.</p>
+<p>First you need to write the <a class="reference internal" href="managers.html#managers.Manager.resource_fields" title="managers.Manager.resource_fields"><tt class="xref py py-attr docutils literal"><span class="pre">resource_fields</span></tt></a> attribute that describes the resource.</p>
 <dl class="docutils">
 <dt>For our example, we will use two fields:</dt>
 <dd><ul class="first last simple">
@@ -125,7 +127,11 @@ Since we install our manager in the root of the service,
 we will ignore the parent parameter in the load and save methods.</p>
 <div class="highlight-python"><div class="highlight"><pre>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">parent</span> <span class="p">):</span>
         <span class="c">#open the hosts file and keep a copy</span>
-        <span class="n">handle</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">FILE_PATH</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">handle</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">FILE_PATH</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="c">#There is no file, consider it as empty</span>
+            <span class="k">return</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
         <span class="n">handle</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="n">resources</span> <span class="o">=</span> <span class="p">{}</span>
@@ -256,31 +262,6 @@ When a value is incorrect, the method throws a <a class="reference internal" hre
 with a string describing the kind of error the user did.</p>
 <p>With the HostManager, we may want to check that users are sending an array of strings as the hostnames attribute
 and a valid and clean IP address for the ip attribute.</p>
-<div class="highlight-python"><div class="highlight"><pre>    <span class="k">def</span> <span class="nf">validate_resource_hostnames</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">hostnames</span><span class="p">):</span>
-        <span class="k">if</span> <span class="p">(</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">hostnames</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span>
-                <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">hostnames</span> <span class="p">])):</span>
-            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Hostnames have to be an array of strings&#39;</span>
-        <span class="k">return</span> <span class="n">hostnames</span>
-
-    <span class="k">def</span> <span class="nf">validate_resource_ip</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ip</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">ip</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;ip have to be a string&#39;</span>
-        <span class="n">ip_components</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ip_components</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
-            <span class="c"># 123.45.67 is not an ip</span>
-            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Not an ip 1&#39;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">ip_components</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="n">ip_components</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-            <span class="c">#123.45.lol.99 is not an ip</span>
-            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Not an ip 2&#39;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="mi">255</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ip_components</span><span class="p">]):</span>
-            <span class="c">#123.45.67.890 is not an ip</span>
-            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Not an ip 3&#39;</span>
-        <span class="c">#filter the useless 0 out of 123.045.012.001</span>
-        <span class="k">return</span> <span class="s">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="n">ip_components</span><span class="p">))</span>
-</pre></div>
-</div>
 </div>
 <div class="section" id="id1">
 <h3>Resulting file<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
@@ -353,8 +334,8 @@ with of the load and save methods.</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">Welcome to Napix&#8217;s documentation!</a></p>
+  <p class="topless"><a href="first_step.html"
+                        title="previous chapter">First steps in the writing of a manager</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="low_level.html"
                         title="next chapter">Howto write a Napix module with the low level interface</a></p>
@@ -393,7 +374,7 @@ with of the load and save methods.</p>
           <a href="low_level.html" title="Howto write a Napix module with the low level interface"
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to Napix’s documentation!"
+          <a href="first_step.html" title="First steps in the writing of a manager"
              >previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>

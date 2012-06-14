@@ -25,7 +25,9 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Napix 0.1 documentation" href="index.html" /> 
+    <link rel="top" title="Napix 0.1 documentation" href="index.html" />
+    <link rel="next" title="Executor" href="executor.html" />
+    <link rel="prev" title="Actions" href="managers.action.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,6 +39,12 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="executor.html" title="Executor"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="managers.action.html" title="Actions"
+             accesskey="P">previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -70,6 +78,7 @@
 <li><strong>function</strong> &#8211; The callback that will be run in the new thread</li>
 <li><strong>fn_args</strong> &#8211; An optional sequence of arguments that will be given to the function</li>
 <li><strong>fn_kwargs</strong> &#8211; An optional dict of arguments that will be given to the function</li>
+<li><strong>give_thread</strong> &#8211; A boolean that tell to the thread manager to pass itself to the function, False by default</li>
 </ul>
 </td>
 </tr>
@@ -82,7 +91,7 @@
 
 <span class="n">thread_manager</span><span class="o">.</span><span class="n">do_async</span><span class="p">(</span> <span class="n">deploy_file</span><span class="p">,</span>
     <span class="n">fn_args</span> <span class="o">=</span> <span class="p">[</span> <span class="s">&#39;/var/http/static/background.png&#39;</span><span class="p">,</span> <span class="s">&#39;host1.example.net&#39;</span><span class="p">,</span> <span class="s">&#39;host2.example.net&#39;</span> <span class="p">],</span>
-    <span class="n">fn_kwargs</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;ssh_key&#39;</span> <span class="p">:</span> <span class="s">&#39;~/ssh_deploy_key&#39;</span> <span class="p">}</span>  <span class="p">):</span>
+    <span class="n">fn_kwargs</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;ssh_key&#39;</span> <span class="p">:</span> <span class="s">&#39;~/ssh_deploy_key&#39;</span> <span class="p">},</span> <span class="n">give_thread</span><span class="o">=</span><span class="bp">True</span> <span class="p">)</span>
 </pre></div>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
@@ -221,6 +230,12 @@ It&#8217;s false by default so the threads are not given to the called function.
 <li><a class="reference internal" href="#background">Background</a></li>
 </ul>
 
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="managers.action.html"
+                        title="previous chapter">Actions</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="executor.html"
+                        title="next chapter">Executor</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/thread_manager.txt"
@@ -252,6 +267,12 @@ It&#8217;s false by default so the threads are not given to the called function.
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="executor.html" title="Executor"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="managers.action.html" title="Actions"
+             >previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>

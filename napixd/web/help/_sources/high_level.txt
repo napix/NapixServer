@@ -29,6 +29,8 @@ For convenience, some subclasses of :py:class:`~managers.Manager` are defined in
 of CPU and RAM.
 
 :py:class:`~managers.default.DictManager` is the base class of the manager we will be writing.
+It's a subclass of :py:class:`managers.Manager` witch implements higher level construct:
+with this implementation, it is just needed to make a dict of resource by ID from a persisted data source and to save it back.
 
 For the hosts example, we will write an implementation of this class.
 We add a docstring for our class.
@@ -38,7 +40,7 @@ It will be used by Napix to document the service.
 Writing the meta-datas
 ^^^^^^^^^^^^^^^^^^^^^^
 
-First you need to write the resource_fields attribute that describes the resource.
+First you need to write the :py:attr:`~managers.Manager.resource_fields` attribute that describes the resource.
 
 For our example, we will use two fields:
     * a string for the IP address
@@ -140,7 +142,7 @@ In our example, we may want to keep the ids as integers
 
 .. literalinclude:: /samples/sample1_validation.py
     :language: python
-    :lines: 105-109
+    :pyobject: HostManager.validate_id
 
 .. note::
 
@@ -163,7 +165,7 @@ and a valid and clean IP address for the ip attribute.
 
 .. literalinclude:: /samples/sample1_validation.py
     :language: python
-    :lines: 81-103
+    :pyobject: HostManager.validate_resource_hostnames, HostManager.validate_resource_ip
 
 Resulting file
 ^^^^^^^^^^^^^^

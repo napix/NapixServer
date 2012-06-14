@@ -364,8 +364,11 @@ Collection and resources methods
 
         Get the ressource object corresponding to resource_id.
 
-        This object must be a dict or emulate it, as the nAPIxd will convert this dict
+        This object must be a dict or emulate it, as Napix will convert this dict
         to a json object to build his response.
+
+        If an object define keys that are not in the :py:attr:`resource_fields`,
+        they will be stripped.
 
         .. code-block:: python
 

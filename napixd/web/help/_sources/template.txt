@@ -1,0 +1,12 @@
+=========
+BLABLABLA
+=========
+
+
+.. py:module:: tamere.monzob
+
+.. py:class:: MyZob
+
+.. py:attribute:: field = value
+
+         field.description

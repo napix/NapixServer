@@ -1,0 +1,151 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Resources, collections and ids &mdash; Napix 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Napix 0.1 documentation" href="index.html" />
+    <link rel="next" title="First steps in the writing of a manager" href="first_step.html" />
+    <link rel="prev" title="Install and deploy Napix" href="deployment.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="first_step.html" title="First steps in the writing of a manager"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="deployment.html" title="Install and deploy Napix"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="resources-collections-and-ids">
+<h1>Resources, collections and ids<a class="headerlink" href="#resources-collections-and-ids" title="Permalink to this headline">¶</a></h1>
+<p>Napix uses the REST structure to help you leverage your assets and monetize through efficient analytics and data-mining.</p>
+<p>The REST method uses HTTP to invoke procedures on specified resources.
+The resources are designated by an URI.
+They are hierarchically sorted and separated by slashes.
+Every character are allowed in the URI, although they may need to be escaped
+For example, if a <tt class="docutils literal"><span class="pre">file</span></tt> manager takes file path as IDs. <tt class="docutils literal"><span class="pre">/file/%2Fusr%2fbin%2fgcc</span></tt> refers to the resource &#8216;/usr/bin/gcc&#8217;</p>
+<div class="section" id="ids">
+<h2>IDs<a class="headerlink" href="#ids" title="Permalink to this headline">¶</a></h2>
+<p>Within Napix, every token between two <tt class="docutils literal"><span class="pre">/</span></tt> that does not start with _napix_ is an ID.</p>
+<p>Every thing that starts with _napix_ is reserved.</p>
+</div>
+<div class="section" id="collections">
+<h2>Collections<a class="headerlink" href="#collections" title="Permalink to this headline">¶</a></h2>
+<p>The collections are a set of resources.
+The collections have an URI ending with a <tt class="docutils literal"><span class="pre">/</span></tt>.</p>
+<p>In Napix the managers subclasses of <a class="reference internal" href="managers.html#managers.Manager" title="managers.Manager"><tt class="xref py py-class docutils literal"><span class="pre">Manager</span></tt></a> instances represent collections.
+They are instantiated with the parent that spawned them.</p>
+</div>
+<div class="section" id="resources">
+<h2>Resources<a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h2>
+<p>Resources are objects managed in Napix.
+They behave like dictionaries.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Resources, collections and ids</a><ul>
+<li><a class="reference internal" href="#ids">IDs</a></li>
+<li><a class="reference internal" href="#collections">Collections</a></li>
+<li><a class="reference internal" href="#resources">Resources</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="deployment.html"
+                        title="previous chapter">Install and deploy Napix</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="first_step.html"
+                        title="next chapter">First steps in the writing of a manager</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/resources.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="first_step.html" title="First steps in the writing of a manager"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="deployment.html" title="Install and deploy Napix"
+             >previous</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Grégoire ROCHER.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -22,7 +22,11 @@ class HostManager(DictManager):
 
     def load( self, parent ):
         #open the hosts file and keep a copy
-        handle = open( self.FILE_PATH, 'rb')
+        try:
+            handle = open( self.FILE_PATH, 'rb')
+        except IOError:
+            #There is no file, consider it as empty
+            return {}
         self.lines = handle.readlines()
         handle.close()
         resources = {}
