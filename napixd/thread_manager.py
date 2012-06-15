@@ -284,16 +284,20 @@ class ThreadWrapper(Thread):
             self.execution_state = 'EXCEPTION'
             #failure callback
             tmp = self.on_failure(e)
+            result = e
         else:
             self.execution_state = 'RETURNED'
             #success callback
             tmp = self.on_success(result)
         finally:
+            self.finished_with = self.execution_state
+            self.result = result
             self.execution_state = 'FINISHING'
             #end callback
             self.on_end(tmp)
         #finished
         self.execution_state = 'CLOSED'
+
     def _on_end(self,x):
         """dummy event handler"""
         pass

@@ -12,12 +12,14 @@ def setUpModule():
     logging.getLogger('Napix.thread_manager').addHandler(
             logging.StreamHandler(strm=open('/dev/null','w')))
 
-def sleepytask(thread):
+def sleepytask():
     time.sleep(1)
-def notthingtask(thread):
+def notthingtask():
     return 555
-def exceptiontask(thread):
+def exceptiontask():
     raise Exception,444
+def itisathread( thread):
+    return thread.execution_state
 
 class TestThreadator(unittest.TestCase):
     def setUp(self):
@@ -33,6 +35,11 @@ class TestThreadator(unittest.TestCase):
         self.assertAlmostEquals(time.time(),start,places=1)
         thread_manager.stop()
         self.assertTrue(time.time() < start+3)
+
+    def testGivenThread(self):
+        thread = self.thread_manager.do_async( itisathread, give_thread=True)
+        thread.join()
+        self.assertEqual( thread.result, 'RUNNING')
 
     def testAttributes(self):
         thread = self.thread_manager.do_async(notthingtask)
@@ -50,12 +57,20 @@ class TestThreadator(unittest.TestCase):
         for x in [ 'CREATED', 'RUNNING', 'EXCEPTION' , 'FINISHING', 'CLOSED' ] :
             _,ec = thread.execution_state_queue.get()
             self.assertEqual(ec,x)
+        self.assertEqual( thread.finished_with, 'EXCEPTION')
+        self.assertEqual( thread.result.__class__, Exception)
+        self.assertEqual( str(thread.result), '444')
+
     def testStatusSuccess(self):
         thread = self.thread_manager.do_async(notthingtask)
         self.assertTrue(thread is not None)
         for x in [ 'CREATED', 'RUNNING', 'RETURNED', 'FINISHING', 'CLOSED' ] :
             _,ec = thread.execution_state_queue.get()
             self.assertEqual(ec,x)
+        self.assertEqual( thread.finished_with, 'RETURNED')
+        self.assertEqual( thread.result.__class__, int)
+        self.assertEqual( thread.result, 555)
+
     def testCallbackSucess(self):
         results=[]
         self.thread_manager.do_async(notthingtask,
