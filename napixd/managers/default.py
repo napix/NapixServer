@@ -48,7 +48,7 @@ class ReadOnlyDictManager(Manager):
            earth_countries.load({'name':'earth','galaxy':'Milky Way'})
 
         """
-        raise NotImplementedError
+        raise NotImplementedError, 'load'
 
     def _get_resources(self):
         if not hasattr(self,'_resources'):
@@ -97,14 +97,14 @@ class DictManager(ReadOnlyDictManager):
         >>>             countries.write('\n')
 
         """
-        raise NotImplementedError
+        raise NotImplementedError, 'save'
 
     def generate_new_id(self,resource_dict):
         """
         Generate a new identifier for the resource dict given
         It must be overriden by the sub classes
         """
-        raise NotImplementedError
+        raise NotImplementedError, 'generate_new_id'
 
     #private methods and attributes
 
@@ -210,18 +210,18 @@ def FileManager(DictManager):
         """
         Get the filename from the parent
         """
-        raise NotImplementedError
+        raise NotImplementedError, 'get_filename'
 
     def parse(self,fp):
         """
         Extract the datas from the file stream given
         """
-        raise NotImplementedError
+        raise NotImplementedError, 'parse'
 
     def write(self,fp,resources):
         """
         Write the content to the file stream given
         """
-        raise NotImplementedError
+        raise NotImplementedError, 'write'
 
 
