@@ -29,16 +29,17 @@ class Service(object):
         """
         self.configuration = configuration or Conf()
         self.collection_services = []
-        self._create_collection_service(None,collection)
         self.url = namespace or collection.get_name()
+        self._create_collection_service(None, collection, self.url)
 
-    def _create_collection_service(self,previous_service,collection, append_url=True):
-        service = CollectionService(previous_service, collection, self.configuration, append_url)
+    def _create_collection_service(self,previous_service,collection, namespace):
+        service = CollectionService(previous_service, collection, self.configuration, namespace)
         self.collection_services.append(service)
 
         if collection.managed_class != None:
             for managed_class in collection.get_managed_classes():
-                self._create_collection_service(service, managed_class, collection.direct_plug())
+                self._create_collection_service(service, managed_class,
+                        managed_class.get_name() if collection.direct_plug() else '' )
         return service
 
     def noop(self):
@@ -54,7 +55,7 @@ class Service(object):
             service.setup_bottle(app)
 
 class CollectionService(object):
-    def __init__(self, previous_service, collection, config, append_url):
+    def __init__(self, previous_service, collection, config, namespace):
         """
         Serve the collection given as a managed class of the previous_service, with the config given.
         collection is a subclass of Manager
@@ -76,7 +77,7 @@ class CollectionService(object):
 
         self.direct_plug = self.collection.direct_plug()
         #url is added if append_url is True
-        self.url = append_url and self.config.get('url', self.get_name()) or ''
+        self.url = namespace
 
         base_url = '/'
         absolute_url = '/'
