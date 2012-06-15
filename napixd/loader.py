@@ -239,9 +239,7 @@ class NapixdBottle(bottle.Bottle):
         """
         for alias, manager in managers:
             config = Conf.get_default().get( alias )
-            if alias and not config.get('url'):
-                config['url'] = alias
-            service = Service( manager, config )
+            service = Service( manager, alias, config )
             logger.debug('Creating service %s', service.url)
             yield service
 
@@ -258,12 +256,13 @@ class NapixdBottle(bottle.Bottle):
         load = self.loader.load()
         console.info( 'Reloading')
 
-        self.make_services( load.new_managers )
         #remove old routes
         for alias,manager in load.old_managers:
             prefix = '/' + alias
             self.routes = [ r for r in self.routes if not r.rule.startswith(prefix) ]
             self.root_urls.discard( alias )
+
+        self.make_services( load.new_managers )
 
         #reset the router
         self.router = bottle.Router()
@@ -275,7 +274,6 @@ class NapixdBottle(bottle.Bottle):
             self.route( '/%s<catch_all:path>'%alias,
                     callback=self._error_service_factory( cause ))
             self.root_urls.add( alias )
-
 
     def setup_bottle(self):
         """

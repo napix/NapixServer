@@ -8,13 +8,12 @@ from bases import TestServiceBase
 from mock.managed_class import Paragraphs
 from mock.request import POST,PUT,GET
 
-from napixd.conf import Conf
 from napixd.loader import NapixdBottle
 from napixd.services import Service
 
 class TestAction(TestServiceBase):
     def setUp(self):
-        self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ],
+        self.bottle = NapixdBottle([ Service(Paragraphs) ],
                 no_conversation=True)
         self.bottle.setup_bottle()
 

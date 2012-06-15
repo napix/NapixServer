@@ -8,6 +8,7 @@ import logging
 import bottle
 from bottle import HTTPError
 from napixd.exceptions import NotFound,ValidationError,Duplicate
+from napixd.conf import Conf
 
 """
 The service class ack like a proxy between bottle and napix resource Manager Component.
@@ -20,16 +21,16 @@ class Service(object):
     """
     The service objects make the interface between the end user's HTTP calls and the active modules.
     """
-    def __init__(self,collection,configuration):
+    def __init__(self,collection, namespace = None, configuration = None ):
         """
         Create a base service for the given collection and its managed classes.
         collection MUST be a Manager subclass and configuration an instance of Conf
         for this collection
         """
-        self.configuration = configuration
+        self.configuration = configuration or Conf()
         self.collection_services = []
-        first_service = self._create_collection_service(None,collection)
-        self.url = first_service.url
+        self._create_collection_service(None,collection)
+        self.url = namespace or collection.get_name()
 
     def _create_collection_service(self,previous_service,collection, append_url=True):
         service = CollectionService(previous_service, collection, self.configuration, append_url)
@@ -193,7 +194,7 @@ class CollectionService(object):
         app.route(self.resource_url,callback=self.as_resource,
                 method='ANY',apply=arguments_plugin)
 
-        if self.direct_plug == False:
+        if self.direct_plug :
             app.route(self.resource_url+'/',
                     callback = self.as_managed_classes , apply = arguments_plugin)
 
@@ -308,7 +309,7 @@ class ServiceRequest(object):
         for x in self.request.data:
             if x in collection.resource_fields:
                 data[x] = self.request.data[x]
-        data = collection.validate_resource(data)
+        data = collection.validate(data)
         return data
 
     def get_manager(self):
@@ -375,7 +376,7 @@ class ServiceCollectionRequest(ServiceRequest):
         result = super(ServiceCollectionRequest,self).handle()
         if self.method == 'POST':
             url = self.make_url(result)
-            raise bottle.HTTPError(202, None, header={
+            raise bottle.HTTPError(201, None, header={
                 'Location': url} )
         if self.method == 'GET':
             return map(self.make_url,result)

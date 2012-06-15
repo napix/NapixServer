@@ -21,7 +21,7 @@ console_handler.setFormatter( formatter)
 logging.getLogger('Rocket').addHandler( file_handler)
 logging.getLogger('Rocket').setLevel( logging.DEBUG )
 logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
-logging.getLogger('Napix').setLevel( logging.INFO )
+logging.getLogger('Napix').setLevel( logging.DEBUG )
 logging.getLogger('Napix').addHandler( console_handler )
 logging.getLogger('Napix').addHandler( file_handler )
 

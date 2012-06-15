@@ -86,7 +86,8 @@ class TestService(TestServiceBase):
             'actions' : ['hash', 'reverse', 'split' ],
             'collection_methods': ['HEAD', 'GET'],
             'doc': 'Words of each paragrach',
-            'direct_plug' : False,
+            'human': '/_napix_autodoc/p.html',
+            'direct_plug' : True,
             'managed_class': ['l', 't'],
             'resource_fields': {'word': {
                 'description' : 'A word in the story',
@@ -96,40 +97,6 @@ class TestService(TestServiceBase):
     def testDocumentationError(self):
         self._expect_405(PUT('/p/*/_napix_resource_fields',
                 newfields={'name':'robin'}),'HEAD,GET')
-
-
-class TestConf(TestServiceBase):
-    def setUp(self):
-        self.bottle = NapixdBottle([
-            Service(Paragraphs,Conf({
-                'url':'para',
-                'w' : {
-                    'url':'words',
-                    't' : {
-                        'url':'trans'
-                        }
-                    }
-                }))
-            ], no_conversation = True)
-        self.bottle.setup_bottle()
-
-    def testGETCollection(self):
-        self._expect_list(GET('/para/'),['/para/mouse','/para/cat'])
-        self._expect_list(GET('/para/mouse/'),
-                ['/para/mouse/a','/para/mouse/mouse','/para/mouse/sleeps'])
-        self._expect_list(GET('/para/cat/eats/l/'),
-                ['/para/cat/eats/l/e','/para/cat/eats/l/a','/para/cat/eats/l/t','/para/cat/eats/l/s'])
-        self._expect_list(GET('/para/mouse/sleeps/trans/'),
-                ['/para/mouse/sleeps/trans/french'])
-
-    def testPOSTCollection(self):
-        self._expect_created(POST('/para/',text='the bird flies in the sky'),
-                '/para/bird')
-
-    def testPOSTSubCollection(self):
-        self._expect_created(POST('/para/cat/eats/trans/',
-            language='german', translated='isst' ),
-                '/para/cat/eats/trans/german')
 
 class TestErrors(TestServiceBase):
     def setUp(self):

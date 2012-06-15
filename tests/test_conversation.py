@@ -18,7 +18,7 @@ class TestConversationPlugin(WSGITester):
     def testCreated(self):
         env = self._make_env('POST','/p/','{"text":"The bird flies in the sky"}')
         code, headers, result = self._do_request(env)
-        self.assertEqual( code, 202)
+        self.assertEqual( code, 201)
         self.assertEqual( headers['Content-Length'], '0')
         self.assertEqual( headers['Location'], '/p/bird')
         self.assertEqual( result, '')
@@ -26,7 +26,7 @@ class TestConversationPlugin(WSGITester):
     def testURLEncoded(self):
         env = self._make_env('POST','/p/',r'text=The%20bird%20flies%20in%20the%20sky', url_encoded=True)
         code, headers, result = self._do_request(env)
-        self.assertEqual( code, 202)
+        self.assertEqual( code, 201)
 
     def testSerializeList(self):
         env = self._make_env('GET', '/p/cat/')

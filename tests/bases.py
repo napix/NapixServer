@@ -72,7 +72,7 @@ class TestServiceBase(unittest2.TestCase):
         try:
             resp = self._do_the_request(request)
         except bottle.HTTPResponse,e:
-            self.assertEqual(e.status, 202)
+            self.assertEqual(e.status, 201)
             self.assertEqual(e.headers['Location'],url)
         else:
             self.fail('Unexpected %s'%repr(resp))

@@ -93,6 +93,7 @@ class TestConfLoader( unittest2.TestCase ):
                 '/etc/napixd/settings.json': self.good_json1,
                  self.conf_file : self.good_json2
                 }
+        Conf.make_default()
         self.assertEqual( Conf.get_default(), { 'json' : { 'v' : 1} } )
         self.assertEqual( Conf.get_default('json'), { 'v' : 1} )
         self.assertEqual( Conf.get_default('json.v'), 1)
