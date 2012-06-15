@@ -54,6 +54,7 @@ if __name__ == '__main__':
 
     bottle.debug(settings.get('debug',False))
     logger.info('Starting')
+    logger.info('Napixd Home is %s', napixd.HOME)
 
     console.info( 'Starting process %s', os.getpid())
     console.info( 'Found napixd home at %s', napixd.HOME)
