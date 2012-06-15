@@ -7,13 +7,12 @@ from mock.managed_class import Paragraphs,STORE
 from mock.request import POST,PUT,GET,DELETE
 from bases import TestServiceBase
 
-from napixd.conf import Conf
 from napixd.services import Service
 from napixd.loader import NapixdBottle
 
 class TestService(TestServiceBase):
     def setUp(self):
-        self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ],
+        self.bottle = NapixdBottle([ Service(Paragraphs) ],
                 no_conversation=True)
         self.bottle.setup_bottle()
 
@@ -100,7 +99,7 @@ class TestService(TestServiceBase):
 
 class TestErrors(TestServiceBase):
     def setUp(self):
-        self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ],
+        self.bottle = NapixdBottle([ Service(Paragraphs) ],
                 no_conversation = True)
         self.bottle.setup_bottle()
 
