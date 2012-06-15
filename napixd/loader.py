@@ -298,7 +298,8 @@ class NapixdBottle(bottle.Bottle):
             logger.info( 'Launch Napix autoreloader')
             watch_manager = pyinotify.WatchManager()
             for path in self.loader.paths:
-                watch_manager.add_watch( path, pyinotify.IN_CLOSE_WRITE)
+                if os.path.isdir( path):
+                    watch_manager.add_watch( path, pyinotify.IN_CLOSE_WRITE)
 
             self.notify_thread = pyinotify.ThreadedNotifier( watch_manager, self.on_file_change)
             self.notify_thread.start()
