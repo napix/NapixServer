@@ -30,27 +30,30 @@ class Service(object):
         self.configuration = configuration or Conf()
         self.collection_services = []
         self.url = namespace or collection.get_name()
-        self._create_collection_service(None, collection, self.url)
 
-    def _create_collection_service(self,previous_service,collection, namespace):
-        service = CollectionService(previous_service, collection, self.configuration, namespace)
+        service = FirstCollectionService( collection, self.configuration, self.url)
+        self._append_service( service)
+        self.create_collection_service( collection, service )
+
+    def _append_service( self, service):
         self.collection_services.append(service)
 
+    def make_collection_service( self, previous_service, collection, namespace ):
+        service = CollectionService(previous_service, collection, self.configuration, namespace)
+        self._append_service( service )
+        self.create_collection_service( collection, service)
+
+    def create_collection_service(self, collection, previous_service ):
         if collection.managed_class != None:
             for managed_class in collection.get_managed_classes():
-                self._create_collection_service(service, managed_class,
+                self.make_collection_service(previous_service, managed_class,
                         managed_class.get_name() if collection.direct_plug() else '' )
-        return service
-
-    def noop(self):
-        return None
 
     def setup_bottle(self,app):
         """
         Route the managers inside the given bottle app.
         """
         logger.debug( 'Setting %s', self.url )
-        app.route( '/'+self.url, callback = self.noop)
         for service in self.collection_services:
             service.setup_bottle(app)
 
@@ -108,11 +111,11 @@ class CollectionService(object):
         if append_url was True, this service hasn't a prefix
         else, it's the url from the configuration
         ex:
-        >>>cs = CollectionService(ps,ManagerClass,conf,append_url=True)
+        >>>cs = CollectionService(ps,ManagerClass,conf,namespace)
         >>>cs.get_prefix()
             'managerclass/'
 
-        >>>cs = CollectionService(ps,ManagerClass,conf,append_url)
+        >>>cs = CollectionService(ps,ManagerClass,conf,namespace)
         >>>cs.get_prefix()
             ''
         """
@@ -127,8 +130,7 @@ class CollectionService(object):
         """
         Get a manager of this collection with the given path.
         """
-        return self._generate_manager(
-                self._get_resource(path))
+        return self._generate_manager( self._get_resource(path) )
 
     def _generate_manager(self,resource):
         """
@@ -258,10 +260,7 @@ class CollectionService(object):
                 'resource_fields' : manager.resource_fields
                 }
     def as_help_human_path( self):
-        if self.previous_service:
-            return self.previous_service.as_help_human_path()
-        else:
-            return '/_napix_autodoc/%s.html' % self.url
+        return self.previous_service.as_help_human_path()
 
     def as_resource_fields(self,path):
         manager = self.collection
@@ -270,6 +269,27 @@ class CollectionService(object):
     def as_example_resource(self,path):
         manager = self.collection({})
         return manager.get_example_resource()
+
+class FirstCollectionService(CollectionService):
+    def __init__(self, collection, config, namespace):
+        super(FirstCollectionService, self).__init__( None, collection, config, namespace)
+        self._cache = None
+
+    def _generate_manager( self, resource):
+        if self._cache is None or not self._cache.is_up_to_date():
+            self._cache = super(FirstCollectionService, self)._generate_manager(resource)
+        return self._cache
+
+    def setup_bottle( self, app):
+        app.route( '/'+self.url, callback = self.noop)
+        super( FirstCollectionService, self).setup_bottle(app)
+
+    def noop(self):
+        return None
+
+    def as_help_human_path(self):
+        return '/_napix_autodoc/%s.html' % self.url
+
 
 class ServiceRequest(object):
     """
