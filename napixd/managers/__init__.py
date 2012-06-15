@@ -275,6 +275,9 @@ class Manager(object):
 
         Return a resource_dict.
         """
+        return resource_dict
+
+    def validate(self, resource_dict):
         # Create a new dict to populate with validated data
         for key, description in self.resource_fields.items():
             if "optional" not in description and key not in resource_dict:
@@ -282,6 +285,7 @@ class Manager(object):
             validator = getattr(self, 'validate_resource_%s'%key,None)
             if validator:
                 resource_dict[key] = validator(resource_dict.get(key,None))
+        resource_dict = self.validate_resource( resource_dict)
         return resource_dict
 
     def is_up_to_date(self):
