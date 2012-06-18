@@ -1,0 +1,16 @@
+
+================
+Managers actions
+================
+
+
+Napix allows to write quickly managers that can do CRUD operations.
+Other operations can be written with actions.
+
+Actions operate on a resource and are instance methods of a manager.
+They can take parameters, mandatory or optional.
+
+They are declared by the decorator :py:func:`managers.actions.action`.
+
+For example, we will add a scan port action to the HostManager written in
+:ref:`the high-level how-to<high_level>`.
