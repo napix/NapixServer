@@ -420,6 +420,12 @@ class ServiceResourceRequest(ServiceRequest):
             'HEAD' : 'get_resource',
             'DELETE':'delete_resource',
         }
+    def handle(self):
+        result = super(ServiceResourceRequest,self).handle()
+        if self.method == 'GET':
+            result = dict( (k,v) for (k,v) in result.items()
+                    if k in self.service.collection.resource_fields)
+        return result
 
     def get_args(self,datas):
         if self.method == 'PUT':
