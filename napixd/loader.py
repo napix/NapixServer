@@ -66,6 +66,8 @@ class Loading(object):
 
         #every managers that we found
         self.managers = set( self.find_managers())
+        for alias, manager in self.managers:
+            self.setup( manager )
 
         #Every manager that we did not find
         if previous is not None:
@@ -84,6 +86,49 @@ class Loading(object):
                 for alias, manager, cause in previous.error_managers:
                     if manager.__module__ in self.errors:
                         self.error_managers.append( ( alias, manager, self.errors[ manager.__module__ ] ))
+
+    def setup( self, manager):
+        if manager.managed_class is None:
+            managed_classes = []
+        elif manager.direct_plug():
+            managed_classes = [ self._setup( manager, manager.managed_class ) ]
+        else:
+            managed_classes = [ self._setup( manager, submanager)
+                    for submanager in manager.managed_class ]
+        managed_classes = filter( bool, managed_classes)
+        manager.set_managed_classes(managed_classes)
+
+    def _setup(self, manager, manager_ref):
+        if isinstance( manager_ref, type):
+            self.setup( manager_ref )
+            return manager_ref
+        elif isinstance( manager_ref, basestring):
+            if '.' in manager_ref:
+                module, dot, manager_name = manager_ref.rpartition('.')
+                try:
+                    self._import(module)
+                    submanager = getattr( sys.modules[ module ], manager_name)
+                except ImportError:
+                    logger.error( 'Fail to load the managed class %s of %s from %s',
+                            manager_name, manager.get_name(), module )
+                    return
+                except AttributeError:
+                    logger.error( 'No managed class %s of %s inside %s',
+                            manager_name, manager.get_name(), module )
+                    return
+            else:
+                try:
+                    submanager = getattr( sys.modules[ manager.__module__ ], manager_ref)
+                except AttributeError:
+                    logger.error( 'Fail to load the managed class %s of %s from same module',
+                            manager_ref, manager.get_name() )
+                    return
+            self.setup( submanager )
+            return submanager
+        else:
+            logger.error( 'managed_class of %s (%s.%s) should be a string, a Manager subclass or a list of these',
+                    manager.get_name(), manager.__module__, manager.__name__)
+            return manager_ref
 
     def __iter__(self):
         return iter( self.managers )
@@ -140,7 +185,7 @@ class Loading(object):
                 obj = getattr(module, attr)
                 if isinstance( obj, type) and issubclass( obj, Manager):
                     if obj.detect():
-                        yield obj.get_name().lower(), obj
+                        yield obj.get_name(), obj
 
     def _import( self, module_path ):
         if not module_path in sys.modules:

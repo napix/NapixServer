@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import logging
 from napixd.exceptions import ValidationError
 
 """
@@ -133,11 +134,14 @@ class Manager(object):
     #Parser was passed to list_resource through parent
 
     """
+    name = None
 
     #list of the fields publicly available with their properties
     resource_fields = {}
-    #Class wraping the children
+    #Class or list of classes wrapping the children
     managed_class = None
+    #Version of above after import
+    _managed_class = None
 
     def __init__(self,parent):
         """
@@ -159,39 +163,30 @@ class Manager(object):
 
     @classmethod
     def get_name(cls):
-        return cls.__name__
+        return cls.name or cls.__name__.lower()
 
     @classmethod
     def direct_plug( self ):
-        try:
-            iter( self.managed_class)
-        except TypeError:
-            return False
-        else:
-            return True if self.managed_class else None
+        if self.managed_class is None:
+            return None
+        if isinstance( self.managed_class, basestring):
+            return True
+        return False
 
     @classmethod
     def get_managed_classes(cls):
-        if cls.managed_class is None:
-            cls._managed_classes_cache = []
-        elif not hasattr( cls, '_managed_classes_cache'):
-            cls._managed_classes_cache = list( cls._get_managed_classes() )
-        return cls._managed_classes_cache
+        if cls._managed_class is None:
+            if cls.managed_class is None:
+                cls._managed_class = []
+            else:
+                cls._managed_class = [cls.managed_class] if cls.direct_plug() else cls.managed_class
+                if any( isinstance( mc, basestring) for mc in cls._managed_class):
+                    logging.getLogger('Napix.manager').warning('Manager %s has not been set up.', cls.get_name())
+        return cls._managed_class
 
     @classmethod
-    def _get_managed_classes(cls):
-        for managed in ( [cls.managed_class] if not cls.direct_plug() else cls.managed_class ) :
-            if isinstance( managed, type):
-                yield managed
-            elif isinstance( managed, basestring):
-                if '.' in managed:
-                    module, dot, managed = managed.rpartition('.')
-                    __import__(module)
-                else:
-                    module =  cls.__module__
-                yield getattr( sys.modules[ module ], managed)
-            else:
-                raise ValueError, 'managed class is a or a list of strings or manager subclasses'
+    def set_managed_classes(cls, managed_classes):
+        cls._managed_class = managed_classes
 
     @classmethod
     def get_all_actions(self):

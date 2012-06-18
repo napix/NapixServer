@@ -3,6 +3,7 @@
 
 import unittest2
 
+from napixd.managers import Manager
 from mock.manager import Words,ValidationError,NotFound
 
 class TestManager(unittest2.TestCase):
@@ -46,9 +47,34 @@ class TestManager(unittest2.TestCase):
         self.assertDictEqual(self.manager.get_resource(3),
                 {'name':'drei','letter_count':4,'first_letter':'d'})
 
-class TestAction(unittest2.TestCase):
-    def setUp(self):
-        self.manager = Words({'words':zip(xrange(1,4),['one','two','three'])})
+class TestDirectPlug( unittest2.TestCase):
+    class SubManager( Manager):
+        pass
+
+    def testNone( self):
+        class ManagerNone( Manager):
+            managed_class = None
+        self.assertEqual( ManagerNone.direct_plug(), None)
+
+    def testFalse( self):
+        class ManagerFalse( Manager):
+            managed_class = [ self.SubManager ]
+        self.assertEqual( ManagerFalse.direct_plug(), False)
+
+    def testFalse( self):
+        class ManagerFalse( Manager):
+            managed_class = [ 'abc' ]
+        self.assertEqual( ManagerFalse.direct_plug(), False)
+
+    def testTrue( self):
+        class ManagerTrue( Manager):
+            managed_class = self.SubManager
+        self.assertEqual( ManagerTrue.direct_plug(), True)
+
+    def testTrue( self):
+        class ManagerTrue( Manager):
+            managed_class = 'abc'
+        self.assertEqual( ManagerTrue.direct_plug(), True)
 
 if __name__ == '__main__':
     unittest2.main()
