@@ -303,15 +303,33 @@ Validation
         or throw a :py:exc:`ValidationError` if the value is incorrect.
 
 
-    .. py:method::  validate_resource( resource_dict) -> resource_dict
+    .. py:method:: validate_resource( resource_dict) -> resource_dict
 
-        Validate a resource_dict (which can be directly a dict or an object emulating a dict) by
-        checking that every mandatory field specified in self.resource_fields is defined.
+        Placeholder method of the managers for the validation of the whole resource_dict
+        This method can change, add or remove fields from the resource_dict.
+        It must return the valid resource even if it is the same as resource_dict,
+        or raise a :py:exc:`ValidationError`.
 
-        If the current object implement self.validate_resource_**key** method, it'll be called with
-        the value of resource_dict[**key**] as parameter.
+        .. code-block:: python
 
-        It shoud raise a :py:exc:`ValidationError` if the data isn't valid, else it must return a valid value
+            class CNAMEManager( Manager):
+                """ Manages the aliases """
+
+                def validate_resource( self, resource_dict):
+                    #avoids a redirection on itself
+                    if resource_dict['name'] == resource_dict['target']:
+                        raise ValidationError, '`name` and `target` must be different'
+                    return resource_dict
+
+
+    .. py:method:: validate( resource_dict ) -> resource_dict
+
+        Validate a resource_dict by checking that every mandatory field specified in self.resource_fields is defined.
+
+        First, if the current object implement :py:meth:`validate_resource_FIELDNAME` method, it'll be called with
+        the value of resource_dict[FIELDNAME] as parameter.
+
+        Then it will call validate_resource with the dict which has its fields cleaned
 
 
 Collection and resources methods

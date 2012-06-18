@@ -55,7 +55,7 @@
           <div class="body">
             
   <div class="section" id="first-steps-in-the-writing-of-a-manager">
-<h1>First steps in the writing of a manager<a class="headerlink" href="#first-steps-in-the-writing-of-a-manager" title="Permalink to this headline">¶</a></h1>
+<span id="first-step"></span><h1>First steps in the writing of a manager<a class="headerlink" href="#first-steps-in-the-writing-of-a-manager" title="Permalink to this headline">¶</a></h1>
 <p>In Napix, managers behaves like collection and have the logic
 to maintain a set of resources.</p>
 <p>Napix uses the REST approach: an URI defines a resource and HTTP verbs ( GET, PUT, POST, etc) defines the action on it.
@@ -67,27 +67,34 @@ Each Manager instance represents a collection and provides methods to manage the
 <div class="section" id="launch">
 <h2>Launch<a class="headerlink" href="#launch" title="Permalink to this headline">¶</a></h2>
 <p>The first step is to launch the server as described in <a class="reference internal" href="deployment.html#installation"><em>Installation</em></a>.
-Install pyinotify to enable the auto-reloading.</p>
-<div class="highlight-none"><div class="highlight"><pre>(napix)$ pip install pyinotify
-</pre></div>
+Install pyinotify to enable the auto-reloading.:</p>
+<div class="highlight-python"><pre>(napix)$ pip install pyinotify</pre>
 </div>
 <p>When launching the napixd daemon, it shows its PID (Starting process xx),
 its root directory (Found napixd home at /xxx),
 the log file ( Logging activity in /xxx),
 the socket on which it is listening ( Listening on <a class="reference external" href="http://xxx:xxx/">http://xxx:xxx/</a>).</p>
-<p>The server can be stopped by hitting Ctrl+c, and it may take up to 3 seconds to stop.</p>
-<div class="highlight-none"><div class="highlight"><pre>(napix)$ bin/napixd
+<p>The server can be stopped by hitting Ctrl+c, and it may take up to 3 seconds to stop.:</p>
+<div class="highlight-python"><pre>(napix)$ bin/napixd
 Starting process 1482
 Found napixd home at /home/user/NapixServer
 Logging activity in /tmp/napix.log
 Bottle server starting up (using RocketAndExecutor())...
 Listening on http://0.0.0.0:8002/
-Hit Ctrl-C to quit.
-</pre></div>
+Hit Ctrl-C to quit.</pre>
 </div>
 <p>You can check that the server is up and responding by poking it with curl.</p>
-<blockquote>
-<div><dl class="docutils">
+<div class="highlight-python"><pre>$ curl -D /dev/stderr -X GET "localhost:8002/?authok" -s | python -m json.tool
+HTTP/1.1 200 OK
+Content-Length: 54
+Content-Type: application/json
+Date: Thu, 14 Jun 2012 10:26:43 GMT
+Server: Rocket 1.2.4 Python/2.6.6
+Connection: keep-alive
+
+[ ]</pre>
+</div>
+<dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">curl</span></tt></dt>
 <dd>A classic command line HTTP client.</dd>
 <dt><tt class="docutils literal"><span class="pre">-D</span> <span class="pre">/dev/stderr</span></tt></dt>
@@ -102,18 +109,6 @@ The authok GET parameter is a bypass of the napix authentication, while Napix ru
 <dt><tt class="docutils literal"><span class="pre">|</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">json.tool</span></tt></dt>
 <dd>Formats the output as a human readable json object.</dd>
 </dl>
-</div></blockquote>
-<div class="highlight-none"><div class="highlight"><pre>$ curl -D /dev/stderr -X GET &quot;localhost:8002/?authok&quot; -s | python -m json.tool
-HTTP/1.1 200 OK
-Content-Length: 54
-Content-Type: application/json
-Date: Thu, 14 Jun 2012 10:26:43 GMT
-Server: Rocket 1.2.4 Python/2.6.6
-Connection: keep-alive
-
-[ ]
-</pre></div>
-</div>
 </div>
 <div class="section" id="write-a-manager">
 <h2>Write a manager<a class="headerlink" href="#write-a-manager" title="Permalink to this headline">¶</a></h2>
@@ -126,8 +121,8 @@ Write the headers and save.</p>
 </pre></div>
 </div>
 <p>The autoloader will detect the filesystem operation and launch a reload.
-A line <tt class="docutils literal"><span class="pre">Reloading</span></tt> will appear in the log of the napixd daemon console.</p>
-<div class="highlight-none"><div class="highlight"><pre>(napix)$ bin/napixd
+A line <tt class="docutils literal"><span class="pre">Reloading</span></tt> will appear in the log of the napixd daemon console.:</p>
+<div class="highlight-python"><pre>(napix)$ bin/napixd
 Starting process 1482
 Found napixd home at /home/user/NapixServer
 Logging activity in /tmp/napix.log
@@ -135,8 +130,7 @@ Bottle server starting up (using RocketAndExecutor())...
 Listening on http://0.0.0.0:8002/
 Hit Ctrl-C to quit.
 
-Reloading
-</pre></div>
+Reloading</pre>
 </div>
 <p>A curl request will still show an empty array, because there isn&#8217;t a Manager yet to be loaded.</p>
 <p>Continue writing in the previously opened file.</p>
@@ -156,16 +150,41 @@ The DictManager implements the method to modify, create, list, etc and does the 
 </pre></div>
 </div>
 <p>When you save the file, the daemon will reload the managers and find the one you created.
-A curl GET request will show you it.</p>
-<div class="highlight-none"><div class="highlight"><pre>$ curl -X GET &quot;localhost:8002/?authok&quot; -s | python -m json.tool
+A curl GET request will show you it.:</p>
+<div class="highlight-python"><pre>$ curl -X GET "localhost:8002/?authok" -s | python -m json.tool
 [
-    &quot;/basicpasswordfilemanager&quot;
-]
+    "/basicpasswordfilemanager"
+]</pre>
+</div>
+<p>If you make a mistake while writing a manager, and it causes the import to fail, Napix will forgive you.
+Just correct the error and save.
+If an import fails, and makes a manager unavailable, a placeholder will catch the calls and
+return the error that cause the import to fail.</p>
+<p>For example: add a syntax error or a undeclared name in the file.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">BasicPasswordFileManager</span><span class="p">(</span><span class="n">DictOopsIMadeAMistake</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Napix server to edit a password file in the user:password format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 </pre></div>
 </div>
+<p>The requests will fail with an <tt class="xref py py-exc docutils literal"><span class="pre">ImportError</span></tt> caused by a <tt class="xref py py-exc docutils literal"><span class="pre">NameError</span></tt>:</p>
+<div class="highlight-python"><pre>$ curl -X GET "localhost:8002/basicpasswordfilemanager?authhok" -s | python -m json.tool
+{
+    "error_class": "ImportError",
+    "error_text": "NameError(\"name 'DictOopsIMadeAMistake' is not defined\",)",
+    "filename": "/home/dude/NapixServer/napixd/loader.py",
+    "line": 352,
+    "request": {
+        "method": "GET",
+        "path": "/basicpasswordfilemanager"
+    },
+    "traceback": []
+}</pre>
+</div>
+<p>Rollback to fix this error before continuing.</p>
 <p>An attempt to list the resources (using GET /<tt class="docutils literal"><span class="pre">name</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">manager</span></tt>/) fails with a <tt class="xref py py-exc docutils literal"><span class="pre">NotImplementedError</span></tt>
-because the load method that the developer must override is not yet written.</p>
-<div class="highlight-none"><div class="highlight"><pre>$ curl -X GET &quot;localhost:8002/basicpasswordfilemanager/?authok&quot; -s | python -m json.tool
+because the load method that the developer must override is not yet written.:</p>
+<div class="highlight-python"><pre>$ curl -X GET "localhost:8002/basicpasswordfilemanager/?authok" -s -D /dev/stderr | python -m json.tool
 HTTP/1.1 500 Internal Server Error
 Content-Length: 219
 Content-Type: application/json
@@ -174,17 +193,16 @@ Server: Rocket 1.2.4 Python/2.6.6
 Connection: keep-alive
 
 {
-    &quot;error_class&quot;: &quot;NotImplementedError&quot;,
-    &quot;error_text&quot;: &quot;&quot;,
-    &quot;filename&quot;: &quot;/home/napix/NapixServer/napixd/managers/default.py&quot;,
-    &quot;line&quot;: 51,
-    &quot;request&quot;: {
-        &quot;method&quot;: &quot;GET&quot;,
-        &quot;path&quot;: &quot;/basicpasswordfilemanager/&quot;
+    "error_class": "NotImplementedError",
+    "error_text": "load",
+    "filename": "/home/napix/NapixServer/napixd/managers/default.py",
+    "line": 51,
+    "request": {
+        "method": "GET",
+        "path": "/basicpasswordfilemanager/"
     },
-    &quot;traceback&quot;: []
-}
-</pre></div>
+    "traceback": []
+}</pre>
 </div>
 <p>You can here observe here the comportment of Napix when an uncaught exception is raised.
 It returns a 500 error, with the description of the exceptions serialized in JSON.</p>
@@ -199,6 +217,244 @@ which documents the names of the attributes of the managed resources and metadat
 They take part in the auto-documentation of the manager and for the filtering of the input and output.
 The resources that are sent to the user are stripped of the fields that are not in the <cite>resource_fields</cite>
 and the resource_dict given to the creation and modification method contains only fields in resource_fields.</p>
+<div class="highlight-python"><div class="highlight"><pre>    <span class="n">FILE_PATH</span>  <span class="o">=</span> <span class="s">&#39;/tmp/test&#39;</span>
+    <span class="n">resource_fields</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;username&#39;</span><span class="p">:{</span>
+            <span class="s">&#39;description&#39;</span><span class="p">:</span><span class="s">&#39;Username&#39;</span><span class="p">,</span>
+            <span class="s">&#39;example&#39;</span><span class="p">:</span> <span class="s">&#39;john&#39;</span>
+            <span class="p">},</span>
+        <span class="s">&#39;password&#39;</span><span class="p">:{</span>
+            <span class="s">&#39;description&#39;</span><span class="p">:</span><span class="s">&#39;Password associated with the username&#39;</span><span class="p">,</span>
+            <span class="s">&#39;example&#39;</span><span class="p">:</span><span class="s">&#39;toto42&#39;</span>
+            <span class="p">}</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+<p>The resources of our manager will contain a <tt class="docutils literal"><span class="pre">username</span></tt> and the corresponding <tt class="docutils literal"><span class="pre">password</span></tt>.
+The template object proposed to the users will be <tt class="docutils literal"><span class="pre">john:toto42</span></tt>.</p>
+<p>This template object is retrieved at <tt class="docutils literal"><span class="pre">/basicpasswordfilemanager/_napix_new</span></tt>:</p>
+<div class="highlight-python"><pre>$ curl -X GET "localhost:8002/basicpasswordfilemanager/_napix_new?authok" -s | python -m json.tool
+{
+    "password": "toto42",
+    "username": "john"
+}</pre>
+</div>
+<p>The url namespace is basicpasswordfilemanager.
+It is the default value of the lower case class name.
+It can be changed by overriding the classmethod <a class="reference internal" href="managers.html#managers.Manager.get_name" title="managers.Manager.get_name"><tt class="xref py py-meth docutils literal"><span class="pre">get_name()</span></tt></a>.</p>
+<div class="highlight-python"><div class="highlight"><pre>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;passwords&#39;</span>
+</pre></div>
+</div>
+<p>The requests show that the old name is gone replaced by the new one.:</p>
+<div class="highlight-python"><pre>$ curl -X GET "localhost:8002/?authok" -s | python -m json.tool
+[
+    "/passwords"
+]
+$ curl -X GET "localhost:8002/passwords/_napix_new?authok" -s | python -m json.tool
+{
+    "password": "toto42",
+    "username": "john"
+}</pre>
+</div>
+<p>The load method have now to be written.</p>
+<p>It takes the parent manager that spawned this one.
+The parent is <tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt> if it is a first level manager when path is <tt class="docutils literal"><span class="pre">/manager/</span></tt>.</p>
+<p>The inheritance cases are treated in <em class="xref std std-ref">inheritance</em>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">os</span>
+<span class="k">class</span> <span class="nc">BasicPasswordFileManager</span><span class="p">(</span><span class="n">DictManager</span><span class="p">):</span>
+    <span class="n">FILE_PATH</span>  <span class="o">=</span> <span class="s">&#39;/tmp/test&#39;</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FILE_PATH</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{}</span>
+        <span class="c"># Read the file</span>
+        <span class="n">content</span> <span class="o">=</span>  <span class="nb">file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FILE_PATH</span><span class="p">)</span>
+        <span class="c"># split the file in line</span>
+        <span class="n">resources</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">content</span><span class="o">.</span><span class="n">readlines</span><span class="p">():</span>
+            <span class="n">username</span><span class="p">,</span> <span class="n">password</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">resources</span><span class="p">[</span><span class="n">username</span><span class="p">]</span> <span class="o">=</span>  <span class="p">{</span>
+                    <span class="s">&#39;username&#39;</span> <span class="p">:</span> <span class="n">username</span><span class="p">,</span>
+                    <span class="s">&#39;password&#39;</span> <span class="p">:</span> <span class="n">password</span>
+                    <span class="p">}</span>
+        <span class="k">return</span> <span class="n">resources</span>
+</pre></div>
+</div>
+<p>It returns a dict of id pointing to resources:</p>
+<div class="highlight-python"><pre>#The load method expect a parent argument.
+&gt;&gt;&gt; pfm = BasicPasswordFileManager(None)
+&gt;&gt;&gt; pfm.resources
+{
+    'john' : {
+        'username' : 'john',
+        'password' : 'toto42'
+    },
+    'mwallace' : {
+        'username' : 'mwallace',
+        'password' : '666'
+    }
+}</pre>
+</div>
+<p>Now the manager can be listed and consulted:</p>
+<div class="highlight-python"><pre>$ echo 'sony_rssi:pikachu1' &gt; /tmp/test
+$ echo 'sony_bigboss:password3' &gt;&gt; /tmp/test
+$ curl -X GET "http://localhost:8002/passwords/?authok" | python -m json.tool
+[
+    "/passwords/sony_rssi",
+    "/passwords/sony_bigboss"
+]
+$ curl -X GET "http://localhost:8002/passwords/sony_rssi?authok" | python -m json.tool
+{
+    "password": "pikachu1",
+    "username": "sony_rssi"
+}</pre>
+</div>
+<p>But an attempt to modify an existing object will fail.:</p>
+<div class="highlight-python"><pre>$ curl -s -X PUT -H 'Content-Type: application/json' \
+    "localhost:8002/passwords/sony_rssi?authok" \
+    --data '{"password":"s4fr34$er-","username":"tanderson"}' | python -m json.tool
+{
+    "error_class": "NotImplementedError",
+    "error_text": "save",
+    "filename": "/home/napix/NapixServer/napixd/managers/default.py",
+    "line": 107,
+    "request": {
+        "method": "PUT",
+        "path": "/passwords/sony_rssi"
+    },
+    "traceback": []
+}</pre>
+</div>
+<p>Another NotImplementedError this time because we need to override the <a class="reference internal" href="managers.default.html#managers.default.DictManager.save" title="managers.default.DictManager.save"><tt class="xref py py-meth docutils literal"><span class="pre">save()</span></tt></a>.
+Save takes the parent (the same as in load) and the resources of the managers as argument and persists them to the disk.</p>
+<p>Like in the load method, we can ignore the parent argument.</p>
+<div class="highlight-python"><div class="highlight"><pre>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">resources</span><span class="p">):</span>
+        <span class="c"># Generate the new file</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">resources</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%(username)s</span><span class="s">:</span><span class="si">%(password)s</span><span class="s">&quot;</span><span class="o">%</span><span class="n">resource</span><span class="p">)</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">content</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="nb">file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FILE_PATH</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now the result is persisted:</p>
+<div class="highlight-python"><pre>$ curl -s -X PUT -H 'Content-Type: application/json' \
+    "localhost:8002/passwords/sony_rssi?authok" \
+    --data '{"password":"s4fr34$er-","username":"tanderson"}'
+$ cat /tmp/test
+sony_bigboss:password3
+sony_rssi:s4fr34$er-
+$ curl -X GET "http://localhost:8002/passwords/sony_rssi?authok" | python -m json.tool
+{
+    "password": "s43fr34$er",
+    "username": "sony_rssi"
+}</pre>
+</div>
+<p>For the creation of a resource, a POST request is sent to the collection:</p>
+<div class="highlight-python"><pre>$ curl -s -X POST -H 'Content-Type: application/json' \
+    "server.napix.nx:8002/passwords/?authok" \
+    --data '{"password":"s4fr34$er-","username":"tanderson"}' | python -m json.tool
+{
+    "error_class": "NotImplementedError",
+    "error_text": "generate_new_id",
+    "filename": "/home/napix/NapixServer/napixd/managers/default.py",
+    "line": 107,
+    "request": {
+        "method": "POST",
+        "path": "/passwords/"
+    },
+    "traceback": []
+}</pre>
+</div>
+<p>A new NotImplementedError, this one comes from the <tt class="xref py py-meth docutils literal"><span class="pre">generate_new_id()</span></tt> method.
+In order to create a new resource, the created resource dict will be stored in the internal resources dict.
+The id it will take may be a serial number, a field or a part of a field, a random number (like a GUID).</p>
+<p>The method generate_new_id will return the id for the resource knowing the resource_dict of the resource to be created.</p>
+<div class="highlight-python"><div class="highlight"><pre>    <span class="k">def</span> <span class="nf">generate_new_id</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">resource_dict</span><span class="p">):</span>
+        <span class="c"># in this case, getting a id for new object is simple, it&#39;s the username</span>
+        <span class="k">return</span> <span class="n">resource_dict</span><span class="p">[</span><span class="s">&quot;username&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The objects can be created and are persisted.
+When an object is created, the napixd returns a 201 created code and
+send the URI of the newly created resource in the Location header</p>
+<div class="highlight-python"><pre>$ curl -s -X POST -H 'Content-Type: application/json' \
+    "server.napix.nx:8002/passwords/?authok" \
+    --data '{"password":"whiterabbit","username":"tanderson"}'
+HTTP/1.1 201 Created
+Content-Length: 0
+Location: /passwords/tanderson
+Date: Thu, 14 Jun 2012 17:09:45 GMT
+Server: Rocket 1.2.4 Python/2.6.6
+Connection: keep-alive
+
+$ cat /tmp/test
+sony_bigboss:password3
+sony_rssi:s4fr34$er-
+tanderson:whiterabbit</pre>
+</div>
+<p>At this moment, it is possible to create, delete, modify, list and retrieve the resource of our manager.
+But there is no validation and it could lead to injection, flaws, etc.</p>
+<p>For example if an attacker wants to create a Mallory account, he can set his password to something with a n in it.:</p>
+<div class="highlight-python"><pre>$ curl -s -X PUT -H 'Content-Type: application/json' \
+    "server.napix.nx:8002/passwords/sony_bigboss?authok" \
+    --data '{"password":"x\nmallory:y","username":"sony_bigboss"}' -D /dev/stderr
+HTTP/1.1 200 OK
+Content-Length: 0
+Content-Type:
+Date: Thu, 14 Jun 2012 17:17:10 GMT
+Server: Rocket 1.2.4 Python/2.6.6
+Connection: keep-alive
+
+$ curl -s -X GET  "server.napix.nx:8002/passwords/?authok"  | python -m json.tool
+[
+    "/passwords/mallory",
+    "/passwords/sony_bigboss",
+    "/passwords/tanderson",
+    "/passwords/sony_rssi"
+]</pre>
+</div>
+<p>He has created an access for Mallory with the password y.
+On another hand, the password are way too weak (No wonder why sony got owned by LulzSec).</p>
+<p>We have to write validation methods.
+In Napix There is three places to make validation of user input.</p>
+<p>First, the manager may implement a method called
+<a class="reference internal" href="managers.html#managers.Manager.validate_resource_FIELDNAME" title="managers.Manager.validate_resource_FIELDNAME"><tt class="xref py py-meth docutils literal"><span class="pre">validate_resource_FIELDNAME()</span></tt></a> with <tt class="docutils literal"><span class="pre">FIELDNAME</span></tt> being a field of the resource.
+This method is used to clean each field individually.</p>
+<div class="highlight-python"><div class="highlight"><pre>    <span class="n">PASS_MIN_SIZE</span>  <span class="o">=</span> <span class="mi">6</span>
+    <span class="k">def</span> <span class="nf">validate_resource_username</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">):</span>
+        <span class="c">#avoid injections</span>
+        <span class="k">if</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="ow">in</span> <span class="n">username</span> <span class="ow">or</span> <span class="s">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">username</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">r&#39;Username cannot contain `\n` nor `:`&#39;</span>
+        <span class="c">#always return the valid value</span>
+        <span class="k">return</span> <span class="n">username</span>
+
+    <span class="k">def</span> <span class="nf">validate_resource_password</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+        <span class="c">#avoid injections</span>
+        <span class="k">if</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="ow">in</span> <span class="n">password</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">r&#39;Password cannot contain `\n`&#39;</span>
+        <span class="c">#check the minimum size of the password</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="n">password</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">PASS_MIN_SIZE</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">r&#39;Password must be at least </span><span class="si">%s</span><span class="s"> characters long&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">PASS_MIN_SIZE</span>
+        <span class="c">#always return the valid value</span>
+        <span class="k">return</span> <span class="n">password</span>
+</pre></div>
+</div>
+<p>Now the managers responds with a 400 Error code when we submit a forged password.:</p>
+<div class="highlight-python"><pre>$ curl -s -X PUT -H 'Content-Type: application/json' \
+    "server.napix.nx:8002/passwords/sony_bigboss?authok" \
+    --data '{"password":"y\noscar:pass","username":"sony_bigboss"}' -D /dev/stderr
+HTTP/1.1 400 Bad Request
+Content-Length: 29
+Content-Type: text/plain
+Date: Fri, 15 Jun 2012 09:49:43 GMT
+Server: Rocket 1.2.4 Python/2.6.6
+Connection: keep-alive
+
+Password cannot contain `\n`</pre>
+</div>
+<p>Download the whole python module here: <a class="reference download internal" href="_downloads/basicpasswordfile.py"><tt class="xref download docutils literal"><span class="pre">/samples/basicpasswordfile.py</span></tt></a></p>
 </div>
 </div>
 </div>

@@ -56,15 +56,26 @@
             
   <div class="section" id="howto-write-napix-modules">
 <span id="high-level"></span><h1>Howto write Napix modules<a class="headerlink" href="#howto-write-napix-modules" title="Permalink to this headline">¶</a></h1>
-<p>In this howto you will learn to write a quick Napix module.
-In order to write this module you have to write a <strong>manager</strong> and install it in the Napix server.
-A Napix module may be in every place that is accessible in the python path.
-Napix adds <tt class="file docutils literal"><span class="pre">/var/lib/napix/</span></tt> in the python path, and it automatically tries to load every module in <tt class="file docutils literal"><span class="pre">/var/lib/napix/auto</span></tt>.</p>
-<p>For more details about the loading of modules inside Napix, see the <a class="reference internal" href="deployment.html#auto-loading"><em>loading page</em></a></p>
-<p>For this example we will be write a manager for the hosts file.
-So we create the file <tt class="file docutils literal"><span class="pre">sample1.py</span></tt> in <tt class="file docutils literal"><span class="pre">/var/lib/napix/auto</span></tt> or in <tt class="file docutils literal"><em><span class="pre">/path/to/NapixServer</span></em><span class="pre">/auto</span></tt></p>
+<p>Considering that you already read <a class="reference internal" href="first_step.html#first-step"><em>The first steps guide</em></a>, this page deals with more advanced topics.</p>
+<p>The example of this page is an host file manager.
+This manager get the hosts file, extracts from each line the IP and the hostnames.
+Even though it may be a questionable choice,
+the id is the number of the line in the file as it allow to keep the comments.</p>
 <div class="section" id="writing-the-module">
 <h2>Writing the module<a class="headerlink" href="#writing-the-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="loading-the-file">
+<h3>Loading the file<a class="headerlink" href="#loading-the-file" title="Permalink to this headline">¶</a></h3>
+<p>In order to write this module you have to write a <tt class="docutils literal"><span class="pre">manager</span></tt> and install it in the Napix server.
+A Napix module may be in every place that is accessible in the python path.
+Napix automatically tries to load every module in <tt class="file docutils literal"><em><span class="pre">HOME</span></em><span class="pre">/auto</span></tt>.</p>
+<p>The napix daemon display its home in the log and the console.:</p>
+<div class="highlight-python"><pre>(napix)$ bin/napixd
+...
+Found napixd home at /home/user/NapixServer
+...</pre>
+</div>
+<p>For more details about the loading of modules inside Napix, see the <a class="reference internal" href="deployment.html#auto-loading"><em>loading page</em></a></p>
+</div>
 <div class="section" id="napix-class">
 <h3>Napix Class<a class="headerlink" href="#napix-class" title="Permalink to this headline">¶</a></h3>
 <p>The base class behind every collection is <a class="reference internal" href="managers.html#managers.Manager" title="managers.Manager"><tt class="xref py py-class docutils literal"><span class="pre">managers.Manager</span></tt></a>.
@@ -78,6 +89,7 @@ with this implementation, it is just needed to make a dict of resource by ID fro
 <p>For the hosts example, we will write an implementation of this class.
 We add a docstring for our class.
 It will be used by Napix to document the service.</p>
+<p>The file will be <tt class="file docutils literal"><em><span class="pre">HOME</span></em><span class="pre">/auto/hostmanager.py</span></tt> in order to benefits from auto-loading.</p>
 </div>
 <div class="section" id="writing-the-meta-datas">
 <h3>Writing the meta-datas<a class="headerlink" href="#writing-the-meta-datas" title="Permalink to this headline">¶</a></h3>
@@ -90,8 +102,9 @@ It will be used by Napix to document the service.</p>
 </ul>
 </dd>
 </dl>
-<p>For each of our field, we add a field in the <a class="reference internal" href="managers.html#managers.Manager.resource_fields" title="managers.Manager.resource_fields"><tt class="xref py py-attr docutils literal"><span class="pre">resource_fields</span></tt></a> dictionary containing another dict
-describing the field. We add a description and an example.</p>
+<p>For each of our fields, we add a key in the <a class="reference internal" href="managers.html#managers.Manager.resource_fields" title="managers.Manager.resource_fields"><tt class="xref py py-attr docutils literal"><span class="pre">resource_fields</span></tt></a>
+dictionary containing another dict describing the field.
+We add a description and an example.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">napixd.managers.default</span> <span class="kn">import</span> <span class="n">DictManager</span>
 
 <span class="k">class</span> <span class="nc">HostManager</span><span class="p">(</span><span class="n">DictManager</span><span class="p">):</span>
@@ -285,8 +298,7 @@ It may be useful for example to load multiple hosts managers for different hosts
 with the configuration of the module if any.</p>
 <p>You may override the configure method of a Napix manager <a class="reference internal" href="managers.html#managers.Manager.configure" title="managers.Manager.configure"><tt class="xref py py-meth docutils literal"><span class="pre">configure()</span></tt></a>.
 This classmethod takes an argument which is the configuration found in the settings file.</p>
-<p>For the HostManager we may add a configuration option to set another hosts file path.
-We may also configure the <cite>url</cite> settings that define on which url the service will be waiting.</p>
+<p>For the HostManager we may add a configuration option to set another hosts file path.</p>
 <p>The configure method get the dictionary that we set in <tt class="file docutils literal"><span class="pre">conf/settings.json</span></tt>.</p>
 </div>
 </div>
@@ -309,6 +321,7 @@ with of the load and save methods.</p>
   <ul>
 <li><a class="reference internal" href="#">Howto write Napix modules</a><ul>
 <li><a class="reference internal" href="#writing-the-module">Writing the module</a><ul>
+<li><a class="reference internal" href="#loading-the-file">Loading the file</a></li>
 <li><a class="reference internal" href="#napix-class">Napix Class</a></li>
 <li><a class="reference internal" href="#writing-the-meta-datas">Writing the meta-datas</a></li>
 <li><a class="reference internal" href="#loading-the-resources">Loading the resources</a></li>

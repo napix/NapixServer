@@ -5,8 +5,6 @@ css/bootstrap.css
 
 css/index.css
 ----------------
-css/bootstrap.css
-css/napix.css
 css/index.css
 
 css/pygments.css
@@ -23,8 +21,6 @@ css/bootstrap-responsive.css
 
 css/help.css
 ----------------
-css/bootstrap.css
-css/pygments.css
 css/help.css
 
 js/main.js

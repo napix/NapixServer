@@ -5,18 +5,31 @@
 Howto write Napix modules
 =========================
 
-In this howto you will learn to write a quick Napix module.
-In order to write this module you have to write a **manager** and install it in the Napix server.
-A Napix module may be in every place that is accessible in the python path.
-Napix adds :file:`/var/lib/napix/` in the python path, and it automatically tries to load every module in :file:`/var/lib/napix/auto`.
+Considering that you already read :ref:`The first steps guide<first_step>`, this page deals with more advanced topics.
 
-For more details about the loading of modules inside Napix, see the :ref:`loading page<auto-loading>`
-
-For this example we will be write a manager for the hosts file.
-So we create the file :file:`sample1.py` in :file:`/var/lib/napix/auto` or in :file:`{/path/to/NapixServer}/auto`
+The example of this page is an host file manager.
+This manager get the hosts file, extracts from each line the IP and the hostnames.
+Even though it may be a questionable choice,
+the id is the number of the line in the file as it allow to keep the comments.
 
 Writing the module
 ==================
+
+Loading the file
+^^^^^^^^^^^^^^^^
+
+In order to write this module you have to write a ``manager`` and install it in the Napix server.
+A Napix module may be in every place that is accessible in the python path.
+Napix automatically tries to load every module in :file:`{HOME}/auto`.
+
+The napix daemon display its home in the log and the console.::
+
+    (napix)$ bin/napixd
+    ...
+    Found napixd home at /home/user/NapixServer
+    ...
+
+For more details about the loading of modules inside Napix, see the :ref:`loading page<auto-loading>`
 
 Napix Class
 ^^^^^^^^^^^
@@ -36,6 +49,7 @@ For the hosts example, we will write an implementation of this class.
 We add a docstring for our class.
 It will be used by Napix to document the service.
 
+The file will be :file:`{HOME}/auto/hostmanager.py` in order to benefits from auto-loading.
 
 Writing the meta-datas
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -46,8 +60,9 @@ For our example, we will use two fields:
     * a string for the IP address
     * an array of hostnames related to this IP.
 
-For each of our field, we add a field in the :py:attr:`~managers.Manager.resource_fields` dictionary containing another dict
-describing the field. We add a description and an example.
+For each of our fields, we add a key in the :py:attr:`~managers.Manager.resource_fields`
+dictionary containing another dict describing the field.
+We add a description and an example.
 
 .. literalinclude:: /samples/sample1.py
     :language: python
@@ -201,7 +216,6 @@ You may override the configure method of a Napix manager :py:meth:`~managers.Man
 This classmethod takes an argument which is the configuration found in the settings file.
 
 For the HostManager we may add a configuration option to set another hosts file path.
-We may also configure the `url` settings that define on which url the service will be waiting.
 
 The configure method get the dictionary that we set in :file:`conf/settings.json`.
 

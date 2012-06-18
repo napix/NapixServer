@@ -363,11 +363,29 @@ or throw a <a class="reference internal" href="exceptions.html#exceptions.Valida
 <dl class="method">
 <dt id="managers.Manager.validate_resource">
 <tt class="descname">validate_resource</tt><big>(</big><em>resource_dict</em><big>)</big> &rarr; resource_dict<a class="headerlink" href="#managers.Manager.validate_resource" title="Permalink to this definition">¶</a></dt>
-<dd><p>Validate a resource_dict (which can be directly a dict or an object emulating a dict) by
-checking that every mandatory field specified in self.resource_fields is defined.</p>
-<p>If the current object implement self.validate_resource_**key** method, it&#8217;ll be called with
-the value of resource_dict[<strong>key</strong>] as parameter.</p>
-<p>It shoud raise a <a class="reference internal" href="exceptions.html#exceptions.ValidationError" title="exceptions.ValidationError"><tt class="xref py py-exc docutils literal"><span class="pre">ValidationError</span></tt></a> if the data isn&#8217;t valid, else it must return a valid value</p>
+<dd><p>Placeholder method of the managers for the validation of the whole resource_dict
+This method can change, add or remove fields from the resource_dict.
+It must return the valid resource even if it is the same as resource_dict,
+or raise a <a class="reference internal" href="exceptions.html#exceptions.ValidationError" title="exceptions.ValidationError"><tt class="xref py py-exc docutils literal"><span class="pre">ValidationError</span></tt></a>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">CNAMEManager</span><span class="p">(</span> <span class="n">Manager</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Manages the aliases &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">validate_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">resource_dict</span><span class="p">):</span>
+        <span class="c">#avoids a redirection on itself</span>
+        <span class="k">if</span> <span class="n">resource_dict</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">resource_dict</span><span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;`name` and `target` must be different&#39;</span>
+        <span class="k">return</span> <span class="n">resource_dict</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.validate">
+<tt class="descname">validate</tt><big>(</big><em>resource_dict</em><big>)</big> &rarr; resource_dict<a class="headerlink" href="#managers.Manager.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validate a resource_dict by checking that every mandatory field specified in self.resource_fields is defined.</p>
+<p>First, if the current object implement <a class="reference internal" href="#managers.Manager.validate_resource_FIELDNAME" title="managers.Manager.validate_resource_FIELDNAME"><tt class="xref py py-meth docutils literal"><span class="pre">validate_resource_FIELDNAME()</span></tt></a> method, it&#8217;ll be called with
+the value of resource_dict[FIELDNAME] as parameter.</p>
+<p>Then it will call validate_resource with the dict which has its fields cleaned</p>
 </dd></dl>
 
 </dd></dl>

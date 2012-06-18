@@ -1,12 +1,9 @@
 .. py:module:: managers.actions
 
-
 Actions
 =======
 
-
 Action are arbitrary python function that can be called on a resource of a collection.
-
 
 .. py:decorator:: action
 
