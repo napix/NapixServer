@@ -22,49 +22,33 @@
         </div>
         <div class="container-fluid">
             <div id="main-tabs" class="tabbable span9">
-                <ul class="nav nav-tabs" id="header" >
-                    <li id="console-label" >
-                    <a href="#console" data-toggle="tab" >Console</a>
-                    </li>
-                    <li id="explorer-label">
-                    <a href="#explorer" data-toggle="tab" >Explorer</a>
-                    </li>
-                </ul>
-                <div class="tab-content">
-                    <div id="console" class="tab-pane" >
-                        <div id="console-body">
-                        </div>
-                        <div id="console-prompt" class="well form-inline" >
-                            <input type="text" id="console-input" class="span7" />
-                            <button id="console-go" class="btn" >Go</button>
-                            <button id="console-clean" class="btn" >Clean</button>
+                <div id="explorer" class="tab-pane">
+                    <div id="explorer-alerts">
+                    </div>
+                    <div id="explorer-headers" class="span3" >
+                        <div id="explorer-server" >
                         </div>
                     </div>
-                    <div id="explorer" class="tab-pane">
-                        <div id="explorer-alerts">
-                        </div>
-                        <div id="explorer-headers" class="span3" >
-                            <div id="explorer-server" >
+                    <div id="explorer-panels" class="span5">
+                        <ul class="nav nav-tabs" id="explorer-tabs" >
+                            <li class="active" >
+                            <a id="explorer-object-label" href="#explorer-object" data-toggle="tab" >
+                                Object <i class="icon-refresh refresh" ></i></a>
+                            </li>
+                            <li ><a id="explorer-help-label" href="#explorer-help" data-toggle="tab" >Help</a></li>
+                            <li ><a id="explorer-create-label" href="#explorer-create" data-toggle="tab" >Create</a></li>
+                            <li ><a id="explorer-edit-label" href="#explorer-edit" data-toggle="tab" >Edit</a></li>
+                        </ul>
+                        <div id="explorer-view" class="tab-content" >
+                            <div id="explorer-object" class="tab-pane active" >
+                                <div id="explorer-object-actions">
+                                </div>
                             </div>
-                        </div>
-                        <div id="explorer-panels" class="span5">
-                            <ul class="nav nav-tabs" id="explorer-tabs" >
-                                <li class="active" ><a id="explorer-object-label" href="#explorer-object" data-toggle="tab" >Object</a></li>
-                                <li ><a id="explorer-help-label" href="#explorer-help" data-toggle="tab" >Help</a></li>
-                                <li ><a id="explorer-create-label" href="#explorer-create" data-toggle="tab" >Create</a></li>
-                                <li ><a id="explorer-edit-label" href="#explorer-edit" data-toggle="tab" >Edit</a></li>
-                            </ul>
-                            <div id="explorer-view" class="tab-content" >
-                                <div id="explorer-object" class="tab-pane active" >
-                                    <div id="explorer-object-actions">
-                                    </div>
-                                </div>
-                                <div id="explorer-edit" class="tab-pane" >
-                                </div>
-                                <div id="explorer-help" class="tab-pane" >
-                                </div>
-                                <div id="explorer-create" class="tab-pane" >
-                                </div>
+                            <div id="explorer-edit" class="tab-pane" >
+                            </div>
+                            <div id="explorer-help" class="tab-pane" >
+                            </div>
+                            <div id="explorer-create" class="tab-pane" >
                             </div>
                         </div>
                     </div>

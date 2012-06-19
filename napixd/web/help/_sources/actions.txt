@@ -1,4 +1,6 @@
 
+.. py:currentmodule:: managers.actions
+
 ================
 Managers actions
 ================
@@ -14,3 +16,138 @@ They are declared by the decorator :py:func:`managers.actions.action`.
 
 For example, we will add a scan port action to the HostManager written in
 :ref:`the high-level how-to<high_level>`.
+
+We will use the following code to scan the port.
+
+.. code-block:: python
+
+    import socket
+    def scan_port( host, port, timeout ):
+        sock = socket.socket( socket.AF_INET)
+        sock.settimeout( timeout )
+        try:
+            sock.connect( (host, port))
+        except (socket.timeout, socket.error) :
+            return False
+        sock.close()
+        return True
+
+The actions of the managers are in the ``actions`` key of the metadatas of the managers.
+Now, this array is empty because there isn't any action declared::
+
+    curl -s -X GET  "localhost:8002/hosts/_napix_help?authok"  | python -m json.tool
+    {
+        "absolute_url": "/hosts/*",
+        "actions": [],
+        "collection_methods": [
+            "POST",
+            "HEAD",
+            "GET"
+        ],
+    ...
+
+Now we add the action in the manager.
+The action, take the target resource as its first argument.
+The following arguments are mandatory if they have not a default value, else they are optional.
+
+.. code-block:: python
+
+    from napixd.managers.actions import action
+
+    class HostManager(DictManager):
+        #...
+        @action
+        def scan( self, resource, port, timeout=1):
+            """Scan the port and return OPEN or CLOSED."""
+            if scan_port( resource['ip'], port):
+                return 'OPEN'
+            else:
+                return 'CLOSED'
+
+Now the action appears in the metadatas of the manager and in  the _napix_all_actions child of each of HostManager resources::
+
+    $ curl -s -X GET  "localhost:8002/hosts/_napix_help?authok"  | python -m json.tool
+    {
+        "absolute_url": "/hosts/*",
+        "actions": [
+            "scan"
+        ],
+    ...
+
+    $ curl -s -X GET  "localhost:8002/hosts/sony_rssi/_napix_all_actions?authok"
+    ["scan"]
+
+
+Actions have their own metadatas available at _napix_action/NAME/_napix_help.
+The ``doc`` key gives the docstring of the method, ``mandatory`` lists the mandatory parameters,
+``optional`` is a dict of the parameters of the function that have a default value.
+``resource_fields`` takes the mandatory and optional parameters and their documentation (cf later)::
+
+    $ curl -s -X GET  "localhost:8002/hosts/sony_rssi/_napix_action/scan/_napix_help?authok" | python -m json.tool
+    {
+        "doc": "Scan the port and return OPEN or CLOSED.",
+        "mandatory": [
+            "port"
+        ],
+        "optional": {
+            "timeout" : 1
+        },
+        "resource_fields": {
+            "port": {
+                "description": "",
+                "example": ""
+            },
+            "timeout": {
+                "description": "",
+                "example": "",
+                "optional": True
+        }
+    }
+
+In order to call an action, send a dict containing the desired parameters to the action URL::
+    $ curl -s -X POST -H 'Content-Type: application/json' \
+        "localhost:8002/hosts/localhost/_napix_action/scan?authok" \
+        --data '{"port":22}'
+        "OPEN"
+    $ curl -s -X POST -H 'Content-Type: application/json' \
+        "localhost:8002/hosts/localhost/_napix_action/scan?authok" \
+        --data '{"port":4352}'
+        "CLOSED"
+
+The data returned by the action are encoded in JSON.
+
+The additional documentation on the parameters of the action can be set with :py:func:`parameter`
+
+.. code-block:: python
+
+    class HostManager(DictManager):
+        #...
+        @parameter( 'port', description='The port to scan', example=22)
+        @parameter( 'timeout', description='The time to wait in seconds', example=1 )
+        @action
+        def scan( self, resource, port, timeout=1):
+            #...
+
+Now, the resource_fields dict of the help is populated.::
+
+    $ curl -s -X GET  "server.napix.nx:8002/hosts/localhost/_napix_action/scan/_napix_help?authok" | python -m json.tools
+    {
+        "doc": "Scan the port and return OPEN or CLOSED.",
+        "mandatory": [
+            "port"
+        ],
+        "optional": {
+            "timeout": 1
+        },
+        "resource_fields": {
+            "port": {
+                "description": "The port to scan",
+                "example": 22
+            },
+            "timeout": {
+                "description": "The time to wait in seconds",
+                "example": 1,
+                "optional": true
+            }
+        }
+    }

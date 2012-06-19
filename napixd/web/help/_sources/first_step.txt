@@ -312,7 +312,7 @@ Now the result is persisted::
 For the creation of a resource, a POST request is sent to the collection::
 
     $ curl -s -X POST -H 'Content-Type: application/json' \
-        "server.napix.nx:8002/passwords/?authok" \
+        "localhost:8002/passwords/?authok" \
         --data '{"password":"s4fr34$er-","username":"tanderson"}' | python -m json.tool
     {
         "error_class": "NotImplementedError",
@@ -341,7 +341,7 @@ When an object is created, the napixd returns a 201 created code and
 send the URI of the newly created resource in the Location header ::
 
     $ curl -s -X POST -H 'Content-Type: application/json' \
-        "server.napix.nx:8002/passwords/?authok" \
+        "localhost:8002/passwords/?authok" \
         --data '{"password":"whiterabbit","username":"tanderson"}'
     HTTP/1.1 201 Created
     Content-Length: 0
@@ -361,7 +361,7 @@ But there is no validation and it could lead to injection, flaws, etc.
 For example if an attacker wants to create a Mallory account, he can set his password to something with a \n in it.::
 
     $ curl -s -X PUT -H 'Content-Type: application/json' \
-        "server.napix.nx:8002/passwords/sony_bigboss?authok" \
+        "localhost:8002/passwords/sony_bigboss?authok" \
         --data '{"password":"x\nmallory:y","username":"sony_bigboss"}' -D /dev/stderr
     HTTP/1.1 200 OK
     Content-Length: 0
@@ -370,7 +370,7 @@ For example if an attacker wants to create a Mallory account, he can set his pas
     Server: Rocket 1.2.4 Python/2.6.6
     Connection: keep-alive
 
-    $ curl -s -X GET  "server.napix.nx:8002/passwords/?authok"  | python -m json.tool
+    $ curl -s -X GET  "localhost:8002/passwords/?authok"  | python -m json.tool
     [
         "/passwords/mallory",
         "/passwords/sony_bigboss",
@@ -395,7 +395,7 @@ This method is used to clean each field individually.
 Now the managers responds with a 400 Error code when we submit a forged password.::
 
     $ curl -s -X PUT -H 'Content-Type: application/json' \
-        "server.napix.nx:8002/passwords/sony_bigboss?authok" \
+        "localhost:8002/passwords/sony_bigboss?authok" \
         --data '{"password":"y\noscar:pass","username":"sony_bigboss"}' -D /dev/stderr
     HTTP/1.1 400 Bad Request
     Content-Length: 29
@@ -405,6 +405,15 @@ Now the managers responds with a 400 Error code when we submit a forged password
     Connection: keep-alive
 
     Password cannot contain `\n`
+
+Secondly, the manager has a method :py:meth:`~managers.Manager.validate_resource`
+which verifies the whole resource dict.
+
+In our case, we can implement a verification to avoid that the password contains the username
+
+.. literalinclude:: /samples/basicpasswordfile.py
+    :language: python
+    :pyobject: BasicPasswordFileManager.validate_resource
 
 
 Download the whole python module here: :download:`/samples/basicpasswordfile.py`

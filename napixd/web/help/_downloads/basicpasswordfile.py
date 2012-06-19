@@ -76,3 +76,7 @@ class BasicPasswordFileManager(DictManager):
             raise ValidationError, r'Password must be at least %s characters long' % self.PASS_MIN_SIZE
         #always return the valid value
         return password
+
+    def validate_resource( self, resource_dict):
+        if resource_dict['username'] in resource_dict['password']:
+            raise ValidationError, 'Password must not contain the username'

@@ -43,13 +43,6 @@ Manager are created by the corresponding resource
        * the appropriate method to respond to the request is called (get_resource, create_resource, etc)
        * end_request is called
 
-    Subclasses MAY set a :py:attr:`managed_class` class attribute.
-    If set, it must be either a class inheriting from this same base class
-    (or implementing its interface) or a iterable of those classes.
-
-    If it's a single class, the resources are wrapper in this class when going up a level in the URL.
-    When going up of a level in the url, children are wrapped in this class
-
     examples:
 
     .. code-block:: python
@@ -143,7 +136,100 @@ Manager are created by the corresponding resource
 
     .. py:attribute:: managed_class
 
-        Class wraping the children
+        A class, or an array of classes that will manager a sub-collections.
+        The classes can be replaced by a string being, the name of another class
+        declared in the file or the dotted python path to another manager.
+
+        If it is a single value, the children resources are directly connected to the parent manager.
+
+        .. code-block:: python
+
+            class FirstManager( Manager):
+                @classmethod
+                def get_name(cls):
+                    return 'first'
+                managed_class = 'ChildManager'
+
+            class SecondManager( Manager):
+                @classmethod
+                def get_name(cls):
+                    return 'second'
+                managed_class = [ 'ChildManager' ]
+
+            class ChildManager( Manager ):
+                @classmethod
+                def get_name(cls):
+                    return 'children'
+                pass
+
+        .. code-block:: none
+
+            GET /first/id_parent/
+            list of children resources
+
+            GET /first/id_parent/id_child
+            { child resource }
+
+            GET /second/id_parent/
+            [ 'other' ]
+
+            GET /second/id_parent/other/
+            list of children resources
+
+            GET /second/id_parent/children/id_child
+            { other_resource }
+
+    .. py:classmethod:: set_managed_classes( managed_classes )
+
+        Set the managed classes of the manager.
+        The orginal :py:attr:`managed_class` attribute is left untouched.
+
+        The managed_class parameter must be a list of class objects.
+
+        This method is called by the loader after it resolved the string references.
+
+    .. py:classmethod:: get_managed_classes
+
+        return the list of managed classes.
+        It always returns a list even if the managed is directly plugged.
+
+        If :py:attr:`managed_class` contains a list or one direct references to class objects,
+        it is not needed to call :py:meth:`set_managed_classes`,
+        else string references have to be resolved.
+
+        .. code-block:: python
+
+            class FooManager( Manager ):
+                managed_class = 'BarManager'
+
+            FooManager.get_managed_classes()
+            #warning: Manager foomanager has not been set up.
+            #should have called set_managed_classes
+            [ 'BarManager' ]
+
+            class MyManager( Manager ):
+                managed_class = MyDirectReference
+
+            FooManager.get_managed_classes()
+            #ok
+            [ MyDirectReference ]
+
+    .. py:classmethod:: direct_plug
+
+        Return how the managed classes are plugged to this manager.
+        If there isn't any managed_class, it returns None.
+        If there is a managed class directly declared into the manager, it returns true,
+        else if the class are declared in an iterable it is True.::
+
+            managed_class = [ 'SubManager' ]
+            direct_plug == False
+
+            managed_class = 'SubManager'
+            direct_plug == True
+
+            managed_class = None
+            direct_plug == None
+
 
     .. py:method:: __init__( parent )
 
@@ -177,7 +263,7 @@ Manager are created by the corresponding resource
                 #Activate the manager only if the host is Linux
                 return platform.platform() == 'Linux'
 
-    .. py:classmethod::  configure(conf)
+    .. py:method::  configure(conf)
 
         Method called with the configuration of this class
 
@@ -199,10 +285,15 @@ Auto documentation
 
 .. py:class:: Manager
 
+    .. py:attribute:: name
+
+        The name of the class, None by default.
+        Always use :py:meth:`get_name` if you need to know the name of a manager.
+
     .. py:classmethod::  get_name() -> name
 
         Returns the name of the manager.
-        By default it's the class name.
+        If :py:attr:`name` is not defined, it's the class name in lower case.
 
     .. py:method::  get_example_resource() -> resource_dict
 

@@ -39,10 +39,6 @@ js/libs/mustache.js
 js/libs/underscore/underscore-extensions.js
 js/json/editor.js
 js/explorer.js
-js/models/history.js
-js/models/consoleentries.js
-js/consoleactions.js
-js/console.js
 js/selectors.js
 js/libs/bootstrap.js
 js/napix-ui.js

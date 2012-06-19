@@ -3546,3 +3546,6 @@ a.thumbnail:hover {
   word-break: break-all;
   word-wrap: break-word;
 }
+.path {
+    white-space: nowrap;
+}

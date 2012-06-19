@@ -27,7 +27,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Napix 0.1 documentation" href="index.html" />
     <link rel="next" title="Default Managers" href="managers.default.html" />
-    <link rel="prev" title="Howto write a Napix module with the low level interface" href="low_level.html" /> 
+    <link rel="prev" title="Managers actions" href="actions.html" /> 
   </head>
   <body>
     <div class="related">
@@ -43,7 +43,7 @@
           <a href="managers.default.html" title="Default Managers"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="low_level.html" title="Howto write a Napix module with the low level interface"
+          <a href="actions.html" title="Managers actions"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>
@@ -104,11 +104,6 @@ The resource got is serialized and sent back to the user</p>
 </dl>
 </li>
 </ul>
-<p>Subclasses MAY set a <a class="reference internal" href="#managers.Manager.managed_class" title="managers.Manager.managed_class"><tt class="xref py py-attr docutils literal"><span class="pre">managed_class</span></tt></a> class attribute.
-If set, it must be either a class inheriting from this same base class
-(or implementing its interface) or a iterable of those classes.</p>
-<p>If it&#8217;s a single class, the resources are wrapper in this class when going up a level in the URL.
-When going up of a level in the url, children are wrapped in this class</p>
 <p>examples:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">FirstManager</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
     <span class="n">managed_class</span> <span class="o">=</span> <span class="n">SecondManager</span>
@@ -194,7 +189,99 @@ exemple</p>
 <dl class="attribute">
 <dt id="managers.Manager.managed_class">
 <tt class="descname">managed_class</tt><a class="headerlink" href="#managers.Manager.managed_class" title="Permalink to this definition">¶</a></dt>
-<dd><p>Class wraping the children</p>
+<dd><p>A class, or an array of classes that will manager a sub-collections.
+The classes can be replaced by a string being, the name of another class
+declared in the file or the dotted python path to another manager.</p>
+<p>If it is a single value, the children resources are directly connected to the parent manager.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">FirstManager</span><span class="p">(</span> <span class="n">Manager</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;first&#39;</span>
+    <span class="n">managed_class</span> <span class="o">=</span> <span class="s">&#39;ChildManager&#39;</span>
+
+<span class="k">class</span> <span class="nc">SecondManager</span><span class="p">(</span> <span class="n">Manager</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;second&#39;</span>
+    <span class="n">managed_class</span> <span class="o">=</span> <span class="p">[</span> <span class="s">&#39;ChildManager&#39;</span> <span class="p">]</span>
+
+<span class="k">class</span> <span class="nc">ChildManager</span><span class="p">(</span> <span class="n">Manager</span> <span class="p">):</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;children&#39;</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<div class="highlight-none"><div class="highlight"><pre>GET /first/id_parent/
+list of children resources
+
+GET /first/id_parent/id_child
+{ child resource }
+
+GET /second/id_parent/
+[ &#39;other&#39; ]
+
+GET /second/id_parent/other/
+list of children resources
+
+GET /second/id_parent/children/id_child
+{ other_resource }
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="managers.Manager.set_managed_classes">
+<em class="property">classmethod </em><tt class="descname">set_managed_classes</tt><big>(</big><em>managed_classes</em><big>)</big><a class="headerlink" href="#managers.Manager.set_managed_classes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the managed classes of the manager.
+The orginal <a class="reference internal" href="#managers.Manager.managed_class" title="managers.Manager.managed_class"><tt class="xref py py-attr docutils literal"><span class="pre">managed_class</span></tt></a> attribute is left untouched.</p>
+<p>The managed_class parameter must be a list of class objects.</p>
+<p>This method is called by the loader after it resolved the string references.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="managers.Manager.get_managed_classes">
+<em class="property">classmethod </em><tt class="descname">get_managed_classes</tt><big>(</big><big>)</big><a class="headerlink" href="#managers.Manager.get_managed_classes" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the list of managed classes.
+It always returns a list even if the managed is directly plugged.</p>
+<p>If <a class="reference internal" href="#managers.Manager.managed_class" title="managers.Manager.managed_class"><tt class="xref py py-attr docutils literal"><span class="pre">managed_class</span></tt></a> contains a list or one direct references to class objects,
+it is not needed to call <a class="reference internal" href="#managers.Manager.set_managed_classes" title="managers.Manager.set_managed_classes"><tt class="xref py py-meth docutils literal"><span class="pre">set_managed_classes()</span></tt></a>,
+else string references have to be resolved.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">FooManager</span><span class="p">(</span> <span class="n">Manager</span> <span class="p">):</span>
+    <span class="n">managed_class</span> <span class="o">=</span> <span class="s">&#39;BarManager&#39;</span>
+
+<span class="n">FooManager</span><span class="o">.</span><span class="n">get_managed_classes</span><span class="p">()</span>
+<span class="c">#warning: Manager foomanager has not been set up.</span>
+<span class="c">#should have called set_managed_classes</span>
+<span class="p">[</span> <span class="s">&#39;BarManager&#39;</span> <span class="p">]</span>
+
+<span class="k">class</span> <span class="nc">MyManager</span><span class="p">(</span> <span class="n">Manager</span> <span class="p">):</span>
+    <span class="n">managed_class</span> <span class="o">=</span> <span class="n">MyDirectReference</span>
+
+<span class="n">FooManager</span><span class="o">.</span><span class="n">get_managed_classes</span><span class="p">()</span>
+<span class="c">#ok</span>
+<span class="p">[</span> <span class="n">MyDirectReference</span> <span class="p">]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="managers.Manager.direct_plug">
+<em class="property">classmethod </em><tt class="descname">direct_plug</tt><big>(</big><big>)</big><a class="headerlink" href="#managers.Manager.direct_plug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return how the managed classes are plugged to this manager.
+If there isn&#8217;t any managed_class, it returns None.
+If there is a managed class directly declared into the manager, it returns true,
+else if the class are declared in an iterable it is True.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">managed_class</span> <span class="o">=</span> <span class="p">[</span> <span class="s">&#39;SubManager&#39;</span> <span class="p">]</span>
+<span class="n">direct_plug</span> <span class="o">==</span> <span class="bp">False</span>
+
+<span class="n">managed_class</span> <span class="o">=</span> <span class="s">&#39;SubManager&#39;</span>
+<span class="n">direct_plug</span> <span class="o">==</span> <span class="bp">True</span>
+
+<span class="n">managed_class</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="n">direct_plug</span> <span class="o">==</span> <span class="bp">None</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -230,9 +317,9 @@ when it is loaded by autodetection.</p>
 </div>
 </dd></dl>
 
-<dl class="classmethod">
+<dl class="method">
 <dt id="managers.Manager.configure">
-<em class="property">classmethod </em><tt class="descname">configure</tt><big>(</big><em>conf</em><big>)</big><a class="headerlink" href="#managers.Manager.configure" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">configure</tt><big>(</big><em>conf</em><big>)</big><a class="headerlink" href="#managers.Manager.configure" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method called with the configuration of this class</p>
 </dd></dl>
 
@@ -262,11 +349,18 @@ If it&#8217;s not the manager is recreated</p>
 <dl class="class">
 <dt>
 <em class="property">class </em><tt class="descclassname">managers.</tt><tt class="descname">Manager</tt></dt>
-<dd><dl class="classmethod">
+<dd><dl class="attribute">
+<dt id="managers.Manager.name">
+<tt class="descname">name</tt><a class="headerlink" href="#managers.Manager.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the class, None by default.
+Always use <a class="reference internal" href="#managers.Manager.get_name" title="managers.Manager.get_name"><tt class="xref py py-meth docutils literal"><span class="pre">get_name()</span></tt></a> if you need to know the name of a manager.</p>
+</dd></dl>
+
+<dl class="classmethod">
 <dt id="managers.Manager.get_name">
 <em class="property">classmethod </em><tt class="descname">get_name</tt><big>(</big><big>)</big> &rarr; name<a class="headerlink" href="#managers.Manager.get_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the name of the manager.
-By default it&#8217;s the class name.</p>
+If <a class="reference internal" href="#managers.Manager.name" title="managers.Manager.name"><tt class="xref py py-attr docutils literal"><span class="pre">name</span></tt></a> is not defined, it&#8217;s the class name in lower case.</p>
 </dd></dl>
 
 <dl class="method">
@@ -489,8 +583,8 @@ the _uri key with appropriate value (based on baseurl + _id).</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="low_level.html"
-                        title="previous chapter">Howto write a Napix module with the low level interface</a></p>
+  <p class="topless"><a href="actions.html"
+                        title="previous chapter">Managers actions</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="managers.default.html"
                         title="next chapter">Default Managers</a></p>
@@ -529,7 +623,7 @@ the _uri key with appropriate value (based on baseurl + _id).</p>
           <a href="managers.default.html" title="Default Managers"
              >next</a> |</li>
         <li class="right" >
-          <a href="low_level.html" title="Howto write a Napix module with the low level interface"
+          <a href="actions.html" title="Managers actions"
              >previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>

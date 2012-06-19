@@ -353,7 +353,7 @@ $ curl -X GET "http://localhost:8002/passwords/sony_rssi?authok" | python -m jso
 </div>
 <p>For the creation of a resource, a POST request is sent to the collection:</p>
 <div class="highlight-python"><pre>$ curl -s -X POST -H 'Content-Type: application/json' \
-    "server.napix.nx:8002/passwords/?authok" \
+    "localhost:8002/passwords/?authok" \
     --data '{"password":"s4fr34$er-","username":"tanderson"}' | python -m json.tool
 {
     "error_class": "NotImplementedError",
@@ -380,7 +380,7 @@ The id it will take may be a serial number, a field or a part of a field, a rand
 When an object is created, the napixd returns a 201 created code and
 send the URI of the newly created resource in the Location header</p>
 <div class="highlight-python"><pre>$ curl -s -X POST -H 'Content-Type: application/json' \
-    "server.napix.nx:8002/passwords/?authok" \
+    "localhost:8002/passwords/?authok" \
     --data '{"password":"whiterabbit","username":"tanderson"}'
 HTTP/1.1 201 Created
 Content-Length: 0
@@ -398,7 +398,7 @@ tanderson:whiterabbit</pre>
 But there is no validation and it could lead to injection, flaws, etc.</p>
 <p>For example if an attacker wants to create a Mallory account, he can set his password to something with a n in it.:</p>
 <div class="highlight-python"><pre>$ curl -s -X PUT -H 'Content-Type: application/json' \
-    "server.napix.nx:8002/passwords/sony_bigboss?authok" \
+    "localhost:8002/passwords/sony_bigboss?authok" \
     --data '{"password":"x\nmallory:y","username":"sony_bigboss"}' -D /dev/stderr
 HTTP/1.1 200 OK
 Content-Length: 0
@@ -407,7 +407,7 @@ Date: Thu, 14 Jun 2012 17:17:10 GMT
 Server: Rocket 1.2.4 Python/2.6.6
 Connection: keep-alive
 
-$ curl -s -X GET  "server.napix.nx:8002/passwords/?authok"  | python -m json.tool
+$ curl -s -X GET  "localhost:8002/passwords/?authok"  | python -m json.tool
 [
     "/passwords/mallory",
     "/passwords/sony_bigboss",
@@ -443,7 +443,7 @@ This method is used to clean each field individually.</p>
 </div>
 <p>Now the managers responds with a 400 Error code when we submit a forged password.:</p>
 <div class="highlight-python"><pre>$ curl -s -X PUT -H 'Content-Type: application/json' \
-    "server.napix.nx:8002/passwords/sony_bigboss?authok" \
+    "localhost:8002/passwords/sony_bigboss?authok" \
     --data '{"password":"y\noscar:pass","username":"sony_bigboss"}' -D /dev/stderr
 HTTP/1.1 400 Bad Request
 Content-Length: 29
@@ -453,6 +453,14 @@ Server: Rocket 1.2.4 Python/2.6.6
 Connection: keep-alive
 
 Password cannot contain `\n`</pre>
+</div>
+<p>Secondly, the manager has a method <a class="reference internal" href="managers.html#managers.Manager.validate_resource" title="managers.Manager.validate_resource"><tt class="xref py py-meth docutils literal"><span class="pre">validate_resource()</span></tt></a>
+which verifies the whole resource dict.</p>
+<p>In our case, we can implement a verification to avoid that the password contains the username</p>
+<div class="highlight-python"><div class="highlight"><pre>    <span class="k">def</span> <span class="nf">validate_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">resource_dict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">resource_dict</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">resource_dict</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Password must not contain the username&#39;</span>
+</pre></div>
 </div>
 <p>Download the whole python module here: <a class="reference download internal" href="_downloads/basicpasswordfile.py"><tt class="xref download docutils literal"><span class="pre">/samples/basicpasswordfile.py</span></tt></a></p>
 </div>

@@ -16,6 +16,7 @@ Contents:
     first_step
     high_level
     low_level
+    submanagers
     actions
     managers
     managers.default
