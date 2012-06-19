@@ -47,7 +47,7 @@ class Service(object):
         if collection.managed_class != None:
             for managed_class in collection.get_managed_classes():
                 self.make_collection_service(previous_service, managed_class,
-                        managed_class.get_name() if collection.direct_plug() else '' )
+                        managed_class.get_name() if not collection.direct_plug() else '' )
 
     def setup_bottle(self,app):
         """
@@ -197,7 +197,7 @@ class CollectionService(object):
         app.route(self.resource_url,callback=self.as_resource,
                 method='ANY',apply=arguments_plugin)
 
-        if self.direct_plug :
+        if not self.direct_plug :
             app.route(self.resource_url+'/',
                     callback = self.as_managed_classes , apply = arguments_plugin)
 
