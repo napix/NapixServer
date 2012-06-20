@@ -347,7 +347,7 @@ class ServiceRequest(object):
         try:
             return getattr(manager,self.METHOD_MAP[self.method])
         except (AttributeError,KeyError):
-            raise HTTPError(405,
+            raise HTTPError(405, 'Method is not implemented',
                     header=[ ('allow',','.join(self.available_methods(manager)))])
     def call(self,callback,args):
         return callback(*args)
