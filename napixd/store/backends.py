@@ -4,7 +4,7 @@
 import os
 import collections
 import cPickle as pickle
-from .conf import Conf
+from ..conf import Conf
 
 class BaseStore( collections.MutableMapping):
     def __init__( self, data):
@@ -25,7 +25,7 @@ class BaseStore( collections.MutableMapping):
         self[key] += 1
         return self[key]
     def drop(self):
-        pass
+        self.data = {}
     def save(self):
         pass
 
@@ -43,6 +43,7 @@ class FileStore( BaseStore ):
         super( FileStore, self).__init__( data )
 
     def drop( self):
+        super( FileStore, self).drop()
         if os.path.isfile(self.file_path):
             os.unlink(self.file_path)
 
@@ -50,18 +51,19 @@ class FileStore( BaseStore ):
         pickle.dump( self.data, open( self.file_path, 'w'))
 
     def get_path(self):
-        return Conf.get_default().get( 'Napix.Store' ).get( 'path') or self.PATH
+        return Conf.get_default().get( 'Napix.storage.file.directory') or self.PATH
 try:
     import redis
     class BaseRedisStore( BaseStore ):
         def get_default_options( self):
-            return Conf.get_default().get( 'Napix.Store').get('redis') or {}
+            return Conf.get_default().get( 'Napix.storage.redis') or {}
         def __init__( self, collection, options= None):
             options = options != None and options or self.get_default_options()
             self.redis = redis.Redis( **options )
             self.collection = collection
 
         def drop(self):
+            super(BaseRedisStore, self).drop()
             self.redis.delete(self.collection)
 
     class RedisStore( BaseRedisStore ):

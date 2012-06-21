@@ -10,8 +10,10 @@
         "autoreload" : true
     },
     "storage" : {
+      "store" : "RedisHashStore",
+      "counter" : "RedisCounter",
       "file" : {
-        "path" : "/tmp/napix"
+        "directory" : "/tmp/napix"
       },
       "redis" : {
         "host" : "redis.napix.nx"

@@ -3,15 +3,67 @@
 
 
 import unittest2
-import os
-import shutil
+from mock.store_backend import MockStore
+
 try:
     from redis import Redis
-    from napixd.store import RedisStore, RedisHashStore, RedisKeyStore
+    from napixd.store.backends import RedisStore, RedisHashStore, RedisKeyStore
 except ImportError:
     Redis = False
 
-from napixd.store import FileStore
+from napixd.store.backends import FileStore
+from napixd.store import Store, NoSuchStoreBackend, Counter
+
+@unittest2.skipIf( not Redis, 'There is not Redis libs available')
+class TestCounter( unittest2.TestCase):
+    backend = 'RedisCounter'
+    def setUp(self):
+        self.counter = Counter('test', backend = self.backend)
+        self.counter.reset()
+
+    def testIncrement(self):
+        self.assertEqual( self.counter.value, 0)
+        self.assertEqual( self.counter.increment(), 1)
+        self.assertEqual( self.counter.increment(), 2)
+        self.assertEqual( self.counter.value, 2)
+
+    def testIncrementBy(self):
+        self.assertEqual( self.counter.value, 0)
+        self.assertEqual( self.counter.increment(), 1)
+        self.assertEqual( self.counter.increment(by=2), 3)
+
+    def testReset(self):
+        self.assertEqual( self.counter.value, 0)
+        self.counter.increment()
+        self.assertEqual( self.counter.reset(), 1)
+        self.assertEqual( self.counter.value, 0)
+
+class TestStore( unittest2.TestCase):
+    def setUp(self):
+        store  = Store('collection')
+        store.drop()
+        store['a'] = 'mpm'
+        store  = Store('collection', backend='FileStore')
+        store['b'] = 'prefork'
+        store.save()
+
+    def testStore(self):
+        store = Store('collection')
+        self.assertEqual( store['a'], 'mpm')
+        self.assertEqual( store.get('b',False), False)
+
+    def testImportStore(self):
+        store = Store('collection', backend='FileStore')
+        self.assertEqual( store['b'], 'prefork')
+        self.assertEqual( store.get('a',False), False)
+
+    def testImportAbsoluteStore(self):
+        store = Store('collection', backend='mock.store_backend.MockStore')
+        self.assertTrue( isinstance( store, MockStore))
+        store.collection = 'collection'
+
+    def testFailImport(self):
+        self.assertRaises(NoSuchStoreBackend, Store, 'collection', backend='IDONOTEXIST')
 
 class BaseTestStore(object):
     def setUp( self):
@@ -28,6 +80,7 @@ class BaseTestStore(object):
     def testDrop( self):
         collection = self.store_class( '_napix_store_test')
         collection.drop()
+        self.assertEqual( len( collection), 0)
         collection = self.store_class( '_napix_store_test')
         self.assertEqual( len( collection), 0)
 
