@@ -12,6 +12,8 @@ logger = logging.getLogger('Napix.thread_manager')
 
 __all__ = ['thread_manager','background']
 
+_counter = 0
+
 """
 Les classes ThreadManager et BackgroundDecorator ne sont pas sensées etre utilisées directement.
 Une instance de la classe ThreadManager est crée sous le nom de thread_manager. Une instance de
@@ -141,7 +143,7 @@ class BackgroundDecorator(object):
         The thread_manager will be used to create the threads.
         """
         self.thread_manager =thread_manager
-    def __call__(self,fn=None,give_thread=False,**kw):
+    def __call__(self,fn=None,**kw):
         """
         function called when decorating a function
         returns a callable that will transmit its parameter
@@ -162,10 +164,6 @@ class BackgroundDecorator(object):
         def outer(fn):
             @functools.wraps(fn)
             def inner(*args,**kwargs):
-                if not give_thread:
-                    def droper(*args,**kwargs):
-                        return fn(*args[1:],**kwargs)
-                    fn = droper
                 #real function call
                 return self.thread_manager.do_async(fn,args,kwargs,**kw)
             return inner
@@ -237,7 +235,7 @@ class ThreadManager(Thread):
             if ex_state != 'CLOSED':
                 continue
             # FIXME : elle est dead la task, ou alors on est aussi dans ce cas la quand elle s'est arrete proprement ?
-            logger.debug('Dead Task %s',thread.ident)
+            logger.debug('Dead Task %s',thread.name)
             #clean the finished thread
             del self.active_threads[thread.ident]
 
@@ -246,14 +244,17 @@ class ThreadWrapper(Thread):
     STATUS = set(['CREATED','RUNNING','RETURNED','EXCEPTION','FINISHING','CLOSED'])
     def __init__(self,activity,
             function,fn_args=None,fn_kwargs=None,give_thread=False,
-            on_success=None,on_failure=None,on_end=None):
+            on_success=None,on_failure=None,on_end=None,name=None):
         """
         FIXME : a quoi serve tout ces parametres ?
         Il y a manifestement des trucs par defaut pour _on_XXX, donc préciser le comprotement par defaut.
 
         S'il y a des parametres fixé pour les callback, les citer, et faire un exemple. (peu etre dans la doc de la classe)
         """
-        Thread.__init__(self)
+        global _counter
+        _counter += 1
+        name = '%s_%s'%( name or function.__name__, _counter)
+        Thread.__init__(self, name=name )
 
         self.execution_state_queue=SubQueue(activity)
         self.start_time=None
@@ -303,10 +304,10 @@ class ThreadWrapper(Thread):
         pass
     def _on_failure(self,e):
         """dummy failure event """
-        logger.warning('Thread %s Failed %s(%s)',self.ident,type(e).__name__,str(e))
+        logger.warning('Thread %s Failed %s(%s)',self.name,type(e).__name__,str(e))
     def _on_success(self,res):
         """dummy success event """
-        logger.info('Thread %s Succeeded %s(%s)',self.ident,type(res).__name__,repr(res))
+        logger.info('Thread %s Succeeded %s(%s)',self.name,type(res).__name__,repr(res))
 
     def _set_execution_state(self,value):
         """
@@ -316,7 +317,7 @@ class ThreadWrapper(Thread):
         assert value in self.STATUS
         self._execution_state = value
         self.execution_state_queue.put((self,value))
-        logger.info('execution_state of %s changed %s',self.ident,value)
+        logger.info('execution_state of %s changed %s',self.name,value)
 
     def _get_execution_state(self):
         """ execution_state getter"""
@@ -325,7 +326,7 @@ class ThreadWrapper(Thread):
 
     def _set_status(self,value):
         """status setter"""
-        logger.debug('status of %s changed to %s',self.ident,value)
+        logger.debug('status of %s changed to %s',self.name,value)
         self._status = value
 
     def _get_status(self):
