@@ -21,6 +21,7 @@ from .services import Service
 from .managers import Manager
 from .autodoc import Autodocument
 from .thread_manager import thread_manager
+from .notify import Notifier
 
 import bottle
 from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
@@ -265,6 +266,11 @@ class NapixdBottle(bottle.Bottle):
 
         self.on_stop = []
         self.setup_bottle()
+
+        if Conf.get_default('Napix.notify.url'):
+            notifier = Notifier( self)
+            self.on_stop.append( notifier.stop)
+            notifier.start()
 
     def doc_set_root(self, root):
         self.route('/_napix_autodoc<filename:path>',
