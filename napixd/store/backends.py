@@ -13,8 +13,8 @@ class BaseStore( collections.MutableMapping):
         return self.data[key]
     def __setitem__( self, key, value):
         self.data[key] = value
-    def __delitem__( self, key, value):
-        self.data[key] = value
+    def __delitem__( self, key):
+        del self.data[key]
     def __iter__(self):
         return iter(self.keys())
     def __len__( self):
