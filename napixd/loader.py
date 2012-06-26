@@ -89,13 +89,11 @@ class Loading(object):
                         self.error_managers.append( ( alias, manager, self.errors[ manager.__module__ ] ))
 
     def setup( self, manager):
-        if manager.managed_class is None:
+        if manager.direct_plug() is None:
             managed_classes = []
-        elif manager.direct_plug():
-            managed_classes = [ self._setup( manager, manager.managed_class ) ]
         else:
             managed_classes = [ self._setup( manager, submanager)
-                    for submanager in manager.managed_class ]
+                    for submanager in manager.get_managed_classes() ]
         managed_classes = filter( bool, managed_classes)
         manager.set_managed_classes(managed_classes)
 
