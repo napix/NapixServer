@@ -30,8 +30,8 @@ class TestService(TestServiceBase):
 
     def testGETResource(self):
         self._expect_dict(GET('/p/mouse'),{'text':'a mouse sleeps'})
-        self._expect_dict(GET('/p/mouse/sleeps'),{'word':'sleeps','length':6})
-        self._expect_dict(GET('/p/mouse/sleeps/l/e'),{'letter':'e','ord':101})
+        self._expect_dict(GET('/p/mouse/sleeps'),{'word':'sleeps'})
+        self._expect_dict(GET('/p/mouse/sleeps/l/e'),{'letter':'e'})
         self._expect_dict(GET('/p/mouse/sleeps/t/french'),
                 {'translated':'dors','language':'french'})
 
@@ -86,7 +86,7 @@ class TestService(TestServiceBase):
             'collection_methods': ['HEAD', 'GET'],
             'doc': 'Words of each paragrach',
             'human': '/_napix_autodoc/p.html',
-            'direct_plug' : True,
+            'direct_plug' : False,
             'managed_class': ['l', 't'],
             'resource_fields': {'word': {
                 'description' : 'A word in the story',

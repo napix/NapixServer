@@ -11,10 +11,10 @@ class TestManager(unittest2.TestCase):
         self.manager = Words({'words':zip(xrange(1,4),['one','two','three'])})
 
     def testName(self):
-        self.assertEqual(self.manager.get_name(),'Words')
+        self.assertEqual(self.manager.get_name(),'words')
 
     def testManagedClasses(self):
-        self.assertListEqual(self.manager.get_managed_classes(),[])
+        self.assertListEqual(Words.get_managed_classes(),[])
 
     def testConfigure(self):
         self.manager.configure({'lol':'network'})
@@ -61,7 +61,7 @@ class TestDirectPlug( unittest2.TestCase):
             managed_class = [ self.SubManager ]
         self.assertEqual( ManagerFalse.direct_plug(), False)
 
-    def testFalse( self):
+    def testFalseString( self):
         class ManagerFalse( Manager):
             managed_class = [ 'abc' ]
         self.assertEqual( ManagerFalse.direct_plug(), False)
@@ -71,7 +71,7 @@ class TestDirectPlug( unittest2.TestCase):
             managed_class = self.SubManager
         self.assertEqual( ManagerTrue.direct_plug(), True)
 
-    def testTrue( self):
+    def testTrueString( self):
         class ManagerTrue( Manager):
             managed_class = 'abc'
         self.assertEqual( ManagerTrue.direct_plug(), True)

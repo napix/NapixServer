@@ -238,8 +238,7 @@ class CollectionService(object):
         return [ x.__name__ for x in self.all_actions ]
 
     def as_managed_classes(self,path):
-        manager = self.collection({})
-        all_urls = list(x.get_name() for x in manager.get_managed_classes())
+        all_urls = list(x.get_name() for x in self.collection.get_managed_classes())
         if self.all_actions:
             all_urls.append('_napix_all_actions')
         return self._make_urls(path, all_urls)
