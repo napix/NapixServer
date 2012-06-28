@@ -17,6 +17,7 @@ import bottle
 from bottle import request,HTTPResponse,HTTPError
 
 from .conf import Conf
+from .http import Response
 
 
 __all__ = ['ExceptionsCatcher', 'ConversationPlugin', 'AAAPlugin', 'UserAgentDetector']
@@ -53,6 +54,9 @@ class ConversationPlugin(object):
                 #result OK
                 if isinstance(result,HTTPResponse):
                     exception = result
+                elif isinstance( result, Response):
+                    bottle.response.headers.update( result.headers)
+                    return result
             except HTTPError,e:
                 exception = e
 

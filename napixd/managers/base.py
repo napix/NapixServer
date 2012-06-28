@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import logging
+import types
 from napixd.exceptions import ValidationError
 
 """
@@ -32,12 +32,24 @@ class ManagerType(type):
             self._managed_class = [self.managed_class] if self.direct_plug() else self.managed_class
 
         self._all_actions = []
+        self._all_formats = {}
+        for base in bases:
+            if hasattr( base, 'get_all_actions'):
+                self._all_actions.extend( base.get_all_actions())
+            if hasattr( base, 'get_all_formats'):
+                self._all_formats.update( base.get_all_formats() )
+
         for attribute_name, attribute in attrs.items():
             if attribute_name[0] == '_':
                 continue
             if (hasattr(attribute,'_napix_action') and attribute._napix_action
                     and callable(attribute)):
                 self._all_actions.append( attribute)
+
+        self._all_formats.update( (attribute._napix_view, attribute)
+                for attribute_name, attribute in attrs.items()
+                if attribute_name[0] != '_' and hasattr(attribute,'_napix_view')
+                and attribute._napix_view and callable(attribute) )
 
     def get_name(self):
         return self.name
@@ -52,6 +64,8 @@ class ManagerType(type):
 
     def get_all_actions(self):
         return self._all_actions
+    def get_all_formats(self):
+        return self._all_formats
 
 class Manager(object):
     """
@@ -203,7 +217,9 @@ class Manager(object):
         """
         self.parent = parent
 
-
+    def get_formatter(self, format_):
+        #return the method instance of the formatter
+        return types.MethodType( self.__class__.get_all_formats()[format_], self, self.__class__)
 
     def configure(self,conf):
         """

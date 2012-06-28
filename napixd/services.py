@@ -4,11 +4,14 @@
 import itertools
 import functools
 import logging
+from urllib import quote
 
 import bottle
 from bottle import HTTPError
-from napixd.exceptions import NotFound,ValidationError,Duplicate
-from napixd.conf import Conf
+
+from .exceptions import NotFound,ValidationError,Duplicate
+from .conf import Conf
+from .http import Response
 
 """
 The service class ack like a proxy between bottle and napix resource Manager Component.
@@ -16,6 +19,10 @@ The service class ack like a proxy between bottle and napix resource Manager Com
 It handle bottle registering, url routing and Manager configuration when needed.
 """
 logger = logging.getLogger('Napix.service')
+
+def urlencode(string):
+    #like quote but alse encode the /
+    return quote( string, '')
 
 class Service(object):
     """
@@ -124,7 +131,7 @@ class CollectionService(object):
         """
         get the url bit for a resource identified by path for this collection
         """
-        return self.get_prefix()+str(path)
+        return self.get_prefix()+urlencode(str(path))
 
     def get_manager(self,path):
         """
@@ -197,7 +204,7 @@ class CollectionService(object):
         app.route(self.resource_url,callback=self.as_resource,
                 method='ANY',apply=arguments_plugin)
 
-        if not self.direct_plug :
+        if self.direct_plug == False :
             app.route(self.resource_url+'/',
                     callback = self.as_managed_classes , apply = arguments_plugin)
 
@@ -231,8 +238,8 @@ class CollectionService(object):
     def _make_urls(self, path, all_urls):
         url = ''
         for service,id_ in zip(self.services,path):
-            url += '/'+service.get_token(id_)
-        return [ '%s/%s'%(url,name) for name in all_urls ]
+            url += '/'+ service.get_token(id_)
+        return [ '%s/%s'%(url,urlencode(name)) for name in all_urls ]
 
     def as_list_actions(self,path):
         return [ x.__name__ for x in self.all_actions ]
@@ -249,11 +256,14 @@ class CollectionService(object):
             bottle.redirect( self.as_help_human_path() )
         return {
                 'human' : self.as_help_human_path(),
-                'doc' : manager.__doc__,
+                'doc' : (manager.__doc__ or '').strip(),
                 'direct_plug' : self.direct_plug,
+                'views' : dict( (format_, (cb.__doc__ or '').strip())
+                    for (format_,cb) in self.collection.get_all_formats().items() ),
                 'absolute_url' : self.absolute_url,
                 'managed_class' : [ mc.get_name() for mc in self.collection.get_managed_classes() ],
-                'actions' : [ action.__name__ for action in self.all_actions ],
+                'actions' : dict( ( action.__name__, (action.__doc__ or '').strip())
+                    for action in self.all_actions ),
                 'collection_methods' : ServiceCollectionRequest.available_methods(manager),
                 'resource_methods' : ServiceResourceRequest.available_methods(manager),
                 'resource_fields' : manager.resource_fields
@@ -371,8 +381,6 @@ class ServiceRequest(object):
             return result
         except ValidationError,e:
             raise HTTPError(400,str(e))
-        except KeyError,e:
-            raise HTTPError(400,'`%s` parameter is required'%str(e))
         except NotFound,e:
             raise HTTPError(404,'`%s` not found'%str(e))
         except Duplicate,e:
@@ -419,11 +427,42 @@ class ServiceResourceRequest(ServiceRequest):
             'HEAD' : 'get_resource',
             'DELETE':'delete_resource',
         }
-    def handle(self):
-        result = super(ServiceResourceRequest,self).handle()
-        if self.method == 'GET':
-            result = dict( (k,v) for (k,v) in result.items()
-                    if k in self.service.collection.resource_fields)
+    def get_callback( self, manager):
+        callback = super(ServiceResourceRequest, self).get_callback(manager)
+        if self.method != 'GET':
+            return callback
+        format_ = self.request.GET.get('format', None )
+        try:
+            formatter = ( manager.get_formatter( format_)
+                    if format_
+                    else self.default_formatter )
+        except KeyError:
+            message = 'Cannot render %s.' % format_
+            all_formats = self.service.collection.get_all_formats()
+            if all_formats:
+                message = '{0} Available formats {1}: {2} '.format(
+                        message, 'is' if len( all_formats) <= 1 else 'are',
+                        ','.join(all_formats.keys()))
+            raise HTTPError( 406, message)
+
+        def outer(callback, formatter):
+            def inner(*args,**kw):
+                result = callback( *args, **kw)
+                response = Response()
+                result = formatter( self.resource_id, result, response)
+                if result is None or result is response:
+                    if not response.is_empty():
+                        response.seek(0)
+                        return response
+                    else:
+                        return None
+                return result
+            return inner
+        return outer( callback, formatter)
+
+    def default_formatter(self, id_, value, response):
+        result = dict( (k,v) for (k,v) in value.items()
+            if k in self.service.collection.resource_fields)
         return result
 
     def get_args(self,datas):

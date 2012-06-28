@@ -19,12 +19,16 @@
         "host" : "redis.napix.nx"
       }
     },
+    "@notify" : {
+      "url" : "http://localhost:8002/directory/",
+      "delay" : 300
+    },
     "auth" : {
       "auth_url" : "http://localhost:8003/auth/authorization/",
       "service" : "localhost:8002"
     },
-    "@managers" : {
-      "hostfiles" : "napixd.examples.list_manager.HostFiles"
+    "managers" : {
+      "directory" : "napixd.contrib.directory.NapixDirectoryManager"
     }
   },
   "hostfiles" : {
