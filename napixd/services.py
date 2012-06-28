@@ -4,7 +4,7 @@
 import itertools
 import functools
 import logging
-from urllib import quote
+from urllib import quote, unquote
 
 import bottle
 from bottle import HTTPError
@@ -153,7 +153,9 @@ class CollectionService(object):
         if this is the first CollectionService return {}
         """
         if path:
-            return self.previous_service.get_manager(path[:-1]).get_resource(path[-1])
+            manager = self.previous_service.get_manager(path[:-1])
+            id_ = manager.validate_id( path[-1] )
+            return manager.get_resource(id_)
         else:
             return {}
 
@@ -311,7 +313,8 @@ class ServiceRequest(object):
         self.request = request
         self.method = request.method
         self.service = service
-        self.path = path
+        #Parse the url components
+        self.path = map( unquote, path)
 
     @classmethod
     def available_methods(cls,manager):
