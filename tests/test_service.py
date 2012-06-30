@@ -97,6 +97,12 @@ class TestService(TestServiceBase):
         self._expect_405(PUT('/p/*/_napix_resource_fields',
                 newfields={'name':'robin'}),'HEAD,GET')
 
+    def testStartEndRequest(self):
+        request = GET('/p/mouse/sleeps/t/french')
+        self._do_the_request( request)
+        self.assertListEqual( request.mark, [ 'in_para', 'in_words', 'in_trans',
+            'out_trans', 'out_words', 'out_para'])
+
 class TestErrors(TestServiceBase):
     def setUp(self):
         self.bottle = NapixdBottle([ Service(Paragraphs) ],

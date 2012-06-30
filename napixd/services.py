@@ -133,11 +133,21 @@ class CollectionService(object):
         """
         return self.get_prefix()+urlencode(str(path))
 
-    def get_manager(self,path):
-        """
-        Get a manager of this collection with the given path.
-        """
-        return self._generate_manager( self._get_resource(path) )
+    def get_managers( self, path):
+        return list( self._get_managers( path ))
+
+    def _get_managers( self, path):
+        resource = {}
+        #self.services is one item shorter than path and that item is self
+        #Thus we search in the path for each of the ancestors of self
+        #but not for self.
+        for id_,service in zip( path, self.services):
+            manager = service._generate_manager(resource)
+            yield manager
+            id_ = manager.validate_id( id_ )
+            resource = manager.get_resource( id_ )
+        #The manager for self is generated here.
+        yield self._generate_manager( resource)
 
     def _generate_manager(self,resource):
         """
@@ -146,18 +156,6 @@ class CollectionService(object):
         manager = self.collection(resource)
         manager.configure(self.config)
         return manager
-
-    def _get_resource(self,path):
-        """
-        Get a resource with the given path.
-        if this is the first CollectionService return {}
-        """
-        if path:
-            manager = self.previous_service.get_manager(path[:-1])
-            id_ = manager.validate_id( path[-1] )
-            return manager.get_resource(id_)
-        else:
-            return {}
 
     def _services_stack(self):
         """
@@ -315,6 +313,7 @@ class ServiceRequest(object):
         self.service = service
         #Parse the url components
         self.path = map( unquote, path)
+        self.all_managers = None
 
     @classmethod
     def available_methods(cls,manager):
@@ -349,7 +348,8 @@ class ServiceRequest(object):
         """
         Récupere la collection correspondante à la requete
         """
-        return self.service.get_manager(self.path)
+        self.all_managers = self.service.get_managers(self.path)
+        return self.all_managers[-1]
 
     def get_callback(self,manager):
         """
@@ -364,6 +364,13 @@ class ServiceRequest(object):
     def call(self,callback,args):
         return callback(*args)
 
+    def start_request( self):
+        for m in self.all_managers:
+            m.start_request( self.request)
+    def end_request( self):
+        for m in reversed(self.all_managers):
+            m.end_request( self.request)
+
     def handle(self):
         """
         Actually handle the request.
@@ -372,7 +379,8 @@ class ServiceRequest(object):
         try:
             #obtient l'object designé
             manager = self.get_manager()
-            manager.start_request(self.request)
+            self.start_request()
+
             #recupère la vue qui va effectuer la requete
             callback = self.get_callback(manager)
             #recupère les données valides pour cet objet
@@ -380,7 +388,8 @@ class ServiceRequest(object):
             #recupere les arguments a passer a cette vue
             args = self.get_args(datas)
             result = self.call(callback,args)
-            manager.end_request(self.request)
+
+            self.end_request()
             return result
         except ValidationError,e:
             raise HTTPError(400,str(e))
@@ -487,10 +496,6 @@ class ServiceActionRequest(ServiceResourceRequest):
     def __init__(self, request, path, service, action_name):
         self.action_name = action_name
         super(ServiceActionRequest,self).__init__(request, path, service)
-
-    def get_manager(self):
-        manager = super(ServiceActionRequest,self).get_manager()
-        return manager
 
     def get_args(self,data):
         return (self.resource_id, data)

@@ -41,6 +41,13 @@ class Translations(DictManager):
             raise ValueError, 'I don\'t like cats'
         return super(Translations,self).get_resource(id_)
 
+    def start_request( self, request):
+        request.mark.append( 'in_trans' )
+        super( Translations, self).start_request(request)
+    def end_request( self, request):
+        request.mark.append( 'out_trans' )
+        super( Translations, self).end_request(request)
+
 class Letters(ReadOnlyDictManager):
     """Letters of each word"""
     @classmethod
@@ -89,6 +96,12 @@ class Words(ReadOnlyDictManager):
         return { 'extract' : resource['word'][slice(start,end)] ,
                 'from' : [ start, end or len(resource['word'])]
                 }
+    def start_request( self, request):
+        super( Words, self).start_request(request)
+        request.mark.append( 'in_words' )
+    def end_request( self, request):
+        super( Words, self).end_request(request)
+        request.mark.append( 'out_words' )
 
 class Paragraphs(DictManager):
     """Stories of pets"""
@@ -124,3 +137,9 @@ class Paragraphs(DictManager):
             if ' '+pet+' ' in resource_dict['text']:
                 return pet
         raise ValidationError,'Story must include a valid PET'
+    def start_request( self, request):
+        request.mark = [ 'in_para' ]
+        super( Paragraphs, self).start_request(request)
+    def end_request( self, request):
+        request.mark.append( 'out_para' )
+        super( Paragraphs, self).end_request(request)
