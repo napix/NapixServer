@@ -11,7 +11,7 @@ try:
 except ImportError:
     Redis = False
 
-from napixd.store.backends import FileStore
+from napixd.store.backends import FileStore, DirectoryStore
 from napixd.store import Store, NoSuchStoreBackend, Counter
 
 @unittest2.skipIf( not Redis, 'There is not Redis libs available')
@@ -124,6 +124,11 @@ class TestFileStore( BaseTestStore, unittest2.TestCase):
         collection = self.store_class( '_napix_store_test', '/tmp/_napix_store/test_dir')
         self.assertEqual( len( collection), 0)
         collection.save()
+
+class TestDirectoryStore( BaseTestStore, unittest2.TestCase):
+    store_class = DirectoryStore
+    testNotSave = unittest2.expectedFailure( BaseTestStore.testNotSave)
+    testIncrement = unittest2.expectedFailure( BaseTestStore.testIncrement)
 
 @unittest2.skipIf( not Redis, 'There is not Redis libs available')
 class TestRedisStore(BaseTestStore, unittest2.TestCase):
