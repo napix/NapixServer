@@ -134,20 +134,19 @@ class CollectionService(object):
         return self.get_prefix()+urlencode(str(path))
 
     def get_managers( self, path):
-        return list( self._get_managers( path ))
-
-    def _get_managers( self, path):
         resource = {}
         #self.services is one item shorter than path and that item is self
         #Thus we search in the path for each of the ancestors of self
         #but not for self.
+        managers_list = []
         for id_,service in zip( path, self.services):
             manager = service._generate_manager(resource)
-            yield manager
             id_ = manager.validate_id( id_ )
             resource = manager.get_resource( id_ )
+            managers_list.append( ( manager, id_, resource) )
         #The manager for self is generated here.
-        yield self._generate_manager( resource)
+        manager = self._generate_manager( resource)
+        return managers_list, manager
 
     def _generate_manager(self,resource):
         """
@@ -348,8 +347,8 @@ class ServiceRequest(object):
         """
         Récupere la collection correspondante à la requete
         """
-        self.all_managers = self.service.get_managers(self.path)
-        return self.all_managers[-1]
+        self.all_managers, self.manager = self.service.get_managers(self.path)
+        return self.manager
 
     def get_callback(self,manager):
         """
@@ -365,10 +364,15 @@ class ServiceRequest(object):
         return callback(*args)
 
     def start_request( self):
-        for m in self.all_managers:
+        for m,i,r in self.all_managers:
             m.start_request( self.request)
+            m.start_managed_request( self.request, i, r)
+        self.manager.start_request( self.request)
+
     def end_request( self):
-        for m in reversed(self.all_managers):
+        self.manager.end_request( self.request)
+        for m,i,r in reversed(self.all_managers):
+            m.end_managed_request( self.request, i, r)
             m.end_request( self.request)
 
     def handle(self):

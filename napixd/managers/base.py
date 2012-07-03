@@ -312,6 +312,22 @@ class Manager(object):
         """
         return False
 
+    def end_managed_request(self, request, resource_id, resource):
+        """
+        Place holder method which is called
+        after a http request
+        when the class act as a managed class for the given resource
+        """
+        pass
+
+    def start_managed_request(self, request, resource_id, resource):
+        """
+        Place holder method which is called
+        before a http request
+        when the class act as a managed class for the given resource
+        """
+        pass
+
     def start_request(self,request):
         """
         place holder method that is called at the start of each HTTP request
