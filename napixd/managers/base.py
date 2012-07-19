@@ -247,6 +247,12 @@ class Manager(object):
         """
         return not cls.__module__.startswith('napixd.managers')
 
+    def serialize(self, value):
+        result = dict( (k,v) for (k,v) in value.items()
+            if k in self.resource_fields)
+        return result
+
+
     def validate_id(self,id_):
         """
         Check that the id given as an argument is a valid ID
