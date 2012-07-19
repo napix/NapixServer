@@ -28,7 +28,22 @@
       "service" : "localhost:8002"
     },
     "managers" : {
-      "directory" : "napixd.contrib.directory.NapixDirectoryManager"
+      "directory" : "napixd.contrib.directory.NapixDirectoryManager",
+      "company" : "napixd.contrib.invoice.service.CompanyManager"
+    },
+    "connectors" : {
+        "django" : {
+            "DATABASES" : {
+                "default": {
+                    "ENGINE": "django.db.backends.sqlite3",
+                    "NAME": "/home/napix/sqlitedb",
+                    "USER": "",
+                    "PASSWORD": "",
+                    "HOST": "",
+                    "PORT": ""
+                }
+            }
+        }
     }
   },
   "hostfiles" : {
