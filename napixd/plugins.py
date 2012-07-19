@@ -33,7 +33,7 @@ class ConversationPlugin(object):
     api = 2
     def apply(self,callback,route):
         @functools.wraps(callback)
-        def inner(*args,**kwargs):
+        def inner_conversation(*args,**kwargs):
             #unserialize the request
             if int(request.get('CONTENT_LENGTH',0)) != 0:
                 if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
@@ -81,7 +81,7 @@ class ConversationPlugin(object):
             headers.append( ('Content-Type', content_type))
             resp = HTTPResponse( result, status, header=headers)
             return resp
-        return inner
+        return inner_conversation
 
     def _json_encode(self,res):
         buff = StringIO()
@@ -99,7 +99,7 @@ class ExceptionsCatcher(object):
         For this error, it send a dict containing the file, line and details of the exception
         """
         @functools.wraps(callback)
-        def inner(*args,**kwargs):
+        def inner_exception_catcher(*args,**kwargs):
             try:
                 return callback(*args,**kwargs) #Exception
             except HTTPResponse :
@@ -112,8 +112,9 @@ class ExceptionsCatcher(object):
                 #traceback.print_tb(last_traceback)
                 napix_path = os.path.realpath( os.path.join( os.path.dirname( __file__)))
                 all_tb = [ dict( zip( ('filename', 'line', 'in', 'call'), x))
-                        for x in traceback.extract_tb( last_traceback )
-                        if not x[0].startswith(napix_path) ]
+                        for x in traceback.extract_tb( last_traceback ) ]
+                extern_tb = [ x for x in all_tb
+                        if x['filename'].startswith(napix_path) ]
                 self.logger.error('%s on %s failed with %s (%s)',  method, path,
                         e.__class__.__name__, str(e) )
                 res = {
@@ -125,10 +126,10 @@ class ExceptionsCatcher(object):
                         'error_class': e.__class__.__name__,
                         'filename': filename,
                         'line': lineno,
-                        'traceback' : all_tb
+                        'traceback' : extern_tb or all_tb,
                         }
                 raise HTTPError(500,res)
-        return inner
+        return inner_exception_catcher
 
 class UserAgentDetector( object ):
     """
@@ -138,7 +139,7 @@ class UserAgentDetector( object ):
     api = 2
     def apply( self, callback, route):
         @functools.wraps( callback)
-        def inner( *args, **kwargs):
+        def inner_useragent( *args, **kwargs):
             if ( request.headers.get('user_agent', '' ).startswith('Mozilla') and
                     not 'authok' in request.GET):
                 raise HTTPError(401, '''
@@ -156,7 +157,7 @@ Anyway if you just want to explore the Napix server when it's in DEBUG mode, use
 </body></html>''', header = [ ( 'CONTENT_TYPE', 'text/html' ) ])
             else:
                 return callback( *args, **kwargs)
-        return inner
+        return inner_useragent
 
 class AAAPlugin(object):
     """
@@ -173,7 +174,7 @@ class AAAPlugin(object):
 
     def apply(self,callback,route):
         @functools.wraps(callback)
-        def inner(*args,**kwargs):
+        def inner_aaa(*args,**kwargs):
             if Conf.get_default('Napix.debug') and 'authok' in request.GET:
                 return callback(*args,**kwargs)
             if not 'Authorization' in request.headers:
@@ -204,4 +205,4 @@ class AAAPlugin(object):
 
             # actually run the callback
             return callback(*args,**kwargs)
-        return inner
+        return inner_aaa

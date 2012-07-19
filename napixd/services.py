@@ -477,9 +477,7 @@ class ServiceResourceRequest(ServiceRequest):
         return outer( callback, formatter)
 
     def default_formatter(self, id_, value, response):
-        result = dict( (k,v) for (k,v) in value.items()
-            if k in self.service.collection.resource_fields)
-        return result
+        return self.manager.serialize( value )
 
     def get_args(self,datas):
         if self.method == 'PUT':
@@ -539,10 +537,10 @@ class ArgumentsPlugin(object):
     api = 2
     def apply(self,callback,route):
         @functools.wraps(callback)
-        def inner(*args,**kw):
+        def inner_arguments(*args,**kw):
             path = self._get_path(args,kw)
             return callback(path)
-        return inner
+        return inner_arguments
 
     def _get_path(self,args,kw):
         if args :
