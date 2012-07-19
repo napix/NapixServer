@@ -40,8 +40,8 @@ class Conf(UserDict.UserDict):
                     continue
                 logger.info( 'Using %s configuration file', path)
                 conf = json.load( handle )
-            except ValueError:
-                logger.error('Configuration file %s contains a bad JSON object', path)
+            except ValueError, e:
+                logger.error('Configuration file %s contains a bad JSON object (%s)', path, e)
             except IOError:
                 pass
 
