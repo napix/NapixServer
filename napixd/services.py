@@ -106,6 +106,12 @@ class CollectionService(object):
 
         self.all_actions = list(self.collection.get_all_actions())
 
+        self.resource_fields = dict( self.collection.resource_fields)
+        for field_meta in self.resource_fields.values():
+            for callable_ in ( 'unserializer', 'serializer', 'type'):
+                if callable_ in field_meta:
+                    field_meta[callable_] = field_meta[callable_].__name__
+
     def _get_services_prefix(self):
         return '.'.join( x.get_name() for x in self.services[1:]) or ''
 
@@ -250,7 +256,7 @@ class CollectionService(object):
         return self._make_urls(path, all_urls)
 
     def as_help( self, path):
-        manager = self.collection({})
+        manager = self.collection
         if 'human' in bottle.request.GET:
             bottle.redirect( self.as_help_human_path() )
         return {
@@ -265,17 +271,16 @@ class CollectionService(object):
                     for action in self.all_actions ),
                 'collection_methods' : ServiceCollectionRequest.available_methods(manager),
                 'resource_methods' : ServiceResourceRequest.available_methods(manager),
-                'resource_fields' : manager.resource_fields
+                'resource_fields' : self.resource_fields
                 }
     def as_help_human_path( self):
         return self.previous_service.as_help_human_path()
 
     def as_resource_fields(self,path):
-        manager = self.collection
-        return manager.resource_fields
+        return self.resource_fields
 
     def as_example_resource(self,path):
-        manager = self.collection({})
+        manager = self.collection
         return manager.get_example_resource()
 
 class FirstCollectionService(CollectionService):
@@ -337,9 +342,14 @@ class ServiceRequest(object):
         if self.request.method not in ('POST','PUT') :
             return {}
         data = {}
-        for x in self.request.data:
-            if x in collection.resource_fields:
-                data[x] = self.request.data[x]
+        for key, meta  in collection.resource_fields.items():
+            value = self.request.data.get(key)
+            if 'unserializer' in meta:
+                value = meta['unserializer'](value)
+            if 'type' in meta:
+                if isinstance( meta, type):
+                    raise ValidationError, 'key %s is not of type %s'
+            data[key] = value
         data = collection.validate(data)
         return data
 

@@ -227,6 +227,7 @@ class Manager(object):
         """
         pass
 
+    @classmethod
     def get_example_resource(self):
         """
         Generate an example of the resources managed by this manager
@@ -248,10 +249,8 @@ class Manager(object):
         return not cls.__module__.startswith('napixd.managers')
 
     def serialize(self, value):
-        result = dict( (k,v) for (k,v) in value.items()
-            if k in self.resource_fields)
+        result = dict( (k, value.get(k) ) for k in self.resource_fields )
         return result
-
 
     def validate_id(self,id_):
         """
