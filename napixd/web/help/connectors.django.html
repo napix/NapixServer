@@ -1,0 +1,279 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Connector for django &mdash; Napix 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Napix 0.1 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="module-connectors.django"></span><div class="section" id="connector-for-django">
+<h1>Connector for django<a class="headerlink" href="#connector-for-django" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="connectors.django.DjangoImport">
+<em class="property">class </em><tt class="descclassname">connectors.django.</tt><tt class="descname">DjangoImport</tt><big>(</big><em>module=None</em><big>)</big><a class="headerlink" href="#connectors.django.DjangoImport" title="Permalink to this definition">¶</a></dt>
+<dd><p>Context Manager used to initialize django before importing a model.</p>
+<p>If <tt class="docutils literal"><span class="pre">module</span></tt> is not specified, it defaults to the configuration key <cite>Napix.connectors.django</cite>.</p>
+<p>If <tt class="docutils literal"><span class="pre">module</span></tt> ( or the configuration key) is a string, it will be used as the module name to
+the settings module of the django application (cf <tt class="docutils literal"><span class="pre">DJANGO_SETTINGS_MODULE</span></tt>).
+Else it must be a mapping which keys are used to configure django
+(cf <tt class="xref py py-meth docutils literal"><span class="pre">django.conf.settings.configure()</span></tt>).</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">napixd.connectors.django</span> <span class="kn">import</span> <span class="n">DjangoImport</span>
+
+<span class="k">with</span> <span class="n">DjangoImport</span><span class="p">(</span> <span class="s">&#39;myproject.settings&#39;&#39;):</span>
+    <span class="kn">from</span> <span class="nn">myapp.models</span> <span class="kn">import</span> <span class="n">MyModel</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="connectors.django.DjangoReadOnlyModelManager">
+<em class="property">class </em><tt class="descclassname">connectors.django.</tt><tt class="descname">DjangoReadOnlyModelManager</tt><a class="headerlink" href="#connectors.django.DjangoReadOnlyModelManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Subclass of <a class="reference internal" href="managers.html#managers.Manager" title="managers.Manager"><tt class="xref py py-class docutils literal"><span class="pre">managers.Manager</span></tt></a> which is specified for a django model.</p>
+<dl class="attribute">
+<dt id="connectors.django.DjangoReadOnlyModelManager.model">
+<tt class="descname">model</tt><a class="headerlink" href="#connectors.django.DjangoReadOnlyModelManager.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-class docutils literal"><span class="pre">django.db.models.Model</span></tt> used for this manager.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="connectors.django.DjangoReadOnlyModelManager.model_fields">
+<tt class="descname">model_fields</tt><a class="headerlink" href="#connectors.django.DjangoReadOnlyModelManager.model_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterables of the included model fields.</p>
+<p>If specified, only the fields of the model given in this set will be used.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="connectors.django.DjangoReadOnlyModelManager.model_fields_exclude">
+<tt class="descname">model_fields_exclude</tt><a class="headerlink" href="#connectors.django.DjangoReadOnlyModelManager.model_fields_exclude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#connectors.django.DjangoReadOnlyModelManager.model_fields" title="connectors.django.DjangoReadOnlyModelManager.model_fields"><tt class="xref py py-attr docutils literal"><span class="pre">model_fields</span></tt></a>, but explicitely exclude the fields.
+When both are specified, model_fields_exclude has the precedence.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="connectors.django.DjangoReadOnlyModelManager.resource_fields">
+<tt class="descname">resource_fields</tt><a class="headerlink" href="#connectors.django.DjangoReadOnlyModelManager.resource_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resource fields of this manager. See <a class="reference internal" href="managers.html#managers.Manager.resource_fields" title="managers.Manager.resource_fields"><tt class="xref py py-attr docutils literal"><span class="pre">managers.Manager.resource_fields</span></tt></a>.</p>
+<p>This attribute is computed from the meta of the model.</p>
+<p>If the class defines its own resource_fields, it is merged with the
+resource_fields generated.
+The additional fields are added, the content of existing fields is merged.</p>
+<p>To remove fields from resource_fields, use <a class="reference internal" href="#connectors.django.DjangoReadOnlyModelManager.model_fields_exclude" title="connectors.django.DjangoReadOnlyModelManager.model_fields_exclude"><tt class="xref py py-attr docutils literal"><span class="pre">model_fields_exclude</span></tt></a>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Account</span><span class="p">(</span> <span class="n">models</span><span class="o">.</span><span class="n">Model</span> <span class="p">):</span>
+    <span class="n">number</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_lentgh</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">help_text</span><span class="o">=</span><span class="s">&#39;Person owning this account&#39;</span> <span class="p">)</span>
+    <span class="n">owner</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span> <span class="n">max_lentgh</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">creation_date</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">DateField</span><span class="p">(</span> <span class="n">auto_now_add</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">BankAccountManager</span><span class="p">(</span> <span class="n">DjangoReadOnlyModelManager</span> <span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Account</span>
+    <span class="n">resource_fields</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;owner&#39;</span> <span class="p">:</span> <span class="p">{</span>
+            <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;Customer of the bank to wich the account is attached.&#39;</span>
+        <span class="p">},</span>
+        <span class="s">&#39;balance&#39;</span> <span class="p">:</span> <span class="p">{</span>
+            <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;Amount of money in this account&#39;</span>
+            <span class="s">&#39;computed&#39;</span> <span class="p">:</span> <span class="bp">True</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+<span class="n">BankAccountManager</span><span class="o">.</span><span class="n">resource_fields</span>
+<span class="p">{</span>
+    <span class="s">&#39;number&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;Customer of the bank to wich the account is attached.&#39;</span>
+    <span class="p">},</span>
+    <span class="s">&#39;owner&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;Person owning this account&#39;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s">&#39;balance&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;Amount of money in this account&#39;</span>
+        <span class="s">&#39;computed&#39;</span> <span class="p">:</span> <span class="bp">True</span>
+    <span class="p">}</span>
+    <span class="s">&#39;creation_date&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="s">&#39;description&#39;</span> <span class="p">:</span>  <span class="s">&#39;&#39;</span><span class="p">,</span>
+        <span class="s">&#39;computed&#39;</span> <span class="p">:</span> <span class="bp">True</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="connectors.django.DjangoReadOnlyModelManager.queryset">
+<tt class="descname">queryset</tt><a class="headerlink" href="#connectors.django.DjangoReadOnlyModelManager.queryset" title="Permalink to this definition">¶</a></dt>
+<dd><p>A django queryset or manager.</p>
+<p>When this property is not defined, it&#8217;s the default manager of <a class="reference internal" href="#connectors.django.DjangoReadOnlyModelManager.model" title="connectors.django.DjangoReadOnlyModelManager.model"><tt class="xref py py-attr docutils literal"><span class="pre">model</span></tt></a> .</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="connectors.django.DjangoReadOnlyModelManager.get_queryset">
+<tt class="descname">get_queryset</tt><big>(</big><big>)</big><a class="headerlink" href="#connectors.django.DjangoReadOnlyModelManager.get_queryset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of <a class="reference internal" href="#connectors.django.DjangoReadOnlyModelManager.queryset" title="connectors.django.DjangoReadOnlyModelManager.queryset"><tt class="xref py py-attr docutils literal"><span class="pre">queryset</span></tt></a>.</p>
+<p>Can be overridden to return a custom queryset</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="connectors.django.DjangoReadOnlyModelManager.get_name">
+<em class="property">classmethod </em><tt class="descname">get_name</tt><big>(</big><big>)</big><a class="headerlink" href="#connectors.django.DjangoReadOnlyModelManager.get_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the lower case model name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="connectors.django.DjangoReadOnlyModelManager.get_resource">
+<tt class="descname">get_resource</tt><big>(</big><big>)</big><a class="headerlink" href="#connectors.django.DjangoReadOnlyModelManager.get_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a resource by its pk.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="connectors.django.DjangoReadOnlyModelManager.list_resource">
+<tt class="descname">list_resource</tt><big>(</big><big>)</big><a class="headerlink" href="#connectors.django.DjangoReadOnlyModelManager.list_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>List the pk of the resource.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="connectors.django.DjangoModelManager">
+<em class="property">class </em><tt class="descclassname">connectors.django.</tt><tt class="descname">DjangoModelManager</tt><a class="headerlink" href="#connectors.django.DjangoModelManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sub class of <a class="reference internal" href="#connectors.django.DjangoReadOnlyModelManager" title="connectors.django.DjangoReadOnlyModelManager"><tt class="xref py py-class docutils literal"><span class="pre">DjangoReadOnlyModelManager</span></tt></a>
+which adds the modification/deletion/creation operations.</p>
+<dl class="method">
+<dt id="connectors.django.DjangoModelManager.modify_resource">
+<tt class="descname">modify_resource</tt><big>(</big><big>)</big><a class="headerlink" href="#connectors.django.DjangoModelManager.modify_resource" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="connectors.django.DjangoModelManager.create_resource">
+<tt class="descname">create_resource</tt><big>(</big><big>)</big><a class="headerlink" href="#connectors.django.DjangoModelManager.create_resource" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="connectors.django.DjangoModelManager.delete_resource">
+<tt class="descname">delete_resource</tt><big>(</big><big>)</big><a class="headerlink" href="#connectors.django.DjangoModelManager.delete_resource" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="connectors.django.DjangoRelatedModelManager">
+<em class="property">class </em><tt class="descclassname">connectors.django.</tt><tt class="descname">DjangoRelatedModelManager</tt><a class="headerlink" href="#connectors.django.DjangoRelatedModelManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sub class of <a class="reference internal" href="#connectors.django.DjangoModelManager" title="connectors.django.DjangoModelManager"><tt class="xref py py-class docutils literal"><span class="pre">DjangoModelManager</span></tt></a>
+which is suitable for a related object.</p>
+<p>Those manager are intended to be used as managed_class
+of a Manager of the related model.</p>
+<dl class="method">
+<dt id="connectors.django.DjangoRelatedModelManager.detect">
+<tt class="descname">detect</tt><big>(</big><big>)</big><a class="headerlink" href="#connectors.django.DjangoRelatedModelManager.detect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override <a class="reference internal" href="managers.html#managers.Manager.detect" title="managers.Manager.detect"><tt class="xref py py-meth docutils literal"><span class="pre">detect()</span></tt></a> to always return false.
+This manager is supposed to be used inside a managed_class and get a model as its parent.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="connectors.django.DjangoRelatedModelManager.related_to">
+<tt class="descname">related_to</tt><a class="headerlink" href="#connectors.django.DjangoRelatedModelManager.related_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>The model or the name of the model to which this manager is related.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">PollManager</span><span class="p">(</span><span class="n">DjangoModelManager</span><span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Poll</span>
+
+<span class="k">class</span> <span class="nc">AnswerManager</span><span class="p">(</span><span class="n">DjangoRelatedModelManager</span><span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Answer</span>
+    <span class="n">related_to</span> <span class="o">=</span> <span class="n">Poll</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="connectors.django.DjangoRelatedModelManager.related_by">
+<tt class="descname">related_by</tt><a class="headerlink" href="#connectors.django.DjangoRelatedModelManager.related_by" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the relation.</p>
+<p>It is required if there is more than one relation between the two models.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/connectors.django.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Grégoire ROCHER.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

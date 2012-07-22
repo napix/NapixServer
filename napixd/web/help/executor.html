@@ -26,7 +26,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Napix 0.1 documentation" href="index.html" />
-    <link rel="prev" title="Thread manager" href="thread_manager.html" /> 
+    <link rel="prev" title="Asynchronous tasks" href="thread_manager.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,7 +39,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="thread_manager.html" title="Thread manager"
+          <a href="thread_manager.html" title="Asynchronous tasks"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>
@@ -76,8 +76,8 @@ The process is removed from the list once it has terminated.</p>
 <p>The <cite>command</cite> is a list starting with the target executable
 followed by the list of the arguments of this target.
 This is comparable with the standard library <tt class="xref py py-mod docutils literal"><span class="pre">subprocess</span></tt> module.</p>
-<p>When the <cite>discard_output</cite> is set to true, the stdout and stderr of the running process
-are sent to /dev/null.</p>
+<p>When <cite>discard_output</cite> is true, the <tt class="xref py py-attr docutils literal"><span class="pre">stdout</span></tt> and <tt class="xref py py-attr docutils literal"><span class="pre">stderr</span></tt> of the running process
+are sent to <tt class="file docutils literal"><span class="pre">/dev/null</span></tt>.</p>
 <p>This method returns a <a class="reference internal" href="#executor.ExecHandle" title="executor.ExecHandle"><tt class="xref py py-class docutils literal"><span class="pre">ExecHandle</span></tt></a> object.</p>
 </dd></dl>
 
@@ -104,11 +104,11 @@ it launch the process and returns by a async queue the handle.</p>
 <dt id="executor.ExecHandle">
 <em class="property">class </em><tt class="descclassname">executor.</tt><tt class="descname">ExecHandle</tt><a class="headerlink" href="#executor.ExecHandle" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
-<div><p>The handlers objects are a wrapper around subprocess.Popen.</p>
+<div><p>The handlers objects are wrappers around <tt class="xref py py-class docutils literal"><span class="pre">subprocess.Popen</span></tt>.</p>
 <p>The main added feature is the notification of the executor.
 Because the executor keeps a trace of all running processes, the wrapper has to notify the executor
 via an asynchronous queue when it ended.</p>
-<p>It proxies the Popen object and has the same properties return_code, wait, poll, etc.</p>
+<p>It proxies the <tt class="xref py py-class docutils literal"><span class="pre">subprocess.Popen</span></tt> object and has the same properties <tt class="xref py py-attr docutils literal"><span class="pre">return_code</span></tt>, <tt class="xref py py-meth docutils literal"><span class="pre">wait()</span></tt>, <tt class="xref py py-meth docutils literal"><span class="pre">poll()</span></tt>, etc.</p>
 </div></blockquote>
 <dl class="method">
 <dt id="executor.ExecHandle.kill">
@@ -129,7 +129,7 @@ via an asynchronous queue when it ended.</p>
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
   <p class="topless"><a href="thread_manager.html"
-                        title="previous chapter">Thread manager</a></p>
+                        title="previous chapter">Asynchronous tasks</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/executor.txt"
@@ -162,7 +162,7 @@ via an asynchronous queue when it ended.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="thread_manager.html" title="Thread manager"
+          <a href="thread_manager.html" title="Asynchronous tasks"
              >previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>

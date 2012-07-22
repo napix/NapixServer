@@ -27,7 +27,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Napix 0.1 documentation" href="index.html" />
     <link rel="next" title="Default Managers" href="managers.default.html" />
-    <link rel="prev" title="Managers actions" href="actions.html" /> 
+    <link rel="prev" title="Using Django models" href="using-django.html" /> 
   </head>
   <body>
     <div class="related">
@@ -43,7 +43,7 @@
           <a href="managers.default.html" title="Default Managers"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="actions.html" title="Managers actions"
+          <a href="using-django.html" title="Using Django models"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>
@@ -66,7 +66,9 @@
 </dd>
 <dt>Ressource :</dt>
 <dd><ul class="first last simple">
-<li>MUST be a dict (or an emulation thereof) that hold a set of properties</li>
+<li>MUST be a dict (or an emulation thereof) that hold a set of properties.
+The resource may be an arbitrary object, but the manager MUST then implements a serialize method
+that convert this object to a dict.</li>
 <li>They MAY have actions</li>
 </ul>
 </dd>
@@ -76,9 +78,10 @@
 <dt id="managers.Manager">
 <em class="property">class </em><tt class="descclassname">managers.</tt><tt class="descname">Manager</tt><a class="headerlink" href="#managers.Manager" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class of the managers</p>
-<p>Managers are objects created to serve requests on a resource for its sub resources
+<blockquote>
+<div><p>Managers are objects created to serve requests on a resource for its sub resources
 example:</p>
-<div class="highlight-none"><div class="highlight"><pre>GET /physics/constants/c
+<div class="highlight-python"><div class="highlight"><pre><span class="n">GET</span> <span class="o">/</span><span class="n">physics</span><span class="o">/</span><span class="n">constants</span><span class="o">/</span><span class="n">c</span>
 </pre></div>
 </div>
 <p>A manager is created of the resource <em>physics</em>, this resource is asked for its child <em>constants</em>,
@@ -90,8 +93,6 @@ The resource got is serialized and sent back to the user</p>
 <li><p class="first">Class creation</p>
 </li>
 <li><p class="first">Insertion into the application inside the root manager or through a parent manager</p>
-</li>
-<li><p class="first">Manager.configure is called with the settings of this class</p>
 </li>
 <li><dl class="first docutils">
 <dt>An instance is generated for a resource</dt>
@@ -144,13 +145,12 @@ example</p>
 <span class="n">ManagerB</span><span class="p">(</span><span class="n">Main</span><span class="p">()</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>If it&#8217;s not set, the manager does not have sub resources</p>
-<div class="highlight-none"><div class="highlight"><pre>#GET /first/second/third/
+<p>If it&#8217;s not set, the manager does not have sub resources:</p>
+<div class="highlight-python"><pre>#GET /first/second/third/
 404 NOT FOUND
 
 #GET /first/second/third/fourth
-404 NOT FOUND
-</pre></div>
+404 NOT FOUND</pre>
 </div>
 <p>The resources may contains some fields that are not in the class&#8217; resource_fields.
 When the resource are serialized to be send in json,
@@ -186,6 +186,13 @@ exemple</p>
 <span class="c">#Parser was passed to list_resource through parent</span>
 </pre></div>
 </div>
+<dl class="attribute">
+<dt id="managers.Manager.parent">
+<tt class="descname">parent</tt><a class="headerlink" href="#managers.Manager.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>The resource that spawned this manager in the context of a request on a sub manager.</p>
+<p>For the first level managers, it is None.</p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="managers.Manager.managed_class">
 <tt class="descname">managed_class</tt><a class="headerlink" href="#managers.Manager.managed_class" title="Permalink to this definition">¶</a></dt>
@@ -333,15 +340,43 @@ If it&#8217;s not the manager is recreated</p>
 <dl class="method">
 <dt id="managers.Manager.start_request">
 <tt class="descname">start_request</tt><big>(</big><em>request</em><big>)</big><a class="headerlink" href="#managers.Manager.start_request" title="Permalink to this definition">¶</a></dt>
-<dd><p>place holder method that is called at the start of each HTTP request</p>
+<dd><p>Method called at the beginning of the request.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">It can be called after <a class="reference internal" href="#managers.Manager.get_resource" title="managers.Manager.get_resource"><tt class="xref py py-meth docutils literal"><span class="pre">get_resource()</span></tt></a> when get_resource is called for a sub manager.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.start_managed_request">
+<tt class="descname">start_managed_request</tt><big>(</big><em>request</em>, <em>resource_id</em>, <em>resource</em><big>)</big><a class="headerlink" href="#managers.Manager.start_managed_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method called when the manager executes its <a class="reference internal" href="#managers.Manager.get_resource" title="managers.Manager.get_resource"><tt class="xref py py-meth docutils literal"><span class="pre">get_resource()</span></tt></a>
+for a request on a submanager.</p>
+<p><tt class="docutils literal"><span class="pre">resource</span></tt> and <tt class="docutils literal"><span class="pre">resource_id</span></tt> are the resource and id of the resource generated by this manager.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="managers.Manager.end_managed_request">
+<tt class="descname">end_managed_request</tt><big>(</big><em>request</em>, <em>resource_id</em>, <em>resource</em><big>)</big><a class="headerlink" href="#managers.Manager.end_managed_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>like <a class="reference internal" href="#managers.Manager.start_managed_request" title="managers.Manager.start_managed_request"><tt class="xref py py-meth docutils literal"><span class="pre">start_managed_request()</span></tt></a>, but called at the end of the request, but called at the end of the request.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="managers.Manager.end_request">
 <tt class="descname">end_request</tt><big>(</big><em>request</em><big>)</big><a class="headerlink" href="#managers.Manager.end_request" title="Permalink to this definition">¶</a></dt>
-<dd><p>place holder method that is called at the end of each HTTP request</p>
+<dd><p>This method is called after a request involving this manager directly or calling a submanager.</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="managers.Manager.serialize">
+<tt class="descname">serialize</tt><big>(</big><em>resource</em><big>)</big> &rarr; resource_dict<a class="headerlink" href="#managers.Manager.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialize the resource before it is send to the client.</p>
+<p>By default, it takes a dict and return another dict containing only the keys declared in
+<a class="reference internal" href="#managers.Manager.resource_fields" title="managers.Manager.resource_fields"><tt class="xref py py-attr docutils literal"><span class="pre">resource_fields</span></tt></a>.</p>
+<p>It is called only on GET request on this resource, not for the request on sub managers.</p>
+</dd></dl>
+
+</div></blockquote>
 </dd></dl>
 
 <div class="section" id="auto-documentation">
@@ -524,7 +559,7 @@ to mean that the method is not supported.</p>
 
 <dl class="method">
 <dt id="managers.Manager.get_resource">
-<tt class="descname">get_resource</tt><big>(</big><em>resource_id</em><big>)</big> &rarr; resource_dict<a class="headerlink" href="#managers.Manager.get_resource" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">get_resource</tt><big>(</big><em>resource_id</em><big>)</big> &rarr; resource<a class="headerlink" href="#managers.Manager.get_resource" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the ressource object corresponding to resource_id.</p>
 <p>This object must be a dict or emulate it, as Napix will convert this dict
 to a json object to build his response.</p>
@@ -583,8 +618,8 @@ the _uri key with appropriate value (based on baseurl + _id).</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="actions.html"
-                        title="previous chapter">Managers actions</a></p>
+  <p class="topless"><a href="using-django.html"
+                        title="previous chapter">Using Django models</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="managers.default.html"
                         title="next chapter">Default Managers</a></p>
@@ -623,7 +658,7 @@ the _uri key with appropriate value (based on baseurl + _id).</p>
           <a href="managers.default.html" title="Default Managers"
              >next</a> |</li>
         <li class="right" >
-          <a href="actions.html" title="Managers actions"
+          <a href="using-django.html" title="Using Django models"
              >previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>

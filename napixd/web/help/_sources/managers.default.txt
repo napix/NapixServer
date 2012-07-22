@@ -1,5 +1,5 @@
 
-.. py:module:: managers.default
+.. module:: managers.default
 
 
 Default Managers
@@ -12,19 +12,19 @@ They will load all the resources of the manager, allow the user to make requests
 and persist all the objects after.
 
 
-.. py:class:: ReadOnlyDictManager
+.. class:: ReadOnlyDictManager
 
-    Sub class of :py:class:`managers.Manager` that will preload a dictionary as its resources.
+    Sub class of :class:`managers.Manager` that will preload a dictionary as its resources.
     The access to this resources is read-only, ie GET.
 
-    The only method to override is :py:meth:`load`.
+    The only method to override is :meth:`load`.
 
-    .. py:attribute:: resources
+    .. attribute:: resources
 
         The resources attribute is the content of the manager.
-        It is lazily loaded with the :py:meth:`load` method.
+        It is lazily loaded with the :meth:`load` method.
 
-    .. py:method:: load( parent ) -> dict[ resource_id : resource_dict]
+    .. method:: load( parent ) -> dict[ resource_id : resource_dict]
 
         Load: Return the list of the resources managed by this manager
         take the parent that created this manager instance as argument
@@ -66,16 +66,16 @@ and persist all the objects after.
 
             earth_countries.load({'name':'earth','galaxy':'Milky Way'})
 
-.. py:class:: DictManager
+.. class:: DictManager
 
-    Subclass of :py:class:`ReadOnlyDictManager` that is also accessible in write, ie DELETE, POST and PUT.
+    Subclass of :class:`ReadOnlyDictManager` that is also accessible in write, ie DELETE, POST and PUT.
 
-    The methods :py:meth:`ReadOnlyDictManager.load`, :py:meth:`save` and :py:meth:`generate_new_id` must be overridden.
+    The methods :meth:`ReadOnlyDictManager.load`, :meth:`save` and :meth:`generate_new_id` must be overridden.
     The first read the content of the manager, the second persist it, and the last find a new id when it is needed (POST).
 
-    The :ref:`validation methods <validation>` of :py:class:`managers.Manager` are used.
+    The :ref:`validation methods <validation>` of :class:`managers.Manager` are used.
 
-    .. py:method:: save( parent, resources)
+    .. method:: save( parent, resources)
 
         Save the ressources after they have been altered by the user's request.
         Idempotent methods (GET,HEAD) don't trigger the save
@@ -83,7 +83,7 @@ and persist all the objects after.
         The `parent` argument is the same argument that was passed to the load method,
         and contains the parent resource to which this manager is attached.
 
-        The `resources` argument is the instance of :py:attr:`ReadOnlyDictManager.resources`.
+        The `resources` argument is the instance of :attr:`ReadOnlyDictManager.resources`.
 
         .. code-block:: python
 
@@ -96,7 +96,7 @@ and persist all the objects after.
                         countries.write('\n')
 
 
-    .. py:method:: generate_new_id( resource_dict ) -> new_id
+    .. method:: generate_new_id( resource_dict ) -> new_id
 
         Return a new id for the given `resource_dict`
 

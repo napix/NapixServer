@@ -1,18 +1,18 @@
 
-.. py:module:: exceptions
+.. module:: exceptions
 
 Exceptions defined by Napix
 ===========================
 
-.. py:exception:: ValidationError
+.. exception:: ValidationError
 
     Thrown when a validation fails on a element submitted by the user
 
-.. py:exception:: NotFound
+.. exception:: NotFound
 
     Exception that means that the resource queried is not available.
     It should be thrown with the asked id.
 
-.. py:exception:: Duplicate
+.. exception:: Duplicate
 
     When a new record was being created and another record was already present at that ID.

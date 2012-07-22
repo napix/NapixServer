@@ -1,6 +1,5 @@
 
-.. py:module:: managers
-
+.. module:: managers
 
 Manager
 =======
@@ -11,21 +10,21 @@ Manager :
     - manages a set of resources
     - does it by defining create/delete/modify methods that act on those resources
 Ressource :
-    - MUST be a dict (or an emulation thereof) that hold a set of properties
+    - MUST be a dict (or an emulation thereof) that hold a set of properties.
+      The resource may be an arbitrary object, but the manager MUST then implements a serialize method
+      that convert this object to a dict.
     - They MAY have actions
 
 Manager are created by the corresponding resource
 
-.. py:class:: Manager
+.. class:: Manager
 
-    Base class of the managers
+   Base class of the managers
 
     Managers are objects created to serve requests on a resource for its sub resources
-    example:
+    example::
 
-    .. code-block :: none
-
-        GET /physics/constants/c
+       GET /physics/constants/c
 
     A manager is created of the resource *physics*, this resource is asked for its child *constants*,
     a manager for this resource *constant* is created, and this manager is asked for its child *c*.
@@ -37,7 +36,6 @@ Manager are created by the corresponding resource
 
     - Class creation
     - Insertion into the application inside the root manager or through a parent manager
-    - Manager.configure is called with the settings of this class
     - An instance is generated for a resource
        * start_request is called
        * the appropriate method to respond to the request is called (get_resource, create_resource, etc)
@@ -87,9 +85,7 @@ Manager are created by the corresponding resource
         #GET /main/1/B/3
         ManagerB(Main().get_resource(1)).get_resource(3)
 
-    If it's not set, the manager does not have sub resources
-
-    .. code-block:: none
+    If it's not set, the manager does not have sub resources::
 
         #GET /first/second/third/
         404 NOT FOUND
@@ -104,7 +100,7 @@ Manager are created by the corresponding resource
     This behavior may be usefull to pass privates values to the next managers.
     exemple
 
-    .. code-block :: python
+    .. code-block:: python
 
             class SectionManager(Manager):
                 """
@@ -134,7 +130,14 @@ Manager are created by the corresponding resource
             [ "section1" , "section2"]
             #Parser was passed to list_resource through parent
 
-    .. py:attribute:: managed_class
+    .. attribute:: parent
+
+        The resource that spawned this manager in the context of a request on a sub manager.
+
+        For the first level managers, it is None.
+
+
+    .. attribute:: managed_class
 
         A class, or an array of classes that will manager a sub-collections.
         The classes can be replaced by a string being, the name of another class
@@ -179,22 +182,22 @@ Manager are created by the corresponding resource
             GET /second/id_parent/children/id_child
             { other_resource }
 
-    .. py:classmethod:: set_managed_classes( managed_classes )
+    .. classmethod:: set_managed_classes( managed_classes )
 
         Set the managed classes of the manager.
-        The orginal :py:attr:`managed_class` attribute is left untouched.
+        The orginal :attr:`managed_class` attribute is left untouched.
 
         The managed_class parameter must be a list of class objects.
 
         This method is called by the loader after it resolved the string references.
 
-    .. py:classmethod:: get_managed_classes
+    .. classmethod:: get_managed_classes
 
         return the list of managed classes.
         It always returns a list even if the managed is directly plugged.
 
-        If :py:attr:`managed_class` contains a list or one direct references to class objects,
-        it is not needed to call :py:meth:`set_managed_classes`,
+        If :attr:`managed_class` contains a list or one direct references to class objects,
+        it is not needed to call :meth:`set_managed_classes`,
         else string references have to be resolved.
 
         .. code-block:: python
@@ -214,7 +217,7 @@ Manager are created by the corresponding resource
             #ok
             [ MyDirectReference ]
 
-    .. py:classmethod:: direct_plug
+    .. classmethod:: direct_plug
 
         Return how the managed classes are plugged to this manager.
         If there isn't any managed_class, it returns None.
@@ -231,7 +234,7 @@ Manager are created by the corresponding resource
             direct_plug == None
 
 
-    .. py:method:: __init__( parent )
+    .. method:: __init__( parent )
 
         intialize the Manager with the parent resource creating it
 
@@ -248,7 +251,7 @@ Manager are created by the corresponding resource
             SecondManager(FirstManager.get_resource('second')).list_resource()
 
 
-    .. py:classmethod::  detect() -> Boolean
+    .. classmethod::  detect() -> Boolean
 
         Auto detection function.
         This function is called by napixd to check if the manager is needed,
@@ -263,45 +266,69 @@ Manager are created by the corresponding resource
                 #Activate the manager only if the host is Linux
                 return platform.platform() == 'Linux'
 
-    .. py:method::  configure(conf)
+    .. method::  configure(conf)
 
         Method called with the configuration of this class
 
-    .. py:method::  is_up_to_date()
+    .. method::  is_up_to_date()
 
         Method to check if the data contained are fresh.
         If it's not the manager is recreated
 
-    .. py:method::  start_request(request)
+    .. method::  start_request(request)
 
-        place holder method that is called at the start of each HTTP request
+        Method called at the beginning of the request.
 
-    .. py:method::  end_request(request)
+        .. warning::
 
-        place holder method that is called at the end of each HTTP request
+            It can be called after :meth:`get_resource` when get_resource is called for a sub manager.
+
+    .. method:: start_managed_request( request, resource_id, resource)
+
+        Method called when the manager executes its :meth:`get_resource`
+        for a request on a submanager.
+
+        ``resource`` and ``resource_id`` are the resource and id of the resource generated by this manager.
+
+    .. method:: end_managed_request( request, resource_id, resource)
+
+        like :meth:`start_managed_request`, but called at the end of the request, but called at the end of the request.
+
+    .. method::  end_request(request)
+
+        This method is called after a request involving this manager directly or calling a submanager.
+
+    .. method:: serialize( resource ) -> resource_dict
+
+        Serialize the resource before it is send to the client.
+
+        By default, it takes a dict and return another dict containing only the keys declared in
+        :attr:`resource_fields`.
+
+        It is called only on GET request on this resource, not for the request on sub managers.
 
 Auto documentation
 ------------------
 
-.. py:class:: Manager
+.. class:: Manager
 
-    .. py:attribute:: name
+    .. attribute:: name
 
         The name of the class, None by default.
-        Always use :py:meth:`get_name` if you need to know the name of a manager.
+        Always use :meth:`get_name` if you need to know the name of a manager.
 
-    .. py:classmethod::  get_name() -> name
+    .. classmethod::  get_name() -> name
 
         Returns the name of the manager.
-        If :py:attr:`name` is not defined, it's the class name in lower case.
+        If :attr:`name` is not defined, it's the class name in lower case.
 
-    .. py:method::  get_example_resource() -> resource_dict
+    .. method::  get_example_resource() -> resource_dict
 
         Generate an example of the resources managed by this manager
-        Computed by the *example* of each resource field in :py:attr:`resource_fields`
+        Computed by the *example* of each resource field in :attr:`resource_fields`
 
 
-    .. py:attribute:: resource_fields
+    .. attribute:: resource_fields
 
         List of the fields publicly available with their properties
 
@@ -320,7 +347,7 @@ Auto documentation
 
         example:
 
-        .. code-block :: python
+        .. code-block:: python
 
             class User(Manager):
                 resource_fields = {
@@ -334,23 +361,23 @@ Auto documentation
 Validation
 ----------
 
-.. py:class:: Manager
+.. class:: Manager
 
     The validation methods of the Manager class take the proposed user input and either return the correct value even if unchanged
-    or raise a :py:exc:`ValidationError`.
+    or raise a :exc:`ValidationError`.
 
     It may change the type of the variable,
     for example to convert number to strings to integer values,
     to query integer indexed values in a list.
 
 
-    .. py:method::  validate_id(id) -> id
+    .. method::  validate_id(id) -> id
 
         Check that the id given as an argument is a valid ID
 
         The id is always a string extracted from the url.
 
-        If the id is not valid, raises a :py:exc:`ValidationError`.
+        If the id is not valid, raises a :exc:`ValidationError`.
         If necessary, modify the id
         this method MUST return the ID even if it wasn't modified.
 
@@ -385,21 +412,21 @@ Validation
 
         By default, this method checks if the id is not an empty string
 
-    .. py:method::  validate_resource_FIELDNAME( value )
+    .. method::  validate_resource_FIELDNAME( value )
 
         If a Manager defines a field `x` and a method `validate_resource_x`,
         this method will be used to validate this field.
 
-        Like :py:meth:`validate_id`, it must return the correct value, even if it was not changed
-        or throw a :py:exc:`ValidationError` if the value is incorrect.
+        Like :meth:`validate_id`, it must return the correct value, even if it was not changed
+        or throw a :exc:`ValidationError` if the value is incorrect.
 
 
-    .. py:method:: validate_resource( resource_dict) -> resource_dict
+    .. method:: validate_resource( resource_dict) -> resource_dict
 
         Placeholder method of the managers for the validation of the whole resource_dict
         This method can change, add or remove fields from the resource_dict.
         It must return the valid resource even if it is the same as resource_dict,
-        or raise a :py:exc:`ValidationError`.
+        or raise a :exc:`ValidationError`.
 
         .. code-block:: python
 
@@ -412,12 +439,11 @@ Validation
                         raise ValidationError, '`name` and `target` must be different'
                     return resource_dict
 
-
-    .. py:method:: validate( resource_dict ) -> resource_dict
+    .. method:: validate( resource_dict ) -> resource_dict
 
         Validate a resource_dict by checking that every mandatory field specified in self.resource_fields is defined.
 
-        First, if the current object implement :py:meth:`validate_resource_FIELDNAME` method, it'll be called with
+        First, if the current object implement :meth:`validate_resource_FIELDNAME` method, it'll be called with
         the value of resource_dict[FIELDNAME] as parameter.
 
         Then it will call validate_resource with the dict which has its fields cleaned
@@ -426,9 +452,9 @@ Validation
 Collection and resources methods
 --------------------------------
 
-.. py:class:: Manager
+.. class:: Manager
 
-    The :py:class:`Manager` class does not implements any of these.
+    The :class:`Manager` class does not implements any of these.
 
     The Manager subclasses *MAY* implement all or only a part of the methods below.
 
@@ -443,10 +469,10 @@ Collection and resources methods
 
 
     All the **resource_id** and **resource_dict** given to the following methods have been cleaned with
-    :py:meth:`validate_id` and :py:meth:`validate_resource` respectively.
+    :meth:`validate_id` and :meth:`validate_resource` respectively.
 
 
-    .. py:method::  delete_resource(resource_id)
+    .. method::  delete_resource(resource_id)
 
         Delete a managed ressource.
 
@@ -455,7 +481,7 @@ Collection and resources methods
             #DELETE /something/[...]/mymanager/42
             mymanager.delete_resource('42')
 
-    .. py:method::  create_resource( resource_dict) -> id
+    .. method::  create_resource( resource_dict) -> id
 
         Create a new managed ressource.
 
@@ -469,14 +495,14 @@ Collection and resources methods
             mymanager.create_resource({ 'toto': 1})
 
 
-    .. py:method::  get_resource(resource_id) -> resource_dict
+    .. method::  get_resource(resource_id) -> resource
 
         Get the ressource object corresponding to resource_id.
 
         This object must be a dict or emulate it, as Napix will convert this dict
         to a json object to build his response.
 
-        If an object define keys that are not in the :py:attr:`resource_fields`,
+        If an object define keys that are not in the :attr:`resource_fields`,
         they will be stripped.
 
         .. code-block:: python
@@ -485,7 +511,7 @@ Collection and resources methods
             mymanager.get_resource(self, '42')
 
 
-    .. py:method::  modify_resource(resource_id,resource_dict)
+    .. method::  modify_resource(resource_id,resource_dict)
 
         Modify the ressource designed by resource_id by updating it with resource_dict
         defined values.
@@ -498,7 +524,7 @@ Collection and resources methods
             mymanager.modify_resource('42', { 'toto': 4242 })
 
 
-    .. py:method::  list_resource() -> list
+    .. method::  list_resource() -> list
 
         Return the ids list of all managed resource. The result can be of 2 form : either a direct list
         of string, representing each id, or a list of dict, defining at least '_id' and '_desc' as key.

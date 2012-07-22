@@ -17,10 +17,13 @@ Contents:
     high_level
     low_level
     submanagers
-    actions
+    extensions
+    store
+    using-django
     managers
     managers.default
-    managers.action
+    managers.actions
+    managers.views
     thread_manager
     executor
 

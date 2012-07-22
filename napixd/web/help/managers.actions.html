@@ -1,0 +1,158 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Actions &mdash; Napix 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Napix 0.1 documentation" href="index.html" />
+    <link rel="next" title="Views on resources" href="managers.views.html" />
+    <link rel="prev" title="Default Managers" href="managers.default.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="managers.views.html" title="Views on resources"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="managers.default.html" title="Default Managers"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="module-managers.actions"></span><div class="section" id="actions">
+<h1>Actions<a class="headerlink" href="#actions" title="Permalink to this headline">¶</a></h1>
+<p>Action are arbitrary python function that can be called on a resource of a collection.</p>
+<dl class="function">
+<dt id="managers.actions.action">
+<tt class="descclassname">&#64;</tt><tt class="descclassname">managers.actions.</tt><tt class="descname">action</tt><a class="headerlink" href="#managers.actions.action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorates a python function that will be an action</p>
+<p>The action takes the resource as its first argument.</p>
+<p>The decorator automatically discovers the mandatory and optional arguments of the function
+and use them for documentation and template request generation.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">RouterManager</span><span class="p">(</span> <span class="n">Manager</span> <span class="p">):</span>
+    <span class="n">resource_fields</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;ip&#39;</span> <span class="p">:</span> <span class="p">{</span>
+                <span class="s">&#39;description&#39;</span> <span class="p">:</span> <span class="s">&#39;IP of the target router&#39;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="o">...</span>
+    <span class="nd">@action</span>
+    <span class="k">def</span> <span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">router</span><span class="p">,</span> <span class="n">tries</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tries</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ping</span><span class="p">(</span> <span class="n">router</span><span class="p">[</span><span class="s">&#39;ip&#39;</span><span class="p">]):</span>
+                <span class="k">return</span> <span class="s">&#39;Router responds&#39;</span>
+        <span class="k">return</span> <span class="s">&#39;Router Unreachable&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="managers.actions.parameter">
+<tt class="descclassname">&#64;</tt><tt class="descclassname">managers.actions.</tt><tt class="descname">parameter</tt><a class="headerlink" href="#managers.actions.parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allow to set one or several parameters on an action.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="nd">@parameter</span><span class="p">(</span> <span class="s">&#39;tries&#39;</span><span class="p">,</span>  <span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Number of times we try to ping&#39;</span> <span class="p">)</span>
+<span class="nd">@action</span>
+<span class="k">def</span> <span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">router</span><span class="p">,</span> <span class="n">tries</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tries</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ping</span><span class="p">(</span> <span class="n">router</span><span class="p">[</span><span class="s">&#39;ip&#39;</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="s">&#39;Router responds&#39;</span>
+    <span class="k">return</span> <span class="s">&#39;Router Unreachable&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="managers.default.html"
+                        title="previous chapter">Default Managers</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="managers.views.html"
+                        title="next chapter">Views on resources</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/managers.actions.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="managers.views.html" title="Views on resources"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="managers.default.html" title="Default Managers"
+             >previous</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Grégoire ROCHER.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -1,1 +1,1 @@
-define(["underscore"],function(a){a.mixin({objectify:function(b){return a.reduce(b,function(a,b){return a[b[0]]=b[1],a},{})}})})
+define(["underscore"],function(e){e.mixin({objectify:function(t){return e.reduce(t,function(e,t){return e[t[0]]=t[1],e},{})},items:function(t){return e.map(t,function(e,t){return{val:e,key:t}})}})})

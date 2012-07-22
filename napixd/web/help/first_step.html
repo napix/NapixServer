@@ -161,12 +161,6 @@ Just correct the error and save.
 If an import fails, and makes a manager unavailable, a placeholder will catch the calls and
 return the error that cause the import to fail.</p>
 <p>For example: add a syntax error or a undeclared name in the file.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">BasicPasswordFileManager</span><span class="p">(</span><span class="n">DictOopsIMadeAMistake</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Napix server to edit a password file in the user:password format</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-</pre></div>
-</div>
 <p>The requests will fail with an <tt class="xref py py-exc docutils literal"><span class="pre">ImportError</span></tt> caused by a <tt class="xref py py-exc docutils literal"><span class="pre">NameError</span></tt>:</p>
 <div class="highlight-python"><pre>$ curl -X GET "localhost:8002/basicpasswordfilemanager?authhok" -s | python -m json.tool
 {
@@ -326,7 +320,7 @@ $ curl -X GET "http://localhost:8002/passwords/sony_rssi?authok" | python -m jso
     "traceback": []
 }</pre>
 </div>
-<p>Another NotImplementedError this time because we need to override the <a class="reference internal" href="managers.default.html#managers.default.DictManager.save" title="managers.default.DictManager.save"><tt class="xref py py-meth docutils literal"><span class="pre">save()</span></tt></a>.
+<p>Another <tt class="xref py py-exc docutils literal"><span class="pre">NotImplementedError</span></tt> this time because we need to override the <a class="reference internal" href="managers.default.html#managers.default.DictManager.save" title="managers.default.DictManager.save"><tt class="xref py py-meth docutils literal"><span class="pre">save()</span></tt></a>.
 Save takes the parent (the same as in load) and the resources of the managers as argument and persists them to the disk.</p>
 <p>Like in the load method, we can ignore the parent argument.</p>
 <div class="highlight-python"><div class="highlight"><pre>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">resources</span><span class="p">):</span>

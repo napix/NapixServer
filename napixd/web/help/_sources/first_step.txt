@@ -1,3 +1,6 @@
+.. highlight:: python
+
+.. currentmodule:: managers.default
 
 .. _first_step:
 
@@ -13,7 +16,7 @@ PUT /htaccess/toto is used to modify the resource identified by /htaccess/toto w
 GET /htaccess/toto is used to retrieve the same resource.
 GET /htaccess/tata retrieves another resource.
 
-Napix uses :py:class:`~managers.Manager` subclasses to handle the collections logic.
+Napix uses :class:`~managers.Manager` subclasses to handle the collections logic.
 Each Manager instance represents a collection and provides methods to manage the collection.
 
 Launch
@@ -76,7 +79,6 @@ Launch your favorite editor with and open a file in the auto-load directory :fil
 Write the headers and save.
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :language: python
     :lines: 1-2
 
 The autoloader will detect the filesystem operation and launch a reload.
@@ -97,10 +99,9 @@ A curl request will still show an empty array, because there isn't a Manager yet
 Continue writing in the previously opened file.
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :language: python
     :lines: 6
 
-The :py:class:`~managers.default.DictManager` class is a subclass of :py:class:`~managers.Manager`
+The :class:`DictManager` class is a subclass of :class:`~managers.Manager`
 which simplifies the way of writing a Manager.
 Instead of writing a method to make a modification, retrieve a resource, create it, etc,
 the DictManager instance store an internal dict of all its resource indexed by id.
@@ -109,7 +110,6 @@ The DictManager implements the method to modify, create, list, etc and does the 
 Append the following lines in the password.py file.
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :language: python
     :lines: 12-15
 
 When you save the file, the daemon will reload the managers and find the one you created.
@@ -127,14 +127,14 @@ return the error that cause the import to fail.
 
 For example: add a syntax error or a undeclared name in the file.
 
-.. code-block:: python
+.. code-block::
 
     class BasicPasswordFileManager(DictOopsIMadeAMistake):
         """
         Napix server to edit a password file in the user:password format
         """
 
-The requests will fail with an :py:exc:`ImportError` caused by a :py:exc:`NameError`::
+The requests will fail with an :exc:`ImportError` caused by a :exc:`NameError`::
 
     $ curl -X GET "localhost:8002/basicpasswordfilemanager?authhok" -s | python -m json.tool
     {
@@ -151,7 +151,7 @@ The requests will fail with an :py:exc:`ImportError` caused by a :py:exc:`NameEr
 
 Rollback to fix this error before continuing.
 
-An attempt to list the resources (using GET /``name of the manager``/) fails with a :py:exc:`NotImplementedError`
+An attempt to list the resources (using GET /``name of the manager``/) fails with a :exc:`NotImplementedError`
 because the load method that the developer must override is not yet written.::
 
     $ curl -X GET "localhost:8002/basicpasswordfilemanager/?authok" -s -D /dev/stderr | python -m json.tool
@@ -184,7 +184,7 @@ The metadata
 ------------
 
 The metadatas of the Manager are composed of the docstring of the module
-which should describe what kind of resources it manages, and the :py:attr:`~managers.Manager.resource_fields` attribute
+which should describe what kind of resources it manages, and the :attr:`~managers.Manager.resource_fields` attribute
 which documents the names of the attributes of the managed resources and metadatas about them.
 
 The metadatas of the managers have two main goals.
@@ -193,7 +193,6 @@ The resources that are sent to the user are stripped of the fields that are not 
 and the resource_dict given to the creation and modification method contains only fields in resource_fields.
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :language: python
     :lines: 16,21-30
 
 The resources of our manager will contain a ``username`` and the corresponding ``password``.
@@ -209,10 +208,9 @@ This template object is retrieved at ``/basicpasswordfilemanager/_napix_new``::
 
 The url namespace is basicpasswordfilemanager.
 It is the default value of the lower case class name.
-It can be changed by overriding the classmethod :py:meth:`~managers.Manager.get_name`.
+It can be changed by overriding the classmethod :meth:`~managers.Manager.get_name`.
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :language: python
     :lines: 32-34
 
 The requests show that the old name is gone replaced by the new one.::
@@ -230,12 +228,11 @@ The requests show that the old name is gone replaced by the new one.::
 The load method have now to be written.
 
 It takes the parent manager that spawned this one.
-The parent is :py:obj:`None` if it is a first level manager when path is ``/manager/``.
+The parent is :obj:`None` if it is a first level manager when path is ``/manager/``.
 
 The inheritance cases are treated in :ref:`inheritance`.
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :language: python
     :lines: 4,12,16,36-49
 
 It returns a dict of id pointing to resources::
@@ -286,13 +283,12 @@ But an attempt to modify an existing object will fail.::
         "traceback": []
     }
 
-Another NotImplementedError this time because we need to override the :py:meth:`~managers.default.DictManager.save`.
+Another :exc:`NotImplementedError` this time because we need to override the :meth:`~managers.default.DictManager.save`.
 Save takes the parent (the same as in load) and the resources of the managers as argument and persists them to the disk.
 
 Like in the load method, we can ignore the parent argument.
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :language: python
     :pyobject: BasicPasswordFileManager.save
 
 Now the result is persisted::
@@ -326,14 +322,13 @@ For the creation of a resource, a POST request is sent to the collection::
         "traceback": []
     }
 
-A new NotImplementedError, this one comes from the :py:meth:`~managers.Manager.DictManager.generate_new_id` method.
+A new NotImplementedError, this one comes from the :meth:`~managers.Manager.DictManager.generate_new_id` method.
 In order to create a new resource, the created resource dict will be stored in the internal resources dict.
 The id it will take may be a serial number, a field or a part of a field, a random number (like a GUID).
 
 The method generate_new_id will return the id for the resource knowing the resource_dict of the resource to be created.
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :language: python
     :pyobject: BasicPasswordFileManager.generate_new_id
 
 The objects can be created and are persisted.
@@ -385,11 +380,10 @@ We have to write validation methods.
 In Napix There is three places to make validation of user input.
 
 First, the manager may implement a method called
-:py:meth:`~managers.Manager.validate_resource_FIELDNAME` with ``FIELDNAME`` being a field of the resource.
+:meth:`~managers.Manager.validate_resource_FIELDNAME` with ``FIELDNAME`` being a field of the resource.
 This method is used to clean each field individually.
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :language: python
     :lines: 17,63-78
 
 Now the managers responds with a 400 Error code when we submit a forged password.::
@@ -406,13 +400,12 @@ Now the managers responds with a 400 Error code when we submit a forged password
 
     Password cannot contain `\n`
 
-Secondly, the manager has a method :py:meth:`~managers.Manager.validate_resource`
+Secondly, the manager has a method :meth:`~managers.Manager.validate_resource`
 which verifies the whole resource dict.
 
 In our case, we can implement a verification to avoid that the password contains the username
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :language: python
     :pyobject: BasicPasswordFileManager.validate_resource
 
 

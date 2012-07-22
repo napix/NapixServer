@@ -18,7 +18,7 @@ class HostManager(DictManager):
                 'example':'127.0.0.1'
                 }
             }
-
+    name = 'hosts'
     def load( self, parent ):
         #open the hosts file and keep a copy
         try:

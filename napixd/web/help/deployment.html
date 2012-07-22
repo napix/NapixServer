@@ -81,12 +81,12 @@
 <dt>sphinx (optional)</dt>
 <dd>Autogeneration of the documentation</dd>
 </dl>
-<div class="highlight-bash"><div class="highlight"><pre><span class="c"># apt-get install python python-virtualenv python-pip</span>
-<span class="nv">$ </span>virtualenv napix
-<span class="nv">$ </span><span class="nb">source </span>napix/bin/activate
-<span class="o">(</span>napix<span class="o">)</span><span class="nv">$ </span>pip install -r NapixServer/requirements.txt
-<span class="o">(</span>napix<span class="o">)</span><span class="nv">$ </span>NapixServer/bin/napixd
-</pre></div>
+<p>The installation procedure looks like this:</p>
+<div class="highlight-python"><pre># apt-get install python python-virtualenv python-pip
+$ virtualenv napix
+$ source napix/bin/activate
+(napix)$ pip install -r NapixServer/requirements.txt
+(napix)$ NapixServer/bin/napixd</pre>
 </div>
 </div>
 </div>
@@ -174,7 +174,7 @@ you can add a value in the root object of the configuration.</p>
 <div class="section" id="auto-loading">
 <span id="id2"></span><h3>Auto-loading<a class="headerlink" href="#auto-loading" title="Permalink to this headline">¶</a></h3>
 <p>If there is a file ending by <strong>.py</strong> in a auto-detect folder
-of the Napix setup (/var/lib/napix/auto or NapixServer/auto),
+of the Napix setup (<tt class="file docutils literal"><span class="pre">/var/lib/napix/auto</span></tt> or <tt class="file docutils literal"><span class="pre">NapixServer/auto</span></tt>),
 the Napix loader will import this python file and add all the subclasses of <a class="reference internal" href="managers.html#managers.Manager" title="managers.Manager"><tt class="xref py py-class docutils literal"><span class="pre">managers.Manager</span></tt></a> in the available managers.
 The auto loaded managers may override the classmethod <a class="reference internal" href="managers.html#managers.Manager.detect" title="managers.Manager.detect"><tt class="xref py py-meth docutils literal"><span class="pre">detect()</span></tt></a>
 which tells if the managers should be loaded.
@@ -186,7 +186,7 @@ By default detect return True when the class is not a base method defined inside
 <p>Napix proposes an option to reload the modules without stopping the server.
 When the reload is triggered, the configuration is reparsed.
 The autoload directories are scanned again.</p>
-<p>The automatic reloading is disabled when Napix.loader.reload is set to false.</p>
+<p>The automatic reloading is disabled when <tt class="docutils literal"><span class="pre">Napix.loader.reload</span></tt> is set to false.</p>
 <div class="section" id="get-napix-reload">
 <h4>GET /_napix_reload<a class="headerlink" href="#get-napix-reload" title="Permalink to this headline">¶</a></h4>
 <p>When the server is on DEBUG mode, a simple GET on /_napix_reload will trigger a reload.
@@ -194,11 +194,10 @@ It is useful for a developer, he just refreshes /_napix_reload then refreshes hi
 </div>
 <div class="section" id="send-a-sighup-signal">
 <h4>Send a SIGHUP signal<a class="headerlink" href="#send-a-sighup-signal" title="Permalink to this headline">¶</a></h4>
-<p>Sending a SIGHUP to the server will cause it to reload.</p>
-<div class="highlight-none"><div class="highlight"><pre>$ ps aux  | grep napixd
+<p>Sending a SIGHUP to the server will cause it to reload:</p>
+<div class="highlight-python"><pre>$ ps aux  | grep napixd
 napixd     13651  0.5  2.4  81000 12560 pts/3    Sl+  05:24   0:17 python bin/napixd
-$ kill -HUP 13651
-</pre></div>
+$ kill -HUP 13651</pre>
 </div>
 </div>
 <div class="section" id="use-inotify">

@@ -3520,7 +3520,7 @@ a.thumbnail:hover {
 .json-simple {
     color: blue;
 }
-.json-edit-body textarea {
+.json-edit-body textarea.text-edit {
     width : 300px;
     height: 150px;
 }
@@ -3548,4 +3548,7 @@ a.thumbnail:hover {
 }
 .path {
     white-space: nowrap;
+}
+.download {
+    float:right;
 }

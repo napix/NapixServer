@@ -1,0 +1,43 @@
+//depends : Backbone ExplorerView ConsoleView jQuery SelectorsView
+//depends-js : backbone.js explorer.js console.js jquery.js selectors.js
+
+/*global define:false */
+
+define([
+       'jQuery',
+       'Backbone',
+       'views/explorer/explorer',
+       'views/selectors',
+       'require',
+       'views/proof',
+       'libs/bootstrap'
+], function( $, Backbone, ExplorerView, SelectorsView, require, proof) {
+    "use strict";
+    var PanelsView = Backbone.View.extend({
+        el : 'body',
+        initialize : function() {
+            //this.explorer = new ExplorerView();
+            this.selectors = new SelectorsView();
+            $('#firstrun a').on( 'click', function() {
+                require(['views/firstrun'], function( firstrun ) { firstrun() ; } );
+            });
+            proof();
+        }
+    });
+    //************************* Application ****************************
+
+    var AppRouter = Backbone.Router.extend({
+        initialize : function( ) {
+            this.panels = new PanelsView();
+            //this.panels.explorer.bind( 'selected', this.navigate, this);
+        },
+        routes : {
+            '*path/' : 'goToPath',
+            '*path' : 'goToPath'
+        },
+        goToPath : function( path) {
+            //this.panels.explorer.goToPath( path[0] !== '/' ? '/' + path : path);
+        }
+    });
+    return AppRouter;
+});

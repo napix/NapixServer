@@ -1,0 +1,153 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Store implementations &mdash; Napix 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Napix 0.1 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="module-store.backends"></span><div class="section" id="store-implementations">
+<h1>Store implementations<a class="headerlink" href="#store-implementations" title="Permalink to this headline">¶</a></h1>
+<p>Implementations of <tt class="xref py py-class docutils literal"><span class="pre">StoreBackend</span></tt>.</p>
+<div class="section" id="asynchronous-implementations">
+<h2>Asynchronous implementations<a class="headerlink" href="#asynchronous-implementations" title="Permalink to this headline">¶</a></h2>
+<p>Synchronous implementations needs the user to call <tt class="xref py py-meth docutils literal"><span class="pre">.save</span></tt>
+on the store after a modification has been made.</p>
+<dl class="class">
+<dt id="store.backends.FileStore">
+<em class="property">class </em><tt class="descclassname">store.backends.</tt><tt class="descname">FileStore</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#store.backends.FileStore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store based on files.
+The collection is a file containing pickled datas.</p>
+<p>It takes an optional <cite>path</cite> argument that indicates the directory which contains
+the collections.
+If it is not given, the configuration key <tt class="docutils literal"><span class="pre">Napix.storage.file.path</span></tt> is used.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="store.backends.RedisStore">
+<em class="property">class </em><tt class="descclassname">store.backends.</tt><tt class="descname">RedisStore</tt><big>(</big><em>host</em>, <em>port</em><big>)</big><a class="headerlink" href="#store.backends.RedisStore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store based on a key in a Redis server.</p>
+<p>It takes optional <cite>host</cite> and <cite>port</cite> arguments to indicate to which server it connects to.
+If they are not given, the configuration key <tt class="docutils literal"><span class="pre">Napix.storage.redis.{host,port}</span></tt> are used.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="synchronous-implementations">
+<h2>Synchronous implementations<a class="headerlink" href="#synchronous-implementations" title="Permalink to this headline">¶</a></h2>
+<p>Asynchronous implementations directly commit the modifications to the underlying persistance support.
+Setting a value from a place and getting it after returns the same data,
+whatever the order of the creation of the stores.</p>
+<dl class="class">
+<dt id="store.backends.RedisHashStore">
+<em class="property">class </em><tt class="descclassname">store.backends.</tt><tt class="descname">RedisHashStore</tt><big>(</big><em>host</em>, <em>port</em><big>)</big><a class="headerlink" href="#store.backends.RedisHashStore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store based on Redis Hashes.
+Every value of the store is a value of a Redis hash.</p>
+<p>cf <a class="reference internal" href="#store.backends.RedisStore" title="store.backends.RedisStore"><tt class="xref py py-class docutils literal"><span class="pre">RedisStore</span></tt></a> for the keyword arguments and connection options.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="store.backends.RedisKeyStore">
+<em class="property">class </em><tt class="descclassname">store.backends.</tt><tt class="descname">RedisKeyStore</tt><big>(</big><em>host</em>, <em>port</em><big>)</big><a class="headerlink" href="#store.backends.RedisKeyStore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store based on Redis keys
+Every value of the store is a value of a Redis key.</p>
+<p>cf <a class="reference internal" href="#store.backends.RedisStore" title="store.backends.RedisStore"><tt class="xref py py-class docutils literal"><span class="pre">RedisStore</span></tt></a> for the keyword arguments and connection options.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Store implementations</a><ul>
+<li><a class="reference internal" href="#asynchronous-implementations">Asynchronous implementations</a></li>
+<li><a class="reference internal" href="#synchronous-implementations">Synchronous implementations</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/store.backends.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Grégoire ROCHER.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

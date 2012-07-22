@@ -26,7 +26,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Napix 0.1 documentation" href="index.html" />
-    <link rel="next" title="Managers actions" href="actions.html" />
+    <link rel="next" title="Managers Extension" href="extensions.html" />
     <link rel="prev" title="Howto write a Napix module with the low level interface" href="low_level.html" /> 
   </head>
   <body>
@@ -40,7 +40,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="actions.html" title="Managers actions"
+          <a href="extensions.html" title="Managers Extension"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="low_level.html" title="Howto write a Napix module with the low level interface"
@@ -75,7 +75,7 @@ The user can also set the logins and the passwords in another file in <tt class=
 │   │   └── .htaccess
 │   └── client2/
 │       └── .htaccess
-└── passwords
+└── passwords/
     ├── client1
     └── client2</pre>
 </div>
@@ -94,49 +94,50 @@ AuthUserFile /var/http/passwords/*name*
 <p>You can see in the code that a key <tt class="docutils literal"><span class="pre">authuserfile</span></tt> key is added to the resources dict.
 This key won&#8217;t be exported to the users who make a GET request,
 but it will be passed to the managed resources spawned.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">HTAccessManager</span><span class="p">(</span> <span class="n">Manager</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Manages the protection of the directories of the users &quot;&quot;&quot;</span>
+<div class="highlight-python"><pre>class HTAccessManager( Manager):
+    """ Manages the protection of the directories of the users """
 
-    <span class="n">resource_fields</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s">&#39;enabled&#39;</span> <span class="p">:</span> <span class="p">{</span>
-                <span class="s">&#39;description&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
-                <span class="s">&#39;example&#39;</span><span class="p">:</span> <span class="bp">True</span>
-                <span class="p">},</span>
-            <span class="s">&#39;authname&#39;</span> <span class="p">:</span> <span class="p">{</span>
-                <span class="s">&#39;description&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
-                <span class="s">&#39;example&#39;</span><span class="p">:</span> <span class="s">&#39;Please enter your login and password&#39;</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span> <span class="n">enabled</span><span class="p">)</span>
+    resource_fields = {
+            'enabled' : {
+                'description': '',
+                'example': True
+                },
+            'authname' : {
+                'description': '',
+                'example': 'Please enter your login and password'
+                }
+            }
+        return bool( enabled)
 
-    <span class="k">def</span> <span class="nf">get_resource</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">id_</span><span class="p">):</span>
-        <span class="c">#get the file path</span>
-        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">VHOSTPATH</span><span class="p">,</span> <span class="n">id_</span><span class="p">,</span> <span class="s">&#39;.htaccess&#39;</span><span class="p">)</span>
-        <span class="c">#initialize an empty resource</span>
-        <span class="n">resource</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s">&#39;enabled&#39;</span> <span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
-                <span class="s">&#39;authname&#39;</span> <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
-                <span class="s">&#39;authuserfile&#39;</span> <span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">PASSPATH</span><span class="p">,</span> <span class="n">id_</span><span class="p">)</span>
-                <span class="p">}</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="c">#try to open</span>
-            <span class="n">handle</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span> <span class="n">path</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">VHOSTPATH</span><span class="p">,</span> <span class="n">id_</span><span class="p">)):</span>
-                <span class="c">#in case of failure, return the empty resource if the vhost exists </span>
-                <span class="k">return</span> <span class="n">resource</span>
-            <span class="c">#else indicate that it is not found.</span>
-            <span class="k">raise</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">id_</span>
+    def get_resource( self, id_):
+        #get the file path
+        path = os.path.join( self.VHOSTPATH, id_, '.htaccess')
+        #initialize an empty resource
+        resource = {
+                'enabled' : False,
+                'authname' : '',
+                'authuserfile' : os.path.join( self.PASSPATH, id_)
+                }
+        try:
+            #try to open
+            handle = open( path, 'r')
+        except IOError:
+            if os.path.isdir( os.path.join( self.VHOSTPATH, id_)):
+                #in case of failure, return the empty resource if the vhost exists 
+                return resource
+            #else indicate that it is not found.
+            raise NotFound, id_
 
-        <span class="c">#parse the file.</span>
-        <span class="n">lines</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span> <span class="nb">str</span><span class="o">.</span><span class="n">strip</span><span class="p">,</span> <span class="n">lines</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span> <span class="s">&#39;Require&#39;</span><span class="p">):</span>
-                <span class="n">resource</span><span class="p">[</span><span class="s">&#39;enabled&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
-            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span> <span class="s">&#39;AuthName&#39;</span><span class="p">):</span>
-                <span class="n">x</span><span class="p">,</span> <span class="n">resource</span><span class="p">[</span><span class="s">&#39;authname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">resource</span>
-</pre></div>
+        #parse the file.
+        lines = handle.readlines()
+        for line in map( str.strip, lines):
+            if line.startswith( 'Require'):
+                resource['enabled'] = True
+            if line.startswith( 'AuthName'):
+                x, resource['authname'] = line.split(' ',1)
+        return resource
+
+</pre>
 </div>
 </div>
 <div class="section" id="passwordsmanager">
@@ -192,7 +193,7 @@ managed_class = 'PasswordsManager'
 </div>
 <p>The first methods is recommended, as it let add another submanager without compatibility problems.
 The change only impacts URL, it has no incidence on the manager.
-A managers plugged with the first method can be plugged with the second method without any change.</p>
+A manager plugged with the first method can be plugged with the second method without any change.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p>Those two lines are almost equivalent.
@@ -306,8 +307,8 @@ $ curl -s -X GET  "server.napix.nx:8002/htaccess/client/passwords/jason?authok" 
   <p class="topless"><a href="low_level.html"
                         title="previous chapter">Howto write a Napix module with the low level interface</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="actions.html"
-                        title="next chapter">Managers actions</a></p>
+  <p class="topless"><a href="extensions.html"
+                        title="next chapter">Managers Extension</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/submanagers.txt"
@@ -340,7 +341,7 @@ $ curl -s -X GET  "server.napix.nx:8002/htaccess/client/passwords/jason?authok" 
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="actions.html" title="Managers actions"
+          <a href="extensions.html" title="Managers Extension"
              >next</a> |</li>
         <li class="right" >
           <a href="low_level.html" title="Howto write a Napix module with the low level interface"

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Thread manager &mdash; Napix 0.1 documentation</title>
+    <title>Asynchronous tasks &mdash; Napix 0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -27,7 +27,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Napix 0.1 documentation" href="index.html" />
     <link rel="next" title="Executor" href="executor.html" />
-    <link rel="prev" title="Actions" href="managers.action.html" /> 
+    <link rel="prev" title="Views on resources" href="managers.views.html" /> 
   </head>
   <body>
     <div class="related">
@@ -43,7 +43,7 @@
           <a href="executor.html" title="Executor"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="managers.action.html" title="Actions"
+          <a href="managers.views.html" title="Views on resources"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>
@@ -54,8 +54,10 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <span class="target" id="module-thread_manager"></span><div class="section" id="thread-manager">
-<h1>Thread manager<a class="headerlink" href="#thread-manager" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-thread_manager"></span><div class="section" id="asynchronous-tasks">
+<h1>Asynchronous tasks<a class="headerlink" href="#asynchronous-tasks" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="thread-manager">
+<h2>Thread manager<a class="headerlink" href="#thread-manager" title="Permalink to this headline">¶</a></h2>
 <p>The thread manager is a tool that manages thread activity in background.</p>
 <dl class="data">
 <dt id="thread_manager.thread_manager">
@@ -87,7 +89,7 @@
 <p>The function is called with the thread instance as first argument.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">deploy_file</span><span class="p">(</span> <span class="n">thread</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="o">*</span><span class="n">servers</span><span class="p">,</span> <span class="n">login</span><span class="o">=</span><span class="s">&#39;root&#39;</span><span class="p">,</span> <span class="n">ssh_key</span><span class="o">=</span><span class="s">&#39;~/.ssh/id_rsa&#39;</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">servers</span><span class="p">:</span>
-        <span class="c">#***</span>
+        <span class="c">#...</span>
 
 <span class="n">thread_manager</span><span class="o">.</span><span class="n">do_async</span><span class="p">(</span> <span class="n">deploy_file</span><span class="p">,</span>
     <span class="n">fn_args</span> <span class="o">=</span> <span class="p">[</span> <span class="s">&#39;/var/http/static/background.png&#39;</span><span class="p">,</span> <span class="s">&#39;host1.example.net&#39;</span><span class="p">,</span> <span class="s">&#39;host2.example.net&#39;</span> <span class="p">],</span>
@@ -174,7 +176,7 @@ and then gets by FINISHING during on_end and finish by FINISHING.</p>
 
 </div>
 <div class="section" id="background">
-<h1>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h1>
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
 <p>The background object is a decorator that will run the decorated function in another thread.</p>
 <dl class="function">
 <dt id="thread_manager.background">
@@ -217,6 +219,7 @@ It&#8217;s false by default so the threads are not given to the called function.
 </dd></dl>
 
 </div>
+</div>
 
 
           </div>
@@ -226,13 +229,16 @@ It&#8217;s false by default so the threads are not given to the called function.
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Thread manager</a></li>
+<li><a class="reference internal" href="#">Asynchronous tasks</a><ul>
+<li><a class="reference internal" href="#thread-manager">Thread manager</a></li>
 <li><a class="reference internal" href="#background">Background</a></li>
+</ul>
+</li>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="managers.action.html"
-                        title="previous chapter">Actions</a></p>
+  <p class="topless"><a href="managers.views.html"
+                        title="previous chapter">Views on resources</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="executor.html"
                         title="next chapter">Executor</a></p>
@@ -271,7 +277,7 @@ It&#8217;s false by default so the threads are not given to the called function.
           <a href="executor.html" title="Executor"
              >next</a> |</li>
         <li class="right" >
-          <a href="managers.action.html" title="Actions"
+          <a href="managers.views.html" title="Views on resources"
              >previous</a> |</li>
         <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
       </ul>

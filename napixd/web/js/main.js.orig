@@ -1,0 +1,52 @@
+/*global define:false, require:false, document:false */
+
+require.config({
+    paths: {
+        jquery: 'libs/jquery',
+        underscore : 'libs/underscore/underscore',
+        'underscore-extensions' : 'libs/underscore/underscore-extensions',
+        Backbone: 'libs/backbone/backbone',
+        kinetic : 'libs/kinetic'
+    },
+    map : {
+        '*' : {
+            'ajax' : 'jquery',
+            'jQuery' : 'jquery'
+        }
+    },
+    shim : {
+        kinetic : {
+            exports : 'Kinetic'
+        },
+        bootstrap : {
+            deps : [ 'jQuery' ]
+        },
+        Backbone : {
+            deps : [ 'jQuery', 'underscore'],
+            exports : 'Backbone'
+        },
+        'libs/jssha' : {
+            exports : 'jsSHA'
+        },
+        underscore : {
+            exports : '_'
+        },
+        'underscore-extensions' : [ 'underscore' ]
+    }
+});
+
+require(
+    [ 'Backbone', 'jQuery', 'views/napix-ui' ],
+    function( Backbone, $, AppRouter ) {
+        "use strict";
+        var _app = null;
+        var makeapp = function() {
+            if ( ! _app ) {
+                _app = new AppRouter();
+                Backbone.history.start();
+            }
+            return _app;
+        };
+        $(document).ready( makeapp );
+        return makeapp;
+    });

@@ -56,7 +56,8 @@
             
   <div class="section" id="howto-write-napix-modules">
 <span id="high-level"></span><h1>Howto write Napix modules<a class="headerlink" href="#howto-write-napix-modules" title="Permalink to this headline">¶</a></h1>
-<p>Considering that you already read <a class="reference internal" href="first_step.html#first-step"><em>The first steps guide</em></a>, this page deals with more advanced topics.</p>
+<p>Considering that you already read <a class="reference internal" href="first_step.html#first-step"><em>The first steps guide</em></a>,
+this page deals with more advanced topics.</p>
 <p>The example of this page is an host file manager.
 This manager get the hosts file, extracts from each line the IP and the hostnames.
 Even though it may be a questionable choice,
@@ -68,7 +69,7 @@ the id is the number of the line in the file as it allow to keep the comments.</
 <p>In order to write this module you have to write a <tt class="docutils literal"><span class="pre">manager</span></tt> and install it in the Napix server.
 A Napix module may be in every place that is accessible in the python path.
 Napix automatically tries to load every module in <tt class="file docutils literal"><em><span class="pre">HOME</span></em><span class="pre">/auto</span></tt>.</p>
-<p>The napix daemon display its home in the log and the console.:</p>
+<p>The napixd daemon display its home in the log and the console.:</p>
 <div class="highlight-python"><pre>(napix)$ bin/napixd
 ...
 Found napixd home at /home/user/NapixServer
@@ -133,7 +134,7 @@ as a template to create a new one and for documentation purposes.</p>
 </div>
 <div class="section" id="loading-the-resources">
 <h3>Loading the resources<a class="headerlink" href="#loading-the-resources" title="Permalink to this headline">¶</a></h3>
-<p>In order to get the resources, you have to define the <a class="reference internal" href="managers.default.html#managers.default.ReadOnlyDictManager.load" title="managers.default.ReadOnlyDictManager.load"><tt class="xref py py-meth docutils literal"><span class="pre">load()</span></tt></a> method.
+<p>In order to get the resources, you have to define the <a class="reference internal" href="managers.default.html#managers.default.ReadOnlyDictManager.load" title="managers.default.ReadOnlyDictManager.load"><tt class="xref py py-meth docutils literal"><span class="pre">ReadOnlyDictManager.load()</span></tt></a> method.
 This method must return a dictionary of the resources indexed by their keys.</p>
 <p>For the manager we are writing, we will use the line number as an index.
 Since we install our manager in the root of the service,
@@ -169,7 +170,7 @@ we will ignore the parent parameter in the load and save methods.</p>
 <p>At this point, the resources can be listed, got, deleted and modified.
 In order to add new resources, the manager must be able to generate the corresponding ID
 of a new resources.
-You have to write the method <a class="reference internal" href="managers.default.html#managers.default.DictManager.generate_new_id" title="managers.default.DictManager.generate_new_id"><tt class="xref py py-meth docutils literal"><span class="pre">generate_new_id()</span></tt></a> that will return the id of the new resource
+You have to write the method <a class="reference internal" href="managers.default.html#managers.default.DictManager.generate_new_id" title="managers.default.DictManager.generate_new_id"><tt class="xref py py-meth docutils literal"><span class="pre">DictManager.generate_new_id()</span></tt></a> that will return the id of the new resource
 knowing its dictionary.</p>
 <p>You may choose to get a UUID, a sequence number, a value from the dictionary, etc,
 as long as this id will allow to query the same object in the future, and will be persisted.</p>
@@ -275,6 +276,32 @@ When a value is incorrect, the method throws a <a class="reference internal" hre
 with a string describing the kind of error the user did.</p>
 <p>With the HostManager, we may want to check that users are sending an array of strings as the hostnames attribute
 and a valid and clean IP address for the ip attribute.</p>
+<div class="highlight-python"><div class="highlight"><pre>    <span class="k">def</span> <span class="nf">validate_resource_hostnames</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">hostnames</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">hostnames</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span>
+                <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">hostnames</span> <span class="p">])):</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Hostnames have to be an array of strings&#39;</span>
+        <span class="k">return</span> <span class="n">hostnames</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>    <span class="k">def</span> <span class="nf">validate_resource_ip</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ip</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span> <span class="n">ip</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;ip have to be a string&#39;</span>
+        <span class="n">ip_components</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ip_components</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="c"># 123.45.67 is not an ip</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Not an ip 1&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ip_components</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="n">ip_components</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="c">#123.45.lol.99 is not an ip</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Not an ip 2&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="mi">255</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ip_components</span><span class="p">]):</span>
+            <span class="c">#123.45.67.890 is not an ip</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="s">&#39;Not an ip 3&#39;</span>
+        <span class="c">#filter the useless 0 out of 123.045.012.001</span>
+        <span class="k">return</span> <span class="s">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="n">ip_components</span><span class="p">))</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="id1">
 <h3>Resulting file<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>

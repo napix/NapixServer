@@ -34,7 +34,7 @@ pyinotify (optional)
 sphinx (optional)
     Autogeneration of the documentation
 
-.. code-block:: bash
+The installation procedure looks like this::
 
     # apt-get install python python-virtualenv python-pip
     $ virtualenv napix
@@ -94,9 +94,9 @@ Auto-loading
 ^^^^^^^^^^^^
 
 If there is a file ending by **.py** in a auto-detect folder
-of the Napix setup (/var/lib/napix/auto or NapixServer/auto),
-the Napix loader will import this python file and add all the subclasses of :py:class:`managers.Manager` in the available managers.
-The auto loaded managers may override the classmethod :py:meth:`~managers.Manager.detect`
+of the Napix setup (:file:`/var/lib/napix/auto` or :file:`NapixServer/auto`),
+the Napix loader will import this python file and add all the subclasses of :class:`managers.Manager` in the available managers.
+The auto loaded managers may override the classmethod :meth:`~managers.Manager.detect`
 which tells if the managers should be loaded.
 By default detect return True when the class is not a base method defined inside Napix.
 
@@ -110,7 +110,7 @@ Napix proposes an option to reload the modules without stopping the server.
 When the reload is triggered, the configuration is reparsed.
 The autoload directories are scanned again.
 
-The automatic reloading is disabled when Napix.loader.reload is set to false.
+The automatic reloading is disabled when ``Napix.loader.reload`` is set to false.
 
 GET /_napix_reload
 ..................
@@ -121,9 +121,7 @@ It is useful for a developer, he just refreshes /_napix_reload then refreshes hi
 Send a SIGHUP signal
 ....................
 
-Sending a SIGHUP to the server will cause it to reload.
-
-.. code-block:: none
+Sending a SIGHUP to the server will cause it to reload::
 
     $ ps aux  | grep napixd
     napixd     13651  0.5  2.4  81000 12560 pts/3    Sl+  05:24   0:17 python bin/napixd
