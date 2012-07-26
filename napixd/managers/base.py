@@ -197,7 +197,14 @@ class Manager(object):
 
     @classmethod
     def get_name(cls):
-        return cls.name or cls.__name__.lower()
+        return cls.name or cls._make_name()
+    @classmethod
+    def _make_name(cls):
+        name = cls.__name__.lower()
+        if name.endswith('manager'):
+            name = name[:-len('manager')]
+        cls.name = name
+        return cls.name
 
     def __init__(self,parent):
         """
