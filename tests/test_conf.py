@@ -48,21 +48,30 @@ class TestConfLoader( unittest2.TestCase ):
 
     @classmethod
     def setUpClass( cls ):
-        cls.old_open = __builtin__.open
+        cls.old_open = Conf.open
     @classmethod
     def tearDownClass( cls):
-        __builtin__.open = cls.old_open
+        Conf.open = cls.old_open
 
     def setUp(self):
-        __builtin__.open = self.open
+        Conf.open = self._open
         self.calls = []
 
-    def open(self, filename, mode='r'):
+    def _open(self, filename, mode='r'):
         self.calls.append( filename )
         if not filename in self.filesystem:
             raise IOError, 'No such file or directory'
         else:
             return StringIO( self.filesystem[filename])
+
+    def test_bad_json(self):
+        self.filesystem = {
+                '/etc/napixd/settings.json': self.bad_json,
+                 self.conf_file : self.good_json2
+                }
+        conf = Conf.make_default()
+        self.assertTrue( 'v' in conf['json'])
+        self.assertEqual( conf.get('json.v'), 2)
 
     def test_load_system(self):
         self.filesystem = {
@@ -97,6 +106,21 @@ class TestConfLoader( unittest2.TestCase ):
         self.assertEqual( Conf.get_default(), { 'json' : { 'v' : 1} } )
         self.assertEqual( Conf.get_default('json'), { 'v' : 1} )
         self.assertEqual( Conf.get_default('json.v'), 1)
+
+    def test_no_file(self):
+        self.filesystem = { }
+        conf = Conf.make_default()
+        self.assertEqual( conf.keys(), [])
+
+
+    def test_force(self):
+        self.filesystem = {
+                self.conf_file : self.good_json1
+                }
+        conf = Conf.make_default()
+        self.assertEqual( Conf.get_default('json.v'), 1)
+        with conf.force( 'json.v', 3):
+            self.assertEqual( Conf.get_default('json.v'), 3)
 
 if __name__ == '__main__':
     unittest2.main()

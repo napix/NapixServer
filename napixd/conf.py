@@ -6,12 +6,14 @@ import json
 import os.path
 import UserDict
 import napixd
+from contextlib import contextmanager
 
 logger = logging.getLogger('Napix.conf')
 
 class Conf(UserDict.UserDict):
     _default = None
 
+    open = staticmethod(open)
     paths = [
             '/etc/napixd/',
             os.path.realpath( os.path.join( napixd.HOME, 'conf')),
@@ -33,7 +35,7 @@ class Conf(UserDict.UserDict):
         for path in cls.paths :
             path = os.path.join( path, 'settings.json')
             try:
-                handle = open( path, 'r' )
+                handle = cls.open( path, 'r' )
                 if conf:
                     logger.warning('Stumbled upon configuration file candidate %s,'+
                             ' but conf is already loaded', path)
@@ -48,7 +50,7 @@ class Conf(UserDict.UserDict):
         if not conf:
             logger.warning( 'Did not find any configuration, trying default conf')
             try:
-                conf = json.load( open( 'default_conf/settings.json'))
+                conf = json.load( cls.open( 'default_conf/settings.json'))
             except IOError:
                 logger.error( 'Did not find any configuration at all')
                 conf = {}
@@ -71,3 +73,21 @@ class Conf(UserDict.UserDict):
         if isinstance( value, dict):
             return Conf(value)
         return value
+
+    def _set(self, item, value):
+        self._do_set( self.data, item, value)
+
+    def _do_set(self, dataset, item, value):
+        if '.' in item :
+            prefix, x, suffix = item.partition('.')
+            self._do_set( dataset[prefix], suffix, value )
+        else:
+            dataset[item] = value
+
+    @contextmanager
+    def force(self, param, value):
+        old_value = self.get( param)
+        self._set( param, value)
+        yield
+        self._set( param, old_value)
+
