@@ -82,6 +82,16 @@ class TestServiceBase(unittest2.TestCase):
         self.assertEqual(resp.headers.get('Location'),url)
         return resp
 
+    def _expect_redirect(self, request, url, code=301):
+        try:
+            resp = self._do_the_request(request)
+        except bottle.HTTPResponse,e:
+            resp = e
+
+        self.assertEqual(resp.status, 301)
+        self.assertEqual(resp.headers.get('Location'),url)
+
+
     def _expect_ok(self,request):
         req = self._request(request)
         self.assertTrue(req is None)

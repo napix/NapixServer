@@ -420,6 +420,14 @@ class ServiceRequest(object):
         except Duplicate,e:
             raise HTTPError(409,'`%s` already exists'%str(e))
 
+    def make_url(self,result):
+        url = ''
+        path = list(self.path)
+        path.append(result)
+        for service,id_ in zip(self.service.services,path):
+            url += '/'+service.get_token(id_)
+        return url
+
 class ServiceCollectionRequest(ServiceRequest):
     """
     ServiceCollectionRequest is an implementation of ServiceRequest specified for Collection requests (urls ending with /)
@@ -445,14 +453,6 @@ class ServiceCollectionRequest(ServiceRequest):
         else:
             return result
 
-    def make_url(self,result):
-        url = ''
-        path = list(self.path)
-        path.append(result)
-        for service,id_ in zip(self.service.services,path):
-            url += '/'+service.get_token(id_)
-        return url
-
 class ServiceResourceRequest(ServiceRequest):
     """
     ServiceResourceRequest is an implementation of ServiceRequest specified for Ressource requests (urls not ending with /)
@@ -465,6 +465,11 @@ class ServiceResourceRequest(ServiceRequest):
         }
 
     def serialize( self, result):
+        if self.method == 'PUT' and result != None :
+            new_url = self.make_url(result)
+            if new_url != self.request.path:
+                return bottle.HTTPError(301, None, header={ 'Location': new_url} )
+            return None
         if self.method != 'GET':
             return result
         format_ = self.request.GET.get('format', None )

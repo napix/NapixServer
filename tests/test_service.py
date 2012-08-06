@@ -8,6 +8,7 @@ from mock.managed_class import Paragraphs,STORE
 from mock.request import POST,PUT,GET,DELETE
 from bases import TestServiceBase
 
+from napixd.managers import Manager
 from napixd.services import Service
 from napixd.loader import NapixdBottle
 
@@ -148,6 +149,27 @@ class TestSerializers(TestServiceBase):
     def test_object_bad_type(self):
         self._expect_error( POST( '/players/', name=[ 'koala' ], score=23.12), 400)
 
+
+class PutManager(Manager):
+    resource_fields = { 'a' : {} }
+    def modify_resource( self, resource_id, resource_dict):
+        if resource_id in '12':
+            return 2
+        else:
+            return
+
+class TestPut(TestServiceBase):
+    def setUp(self):
+        self.bottle = NapixdBottle([ Service(PutManager) ],
+                no_conversation = True)
+        self.bottle.setup_bottle()
+
+    def test_same_id(self):
+        self._expect_ok( PUT('/put/2', a='b'))
+    def test_different_id(self):
+        self._expect_redirect( PUT('/put/1', a='b'), '/put/2')
+    def test_none(self):
+        self._expect_ok( PUT('/put/3', a='b'))
 
 if __name__ == '__main__':
     unittest2.main()
