@@ -68,18 +68,20 @@ class TestServiceBase(unittest2.TestCase):
         try:
             resp = self._do_the_request(request)
         except bottle.HTTPError,e:
-            self.assertEqual(e.status,code)
-            return e
-        else:
-            self.fail('Unexpected %s'%repr(resp))
+            resp = e
+
+        self.assertEqual(resp.status,code)
+        return resp
+
     def _expect_created(self,request,url):
         try:
             resp = self._do_the_request(request)
         except bottle.HTTPResponse,e:
-            self.assertEqual(e.status, 201)
-            self.assertEqual(e.headers['Location'],url)
-        else:
-            self.fail('Unexpected %s'%repr(resp))
+            resp = e
+        self.assertEqual(resp.status, 201)
+        self.assertEqual(resp.headers.get('Location'),url)
+        return resp
+
     def _expect_ok(self,request):
         req = self._request(request)
         self.assertTrue(req is None)

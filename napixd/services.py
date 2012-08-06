@@ -390,6 +390,9 @@ class ServiceRequest(object):
             m.end_managed_request( self.request, i, r)
             m.end_request( self.request)
 
+    def serialize( self, result):
+        return result
+
     def handle(self):
         """
         Actually handle the request.
@@ -409,7 +412,7 @@ class ServiceRequest(object):
             result = self.call(callback,args)
 
             self.end_request()
-            return result
+            return self.serialize(result)
         except ValidationError,e:
             raise HTTPError(400,str(e))
         except NotFound,e:
@@ -431,15 +434,17 @@ class ServiceCollectionRequest(ServiceRequest):
         if self.method == 'POST':
             return (datas,)
         return tuple()
-    def handle(self):
-        result = super(ServiceCollectionRequest,self).handle()
+
+    def serialize( self, result):
         if self.method == 'POST':
             url = self.make_url(result)
-            raise bottle.HTTPError(201, None, header={
+            return bottle.HTTPError(201, None, header={
                 'Location': url} )
-        if self.method == 'GET':
+        elif self.method == 'GET':
             return map(self.make_url,result)
-        return result
+        else:
+            return result
+
     def make_url(self,result):
         url = ''
         path = list(self.path)
@@ -458,15 +463,15 @@ class ServiceResourceRequest(ServiceRequest):
             'HEAD' : 'get_resource',
             'DELETE':'delete_resource',
         }
-    def get_callback( self, manager):
-        callback = super(ServiceResourceRequest, self).get_callback(manager)
+
+    def serialize( self, result):
         if self.method != 'GET':
-            return callback
+            return result
         format_ = self.request.GET.get('format', None )
+        if not format_:
+            return self.default_formatter( result)
         try:
-            formatter = ( manager.get_formatter( format_)
-                    if format_
-                    else self.default_formatter )
+            formatter = self.manager.get_formatter( format_)
         except KeyError:
             message = 'Cannot render %s.' % format_
             all_formats = self.service.collection.get_all_formats()
@@ -474,22 +479,18 @@ class ServiceResourceRequest(ServiceRequest):
                 message = '{0} Available formats {1}: {2} '.format(
                         message, 'is' if len( all_formats) <= 1 else 'are',
                         ','.join(all_formats.keys()))
-            raise HTTPError( 406, message)
+            return HTTPError( 406, message)
 
-        def outer(callback, formatter):
-            def inner(*args,**kw):
-                result = callback( *args, **kw)
-                response = Response()
-                result = formatter( self.resource_id, result, response)
-                if result is None or result is response:
-                    if not response.is_empty():
-                        response.seek(0)
-                    return response
-                return result
-            return inner
-        return outer( callback, formatter)
+        response = Response()
+        result = formatter( self.resource_id, result, response)
+        if result is None or result is response:
+            if not response.is_empty():
+                response.seek(0)
+            return response
+        else:
+            return result
 
-    def default_formatter(self, id_, value, response):
+    def default_formatter(self, value):
         resp = self.manager.serialize( value )
         for key,meta in self.manager.resource_fields.items():
             if callable(meta.get('serializer')):

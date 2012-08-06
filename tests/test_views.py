@@ -23,7 +23,7 @@ class TestView(TestServiceBase):
         req = GET( '/p/cat/cat/l/a')
         req.GET = { 'format' : 'xml' }
         resp = self._request( req)
-        self.assertEqual( resp.headers['content-type'], 'application/xml')
+        self.assertEqual( resp.headers.get('Content-Type'), 'application/xml')
         self.assertEqual( resp.read(), '<letter ord="97">a</letter>')
 
     def test_response_empty(self):
