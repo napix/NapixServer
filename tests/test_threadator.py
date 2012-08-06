@@ -19,6 +19,7 @@ def notthingtask():
 def exceptiontask():
     raise Exception,444
 def itisathread( thread):
+    thread.status = 'doing'
     return thread.execution_state
 
 class TestThreadator(unittest.TestCase):
@@ -39,6 +40,7 @@ class TestThreadator(unittest.TestCase):
     def testGivenThread(self):
         thread = self.thread_manager.do_async( itisathread, give_thread=True)
         thread.join()
+        self.assertEqual( thread.status, 'doing')
         self.assertEqual( thread.result, 'RUNNING')
 
     def testAttributes(self):

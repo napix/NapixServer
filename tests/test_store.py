@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 import unittest2
 from mock.store_backend import MockStore
 
@@ -58,7 +57,7 @@ class TestStore( unittest2.TestCase):
         self.assertEqual( store.get('a',False), False)
 
     def testImportAbsoluteStore(self):
-        store = Store('collection', backend='mock.store_backend.MockStore')
+        store = Store('collection', backend='tests.mock.store_backend.MockStore')
         self.assertTrue( isinstance( store, MockStore))
         store.collection = 'collection'
 
@@ -144,5 +143,3 @@ class TestRedisKeyStore(BaseTestStore, unittest2.TestCase):
     store_class = RedisKeyStore
     testNotSave = unittest2.expectedFailure( BaseTestStore.testNotSave)
 
-if __name__ == '__main__':
-    unittest2.main()

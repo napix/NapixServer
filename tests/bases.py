@@ -6,7 +6,9 @@ import unittest2
 from cStringIO import StringIO
 
 class WSGITester(unittest2.TestCase):
-    def _make_env( self, method, url, body=None, localhost = True, auth=None, url_encoded = False):
+    def _make_env( self, method, url,
+            body=None, localhost = True, auth=None,
+            url_encoded = False,query='', agent=''):
         body_ = StringIO()
         if body:
             body_.write(body)
@@ -15,9 +17,11 @@ class WSGITester(unittest2.TestCase):
                 'wsgi.input' :body_,
                 'wsgi.errors' : open('/dev/null','w'),
                 'PATH_INFO': url,
+                'QUERY_STRING' : query,
                 'HTTP_HOST': 'napix.test',
                 'REQUEST_METHOD': method,
                 'SERVER_PROTOCOL' : 'HTTP/1.1',
+                'HTTP_USER_AGENT' : agent,
                 'HTTP_REMOTE_HOST' : localhost  and '127.0.0.1' or '1.2.3.4',
                 'HTTP_AUTHORIZATION' : auth or '',
                 'CONTENT_TYPE' : ( url_encoded and 'application/x-www-form-urlencoded'

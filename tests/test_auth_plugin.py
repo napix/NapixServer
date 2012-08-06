@@ -4,7 +4,8 @@
 
 import unittest2
 
-from mock.http_client import MockHTTPClient
+from mock.http_client import MockHTTPClient, MockHTTPClientError
+from napixd.conf import Conf
 from bases import WSGITester
 
 from napixd.plugins import AAAPlugin
@@ -61,6 +62,18 @@ class TestAAAPluginSuccess(WSGITester):
         self.assertEqual( status, 401)
         self.assertEqual( result, 'Incorrect NAPIX Authentication')
 
+    def testDebugNoauth(self):
+        with Conf.get_default().force( 'Napix.debug',True):
+            status, headers, result = self._do_request(
+                    self._make_env('GET', '/test', auth= False,query='authok'))
+        self.assertEqual( status, 200)
+
+    def testNodebugNoAuth(self):
+        with Conf.get_default().force( 'Napix.debug',False):
+            status, headers, result = self._do_request(
+                    self._make_env('GET', '/test', auth= False,query='authok'))
+        self.assertEqual( status, 401)
+
 class TestAAAPlugin(WSGITester):
     def setUp(self):
         self.bottle = NapixdBottle([ MockService() ])
@@ -86,6 +99,19 @@ class TestAAAPlugin(WSGITester):
         self.assertEqual( status, 403)
         self.assertEqual( headers['Content-Type'], 'text/plain')
         self.assertEqual( result, 'Access Denied')
+
+    def testFailed( self):
+        self.bottle.install(AAAPlugin(
+            {'auth_url': 'http://auth.napix.local/auth/authorization/' , 'service' : 'napix.test' },
+            MockHTTPClientError()))
+        status, headers, result = self._do_request(
+                self._make_env('GET', '/test', auth='host=napix.test:sign' ))
+        self.assertEqual( status, 500)
+        self.assertEqual( headers['Content-Type'], 'text/plain')
+        self.assertEqual( result, 'Auth server did not respond')
+
+
+
 
 
 if __name__ == '__main__':

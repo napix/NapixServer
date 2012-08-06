@@ -33,8 +33,8 @@ class TestAction(TestServiceBase):
             'mandatory': ['start'],
             'optional': {'end': None},
             'resource_fields': {
-                'end': {'description': '', 'example': '', 'optional': True},
-                'start': {'description': '', 'example': ''}}
+                'end': { 'description': '', 'example': 10, 'optional': True},
+                'start': {'description': 'index of the first character', 'example': 1 }}
             })
 
 

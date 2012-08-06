@@ -7,6 +7,7 @@ import json
 from napixd.conf import Conf
 from napixd.services import Service
 from napixd.loader import NapixdBottle
+from napixd.plugins import UserAgentDetector
 
 from mock.managed_class import Paragraphs
 from bases import WSGITester
@@ -67,6 +68,44 @@ class TestConversationPlugin(WSGITester):
         self.assertEqual( headers['Content-Type'], 'text/plain')
         self.assertEqual( result, 'Unable to load JSON object')
 
+    def testResponse(self):
+        env = self._make_env('GET', '/p/cat/cat/l/a',query='format=xml')
+        code, headers, result = self._do_request(env)
+        self.assertEqual( code, 200)
+        self.assertEqual( headers['Content-Type'], 'application/xml')
+        self.assertEqual( result, '<letter ord="97">a</letter>')
+
+    def testResponseEmpty(self):
+        env = self._make_env('GET', '/p/cat/cat/l/a',query='format=empty')
+        code, headers, result = self._do_request(env)
+        self.assertEqual( code, 200)
+        self.assertEqual( headers.get('My-Own-Header'), 'napix')
+
+class TestHumanPlugin(WSGITester):
+    def setUp(self):
+        self.bottle = NapixdBottle([ Service(Paragraphs,Conf({})) ])
+        self.bottle.install( UserAgentDetector())
+        self.bottle.setup_bottle()
+
+    def test_human_noauth(self):
+        env = self._make_env('GET', '/p/', auth=False, agent='Mozilla/5 blah blah')
+        code, headers, result = self._do_request(env)
+        self.assertEqual( headers['Content-Type'], 'text/html')
+
+    def test_human_debugauth(self):
+        env = self._make_env('GET', '/p/', auth=False, query='authok', agent='Mozilla/5 blah blah')
+        code, headers, result = self._do_request(env)
+        self.assertEqual( headers['Content-Type'], 'application/json')
+
+    def test_human_success_auth(self):
+        env = self._make_env('GET', '/p/', auth='host=napix.test:sign',agent='Mozilla/5 blah blah' )
+        code, headers, result = self._do_request(env)
+        self.assertEqual( headers['Content-Type'], 'application/json')
+
+    def test_bot_failed_auth(self):
+        env = self._make_env('GET', '/p/', auth=False, agent='Curl blah blah')
+        code, headers, result = self._do_request(env)
+        self.assertEqual( headers['Content-Type'], 'application/json')
 
 if __name__ == '__main__':
     unittest2.main()

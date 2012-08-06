@@ -51,9 +51,6 @@ class ManagerType(type):
                 if attribute_name[0] != '_' and hasattr(attribute,'_napix_view')
                 and attribute._napix_view and callable(attribute) )
 
-    def get_name(self):
-        return self.name
-
     def direct_plug( self ):
         return self._direct_plug
 

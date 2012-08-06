@@ -106,7 +106,7 @@ class CollectionService(object):
 
         self.all_actions = list(self.collection.get_all_actions())
 
-        self.resource_fields = dict( self.collection.resource_fields)
+        self.resource_fields = dict( (x,dict(y)) for x,y in self.collection.resource_fields.items())
         for field_meta in self.resource_fields.values():
             for callable_ in ( 'unserializer', 'serializer', 'type'):
                 if callable_ in field_meta:
@@ -343,12 +343,17 @@ class ServiceRequest(object):
             return {}
         data = {}
         for key, meta  in collection.resource_fields.items():
-            value = self.request.data.get(key)
+            if key in self.request.data:
+                value = self.request.data[key]
+            elif meta.get('optional',False) or meta.get('computed',False):
+                continue
+            else:
+                raise ValidationError, 'Missing argument `%s`' % key
             if 'unserializer' in meta:
                 value = meta['unserializer'](value)
             if 'type' in meta:
-                if isinstance( meta, type):
-                    raise ValidationError, 'key %s is not of type %s'
+                if not isinstance( value, meta['type']):
+                    raise ValidationError, 'key %s is not of type %s' %( key, meta['type'].__name__)
             data[key] = value
         data = collection.validate(data)
         return data
@@ -479,15 +484,17 @@ class ServiceResourceRequest(ServiceRequest):
                 if result is None or result is response:
                     if not response.is_empty():
                         response.seek(0)
-                        return response
-                    else:
-                        return None
+                    return response
                 return result
             return inner
         return outer( callback, formatter)
 
     def default_formatter(self, id_, value, response):
-        return self.manager.serialize( value )
+        resp = self.manager.serialize( value )
+        for key,meta in self.manager.resource_fields.items():
+            if callable(meta.get('serializer')):
+                resp[key] = meta['serializer'](resp[key])
+        return resp
 
     def get_args(self,datas):
         if self.method == 'PUT':

@@ -12,7 +12,7 @@ from napixd.connectors.django import ( DjangoImport,
         DjangoReadOperations, DjangoWriteOperations,
         DjangoRelatedModelManager, DjangoModelManager)
 
-with DjangoImport( 'mock.django_settings'):
+with DjangoImport( 'tests.mock.django_settings'):
     import mock.django_models as models
     from django.conf import settings
 

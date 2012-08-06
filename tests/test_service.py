@@ -3,6 +3,7 @@
 
 import unittest2
 
+from mock.manager_types import Players
 from mock.managed_class import Paragraphs,STORE
 from mock.request import POST,PUT,GET,DELETE
 from bases import TestServiceBase
@@ -80,9 +81,14 @@ class TestService(TestServiceBase):
             'language' : 'esperanto',
             'translated' : 'aferon'
             })
-        self._expect_dict(GET('/p/*/_napix_help'),{
+        actual_docs = self._request(GET('/p/*/_napix_help'))
+        expected_docs = {
             'absolute_url' : '/p/*/*',
-            'actions' : ['hash', 'reverse', 'split' ],
+            'actions' :  {
+                'hash' : 'Return the word hashed with the given function',
+                'reverse' : 'Reverse the word',
+                'split' : 'Extract the start from a string'
+                },
             'collection_methods': ['HEAD', 'GET'],
             'doc': 'Words of each paragrach',
             'human': '/_napix_autodoc/p.html',
@@ -91,7 +97,9 @@ class TestService(TestServiceBase):
             'resource_fields': {'word': {
                 'description' : 'A word in the story',
                 }},
-            'resource_methods': ['HEAD', 'GET']})
+            'resource_methods': ['HEAD', 'GET']}
+        for key, value in expected_docs.items():
+            self.assertEqual( actual_docs[key], value)
 
     def testDocumentationError(self):
         self._expect_405(PUT('/p/*/_napix_resource_fields',
@@ -123,6 +131,23 @@ class TestErrors(TestServiceBase):
             'line' : 41,
             'request' : { 'method' : 'GET', 'path' : '/p/cat/cat/t/french'}
             })
+
+class TestSerializers(TestServiceBase):
+    def setUp(self):
+        self.bottle = NapixdBottle([ Service(Players) ],
+                no_conversation = True)
+        self.bottle.setup_bottle()
+    
+    def test_serializer( self):
+        resp = self._request( GET( '/players/1' ))
+        self.assertEqual( resp['score'], '15.30')
+
+    def test_unserializer(self):
+        self._expect_created( POST( '/players/', name='koala', score='12.123'), '/players/str-float-')
+
+    def test_object_bad_type(self):
+        self._expect_error( POST( '/players/', name=[ 'koala' ], score=23.12), 400)
+
 
 if __name__ == '__main__':
     unittest2.main()

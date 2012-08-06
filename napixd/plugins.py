@@ -7,6 +7,7 @@ import traceback
 import functools
 import json
 import logging
+import socket
 from cStringIO import StringIO
 
 from urlparse import parse_qs
@@ -141,7 +142,7 @@ class UserAgentDetector( object ):
         @functools.wraps( callback)
         def inner_useragent( *args, **kwargs):
             if ( request.headers.get('user_agent', '' ).startswith('Mozilla') and
-                    not 'authok' in request.GET):
+                    not ( 'authok' in request.GET or 'Authorization' in request.headers )):
                 raise HTTPError(401, '''
 <html><head><title>Request Not authorized</title></head><body>
 <h1> You need to sign your request</h1>
@@ -193,14 +194,20 @@ class AAAPlugin(object):
                 raise HTTPError(403, 'No host')
             content['msg'] = msg
             content['signature'] = signature
-            self.logger.debug(msg)
+            #self.logger.debug(msg)
             headers = { 'Accept':'application/json',
-                    'Content-type':'application/x-www-form-urlencoded', }
-            body = urlencode(content)
-            resp,content = self.http_client.request(self.settings.get('auth_url'),'POST',body=body,headers=headers)
+                    'Content-type':'application/json', }
+            body = json.dumps(content)
+            try:
+                resp,content = self.http_client.request(self.settings.get('auth_url'),
+                        'POST', body=body, headers=headers)
+            except socket.error, e:
+                self.logger.error( 'Auth server did not respond, %r', e)
+                raise HTTPError( 500, 'Auth server did not respond')
             if resp.status == 403:
                 raise HTTPError(403,'Access Denied')
             elif resp.status != 200:
+                self.logger.error( 'Auth server responded a 500')
                 raise HTTPError(500, 'Auth server responded unexpected %s code'%resp.status)
 
             # actually run the callback

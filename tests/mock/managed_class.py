@@ -3,7 +3,8 @@
 
 from napixd.exceptions import ValidationError
 from napixd.managers.default import DictManager, ReadOnlyDictManager
-from napixd.managers.actions import action
+from napixd.managers.actions import action, parameter
+from napixd.managers.views import view, content_type
 
 TRANSLATION_TABLE = { 'the':'le', 'cat':'chat',
 'eats':'mange', 'a':'une','mouse':'souris',
@@ -19,11 +20,11 @@ class Translations(DictManager):
     resource_fields = {
             'translated' : {
                 'description' : 'translation of a word',
-                'example' : 'aferon'
+                'example' : 'aferon',
                 },
             'language' : {
                 'description' : 'language in wich this word is translated',
-                'example' : 'esperanto'
+                'example' : 'esperanto',
                 } }
     def load(self,parent):
         return {
@@ -35,7 +36,6 @@ class Translations(DictManager):
         return resource_dict['language']
     def save(self,parent,resources):
         STORE['translations'] = resources
-
     def get_resource( self, id_):
         if self.parent['word'] == 'cat':
             raise ValueError, 'I don\'t like cats'
@@ -58,6 +58,23 @@ class Letters(ReadOnlyDictManager):
         }}
     def load(self, parent):
         return dict([(x,{'letter':x,'ord':ord(x)}) for x in parent['word']])
+
+    @view('xml')
+    @content_type('application/xml')
+    def as_xml(self, id, resource, response):
+        response.write('<letter ord="%(ord)s">%(letter)s</letter>' % resource )
+
+    @view('empty')
+    def empty(self, id, resource, response):
+        response.set_header( 'my-own-header', 'napix')
+
+    @view('otherapi')
+    def api_v1(self, id, resource, response):
+        return {
+                'ascii' : resource['ord'],
+                'letter' : resource['letter'],
+                'word' : self.parent['word']
+                }
 
 class Words(ReadOnlyDictManager):
     """Words of each paragrach"""
@@ -85,6 +102,8 @@ class Words(ReadOnlyDictManager):
         except ValueError:
             raise ValidationError, 'invalid hash function'
 
+    @parameter('start', description='index of the first character', example=1)
+    @parameter('end', example=10)
     @action
     def split(self, resource, start, end=None):
         """Extract the start from a string"""

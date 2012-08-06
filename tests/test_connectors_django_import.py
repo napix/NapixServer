@@ -8,6 +8,7 @@ import napixd
 from napixd.connectors.django import DjangoImport
 
 class TestDjangoImport( unittest2.TestCase ):
+    @classmethod
     def setUpClass( self):
         conf_ = reload(django.conf)
         napixd.connectors.django.settings = conf_.settings
@@ -19,7 +20,7 @@ class TestDjangoImport( unittest2.TestCase ):
         napixd.connectors.django.settings = conf_.settings
 
     def test_import_module(self):
-        with DjangoImport('mock.django_settings'):
+        with DjangoImport('tests.mock.django_settings'):
             from django.conf import settings
 
         self.assertEqual( settings.MY_SETTING, 1)
