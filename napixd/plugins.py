@@ -15,7 +15,7 @@ from httplib2 import Http
 from urllib import urlencode
 
 import bottle
-from bottle import request,HTTPResponse,HTTPError
+from bottle import HTTPResponse,HTTPError
 
 from .conf import Conf
 from .http import Response
@@ -35,6 +35,7 @@ class ConversationPlugin(object):
     def apply(self,callback,route):
         @functools.wraps(callback)
         def inner_conversation(*args,**kwargs):
+            request = bottle.request
             #unserialize the request
             if int(request.get('CONTENT_LENGTH',0)) != 0:
                 if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
@@ -141,6 +142,7 @@ class UserAgentDetector( object ):
     def apply( self, callback, route):
         @functools.wraps( callback)
         def inner_useragent( *args, **kwargs):
+            request = bottle.request
             if ( request.headers.get('user_agent', '' ).startswith('Mozilla') and
                     not ( 'authok' in request.GET or 'Authorization' in request.headers )):
                 raise HTTPError(401, '''
@@ -171,44 +173,60 @@ class AAAPlugin(object):
     logger = logging.getLogger('Napix.AAA')
     def __init__( self, conf= None, client= None):
         self.http_client = client or Http()
-        self.settings = dict(conf)
+        self.settings = conf or Conf.get_default('Napix.auth')
+
+    def debug_check(self,request):
+        return Conf.get_default('Napix.debug') and 'authok' in request.GET
+
+    def authorization_extract(self,request):
+        if not 'Authorization' in request.headers:
+            raise HTTPError( 401, 'You need to sign your request')
+        msg,l,signature = request.headers['Authorization'].rpartition(':')
+        if l != ':':
+            self.logger.info('Rejecting request of %s',request.headers['REMOTE_HOST'])
+            raise HTTPError(401, 'Incorrect NAPIX Authentication')
+        content = parse_qs(msg)
+        for x in content:
+            content[x] = content[x][0]
+        content['msg'] = msg
+        content['signature'] = signature
+        return content
+
+    def host_check(self, content):
+        try:
+            if content['host'] != self.settings.get('service'):
+                raise HTTPError(403, 'Bad host')
+        except KeyError:
+            raise HTTPError(403, 'No host')
+
+    def authserver_check(self, content):
+        headers = { 'Accept':'application/json',
+                'Content-type':'application/json', }
+        body = json.dumps(content)
+        try:
+            resp,content = self.http_client.request(self.settings.get('auth_url'),
+                    'POST', body=body, headers=headers)
+        except socket.error, e:
+            self.logger.error( 'Auth server did not respond, %r', e)
+            raise HTTPError( 500, 'Auth server did not respond')
+        if resp.status == 403:
+            raise HTTPError(403,'Access Denied')
+        elif resp.status != 200:
+            self.logger.error( 'Auth server responded a %s', resp.status)
+            raise HTTPError(500, 'Auth server responded unexpected %s code'%resp.status)
+
 
     def apply(self,callback,route):
         @functools.wraps(callback)
         def inner_aaa(*args,**kwargs):
-            if Conf.get_default('Napix.debug') and 'authok' in request.GET:
+            request = bottle.request
+            if self.debug_check( request):
                 return callback(*args,**kwargs)
-            if not 'Authorization' in request.headers:
-                raise HTTPError( 401, 'You need to sign your request')
-            msg,l,signature = request.headers['Authorization'].rpartition(':')
-            if l != ':':
-                self.logger.info('Rejecting request of %s',request.headers['REMOTE_HOST'])
-                raise HTTPError(401, 'Incorrect NAPIX Authentication')
-            content = parse_qs(msg)
-            for x in content:
-                content[x] = content[x][0]
-            try:
-                if content['host'] != self.settings.get('service'):
-                    raise HTTPError(403, 'Bad host')
-            except KeyError:
-                raise HTTPError(403, 'No host')
-            content['msg'] = msg
-            content['signature'] = signature
+            content = self.authorization_extract( request)
+
             #self.logger.debug(msg)
-            headers = { 'Accept':'application/json',
-                    'Content-type':'application/json', }
-            body = json.dumps(content)
-            try:
-                resp,content = self.http_client.request(self.settings.get('auth_url'),
-                        'POST', body=body, headers=headers)
-            except socket.error, e:
-                self.logger.error( 'Auth server did not respond, %r', e)
-                raise HTTPError( 500, 'Auth server did not respond')
-            if resp.status == 403:
-                raise HTTPError(403,'Access Denied')
-            elif resp.status != 200:
-                self.logger.error( 'Auth server responded a 500')
-                raise HTTPError(500, 'Auth server responded unexpected %s code'%resp.status)
+            self.host_check( content)
+            self.authserver_check( content)
 
             # actually run the callback
             return callback(*args,**kwargs)
