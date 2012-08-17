@@ -1,0 +1,268 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Authentication &mdash; Napix 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Napix 0.1 documentation" href="index.html" />
+    <link rel="next" title="Resources, collections and ids" href="resources.html" />
+    <link rel="prev" title="Install and deploy Napix" href="deployment.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="resources.html" title="Resources, collections and ids"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="deployment.html" title="Install and deploy Napix"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="authentication">
+<h1>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">¶</a></h1>
+<p>The napixd use a central authentication server that authentifies the user,
+checks if the user has the permissions and logs it.</p>
+<div class="section" id="protocol">
+<span id="id1"></span><h2>Protocol<a class="headerlink" href="#protocol" title="Permalink to this headline">¶</a></h2>
+<p>Request authentication data:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="12%" />
+<col width="42%" />
+<col width="29%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter</th>
+<th class="head">Type</th>
+<th class="head">Definition</th>
+<th class="head">Example</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>timestamp</td>
+<td>float</td>
+<td>Timestamp of the request</td>
+<td>1345195098.769764</td>
+</tr>
+<tr class="row-odd"><td>Login</td>
+<td>string</td>
+<td>Name of the alias the user
+is using to sign its
+request</td>
+<td>user</td>
+</tr>
+<tr class="row-even"><td>method</td>
+<td>string</td>
+<td>Method of the request</td>
+<td>GET</td>
+</tr>
+<tr class="row-odd"><td>host</td>
+<td>string</td>
+<td>Target host of the request</td>
+<td>napix.example.com</td>
+</tr>
+<tr class="row-even"><td>path</td>
+<td>string</td>
+<td>Request path</td>
+<td>/collection/</td>
+</tr>
+<tr class="row-odd"><td>nonce</td>
+<td>string</td>
+<td>Random string. Used to
+avoid replay of request</td>
+<td>ezmdsb34sers3gopf</td>
+</tr>
+</tbody>
+</table>
+<p>All those parameters are URI encoded and then signed with the key of the alias used.</p>
+<div class="section" id="client">
+<h3>Client<a class="headerlink" href="#client" title="Permalink to this headline">¶</a></h3>
+<p>Before the request starts, an identifier and a secret key are shared between the
+authentication server of the realm and the client.</p>
+<p>For each request, the client generate a random unique string,
+get the timestamp, add the detail of the request (method, host, path).
+Thoses data are urlencoded and the resulting string is signed with the client&#8217;s secret key.</p>
+<p>Then it sends the result and the signature joined  by a &#8216;:&#8217; in the <cite>Authorization</cite> HTTP header.</p>
+</div>
+<div class="section" id="server">
+<h3>Server<a class="headerlink" href="#server" title="Permalink to this headline">¶</a></h3>
+<p>The server receive the request, it unserializes the request data and checks
+that the data that were signed are the actual request.
+It checks that the destination is itself, by checking that the <tt class="docutils literal"><span class="pre">host</span></tt> parameter
+of the request corresponds to the <tt class="docutils literal"><span class="pre">Napix.auth.service</span></tt> configuration key.</p>
+<p>Then it sends the request to the central server at the url pointed by <tt class="docutils literal"><span class="pre">Napix.auth.auth_url</span></tt>
+and if it returns a 200, it runs the request.</p>
+</div>
+<div class="section" id="central">
+<h3>Central<a class="headerlink" href="#central" title="Permalink to this headline">¶</a></h3>
+<p>The central server retrieves the user that signed the request,
+and checks the signature against the key.</p>
+<p>If eveything is in order, it returns 200 OK,
+else it return a 400 if the request has not been understood or
+403 if the request was correct but the authorization has not been granted.</p>
+</div>
+</div>
+<div class="section" id="napix-central-server">
+<h2>Napix central server<a class="headerlink" href="#napix-central-server" title="Permalink to this headline">¶</a></h2>
+<p>The Napix Central server</p>
+<div class="section" id="objects">
+<h3>Objects<a class="headerlink" href="#objects" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="users">
+<h4>Users<a class="headerlink" href="#users" title="Permalink to this headline">¶</a></h4>
+<p>The users are the holders of permissions.
+They are identified by aliases.</p>
+</div>
+<div class="section" id="alias">
+<h4>Alias<a class="headerlink" href="#alias" title="Permalink to this headline">¶</a></h4>
+<p>Aliases are the base object of the authentication.
+Each alias contains a <em>login</em> and a <em>password</em> that can be used to identify an user.</p>
+<p>Aliases are equivalent in permissions.</p>
+</div>
+<div class="section" id="perm">
+<h4>Perm<a class="headerlink" href="#perm" title="Permalink to this headline">¶</a></h4>
+<p>The permission is a unity of authorization.
+Each permission has three component</p>
+</div>
+</div>
+</div>
+<div class="section" id="napixd-pluggable-authentication">
+<h2>Napixd pluggable authentication<a class="headerlink" href="#napixd-pluggable-authentication" title="Permalink to this headline">¶</a></h2>
+<p>The authentication layer is provided by a plugin <tt class="xref py py-class docutils literal"><span class="pre">plugins.AAAPlugin</span></tt>.
+This plugin is not automatically installed by <tt class="xref py py-class docutils literal"><span class="pre">loader.NapixBottle</span></tt>.</p>
+<p>This plugin is loaded if a key <tt class="docutils literal"><span class="pre">Napix.auth</span></tt> exists in the configuration file.</p>
+<div class="section" id="custom-central-server">
+<h3>Custom central server<a class="headerlink" href="#custom-central-server" title="Permalink to this headline">¶</a></h3>
+<p>The central server receives a POST with the parameters given in <a class="reference internal" href="#protocol"><em>Protocol</em></a>,
+and additional keys <cite>msg</cite> which is the original message and <cite>signature</cite> which
+is the signature of <cite>msg</cite> by the user.</p>
+<p>If the central server accepts the request, it returns a 200 OK response,
+and the napixd server executes the request.
+If it denies the request, it returns a 403 FORBIDDEN response,
+and the napixd returns also a 403.</p>
+<p>Every other response possible will cause the request to be denied and will be reported as an error
+by the napixd server and will return to the user as a 500 INTERNAL ERROR.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Authentication</a><ul>
+<li><a class="reference internal" href="#protocol">Protocol</a><ul>
+<li><a class="reference internal" href="#client">Client</a></li>
+<li><a class="reference internal" href="#server">Server</a></li>
+<li><a class="reference internal" href="#central">Central</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#napix-central-server">Napix central server</a><ul>
+<li><a class="reference internal" href="#objects">Objects</a><ul>
+<li><a class="reference internal" href="#users">Users</a></li>
+<li><a class="reference internal" href="#alias">Alias</a></li>
+<li><a class="reference internal" href="#perm">Perm</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#napixd-pluggable-authentication">Napixd pluggable authentication</a><ul>
+<li><a class="reference internal" href="#custom-central-server">Custom central server</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="deployment.html"
+                        title="previous chapter">Install and deploy Napix</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="resources.html"
+                        title="next chapter">Resources, collections and ids</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/authentication.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="resources.html" title="Resources, collections and ids"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="deployment.html" title="Install and deploy Napix"
+             >previous</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Grégoire ROCHER.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
