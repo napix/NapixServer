@@ -196,6 +196,9 @@ class AAAPlugin(object):
         try:
             if content['host'] != self.settings.get('service'):
                 raise HTTPError(403, 'Bad host')
+            if ( content['method'] != bottle.request.method or
+                    content['path'] != bottle.request.path ):
+                raise HTTPError(403, 'Bad authorization data')
         except KeyError:
             raise HTTPError(403, 'No host')
 

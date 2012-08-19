@@ -29,24 +29,24 @@ class TestAAAPluginSuccess(WSGITester):
 
     def testSuccess(self):
         status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='host=napix.test:sign' ))
+                self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' ))
         self.assertEqual( result, '{"access": "granted"}')
 
     def testBadHost(self):
         status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='host=napix.other:sign' ))
+                self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.other:sign' ))
         self.assertEqual( status, 403)
         self.assertEqual( result, 'Bad host')
 
     def testEmptyHost(self):
         status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='host=:sign' ))
+                self._make_env('GET', '/test', auth='method=GET&path=/test&host=:sign' ))
         self.assertEqual( status, 403)
         self.assertEqual( result, 'No host')
 
     def testNoHost(self):
         status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='hast=napix.test:sign' ))
+                self._make_env('GET', '/test', auth='method=GET&path=/test&hast=napix.test:sign' ))
         self.assertEqual( status, 403)
         self.assertEqual( result, 'No host')
 
@@ -74,6 +74,13 @@ class TestAAAPluginSuccess(WSGITester):
                     self._make_env('GET', '/test', auth= False,query='authok'))
         self.assertEqual( status, 401)
 
+    def testMismatchMethod(self):
+        status, headers, result = self._do_request(
+                self._make_env('GET', '/test', auth='method=POST&path=/test&host=napix.test:sign' ))
+        self.assertEqual( status, 403)
+        self.assertEqual( result, 'Bad authorization data')
+
+
 class TestAAAPlugin(WSGITester):
     def setUp(self):
         self.bottle = NapixdBottle([ MockService() ])
@@ -87,7 +94,7 @@ class TestAAAPlugin(WSGITester):
     def testError(self):
         self._install(502)
         status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='host=napix.test:sign' ))
+                self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' ))
         self.assertEqual( status, 500)
         self.assertEqual( headers['Content-Type'], 'text/plain')
         self.assertEqual( result, 'Auth server responded unexpected 502 code')
@@ -95,7 +102,7 @@ class TestAAAPlugin(WSGITester):
     def testForbidden(self):
         self._install(403)
         status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='host=napix.test:sign' ))
+                self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' ))
         self.assertEqual( status, 403)
         self.assertEqual( headers['Content-Type'], 'text/plain')
         self.assertEqual( result, 'Access Denied')
@@ -105,7 +112,7 @@ class TestAAAPlugin(WSGITester):
             {'auth_url': 'http://auth.napix.local/auth/authorization/' , 'service' : 'napix.test' },
             MockHTTPClientError()))
         status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='host=napix.test:sign' ))
+                self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' ))
         self.assertEqual( status, 500)
         self.assertEqual( headers['Content-Type'], 'text/plain')
         self.assertEqual( result, 'Auth server did not respond')
