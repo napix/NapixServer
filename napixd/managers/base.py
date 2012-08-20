@@ -305,9 +305,11 @@ class Manager(object):
     def validate(self, resource_dict):
         # Create a new dict to populate with validated data
         for key, description in self.resource_fields.items():
-            if ( key not in resource_dict and
-                    not ( "optional" in description or "computed" in description )):
-                raise ValidationError("Field %s is missing in the supplied resource"%key)
+            if key not in resource_dict:
+                if "optional" in description or "computed" in description:
+                    continue
+                else:
+                    raise ValidationError("Field %s is missing in the supplied resource"%key)
             validator = getattr(self, 'validate_resource_%s'%key,None)
             if validator:
                 resource_dict[key] = validator(resource_dict.get(key,None))
