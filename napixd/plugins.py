@@ -8,11 +8,11 @@ import functools
 import json
 import logging
 import socket
+import urllib
 from cStringIO import StringIO
 
 from urlparse import parse_qs
 from httplib2 import Http
-from urllib import urlencode
 
 import bottle
 from bottle import HTTPResponse,HTTPError
@@ -197,10 +197,10 @@ class AAAPlugin(object):
             if content['host'] != self.settings.get('service'):
                 raise HTTPError(403, 'Bad host')
             if ( content['method'] != bottle.request.method or
-                    content['path'] != bottle.request.path ):
+                    content['path'] != urllib.quote(bottle.request.path ,'%/') ):
                 raise HTTPError(403, 'Bad authorization data')
-        except KeyError:
-            raise HTTPError(403, 'No host')
+        except KeyError, e:
+            raise HTTPError(403, 'Missing authentication data: %s' %e)
 
     def authserver_check(self, content):
         headers = { 'Accept':'application/json',
