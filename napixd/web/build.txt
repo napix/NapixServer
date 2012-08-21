@@ -39,8 +39,14 @@ js/models/servers.js
 js/models/credentials.js
 js/libs/jssha.js
 js/napixclient.js
+js/views/json/multitype.js
+js/views/json/finder.js
 js/views/json/viewer.js
+js/views/json/scalar.js
+js/views/json/object.js
 js/libs/underscore/underscore-extensions.js
+js/views/json/composed.js
+js/views/json/edit.js
 js/views/json/editor.js
 js/views/explorer/object.js
 js/views/explorer/root.js

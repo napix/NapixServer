@@ -22,7 +22,7 @@
     border-left: 1px dotted;
     padding: 4px;
 }
-.json li {
+.json-edit ol > li, .json-edit ul > li, .json ul > li {
     list-style: none;
 }
 .json label {
