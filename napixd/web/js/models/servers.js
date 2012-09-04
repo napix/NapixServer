@@ -1,1 +1,0 @@
-define(["models/selecteditem","libs/backbone/localstorage"],function(e,t){var n=e.Model.extend({defaults:{host:"localhost",selected:!1},validate:function(){if(!this.get("host"))return"You need to define an host"},toString:function(){return this.get("host")}}),r=e.Collection.extend({model:n,localStorage:new t("servers")});return new r})
