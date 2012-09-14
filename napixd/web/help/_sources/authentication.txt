@@ -66,33 +66,6 @@ If eveything is in order, it returns 200 OK,
 else it return a 400 if the request has not been understood or
 403 if the request was correct but the authorization has not been granted.
 
-Napix central server
-====================
-
-The Napix Central server
-
-Objects
--------
-
-Users
-.....
-
-The users are the holders of permissions.
-They are identified by aliases.
-
-Alias
-.....
-
-Aliases are the base object of the authentication.
-Each alias contains a *login* and a *password* that can be used to identify an user.
-
-Aliases are equivalent in permissions.
-
-Perm
-....
-
-The permission is a unity of authorization.
-Each permission has three component
 
 Napixd pluggable authentication
 ===============================

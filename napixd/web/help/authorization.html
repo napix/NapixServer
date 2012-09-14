@@ -1,0 +1,406 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Authentication API &mdash; Napix 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Napix 0.1 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="authentication-api">
+<h1>Authentication API<a class="headerlink" href="#authentication-api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="objects">
+<h2>Objects<a class="headerlink" href="#objects" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="users">
+<h3>Users<a class="headerlink" href="#users" title="Permalink to this headline">¶</a></h3>
+<p>An User is the unit of authentication.
+It holds a set of permissions, and a list of children and clones</p>
+<p>They have a set of properties:</p>
+<dl class="docutils">
+<dt>name</dt>
+<dd>The name of the user. It is unique in the whole Napix Central server.</dd>
+<dt>password</dt>
+<dd>The key used by the user to connect to the API.</dd>
+<dt>delegate</dt>
+<dd>Can create and manage children.</dd>
+<dt>master</dt>
+<dd>Can create and manage its clones.</dd>
+<dt>parent</dt>
+<dd>the user who created this user</dd>
+<dt>referent</dt>
+<dd>The user of which this user is a clone</dd>
+</dl>
+<div class="section" id="clones">
+<h4>Clones<a class="headerlink" href="#clones" title="Permalink to this headline">¶</a></h4>
+<p>The user is either a referent or a clone.
+The referent is the original user created.
+It cannot change its name.
+Its deletion triggers the deletion of all its clones and children.</p>
+<p>The clones are copies a an user with different properties (password, delegation rights, etc)
+but the same children and clones as its referent.</p>
+<p>When a clone is deleted, its referent remains.</p>
+<p>The referent of an user can not be changed.</p>
+</div>
+<div class="section" id="children">
+<h4>Children<a class="headerlink" href="#children" title="Permalink to this headline">¶</a></h4>
+<p>The users are related together by a child-parent link.</p>
+<p>Parent have authority over their children.
+When a parent is removed, its children are also deleted,
+when a child is removed, its parent remains.</p>
+<p>A child is always linked to a referent.</p>
+<p>The parent of an user can not be changed.</p>
+<p>User who doesn&#8217;t have a parent are the super-admins.</p>
+</div>
+</div>
+<div class="section" id="perm">
+<h3>Perm<a class="headerlink" href="#perm" title="Permalink to this headline">¶</a></h3>
+<p>The permissions are the unit of the authorization.
+They are composed of a path, an host and a set of methods.</p>
+<p>The method is a list of authorized HTTP methods: GET, POST, PUT, etc.</p>
+<p>The path and the host can be:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">*</span></tt> meaning that there is no limit on this parameter</li>
+<li>The litteral expected string. In order to authorize request on <tt class="docutils literal"><span class="pre">ns.napix.nx</span></tt>, the host will be <tt class="docutils literal"><span class="pre">ns.napix.nx</span></tt></li>
+<li>A pattern of tokens and litterals separated by <tt class="docutils literal"><span class="pre">.</span></tt> for the host and <tt class="docutils literal"><span class="pre">/</span></tt> for the path
+The tokens are <tt class="docutils literal"><span class="pre">*</span></tt> meaning any value inside this token and <tt class="docutils literal"><span class="pre">**</span></tt> meaning any value for this token and the following.
+The <tt class="docutils literal"><span class="pre">**</span></tt> are always either at the start or the end of the rule.
+It is possible to get a litteral and a token in the same group.</li>
+</ul>
+<p>Examples:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="20%" />
+<col width="18%" />
+<col width="24%" />
+<col width="17%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" rowspan="2">Host names</th>
+<th class="head" colspan="4">Rules</th>
+</tr>
+<tr class="row-even"><th class="head">*.napix.nx</th>
+<th class="head">client.**</th>
+<th class="head">client.napix.*</th>
+<th class="head">**.napix.nx</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-odd"><td>napix.nx</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>ns.napix.nx</td>
+<td>X</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>X</td>
+</tr>
+<tr class="row-odd"><td>ns.dns.napix.nx</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>X</td>
+</tr>
+<tr class="row-even"><td>client.napix.nx</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr class="row-odd"><td>client.napix.org</td>
+<td>&nbsp;</td>
+<td>X</td>
+<td>X</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="services">
+<h2>Services<a class="headerlink" href="#services" title="Permalink to this headline">¶</a></h2>
+<p>The Napix Central object may be accessed over an API.</p>
+<p>This API does not use the Napix centrald services.
+Instead it authentificates its user with its own base.
+The permission on the objects depends on the connectted user and its position to its target.</p>
+<div class="section" id="users-services">
+<h3>Users services<a class="headerlink" href="#users-services" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="31%" />
+<col width="28%" />
+<col width="22%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Request</th>
+<th class="head">Action</th>
+<th class="head">Authorized to</th>
+<th class="head">Notes</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET /auth/</td>
+<td>Retrieve all the login of the users</td>
+<td>Every user, but the listing is
+limited to the descendants</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>POST /auth/</td>
+<td>Creates a referent</td>
+<td>Users that have the <tt class="docutils literal"><span class="pre">delegate</span></tt>
+privilege</td>
+<td>The parent is either a
+descendant of the connected
+user or himself by default</td>
+</tr>
+<tr class="row-even"><td>GET /auth/login</td>
+<td>Retrieve the info about the user <cite>login</cite></td>
+<td>The ancestor of the target or the
+target itself.</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>PUT /auth/login</td>
+<td>Modifies the info about the user <cite>login</cite></td>
+<td>The user himself or an ancestor
+who has the <tt class="docutils literal"><span class="pre">delegate</span></tt> privilege</td>
+<td>The user cannot modify his
+own <tt class="docutils literal"><span class="pre">master</span></tt> and
+<tt class="docutils literal"><span class="pre">delegate</span></tt> rights.
+The name cannot be changed</td>
+</tr>
+<tr class="row-even"><td>DELETE /auth/login</td>
+<td>Remove the user <cite>login</cite> and all its
+descendants and clones</td>
+<td>An ancestor who has the <tt class="docutils literal"><span class="pre">delegate</span></tt>
+privilege</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="permission-services">
+<h3>Permission services<a class="headerlink" href="#permission-services" title="Permalink to this headline">¶</a></h3>
+<p>In order to create or modify a permission,
+the user making the request must already own the permission or a superset of the permission.</p>
+<p>For example, if an user have the permission to make a request on <tt class="docutils literal"><span class="pre">/collection/*</span></tt> on <tt class="docutils literal"><span class="pre">*.napix.nx</span></tt>,
+he can delegate this same permission or a subset like <tt class="docutils literal"><span class="pre">/collection/*</span></tt> on <tt class="docutils literal"><span class="pre">n1.napix.nx</span></tt>.
+But he cannot delegate <tt class="docutils literal"><span class="pre">/other_collection/*</span></tt> on <tt class="docutils literal"><span class="pre">*.napix.nx</span></tt>.</p>
+<p>Thus an user cannot modify his own permissions, he cannot add himself more permission than he already have,
+and it prevents him from forbidding himself to do something he is allowed to do.</p>
+<p>If an user remove or modify a permission of an user, the action is also applied on all his descendants.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="25%" />
+<col width="28%" />
+<col width="26%" />
+<col width="21%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Request</th>
+<th class="head">Action</th>
+<th class="head">Authorized to</th>
+<th class="head">Notes</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET /auth/login/permissions/</td>
+<td>List the permissions of the target</td>
+<td>The user and its ancestors</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>POST /auth/login/permissions/</td>
+<td>Create a new permission</td>
+<td>Users that have the <tt class="docutils literal"><span class="pre">delegate</span></tt>
+privilege. The user can not make this
+request on himself.</td>
+<td>The user must own the
+permission he wants to
+attribute</td>
+</tr>
+<tr class="row-even"><td>GET /auth/login/permissions/key</td>
+<td>Get the details on the permission</td>
+<td>Same as GET permissions/</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>PUT /auth/login/permissions/key</td>
+<td>Modifies the info about the user <cite>login</cite></td>
+<td>Same as POST</td>
+<td>If the permission removed is
+not a subset of the new
+permission, the modification
+is cascaded on the children.</td>
+</tr>
+<tr class="row-even"><td>DELETE /auth/login/permissions/key</td>
+<td>Remove a permission from the user&#8217;s set</td>
+<td>An ancestor who has the <tt class="docutils literal"><span class="pre">delegate</span></tt></td>
+<td>The permission is removed to
+the children</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="clones-services">
+<h3>Clones services<a class="headerlink" href="#clones-services" title="Permalink to this headline">¶</a></h3>
+<p>The clones services exposes the <tt class="docutils literal"><span class="pre">master</span></tt>, <tt class="docutils literal"><span class="pre">delegate</span></tt>, <tt class="docutils literal"><span class="pre">password</span></tt> and <tt class="docutils literal"><span class="pre">name</span></tt> properties.
+The referent is always the user on which the request is made.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="29%" />
+<col width="27%" />
+<col width="21%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Request</th>
+<th class="head">Action</th>
+<th class="head">Authorized to</th>
+<th class="head">Notes</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET /auth/login/aliases/</td>
+<td>List the clones of the target</td>
+<td>The user and its ancestors</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>POST /auth/login/aliases/</td>
+<td>Create a new permission</td>
+<td>Ancestor or clones who  have the
+<tt class="docutils literal"><span class="pre">master</span></tt> privilege</td>
+<td>The login is unique for all
+the users and clones. The user
+can set <tt class="docutils literal"><span class="pre">delegate</span></tt> to true
+only if he has this right</td>
+</tr>
+<tr class="row-even"><td>GET /auth/login/aliases/alias</td>
+<td>Get the details on the clone</td>
+<td>Same as GET /</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>PUT /auth/login/aliases/alias</td>
+<td>Modifies the info about the user <cite>login</cite></td>
+<td>Same as POST</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>DELETE /auth/login/aliases/alias</td>
+<td>Remove a clone</td>
+<td>Same as POST</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Authentication API</a><ul>
+<li><a class="reference internal" href="#objects">Objects</a><ul>
+<li><a class="reference internal" href="#users">Users</a><ul>
+<li><a class="reference internal" href="#clones">Clones</a></li>
+<li><a class="reference internal" href="#children">Children</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#perm">Perm</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#services">Services</a><ul>
+<li><a class="reference internal" href="#users-services">Users services</a></li>
+<li><a class="reference internal" href="#permission-services">Permission services</a></li>
+<li><a class="reference internal" href="#clones-services">Clones services</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/authorization.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">Napix 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Grégoire ROCHER.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

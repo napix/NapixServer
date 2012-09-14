@@ -139,29 +139,6 @@ else it return a 400 if the request has not been understood or
 403 if the request was correct but the authorization has not been granted.</p>
 </div>
 </div>
-<div class="section" id="napix-central-server">
-<h2>Napix central server<a class="headerlink" href="#napix-central-server" title="Permalink to this headline">¶</a></h2>
-<p>The Napix Central server</p>
-<div class="section" id="objects">
-<h3>Objects<a class="headerlink" href="#objects" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="users">
-<h4>Users<a class="headerlink" href="#users" title="Permalink to this headline">¶</a></h4>
-<p>The users are the holders of permissions.
-They are identified by aliases.</p>
-</div>
-<div class="section" id="alias">
-<h4>Alias<a class="headerlink" href="#alias" title="Permalink to this headline">¶</a></h4>
-<p>Aliases are the base object of the authentication.
-Each alias contains a <em>login</em> and a <em>password</em> that can be used to identify an user.</p>
-<p>Aliases are equivalent in permissions.</p>
-</div>
-<div class="section" id="perm">
-<h4>Perm<a class="headerlink" href="#perm" title="Permalink to this headline">¶</a></h4>
-<p>The permission is a unity of authorization.
-Each permission has three component</p>
-</div>
-</div>
-</div>
 <div class="section" id="napixd-pluggable-authentication">
 <h2>Napixd pluggable authentication<a class="headerlink" href="#napixd-pluggable-authentication" title="Permalink to this headline">¶</a></h2>
 <p>The authentication layer is provided by a plugin <tt class="xref py py-class docutils literal"><span class="pre">plugins.AAAPlugin</span></tt>.
@@ -195,15 +172,6 @@ by the napixd server and will return to the user as a 500 INTERNAL ERROR.</p>
 <li><a class="reference internal" href="#client">Client</a></li>
 <li><a class="reference internal" href="#server">Server</a></li>
 <li><a class="reference internal" href="#central">Central</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#napix-central-server">Napix central server</a><ul>
-<li><a class="reference internal" href="#objects">Objects</a><ul>
-<li><a class="reference internal" href="#users">Users</a></li>
-<li><a class="reference internal" href="#alias">Alias</a></li>
-<li><a class="reference internal" href="#perm">Perm</a></li>
-</ul>
-</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#napixd-pluggable-authentication">Napixd pluggable authentication</a><ul>
