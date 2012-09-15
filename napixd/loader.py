@@ -331,13 +331,26 @@ class NapixdBottle(bottle.Bottle):
         #/ route, give the services
         self.route('/',callback=self.slash)
         self.route('/_napix_reload',callback=self.reload)
-        self.route('/_napix_js<filename:path>',
-                callback=self.static_factory( os.path.join( os.path.dirname( __file__),'web') ),
-                skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
         #Error handling for not found and invalid
         self.error(404)(self._error_handler_factory(404))
         self.error(400)(self._error_handler_factory(400))
         self.error(500)(self._error_handler_factory(500))
+
+        webclient_path = self.get_webclient_path()
+        if webclient_path:
+            logger.info( 'Using %s as webclient', webclient_path)
+            self.route('/_napix_js<filename:path>',
+                    callback=self.static_factory( webclient_path),
+                    skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
+
+    def get_webclient_path(self):
+        for directory in [ Conf.get_default('Napix.webclient.path'),
+                os.path.join( HOME, 'web'),
+                os.path.join( os.path.dirname( __file__), 'web')
+                ]:
+            logger.debug( 'Try WebClient in directory %s', directory)
+            if directory and os.path.isdir( directory):
+                return directory
 
     def launch_autoreloader(self):
         signal.signal( signal.SIGHUP, self.on_sighup)
