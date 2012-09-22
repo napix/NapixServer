@@ -92,19 +92,15 @@ class CollectionService(object):
         self.url = namespace
 
         base_url = '/'
-        absolute_url = '/'
         last = len(self.services) -1
         #build the prefix url with the list of previous services
         for i,service in enumerate(self.services):
             base_url += service.get_prefix()
-            absolute_url += service.get_prefix() + '*'
             if i != last:
                 base_url += ':f%i/'%i
-                absolute_url += '/'
         #collection and resource urls of this service
         self.collection_url = base_url
         self.resource_url = base_url + ':f%i' % last
-        self.absolute_url = absolute_url
 
         self.all_actions = list(self.collection.get_all_actions())
 
@@ -270,7 +266,6 @@ class CollectionService(object):
                 'direct_plug' : self.direct_plug,
                 'views' : dict( (format_, (cb.__doc__ or '').strip())
                     for (format_,cb) in self.collection.get_all_formats().items() ),
-                'absolute_url' : self.absolute_url,
                 'managed_class' : [ mc.get_name() for mc in self.collection.get_managed_classes() ],
                 'actions' : dict( ( action.__name__, (action.__doc__ or '').strip())
                     for action in self.all_actions ),
