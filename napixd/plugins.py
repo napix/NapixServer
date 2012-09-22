@@ -144,6 +144,7 @@ class UserAgentDetector( object ):
         def inner_useragent( *args, **kwargs):
             request = bottle.request
             if ( request.headers.get('user_agent', '' ).startswith('Mozilla') and
+                    not request.headers.get('X-Requested-With') == 'XMLHttpRequest' and
                     not ( 'authok' in request.GET or 'Authorization' in request.headers )):
                 raise HTTPError(401, '''
 <html><head><title>Request Not authorized</title></head><body>
