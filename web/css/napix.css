@@ -3494,6 +3494,9 @@ a.thumbnail:hover {
 .selected {
   font-weight: bold;
 }
+.pending {
+    font-style: italic;
+}
 .json ul {
     margin:0;
     padding:0;
