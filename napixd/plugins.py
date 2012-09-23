@@ -179,13 +179,17 @@ class AAAPlugin(object):
     def debug_check(self,request):
         return Conf.get_default('Napix.debug') and 'authok' in request.GET
 
+    def reject(self, cause, code=403):
+        self.logger.info('Rejecting request of %s: %s',
+                bottle.request.environ['REMOTE_ADDR'], cause)
+        return HTTPError( code, cause) 
+
     def authorization_extract(self,request):
         if not 'Authorization' in request.headers:
-            raise HTTPError( 401, 'You need to sign your request')
+            raise self.reject( 'You need to sign your request', 401)
         msg,l,signature = request.headers['Authorization'].rpartition(':')
         if l != ':':
-            self.logger.info('Rejecting request of %s',request.headers['REMOTE_HOST'])
-            raise HTTPError(401, 'Incorrect NAPIX Authentication')
+            raise self.reject( 'Incorrect NAPIX Authentication', 401)
         content = parse_qs(msg)
         for x in content:
             content[x] = content[x][0]
@@ -196,12 +200,12 @@ class AAAPlugin(object):
     def host_check(self, content):
         try:
             if content['host'] != self.settings.get('service'):
-                raise HTTPError(403, 'Bad host')
+                raise self.reject('Bad host')
             if ( content['method'] != bottle.request.method or
                     content['path'] != urllib.quote(bottle.request.path ,'%/') ):
-                raise HTTPError(403, 'Bad authorization data')
+                raise self.reject( 'Bad authorization data')
         except KeyError, e:
-            raise HTTPError(403, 'Missing authentication data: %s' %e)
+            raise self.reject(  'Missing authentication data: %s' %e)
 
     def authserver_check(self, content):
         headers = { 'Accept':'application/json',
@@ -214,7 +218,7 @@ class AAAPlugin(object):
             self.logger.error( 'Auth server did not respond, %r', e)
             raise HTTPError( 500, 'Auth server did not respond')
         if resp.status == 403:
-            raise HTTPError(403,'Access Denied')
+            raise self.reject( 'Access Denied')
         elif resp.status != 200:
             self.logger.error( 'Auth server responded a %s', resp.status)
             raise HTTPError(500, 'Auth server responded unexpected %s code'%resp.status)
