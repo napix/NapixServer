@@ -1,32 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import json
 import time
 import logging
 import socket
-import httplib
 import urlparse
 
-
+from .client import Client
 from .thread_manager import background
 from .conf import Conf
 
 logger = logging.getLogger('Napix.notifications')
 
 class Notifier(object):
-    def __init__( self, app, client=None, delay=None ):
+    def __init__( self, app, delay=None ):
         self.app = app
         self._alive = True
-
 
         post_url = Conf.get_default( 'Napix.notify.url')
         post_url_bits = urlparse.urlsplit( post_url )
         self.post_url = post_url_bits.path
-        self.client_class = client or httplib.HTTPConnection
-        self.client_args = ( post_url_bits.hostname, post_url_bits.port)
-        self.connect()
 
+        self.client = Client( post_url_bits.netloc, Conf.get_default( 'Napix.notify.credentials'))
         self.put_url = None
 
         self.delay = delay or Conf.get_default('Napix.notify.delay') or 300
@@ -34,15 +29,14 @@ class Notifier(object):
         if self.delay < 1:
             logger.warning( 'Notification delay is below 1s, the minimum rate is 1s')
 
-    def connect(self):
-        self.client = self.client_class( *self.client_args)
-
     @background(name='notify_thread')
     def start(self):
         for x in range(3):
             if self.send_first_notification():
                 break
             time.sleep(2)
+            if not self._alive:
+                return
         else:
             logger.error('Did not succeed to notifications')
             return
@@ -81,23 +75,8 @@ class Notifier(object):
         self.send_request(  'PUT', self.put_url)
 
     def send_request( self, method, url):
-        headers = { 'Accept':'application/json',
-                'Content-type':'application/json', }
-        try:
-            self.client.request( method, url + '?authok',
-                    body = json.dumps( self._get_request_content()), headers=headers)
-            resp = self.client.getresponse()
-            resp.read()
-            return resp
-        except socket.error:
-            logger.error( 'Socket error, reconnecting')
-            self.connect()
-        except Exception, e:
-            logger.error( 'Update failed "%s"', repr(e))
-            return None
-
-    def _get_request_content(self):
-        return {
-                'host' : Conf.get_default('Napix.auth.service') or socket.gethostname(),
-                'managers' : list(self.app.root_urls),
-                }
+        return self.client.request( method, url,
+                body ={
+                    'host' : Conf.get_default('Napix.auth.service') or socket.gethostname(),
+                    'managers' : list(self.app.root_urls),
+                    })
