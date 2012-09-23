@@ -22,6 +22,7 @@ class WSGITester(unittest2.TestCase):
                 'REQUEST_METHOD': method,
                 'SERVER_PROTOCOL' : 'HTTP/1.1',
                 'HTTP_USER_AGENT' : agent,
+                'REMOTE_ADDR': localhost  and '127.0.0.1' or '1.2.3.4',
                 'HTTP_REMOTE_HOST' : localhost  and '127.0.0.1' or '1.2.3.4',
                 'HTTP_AUTHORIZATION' : auth or '',
                 'CONTENT_TYPE' : ( url_encoded and 'application/x-www-form-urlencoded'

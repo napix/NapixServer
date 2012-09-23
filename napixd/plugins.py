@@ -32,25 +32,26 @@ class ConversationPlugin(object):
     """
     name = "conversation_plugin"
     api = 2
+    def unwrap(self, request):
+        #unserialize the request
+        if int(request.get('CONTENT_LENGTH',0)) != 0:
+            if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
+                try:
+                    request.data = json.load(request.body)
+                except ValueError:
+                   raise HTTPError(400, 'Unable to load JSON object', header={ 'content-type' : 'text/plain' })
+            else:
+                request.data = request.forms
+        else :
+            request.data = {}
+
     def apply(self,callback,route):
         @functools.wraps(callback)
         def inner_conversation(*args,**kwargs):
             request = bottle.request
-            #unserialize the request
-            if int(request.get('CONTENT_LENGTH',0)) != 0:
-                if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
-                    try:
-                        request.data = json.load(request.body)
-                    except ValueError:
-                        raise HTTPError(400,'Unable to load JSON object')
-                else:
-                    request.data = request.forms
-            else :
-                request.data = {}
-            headers = []
-            content_type = ''
             exception = None
             try:
+                self.unwrap( request)
                 result = callback(*args,**kwargs) #Conv
                 status = 200
                 #result OK
@@ -58,10 +59,13 @@ class ConversationPlugin(object):
                     exception = result
                 elif isinstance( result, Response):
                     bottle.response.headers.update( result.headers)
+                    result.seek(0)
                     return result
             except HTTPError,e:
                 exception = e
 
+            headers = []
+            content_type = ''
             if exception is not None:
                 result = exception.output
                 status = exception.status

@@ -8,8 +8,9 @@ from mock.http_client import MockHTTPClient, MockHTTPClientError
 from napixd.conf import Conf
 from bases import WSGITester
 
-from napixd.plugins import AAAPlugin
-from napixd.loader import NapixdBottle
+from bottle import Bottle
+
+from napixd.plugins import AAAPlugin, ConversationPlugin
 
 class MockService(object):
     def __init__(self,url = ''):
@@ -19,15 +20,29 @@ class MockService(object):
     def serve(self):
         return { 'access': 'granted' }
 
-class TestAAAPluginSuccess(WSGITester):
+class AAAPluginBase(WSGITester):
     def setUp(self):
-        self.bottle = NapixdBottle([ MockService() ])
-        self.bottle.setup_bottle()
+        self.bottle = Bottle()
+        self.bottle.install( ConversationPlugin());
+        @self.bottle.route( '/test')
+        def ok():
+            return { 'access' : 'granted' }
         self.bottle.install(AAAPlugin(
             {'auth_url': 'http://auth.napix.local/auth/authorization/' , 'service' : 'napix.test' },
             MockHTTPClient(200)))
+    def _install(self,status):
+        self.bottle.install(AAAPlugin(
+            {'auth_url': 'http://auth.napix.local/auth/authorization/' , 'service' : 'napix.test' },
+            MockHTTPClient(status)))
+
+class TestAAAPluginSuccess(AAAPluginBase):
+    def setUp(self):
+        super( TestAAAPluginSuccess, self).setUp()
+        self._install( 200)
 
     def testSuccess(self):
+        import bottle
+        bottle.DEBUG=True
         status, headers, result = self._do_request(
                 self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' ))
         self.assertEqual( result, '{"access": "granted"}')
@@ -42,13 +57,13 @@ class TestAAAPluginSuccess(WSGITester):
         status, headers, result = self._do_request(
                 self._make_env('GET', '/test', auth='method=GET&path=/test&host=:sign' ))
         self.assertEqual( status, 403)
-        self.assertEqual( result, 'No host')
+        self.assertEqual( result, 'Missing authentication data: \'host\'')
 
     def testNoHost(self):
         status, headers, result = self._do_request(
                 self._make_env('GET', '/test', auth='method=GET&path=/test&hast=napix.test:sign' ))
         self.assertEqual( status, 403)
-        self.assertEqual( result, 'No host')
+        self.assertEqual( result, 'Missing authentication data: \'host\'')
 
     def testNoAuth(self):
         status, headers, result = self._do_request(
@@ -81,15 +96,7 @@ class TestAAAPluginSuccess(WSGITester):
         self.assertEqual( result, 'Bad authorization data')
 
 
-class TestAAAPlugin(WSGITester):
-    def setUp(self):
-        self.bottle = NapixdBottle([ MockService() ])
-        self.bottle.setup_bottle()
-
-    def _install(self,status):
-        self.bottle.install(AAAPlugin(
-            {'auth_url': 'http://auth.napix.local/auth/authorization/' , 'service' : 'napix.test' },
-            MockHTTPClient(status)))
+class TestAAAPlugin(AAAPluginBase):
 
     def testError(self):
         self._install(502)
@@ -116,10 +123,6 @@ class TestAAAPlugin(WSGITester):
         self.assertEqual( status, 500)
         self.assertEqual( headers['Content-Type'], 'text/plain')
         self.assertEqual( result, 'Auth server did not respond')
-
-
-
-
 
 if __name__ == '__main__':
     unittest2.main()
