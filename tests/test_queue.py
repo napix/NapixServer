@@ -18,7 +18,7 @@ class TestQueue(unittest.TestCase):
         start=time()
         self.assertRaises(Empty,
             self.main_queue.get,timeout=1)
-        self.assertAlmostEquals(start+1,time(),places=3)
+        self.assertAlmostEquals(start+1,time(),places=2)
 
     def testEmpty(self):
         self.assertRaises(Empty,self.sub_queue1.get,False)

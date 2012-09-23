@@ -14,7 +14,7 @@ from napixd.services import Service
 class TestAction(TestServiceBase):
     def setUp(self):
         self.bottle = NapixdBottle([ Service(Paragraphs) ],
-                no_conversation=True)
+                no_conversation=True, options=set())
         self.bottle.setup_bottle()
 
     def testDiscovery(self):

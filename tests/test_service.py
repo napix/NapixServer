@@ -6,18 +6,20 @@ import unittest2
 from mock.manager_types import Players
 from mock.managed_class import Paragraphs,STORE
 from mock.request import POST,PUT,GET,DELETE
-from bases import TestServiceBase
+from bases import TestServiceBase as TestServiceBase_
 
 from napixd.managers import Manager
 from napixd.services import Service
 from napixd.loader import NapixdBottle
 
-class TestService(TestServiceBase):
+class TestServiceBase( TestServiceBase_):
+    MANAGER = Paragraphs
     def setUp(self):
-        self.bottle = NapixdBottle([ Service(Paragraphs) ],
-                no_conversation=True)
+        self.bottle = NapixdBottle([ Service(self.MANAGER) ],
+                no_conversation=True, options=set())
         self.bottle.setup_bottle()
 
+class TestService(TestServiceBase):
     def testGETCollection(self):
         self._expect_ok(GET('/p'))
         self._expect_list(GET('/p/'),['/p/mouse','/p/cat'])
@@ -84,7 +86,6 @@ class TestService(TestServiceBase):
             })
         actual_docs = self._request(GET('/p/*/_napix_help'))
         expected_docs = {
-            'absolute_url' : '/p/*/*',
             'actions' :  {
                 'hash' : 'Return the word hashed with the given function',
                 'reverse' : 'Reverse the word',
@@ -113,11 +114,6 @@ class TestService(TestServiceBase):
             'out_trans', 'out_words', 'out_para'])
 
 class TestErrors(TestServiceBase):
-    def setUp(self):
-        self.bottle = NapixdBottle([ Service(Paragraphs) ],
-                no_conversation = True)
-        self.bottle.setup_bottle()
-
     def testSlash(self):
         self._expect_list(GET('/'), ['/p'])
 
@@ -134,11 +130,7 @@ class TestErrors(TestServiceBase):
             })
 
 class TestSerializers(TestServiceBase):
-    def setUp(self):
-        self.bottle = NapixdBottle([ Service(Players) ],
-                no_conversation = True)
-        self.bottle.setup_bottle()
-    
+    MANAGER = Players
     def test_serializer( self):
         resp = self._request( GET( '/players/1' ))
         self.assertEqual( resp['score'], '15.30')
@@ -159,10 +151,7 @@ class PutManager(Manager):
             return
 
 class TestPut(TestServiceBase):
-    def setUp(self):
-        self.bottle = NapixdBottle([ Service(PutManager) ],
-                no_conversation = True)
-        self.bottle.setup_bottle()
+    MANAGER = PutManager
 
     def test_same_id(self):
         self._expect_ok( PUT('/put/2', a='b'))

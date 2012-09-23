@@ -173,7 +173,7 @@ class ServiceResourceRequest(ServiceRequest):
         if self.method == 'PUT' and result != None :
             new_url = self.make_url(result)
             if new_url != self.request.path:
-                return HTTPError(301, None, header={ 'Location': new_url} )
+                return HTTPError(303, None, header={ 'Location': new_url} )
             return None
         if self.method != 'GET':
             return result
@@ -194,8 +194,6 @@ class ServiceResourceRequest(ServiceRequest):
         response = Response()
         result = formatter( self.resource_id, result, response)
         if result is None or result is response:
-            if not response.is_empty():
-                response.seek(0)
             return response
         else:
             return result

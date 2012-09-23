@@ -11,7 +11,7 @@ from napixd.services import Service
 class TestView(TestServiceBase):
     def setUp(self):
         self.bottle = NapixdBottle([ Service(Paragraphs) ],
-                no_conversation=True)
+                no_conversation=True, options=set())
         self.bottle.setup_bottle()
 
     def test_return_dict(self):
@@ -23,6 +23,7 @@ class TestView(TestServiceBase):
         req = GET( '/p/cat/cat/l/a')
         req.GET = { 'format' : 'xml' }
         resp = self._request( req)
+        resp.seek(0)
         self.assertEqual( resp.headers.get('Content-Type'), 'application/xml')
         self.assertEqual( resp.read(), '<letter ord="97">a</letter>')
 
@@ -37,6 +38,5 @@ class TestView(TestServiceBase):
         req.GET = { 'format' : 'non_existing' }
         resp = self._expect_error( req, 406)
         self.assertEqual( resp.output, 'Cannot render non_existing. Available formats are: xml,otherapi,empty ')
-
 
 
