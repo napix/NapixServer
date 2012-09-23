@@ -26,21 +26,29 @@ from .notify import Notifier
 import bottle
 from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
 
-def get_bottle_app():
+class AllOptions(object):
+    def __contains__(self, x):
+        return True
+
+def get_bottle_app( options =None ):
     """
     Return the bottle application for the napixd server.
     """
-    napixd = NapixdBottle()
+    options = options if options is not None else AllOptions()
+    napixd = NapixdBottle( options=options)
 
     conf =  Conf.get_default('Napix.auth')
-    napixd.install( UserAgentDetector() )
-    if conf :
-        napixd.install(AAAPlugin( conf))
-    else:
-        logger.warning('No authentification configuration found.')
+    if 'useragent' in options:
+        napixd.install( UserAgentDetector() )
+    if 'auth' in options:
+        if conf :
+            napixd.install(AAAPlugin( conf))
+        else:
+            logger.warning('No authentification configuration found.')
 
     #attach autoreloaders
-    napixd.launch_autoreloader()
+    if 'reload' in options:
+        napixd.launch_autoreloader()
     return napixd
 
 class Loader( object):
@@ -229,7 +237,7 @@ class NapixdBottle(bottle.Bottle):
     """
     loader_class = Loader
 
-    def __init__(self, services=None, no_conversation=False):
+    def __init__(self, services=None, no_conversation=False, options=None):
         """
         Create a new bottle app.
         The services served by this bottle are either given in the services parameter or guessed
@@ -240,6 +248,7 @@ class NapixdBottle(bottle.Bottle):
 
         the no_conversation parameter may be set to True to disable the ConversationPlugin.
         """
+        self.options = options if options is not None else AllOptions()
         super(NapixdBottle,self).__init__(autojson=False)
         self._start()
         self.root_urls = set()
@@ -249,9 +258,10 @@ class NapixdBottle(bottle.Bottle):
             self.loader = self.loader_class()
             load =  self.loader.load()
             services = self.make_services( load.managers )
-            doc = Autodocument()
-            thread_manager.do_async( doc.generate_doc, fn_args=(load.managers,),
-                    give_thread=False, on_success=self.doc_set_root)
+            if 'doc' in self.options:
+                doc = Autodocument()
+                thread_manager.do_async( doc.generate_doc, fn_args=(load.managers,),
+                        give_thread=False, on_success=self.doc_set_root)
         else:
             self.root_urls.update( s.url for s in services )
             for service in services:
@@ -265,7 +275,7 @@ class NapixdBottle(bottle.Bottle):
         self.on_stop = []
         self.setup_bottle()
 
-        if Conf.get_default('Napix.notify.url'):
+        if 'notify' in self.options and Conf.get_default('Napix.notify.url'):
             notifier = Notifier( self)
             self.on_stop.append( notifier.stop)
             notifier.start()
@@ -330,18 +340,21 @@ class NapixdBottle(bottle.Bottle):
         """
         #/ route, give the services
         self.route('/',callback=self.slash)
-        self.route('/_napix_reload',callback=self.reload)
+        if 'reload' in self.options:
+            self.route('/_napix_reload',callback=self.reload)
+
         #Error handling for not found and invalid
         self.error(404)(self._error_handler_factory(404))
         self.error(400)(self._error_handler_factory(400))
         self.error(500)(self._error_handler_factory(500))
 
-        webclient_path = self.get_webclient_path()
-        if webclient_path:
-            logger.info( 'Using %s as webclient', webclient_path)
-            self.route('/_napix_js<filename:path>',
-                    callback=self.static_factory( webclient_path),
-                    skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
+        if 'webclient' in self.options:
+            webclient_path = self.get_webclient_path()
+            if webclient_path:
+                logger.info( 'Using %s as webclient', webclient_path)
+                self.route('/_napix_js<filename:path>',
+                        callback=self.static_factory( webclient_path),
+                        skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
 
     def get_webclient_path(self):
         for directory in [ Conf.get_default('Napix.webclient.path'),

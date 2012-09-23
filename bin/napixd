@@ -5,6 +5,8 @@
 # Mettre un exemple de ligne de commande
 
 import logging
+import sys
+import operator
 import os
 
 formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
@@ -32,7 +34,6 @@ try:
     import napixd
     napixd.HOME = os.environ.get('NAPIXHOME','')
 except ImportError:
-    import sys
     path = os.path.realpath( os.path.join( os.path.dirname(__file__), '..' ))
     sys.path.append(path)
     import napixd
@@ -43,25 +44,78 @@ from napixd.executor.bottle_adapter import RocketAndExecutor
 from napixd.loader import get_bottle_app
 from napixd.conf import Conf
 
+
+all_the_componants = set([
+'app', #Launch the application
+'notify', # the thread of periodic notifications
+'doc', # the autodocumentation generation
+'useragent', # the html page shown when a browser access directly
+'auth', # the auth interface
+'reload', #the reloader on signal page and automatic
+'webclient' # the web client
+])
+
+
+def segregate( segregator, iterable ):
+    has = []
+    hasnt = []
+    for e in iterable:
+        if segregator(e):
+            has.append( e)
+        else:
+            hasnt.append(e)
+    return has, hasnt
+
 if __name__ == '__main__':
     logger = logging.getLogger('Napix.Server')
     console = logging.getLogger('Napix.console')
 
+    nooptions, options = segregate( lambda x:x.startswith('no'), sys.argv[1:])
+    options = set( options)
+    if 'help' in options:
+        print '''
+napixd daemon runner.
+usage: napixd [(no)option] ...
+       napixd help: show this message 
+       napixd [(no)option] ... options: show enabled options
+
+option to enable the option.
+nooptions to disable the option
+options are:
+app:        Launch the application
+notify:     Enable the notification thread
+doc:        Run the automatic documentation generation
+useragent:  The html page shown when a browser access directly
+auth:       The authentication component
+reload:     The reloader events attachement on signal, page and inotify
+webclient:  The web interface accessible on /_napix_js/
+        '''
+        sys.exit(1)
+    nooptions = set(map( operator.itemgetter( slice(2,None)), nooptions))
+
+    options = options.union( all_the_componants).difference( nooptions)
+    if 'options' in options:
+        print ' '.join( options)
+        sys.exit()
+
     #Get the napix bottle
-    napixapp = get_bottle_app()
+    napixapp = get_bottle_app( options )
     #get the settings of the daemon
     settings = dict( Conf.get_default().get('Napix.daemon'))
 
     bottle.debug(settings.get('debug',False))
     logger.info('Starting')
+    console.info('Options are %s', ','.join(options))
     logger.info('Napixd Home is %s', napixd.HOME)
 
     console.info( 'Starting process %s', os.getpid())
     console.info( 'Found napixd home at %s', napixd.HOME)
     console.info( 'Logging activity in %s', LOG_FILE )
     #run the daemon
-    bottle.run(napixapp, host=settings.get('host','127.0.0.1'),
-            port=settings.get('port',8002), server=RocketAndExecutor)
+    if 'app' in options :
+        bottle.run(napixapp, host=settings.get('host','127.0.0.1'),
+                port=settings.get('port',8002), server=RocketAndExecutor)
+    napixapp.stop();
 
     logger.info('Stopping')
 
