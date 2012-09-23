@@ -12,7 +12,6 @@ import string
 
 from time import time
 from urllib import urlencode
-from urlparse import urlsplit
 
 logger = logging.getLogger('Napix.client')
 
