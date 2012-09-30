@@ -14,16 +14,6 @@ from napixd.conf import Conf
 
 LOG_FILE =  '/tmp/napix.log'
 
-def segregate( segregator, iterable ):
-    has = []
-    hasnt = []
-    for e in iterable:
-        if segregator(e):
-            has.append( e)
-        else:
-            hasnt.append(e)
-    return has, hasnt
-
 logger = logging.getLogger('Napix.Server')
 console = logging.getLogger('Napix.console')
 
@@ -48,27 +38,40 @@ class Setup(object):
 napixd daemon runner.
 usage: napixd [(no)option] ...
        napixd help: show this message 
-       napixd [(no)option] ... options: show enabled options
+       napixd [only] [(no)option] ... options: show enabled options
 
 option to enable the option.
 nooptions to disable the option
+
+napixd help will show this message
+napixd only ... will run only the given options and not enable the defaults options
+napixd options ... will show the options enabled in this configuration.
+    It takes into account 'only', 'no<option>', and the defaults.
+
 options are:
-app:        Launch the application
-notify:     Enable the notification thread
-doc:        Run the automatic documentation generation
-useragent:  The html page shown when a browser access directly
-auth:       The authentication component
-reload:     The reloader events attachement on signal, page and inotify
-webclient:  The web interface accessible on /_napix_js/
-executor:   Launch the executor controler
-gevent:     Use gevent controller
-silent:     Do not show the messages in the console
+Default options:
+    app:        Launch the application
+    notify:     Enable the notification thread
+    doc:        Run the automatic documentation generation
+    useragent:  The html page shown when a browser access directly
+    auth:       The authentication component
+    reload:     The reloader events attachement on signal, page and inotify
+    webclient:  The web interface accessible on /_napix_js/
+    executor:   Launch the executor controler
+
+Non-default:
+    silent:     Do not show the messages in the console
+    debug:      Run the DEBUG mode
+    print_exc:  Show the exceptions in the console output
         '''
     def __init__(self, options):
         self.options = options
-        nooptions, options = segregate( lambda x:x.startswith('no'), options)
-        nooptions = map( operator.itemgetter( slice(2,None)), nooptions)
-        self.options = set(options).union( self.DEFAULT_OPTIONS ).difference( nooptions)
+        nooptions = [ opt[2:] for opt in options if opt.startswith('no') ]
+
+        options = set(options)
+        if 'only' not in options:
+            options = options.union( self.DEFAULT_OPTIONS )
+        self.options = options.difference( nooptions)
 
         self.set_loggers()
 
@@ -98,13 +101,13 @@ silent:     Do not show the messages in the console
                 bottle.run( app, host=settings.get('host', self.DEFAULT_HOST),
                         port=settings.get('port', self.DEFAULT_PORT), server=server)
         finally:
-            logger.info('Stopping')
+            console.info('Stopping')
             app.stop();
 
-        logger.info('Stopped')
+        console.info('Stopped')
 
     def set_debug(self):
-        bottle.debug( 'debug' in self.options and Conf.get('Napix.debug',False))
+        bottle.debug( 'debug' in self.options )
 
     def get_app(self):
         return get_bottle_app( self.options)
@@ -114,8 +117,6 @@ silent:     Do not show the messages in the console
         if 'executor' in self.options:
             from napixd.executor.bottle_adapter import RocketAndExecutor
             return RocketAndExecutor
-        elif 'gevent' in self.options:
-            return 'gevent'
         else:
             return 'rocket'
 
@@ -131,7 +132,8 @@ silent:     Do not show the messages in the console
 
         logging.getLogger('Rocket').addHandler( file_handler)
         logging.getLogger('Rocket').setLevel( logging.DEBUG )
-        logging.getLogger('Rocket.Errors').setLevel(logging.INFO)
+        logging.getLogger('Rocket.Errors').setLevel(logging.DEBUG)
+        logging.getLogger('Rocket.Errors.ThreadPool').setLevel(logging.INFO)
 
         logging.getLogger('Napix').setLevel( logging.DEBUG )
         logging.getLogger('Napix').addHandler( console_handler )
