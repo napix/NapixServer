@@ -143,12 +143,12 @@ class Autodocument(object):
             with body.indentation():
                 if 'example' in metadatas:
                     body.append( ':Example: %s', metadatas['example'])
-                body.append( metadatas['description'] )
+                body.append( metadatas.get('description', '!!No description' ))
 
         for action in manager.get_all_actions():
             body.append_py( 'method', action.__name__ )
             with body.indentation():
-                body.append( metadatas['description'] )
+                body.append( metadatas.get('description', '!!No description' ))
 
 
         all_implemented_methods = set( method for method in dir(manager) if method[0] != '_' )
