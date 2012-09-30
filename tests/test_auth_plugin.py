@@ -4,36 +4,27 @@
 
 import unittest2
 
-from mock.http_client import MockHTTPClient, MockHTTPClientError
-from napixd.conf import Conf
+from mock.http_client import FakeCheckerFactory, FakeHTTPClientFactory, FakeHTTPErrorClient
 from bases import WSGITester
 
+import bottle
 from bottle import Bottle
 
-from napixd.plugins import AAAPlugin, ConversationPlugin
+from napixd.plugins import AAAPlugin, AAAChecker, ConversationPlugin
 
-class MockService(object):
-    def __init__(self,url = ''):
-        self.url = url or 'test'
-    def setup_bottle(self,app):
-        app.route('/' + self.url, callback = self.serve)
-    def serve(self):
-        return { 'access': 'granted' }
 
 class AAAPluginBase(WSGITester):
     def setUp(self):
-        self.bottle = Bottle()
+        self.bottle = Bottle( catchall=False)
         self.bottle.install( ConversationPlugin());
         @self.bottle.route( '/test')
         def ok():
             return { 'access' : 'granted' }
+    def _install(self,status, allow_bypass=False):
         self.bottle.install(AAAPlugin(
             {'auth_url': 'http://auth.napix.local/auth/authorization/' , 'service' : 'napix.test' },
-            MockHTTPClient(200)))
-    def _install(self,status):
-        self.bottle.install(AAAPlugin(
-            {'auth_url': 'http://auth.napix.local/auth/authorization/' , 'service' : 'napix.test' },
-            MockHTTPClient(status)))
+            allow_bypass=allow_bypass,
+            auth_checker_factory = FakeCheckerFactory(status, self)))
 
 class TestAAAPluginSuccess(AAAPluginBase):
     def setUp(self):
@@ -41,8 +32,6 @@ class TestAAAPluginSuccess(AAAPluginBase):
         self._install( 200)
 
     def testSuccess(self):
-        import bottle
-        bottle.DEBUG=True
         status, headers, result = self._do_request(
                 self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' ))
         self.assertEqual( result, '{"access": "granted"}')
@@ -71,6 +60,16 @@ class TestAAAPluginSuccess(AAAPluginBase):
         self.assertEqual( status, 401)
         self.assertEqual( result, 'You need to sign your request')
 
+    def testNodebugNoAuth(self):
+        status, headers, result = self._do_request(
+                self._make_env('GET', '/test', auth= False,query='authok'))
+        self.assertEqual( status, 401)
+
+class TestAAAPluginByPass(AAAPluginBase):
+    def setUp(self):
+        super( TestAAAPluginByPass, self).setUp()
+        self._install( 403, True)
+
     def testBadAuth(self):
         status, headers, result = self._do_request(
                 self._make_env('GET', '/test', auth= 'lolnetwork' ))
@@ -78,16 +77,9 @@ class TestAAAPluginSuccess(AAAPluginBase):
         self.assertEqual( result, 'Incorrect NAPIX Authentication')
 
     def testDebugNoauth(self):
-        with Conf.get_default().force( 'Napix.debug',True):
-            status, headers, result = self._do_request(
-                    self._make_env('GET', '/test', auth= False,query='authok'))
+        status, headers, result = self._do_request(
+                self._make_env('GET', '/test', auth= False,query='authok'))
         self.assertEqual( status, 200)
-
-    def testNodebugNoAuth(self):
-        with Conf.get_default().force( 'Napix.debug',False):
-            status, headers, result = self._do_request(
-                    self._make_env('GET', '/test', auth= False,query='authok'))
-        self.assertEqual( status, 401)
 
     def testMismatchMethod(self):
         status, headers, result = self._do_request(
@@ -95,17 +87,7 @@ class TestAAAPluginSuccess(AAAPluginBase):
         self.assertEqual( status, 403)
         self.assertEqual( result, 'Bad authorization data')
 
-
-class TestAAAPlugin(AAAPluginBase):
-
-    def testError(self):
-        self._install(502)
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' ))
-        self.assertEqual( status, 500)
-        self.assertEqual( headers['Content-Type'], 'text/plain')
-        self.assertEqual( result, 'Auth server responded unexpected 502 code')
-
+class TestAAAPluginDenied(AAAPluginBase):
     def testForbidden(self):
         self._install(403)
         status, headers, result = self._do_request(
@@ -114,15 +96,23 @@ class TestAAAPlugin(AAAPluginBase):
         self.assertEqual( headers['Content-Type'], 'text/plain')
         self.assertEqual( result, 'Access Denied')
 
-    def testFailed( self):
-        self.bottle.install(AAAPlugin(
-            {'auth_url': 'http://auth.napix.local/auth/authorization/' , 'service' : 'napix.test' },
-            MockHTTPClientError()))
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' ))
-        self.assertEqual( status, 500)
-        self.assertEqual( headers['Content-Type'], 'text/plain')
-        self.assertEqual( result, 'Auth server did not respond')
+class TestAAAChecker(unittest2.TestCase):
+    def _install(self, code):
+        self.checker = AAAChecker( 'auth.napix.local', '/auth/authorization/',
+                http_factory=FakeHTTPClientFactory( code, self)  )
+    def testSuccess( self):
+        self._install( 200)
+        self.assertTrue( self.checker.authserver_check({ 'path': '/test' }))
+    def testFail( self):
+        self._install( 403)
+        self.assertFalse( self.checker.authserver_check({ 'path': '/test' }))
 
-if __name__ == '__main__':
-    unittest2.main()
+    def testError( self):
+        self._install( 504)
+        self.assertRaises( bottle.HTTPError, self.checker.authserver_check, { 'path': '/test' })
+
+    def testSocketError(self):
+        self.checker = AAAChecker(  'auth.napix.local', '/auth/authorization/',
+                http_factory=FakeHTTPErrorClient)
+        self.assertRaises( bottle.HTTPError, self.checker.authserver_check, { 'path': '/test' })
+

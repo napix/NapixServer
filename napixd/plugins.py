@@ -9,10 +9,11 @@ import json
 import logging
 import socket
 import urllib
+import threading
 from cStringIO import StringIO
 
-from urlparse import parse_qs
-from httplib2 import Http
+from urlparse import parse_qs, urlsplit, urlunsplit
+from httplib import HTTPConnection
 
 import bottle
 from bottle import HTTPResponse,HTTPError
@@ -98,6 +99,8 @@ class ExceptionsCatcher(object):
     name = 'exceptions_catcher'
     api = 2
     logger = logging.getLogger('Napix.Errors')
+    def __init__(self, show_errors=False):
+        self.show_errors = show_errors
     def apply(self,callback,route):
         """
         This plugin run the view and catch the exception that are not HTTPResponse.
@@ -115,7 +118,8 @@ class ExceptionsCatcher(object):
                 path = bottle.request.path
                 a, b, last_traceback = sys.exc_info()
                 filename, lineno, function_name, text = traceback.extract_tb(last_traceback)[-1]
-                #traceback.print_tb(last_traceback)
+                if self.show_errors:
+                    traceback.print_exc()
                 napix_path = os.path.realpath( os.path.join( os.path.dirname( __file__)))
                 all_tb = [ dict( zip( ('filename', 'line', 'in', 'call'), x))
                         for x in traceback.extract_tb( last_traceback ) ]
@@ -167,6 +171,37 @@ Anyway if you just want to explore the Napix server when it's in DEBUG mode, use
                 return callback( *args, **kwargs)
         return inner_useragent
 
+
+
+class AAAChecker(object):
+    logger = logging.getLogger('Napix.AAA.Checker')
+    def __init__(self, host, url, http_factory=HTTPConnection):
+        self.logger.debug( 'Creating a new checker')
+        self.http_client = http_factory(host)
+        self.url = url
+
+    def authserver_check(self, content):
+        headers = { 'Accept':'application/json',
+                'Content-type':'application/json', }
+        body = json.dumps(content)
+        try:
+            self.logger.info('Sending request to the auth server')
+            self.http_client.request( 'POST', self.url,
+                    body=body, headers=headers)
+            resp = self.http_client.getresponse()
+            resp.read()
+        except socket.error, e:
+            self.logger.error( 'Auth server did not respond, %r', e)
+            raise HTTPError( 500, 'Auth server did not respond')
+        finally:
+            self.logger.info('Finished the request to the auth server')
+
+        if resp.status != 200 and resp.status != 403 :
+            self.logger.error( 'Auth server responded a %s', resp.status)
+            raise HTTPError(500, 'Auth server responded unexpected %s code'%resp.status)
+        return resp.status == 200
+
+
 class AAAPlugin(object):
     """
     Authentication, Authorization and Accounting plugins
@@ -176,12 +211,25 @@ class AAAPlugin(object):
     name = 'authentication_plugin'
     api = 2
     logger = logging.getLogger('Napix.AAA')
-    def __init__( self, conf= None, client= None):
-        self.http_client = client or Http()
+
+    def __init__( self, conf= None, allow_bypass=False, auth_checker_factory=AAAChecker):
         self.settings = conf or Conf.get_default('Napix.auth')
+        self.allow_bypass = allow_bypass
+
+        auth_url_parts = urlsplit(self.settings.get('auth_url'))
+        self.host = auth_url_parts.netloc
+        self.url = urlunsplit(( '','',auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
+        self._local = threading.local()
+        self.auth_checker_factory = auth_checker_factory
+
+    @property
+    def checker(self):
+        if not hasattr( self._local, 'checker'):
+            self._local.checker = self.auth_checker_factory( self.host, self.url)
+        return self._local.checker
 
     def debug_check(self,request):
-        return Conf.get_default('Napix.debug') and 'authok' in request.GET
+        return self.allow_bypass and 'authok' in request.GET
 
     def reject(self, cause, code=403):
         self.logger.info('Rejecting request of %s: %s',
@@ -212,21 +260,9 @@ class AAAPlugin(object):
             raise self.reject(  'Missing authentication data: %s' %e)
 
     def authserver_check(self, content):
-        headers = { 'Accept':'application/json',
-                'Content-type':'application/json', }
-        body = json.dumps(content)
-        try:
-            resp,content = self.http_client.request(self.settings.get('auth_url'),
-                    'POST', body=body, headers=headers)
-        except socket.error, e:
-            self.logger.error( 'Auth server did not respond, %r', e)
-            raise HTTPError( 500, 'Auth server did not respond')
-        if resp.status == 403:
+        check = self.checker.authserver_check(content)
+        if not check:
             raise self.reject( 'Access Denied')
-        elif resp.status != 200:
-            self.logger.error( 'Auth server responded a %s', resp.status)
-            raise HTTPError(500, 'Auth server responded unexpected %s code'%resp.status)
-
 
     def apply(self,callback,route):
         @functools.wraps(callback)
@@ -243,3 +279,5 @@ class AAAPlugin(object):
             # actually run the callback
             return callback(*args,**kwargs)
         return inner_aaa
+
+
