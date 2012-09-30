@@ -42,7 +42,7 @@ def get_bottle_app( options =None ):
         napixd.install( UserAgentDetector() )
     if 'auth' in options:
         if conf :
-            napixd.install(AAAPlugin( conf))
+            napixd.install(AAAPlugin( conf, allow_bypass='debug' in options))
         else:
             logger.warning('No authentification configuration found.')
 
@@ -269,7 +269,7 @@ class NapixdBottle(bottle.Bottle):
 
         if not no_conversation :
             self.install(ConversationPlugin())
-        self.install(ExceptionsCatcher())
+        self.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
         self.notify_thread = False
 
         self.on_stop = []
