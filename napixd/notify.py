@@ -47,12 +47,12 @@ class Notifier(object):
     def loop( self):
         count = 0
         while self._alive:
-            time.sleep(1)
             if count > self.delay:
                 count = 0
                 self.send_notification()
-                continue
-            count += 1
+            else:
+                count += 1
+            time.sleep(1)
 
     def stop(self):
         self._alive = False
