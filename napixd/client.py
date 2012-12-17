@@ -51,12 +51,12 @@ class Client( object):
             headers['Authorization'] = self._get_authorization( method, url)
         
         try:
-            logger.info('Start request %s%s', self.host, self.url)
+            logger.info('Start request %s%s', self.host, url)
             self.client.request( method, url, 
                     body = json.dumps( body), headers = headers)
             resp = self.client.getresponse()
             resp.read()
-            logger.info('End request %s%s', self.host, self.url)
+            logger.info('End request %s%s', self.host, url)
             return resp
         except socket.error:
             logger.error( 'Socket error, reconnecting')
