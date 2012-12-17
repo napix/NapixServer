@@ -15,7 +15,7 @@ logger = logging.getLogger('Napix.notifications')
 class Notifier(object):
     def __init__( self, app, delay=None ):
         self.app = app
-        self._alive = True
+        self._alive = False
 
         post_url = Conf.get_default( 'Napix.notify.url')
         post_url_bits = urlparse.urlsplit( post_url )
@@ -29,8 +29,12 @@ class Notifier(object):
         if self.delay < 1:
             logger.warning( 'Notification delay is below 1s, the minimum rate is 1s')
 
-    @background
     def start(self):
+        self._alive = True
+        self.job = self._start()
+
+    @background
+    def _start(self):
         for x in range(3):
             if self.send_first_notification():
                 break
@@ -43,7 +47,6 @@ class Notifier(object):
         logger.info('Running loop')
         self.loop()
 
-
     def loop( self):
         count = 0
         while self._alive:
@@ -55,7 +58,10 @@ class Notifier(object):
             time.sleep(1)
 
     def stop(self):
+        if not self._alive:
+            return
         self._alive = False
+        self.job.join()
 
     def send_first_notification(self):
         resp = self.send_request(  'POST', self.post_url)
