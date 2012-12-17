@@ -3,14 +3,13 @@
 
 
 import logging
-import operator
 import os
 import bottle
 
 import napixd
-from napixd.loader import get_bottle_app
+from napixd.loader import NapixdBottle
 from napixd.conf import Conf
-
+from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
 
 LOG_FILE =  '/tmp/napix.log'
 
@@ -31,7 +30,8 @@ class Setup(object):
         'auth', # the auth interface
         'reload', #the reloader on signal page and automatic
         'webclient', # the web client,
-        'executor', #The executor
+        #'executor', #The executor
+        'gevent', #Use gevent
     ])
 
     HELP_TEXT = '''
@@ -109,12 +109,39 @@ Non-default:
     def set_debug(self):
         bottle.debug( 'debug' in self.options )
 
+    def set_auth_handler(self, app):
+        conf =  Conf.get_default('Napix.auth')
+        if conf :
+            app.install(AAAPlugin( conf, allow_bypass='debug' in self.options))
+        else:
+            logger.warning('No authentification configuration found.')
+
     def get_app(self):
-        return get_bottle_app( self.options)
+        """
+        Return the bottle application for the napixd server.
+        """
+        napixd = NapixdBottle( options=self.options)
+
+        if 'useragent' in self.options:
+            napixd.install( UserAgentDetector() )
+
+        if 'auth' in self.options:
+            self.set_auth_handler( napixd)
+
+        #attach autoreloaders
+        if 'reload' in self.options:
+            napixd.launch_autoreloader()
+
+        napixd.install(ConversationPlugin())
+        napixd.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
+        return napixd
+
     def get_settings(self):
         return dict( Conf.get_default().get('Napix.daemon'))
     def get_server(self):
-        if 'executor' in self.options:
+        if 'gevent' in self.options:
+            return 'gevent'
+        elif 'executor' in self.options:
             from napixd.executor.bottle_adapter import RocketAndExecutor
             return RocketAndExecutor
         else:
@@ -122,7 +149,7 @@ Non-default:
 
     def set_loggers(self):
         formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
-        file_handler = logging.FileHandler( LOG_FILE, mode='a')
+        self.log_file = file_handler = logging.FileHandler( LOG_FILE, mode='a')
         file_handler.setLevel( logging.DEBUG)
         file_handler.setFormatter( formatter)
 

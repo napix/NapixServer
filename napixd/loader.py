@@ -8,6 +8,7 @@ import sys
 import time
 import os
 import signal
+import gevent
 
 try:
     import pyinotify
@@ -20,36 +21,14 @@ from .conf import Conf
 from .services import Service
 from .managers import Manager
 from .autodoc import Autodocument
-from .thread_manager import thread_manager
 from .notify import Notifier
 
 import bottle
-from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
 
 class AllOptions(object):
     def __contains__(self, x):
         return True
 
-def get_bottle_app( options =None ):
-    """
-    Return the bottle application for the napixd server.
-    """
-    options = options if options is not None else AllOptions()
-    napixd = NapixdBottle( options=options)
-
-    conf =  Conf.get_default('Napix.auth')
-    if 'useragent' in options:
-        napixd.install( UserAgentDetector() )
-    if 'auth' in options:
-        if conf :
-            napixd.install(AAAPlugin( conf, allow_bypass='debug' in options))
-        else:
-            logger.warning('No authentification configuration found.')
-
-    #attach autoreloaders
-    if 'reload' in options:
-        napixd.launch_autoreloader()
-    return napixd
 
 class Loader( object):
     AUTO_DETECT_PATH = '/var/lib/napix/auto'
@@ -260,16 +239,12 @@ class NapixdBottle(bottle.Bottle):
             services = self.make_services( load.managers )
             if 'doc' in self.options:
                 doc = Autodocument()
-                thread_manager.do_async( doc.generate_doc, fn_args=(load.managers,),
-                        give_thread=False, on_success=self.doc_set_root)
+                gevent.spawn( doc.generate_doc, load.managers)
         else:
             self.root_urls.update( s.url for s in services )
             for service in services:
                 service.setup_bottle( self)
 
-        if not no_conversation :
-            self.install(ConversationPlugin())
-        self.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
         self.notify_thread = False
 
         self.on_stop = []
