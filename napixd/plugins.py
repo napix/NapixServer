@@ -201,32 +201,13 @@ class AAAChecker(object):
             raise HTTPError(500, 'Auth server responded unexpected %s code'%resp.status)
         return resp.status == 200
 
-
-class AAAPlugin(object):
-    """
-    Authentication, Authorization and Accounting plugins
-
-    FIXME : A documenter quand ce sera arreté
-    """
+class BaseAAAPlugin(object):
     name = 'authentication_plugin'
     api = 2
-    logger = logging.getLogger('Napix.AAA')
 
-    def __init__( self, conf= None, allow_bypass=False, auth_checker_factory=AAAChecker):
+    def __init__( self, conf= None, allow_bypass=False):
         self.settings = conf or Conf.get_default('Napix.auth')
         self.allow_bypass = allow_bypass
-
-        auth_url_parts = urlsplit(self.settings.get('auth_url'))
-        self.host = auth_url_parts.netloc
-        self.url = urlunsplit(( '','',auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
-        self._local = threading.local()
-        self.auth_checker_factory = auth_checker_factory
-
-    @property
-    def checker(self):
-        if not hasattr( self._local, 'checker'):
-            self._local.checker = self.auth_checker_factory( self.host, self.url)
-        return self._local.checker
 
     def debug_check(self,request):
         return self.allow_bypass and 'authok' in request.GET
@@ -258,6 +239,28 @@ class AAAPlugin(object):
                 raise self.reject( 'Bad authorization data')
         except KeyError, e:
             raise self.reject(  'Missing authentication data: %s' %e)
+
+class AAAPlugin(BaseAAAPlugin):
+    """
+    Authentication, Authorization and Accounting plugins
+
+    FIXME : A documenter quand ce sera arreté
+    """
+    logger = logging.getLogger('Napix.AAA')
+
+    def __init__( self, conf=None, allow_bypass=False , auth_checker_factory=AAAChecker):
+        super( AAAPlugin, self).__init__( conf, allow_bypass)
+        auth_url_parts = urlsplit(self.settings.get('auth_url'))
+        self.host = auth_url_parts.netloc
+        self.url = urlunsplit(( '','',auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
+        self._local = threading.local()
+        self.auth_checker_factory = auth_checker_factory
+
+    @property
+    def checker(self):
+        if not hasattr( self._local, 'checker'):
+            self._local.checker = self.auth_checker_factory( self.host, self.url)
+        return self._local.checker
 
     def authserver_check(self, content):
         check = self.checker.authserver_check(content)
