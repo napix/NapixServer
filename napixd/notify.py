@@ -29,7 +29,7 @@ class Notifier(object):
         if self.delay < 1:
             logger.warning( 'Notification delay is below 1s, the minimum rate is 1s')
 
-    @background(name='notify_thread')
+    @background
     def start(self):
         for x in range(3):
             if self.send_first_notification():
