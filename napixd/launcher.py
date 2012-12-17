@@ -4,6 +4,7 @@
 
 import logging
 import os
+import sys
 import bottle
 
 import napixd
@@ -17,6 +18,7 @@ logger = logging.getLogger('Napix.Server')
 console = logging.getLogger('Napix.console')
 
 def launch(options):
+    sys.stdin.close()
     Setup(options).run()
 
 class Setup(object):
@@ -65,21 +67,24 @@ Non-default:
     print_exc:  Show the exceptions in the console output
         '''
     def __init__(self, options):
-        self.options = options
         nooptions = [ opt[2:] for opt in options if opt.startswith('no') ]
 
         options = set(options)
         if 'only' not in options:
             options = options.union( self.DEFAULT_OPTIONS )
-        self.options = options.difference( nooptions)
+        self.options = options = options.difference( nooptions)
 
         self.set_loggers()
 
         console.info( 'Napixd Home is %s', napixd.HOME)
-        console.info( 'Options are %s', ','.join(options))
+        console.info( 'Options are %s', ','.join(self.options))
         console.info( 'Starting process %s', os.getpid())
         console.info( 'Found napixd home at %s', napixd.HOME)
         console.info( 'Logging activity in %s', LOG_FILE )
+
+        if 'gevent' in self.options:
+            from gevent.monkey import patch_all
+            patch_all()
 
 
     def run( self):
@@ -141,10 +146,7 @@ Non-default:
     def get_server(self):
         if 'gevent' in self.options:
             return 'gevent'
-        elif 'executor' in self.options:
-            from napixd.executor.bottle_adapter import RocketAndExecutor
-            return RocketAndExecutor
-        else:
+        elif 'rocket' in self.options:
             return 'rocket'
 
     def set_loggers(self):

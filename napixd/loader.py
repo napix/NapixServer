@@ -8,7 +8,6 @@ import sys
 import time
 import os
 import signal
-import gevent
 
 try:
     import pyinotify
@@ -239,6 +238,7 @@ class NapixdBottle(bottle.Bottle):
             services = self.make_services( load.managers )
             if 'doc' in self.options:
                 doc = Autodocument()
+                import gevent
                 gevent.spawn( doc.generate_doc, load.managers)
         else:
             self.root_urls.update( s.url for s in services )
