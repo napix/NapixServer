@@ -46,7 +46,7 @@ class Greenlet(gevent.greenlet.Greenlet):
 
     def get_running_intervals(self):
         i = iter(self._times)
-        now = time.time())
+        now = time.time()
         for t in i:
             yield t, next(i, now)
 
