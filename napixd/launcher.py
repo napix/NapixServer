@@ -169,11 +169,17 @@ Non-default:
     def set_loggers(self):
         formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
         self.log_file = file_handler = logging.FileHandler( LOG_FILE, mode='a')
-        file_handler.setLevel( logging.DEBUG)
+        file_handler.setLevel( logging.INFO)
         file_handler.setFormatter( formatter)
 
         console_handler = logging.StreamHandler( )
-        console_handler.setLevel( logging.WARNING )
+        console_handler.setLevel(
+                logging.DEBUG
+                if 'verbose' in self.options else
+                logging.WARNING
+                if 'silent' in self.options else
+                logging.INFO)
+
         console_handler.setFormatter( formatter)
 
         logging.getLogger('Rocket').addHandler( file_handler)
@@ -186,7 +192,10 @@ Non-default:
         logging.getLogger('Napix').addHandler( file_handler )
 
         if 'silent' not in self.options:
-            logging.getLogger('Napix.console').setLevel( logging.INFO )
+            if 'verbose' in self.options:
+                logging.getLogger('Napix.console').setLevel( logging.DEBUG)
+            else:
+                logging.getLogger('Napix.console').setLevel( logging.INFO)
             logging.getLogger('Napix.console').addHandler( logging.StreamHandler() )
 
 
