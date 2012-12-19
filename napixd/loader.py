@@ -7,13 +7,6 @@ logger = logging.getLogger('Napix.loader')
 import sys
 import time
 import os
-import signal
-
-try:
-    import pyinotify
-    has_inotify = True
-except ImportError:
-    has_inotify = False
 
 from napixd import HOME
 from .conf import Conf
@@ -253,7 +246,7 @@ class NapixdBottle(bottle.Bottle):
         if 'notify' in self.options and Conf.get_default('Napix.notify.url'):
             notifier = Notifier( self)
             self.on_stop.append( notifier.stop)
-            notifier.start()
+            gevent.spawn( notifier.loop)
 
     def doc_set_root(self, root):
         self.route('/_napix_autodoc<filename:path>',
@@ -282,7 +275,7 @@ class NapixdBottle(bottle.Bottle):
         bottle.DEBUG = Conf.get_default('Napix.debug')
         #self.services = list(self.loader)
 
-    def _reload(self):
+    def reload(self):
         console = logging.getLogger( 'Napix.console')
         if self.loader is None:
             return
@@ -315,8 +308,6 @@ class NapixdBottle(bottle.Bottle):
         """
         #/ route, give the services
         self.route('/',callback=self.slash)
-        if 'reload' in self.options:
-            self.route('/_napix_reload',callback=self.reload)
 
         #Error handling for not found and invalid
         self.error(404)(self._error_handler_factory(404))
@@ -339,39 +330,6 @@ class NapixdBottle(bottle.Bottle):
             logger.debug( 'Try WebClient in directory %s', directory)
             if directory and os.path.isdir( directory):
                 return directory
-
-    def launch_autoreloader(self):
-        signal.signal( signal.SIGHUP, self.on_sighup)
-
-        if ( self.loader is not None and has_inotify and
-                Conf.get_default('Napix.loader.autoreload')):
-            logger.info( 'Launch Napix autoreloader')
-            watch_manager = pyinotify.WatchManager()
-            for path in self.loader.paths:
-                if os.path.isdir( path):
-                    watch_manager.add_watch( path, pyinotify.IN_CLOSE_WRITE)
-
-            self.notify_thread = pyinotify.ThreadedNotifier( watch_manager, self.on_file_change)
-            self.notify_thread.start()
-            self.on_stop.append( self.notify_thread.stop )
-        elif not has_inotify:
-            logger.info('Did not find pyinotify, reload on file change support disabled')
-
-    def on_sighup(self, signum, frame):
-        logger.info('Caught SIGHUP, reloading')
-        self._reload()
-
-    def on_file_change( self, event):
-        if ( event.dir or not event.name.endswith('.py')):
-            return
-        logger.info('Caught file change, reloading')
-        self._reload()
-
-    def reload( self):
-        if not Conf.get_default().get('Napix.debug'):
-            raise bottle.HTTPError( 403, 'Not in debug mode, HTTP reloading is not possible')
-        logger.info('Asked to do so, reloading')
-        self._reload()
 
     def static_factory(self, root):
         def static( filename = 'index.html' ):

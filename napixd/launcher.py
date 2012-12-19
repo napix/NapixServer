@@ -8,9 +8,11 @@ import sys
 import bottle
 
 import napixd
+
 from napixd.loader import NapixdBottle
 from napixd.conf import Conf
-from .plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
+from napixd.plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
+from napixd.reload import Reloader
 
 LOG_FILE =  '/tmp/napix.log'
 
@@ -137,7 +139,7 @@ Non-default:
 
         #attach autoreloaders
         if 'reload' in self.options:
-            napixd.launch_autoreloader()
+            Reloader( napixd).start()
 
         if 'times' in self.options:
             from napixd.gevent_tools import AddGeventTimeHeader
