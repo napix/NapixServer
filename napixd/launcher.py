@@ -60,11 +60,14 @@ Default options:
     reload:     The reloader events attachement on signal, page and inotify
     webclient:  The web interface accessible on /_napix_js/
     executor:   Launch the executor controler
+    gevent:     Use gevent as the wsgi interface
 
 Non-default:
     silent:     Do not show the messages in the console
     debug:      Run the DEBUG mode
     print_exc:  Show the exceptions in the console output
+    rocket:     Use Rocket as the server
+    times:      Add custom header to show the running time and the total time
         '''
     def __init__(self, options):
         nooptions = [ opt[2:] for opt in options if opt.startswith('no') ]
@@ -95,16 +98,15 @@ Non-default:
             print 'Enabled options are: ' + ' '.join( self.options)
             return
 
-        settings = self.get_settings()
         app = self.get_app()
         server = self.get_server()
-
 
         logger.info('Starting')
         try:
             if 'app' in self.options :
-                bottle.run( app, host=settings.get('host', self.DEFAULT_HOST),
-                        port=settings.get('port', self.DEFAULT_PORT), server=server)
+                server_options = self.get_server_options()
+                server_options['server'] = server
+                bottle.run( app, **server_options)
         finally:
             console.info('Stopping')
             app.stop();
@@ -137,17 +139,30 @@ Non-default:
         if 'reload' in self.options:
             napixd.launch_autoreloader()
 
+        if 'times' in self.options:
+            from napixd.gevent_tools import AddGeventTimeHeader
+            napixd.install( AddGeventTimeHeader())
+
         napixd.install(ConversationPlugin())
+
         napixd.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
         return napixd
 
     def get_settings(self):
         return dict( Conf.get_default().get('Napix.daemon'))
+
     def get_server(self):
         if 'gevent' in self.options:
             return 'gevent'
         elif 'rocket' in self.options:
             return 'rocket'
+
+    def get_server_options(self):
+        settings = self.get_settings()
+        return {
+                'host':settings.get('host', self.DEFAULT_HOST),
+                'port':settings.get('port', self.DEFAULT_PORT),
+                }
 
     def set_loggers(self):
         formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
