@@ -14,7 +14,6 @@ from napixd.conf import Conf
 from napixd.plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
 from napixd.reload import Reloader
 
-LOG_FILE =  '/tmp/napix.log'
 
 logger = logging.getLogger('Napix.Server')
 console = logging.getLogger('Napix.console')
@@ -38,6 +37,7 @@ class Setup(object):
         'gevent', #Use gevent
     ])
 
+    LOG_FILE =  '/tmp/napix.log'
     HELP_TEXT = '''
 napixd daemon runner.
 usage: napixd [(no)option] ...
@@ -85,7 +85,7 @@ Non-default:
         console.info( 'Options are %s', ','.join(self.options))
         console.info( 'Starting process %s', os.getpid())
         console.info( 'Found napixd home at %s', napixd.HOME)
-        console.info( 'Logging activity in %s', LOG_FILE )
+        console.info( 'Logging activity in %s', self.LOG_FILE )
 
         if 'gevent' in self.options:
             from gevent.monkey import patch_all
@@ -168,11 +168,11 @@ Non-default:
 
     def set_loggers(self):
         formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
-        self.log_file = file_handler = logging.FileHandler( LOG_FILE, mode='a')
+        self.log_file = file_handler = logging.FileHandler( self.LOG_FILE, mode='a')
         file_handler.setLevel( logging.INFO)
         file_handler.setFormatter( formatter)
 
-        console_handler = logging.StreamHandler( )
+        self.console = console_handler = logging.StreamHandler( )
         console_handler.setLevel(
                 logging.DEBUG
                 if 'verbose' in self.options else
