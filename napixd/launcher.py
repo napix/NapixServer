@@ -5,15 +5,10 @@
 import logging
 import os
 import sys
-import bottle
 
 import napixd
 
-from napixd.loader import NapixdBottle
 from napixd.conf import Conf
-from napixd.plugins import ConversationPlugin, ExceptionsCatcher, AAAPlugin, UserAgentDetector
-from napixd.reload import Reloader
-
 
 logger = logging.getLogger('Napix.Server')
 console = logging.getLogger('Napix.console')
@@ -108,6 +103,7 @@ Non-default:
             if 'app' in self.options :
                 server_options = self.get_server_options()
                 server_options['server'] = server
+                import bottle
                 bottle.run( app, **server_options)
         finally:
             console.info('Stopping')
@@ -116,11 +112,13 @@ Non-default:
         console.info('Stopped')
 
     def set_debug(self):
+        import bottle
         bottle.debug( 'debug' in self.options )
 
     def set_auth_handler(self, app):
         conf =  Conf.get_default('Napix.auth')
         if conf :
+            from napixd.plugins import AAAPlugin
             app.install(AAAPlugin( conf, allow_bypass='debug' in self.options))
         else:
             logger.warning('No authentification configuration found.')
@@ -129,6 +127,9 @@ Non-default:
         """
         Return the bottle application for the napixd server.
         """
+        from napixd.loader import NapixdBottle
+        from napixd.plugins import ExceptionsCatcher, ConversationPlugin
+
         napixd = NapixdBottle( options=self.options)
 
         if 'times' in self.options:
@@ -138,6 +139,7 @@ Non-default:
         napixd.install(ConversationPlugin())
 
         if 'useragent' in self.options:
+            from napixd.plugins import UserAgentDetector
             napixd.install( UserAgentDetector() )
 
         if 'auth' in self.options:
@@ -145,6 +147,7 @@ Non-default:
 
         #attach autoreloaders
         if 'reload' in self.options:
+            from napixd.reload import Reloader
             Reloader( napixd).start()
 
         napixd.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
