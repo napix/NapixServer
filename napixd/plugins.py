@@ -33,14 +33,17 @@ class ConversationPlugin(object):
     """
     name = "conversation_plugin"
     api = 2
+    logger = logging.getLogger('Napix.conversations')
     def unwrap(self, request):
         #unserialize the request
         if int(request.get('CONTENT_LENGTH',0)) != 0:
             if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
                 try:
                     request.data = json.load(request.body)
-                except ValueError:
-                   raise HTTPError(400, 'Unable to load JSON object', header={ 'content-type' : 'text/plain' })
+                except ValueError, e:
+                    self.logger.warning( 'Got bad JSON object: %s', e)
+                    self.logger.debug('JSON object is %s', request.body.getvalue())
+                    raise HTTPError(400, 'Unable to load JSON object', header={ 'content-type' : 'text/plain' })
             else:
                 request.data = request.forms
         else :
@@ -185,19 +188,20 @@ class AAAChecker(object):
                 'Content-type':'application/json', }
         body = json.dumps(content)
         try:
-            self.logger.info('Sending request to the auth server')
+            self.logger.debug('Sending request to the auth server')
             self.http_client.request( 'POST', self.url,
                     body=body, headers=headers)
             resp = self.http_client.getresponse()
-            resp.read()
+            content = resp.read()
         except socket.error, e:
             self.logger.error( 'Auth server did not respond, %r', e)
             raise HTTPError( 500, 'Auth server did not respond')
         finally:
-            self.logger.info('Finished the request to the auth server')
+            self.logger.debug('Finished the request to the auth server')
 
         if resp.status != 200 and resp.status != 403 :
             self.logger.error( 'Auth server responded a %s', resp.status)
+            self.logger.debug( 'Auth server said: %s', content)
             raise HTTPError(500, 'Auth server responded unexpected %s code'%resp.status)
         return resp.status == 200
 
@@ -215,7 +219,7 @@ class BaseAAAPlugin(object):
     def reject(self, cause, code=403):
         self.logger.info('Rejecting request of %s: %s',
                 bottle.request.environ['REMOTE_ADDR'], cause)
-        return HTTPError( code, cause) 
+        return HTTPError( code, cause)
 
     def authorization_extract(self,request):
         if not 'Authorization' in request.headers:
@@ -238,7 +242,7 @@ class BaseAAAPlugin(object):
                     content['path'] != urllib.quote(bottle.request.path ,'%/') ):
                 raise self.reject( 'Bad authorization data')
         except KeyError, e:
-            raise self.reject(  'Missing authentication data: %s' %e)
+            raise self.reject( 'Missing authentication data: %s' %e)
 
 class AAAPlugin(BaseAAAPlugin):
     """
