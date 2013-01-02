@@ -131,6 +131,12 @@ Non-default:
         """
         napixd = NapixdBottle( options=self.options)
 
+        if 'times' in self.options:
+            from napixd.gevent_tools import AddGeventTimeHeader
+            napixd.install( AddGeventTimeHeader())
+
+        napixd.install(ConversationPlugin())
+
         if 'useragent' in self.options:
             napixd.install( UserAgentDetector() )
 
@@ -140,12 +146,6 @@ Non-default:
         #attach autoreloaders
         if 'reload' in self.options:
             Reloader( napixd).start()
-
-        if 'times' in self.options:
-            from napixd.gevent_tools import AddGeventTimeHeader
-            napixd.install( AddGeventTimeHeader())
-
-        napixd.install(ConversationPlugin())
 
         napixd.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
         return napixd
