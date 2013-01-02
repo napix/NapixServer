@@ -65,6 +65,9 @@ class Conf(UserDict.UserDict):
         else:
             return self.data[item]
 
+    def __nonzero__(self):
+        return bool(self.data)
+
     def get( self, section_id):
         try:
             value = self[section_id]
