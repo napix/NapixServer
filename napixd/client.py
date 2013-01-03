@@ -33,7 +33,7 @@ class Client( object):
         self.host = host
         self.noauth = noauth
         self.credentials = credentials
-        self.key = str( credentials['key'])
+        self.key = str( credentials.get('key'))
         self.connect();
 
     def connect(self):
