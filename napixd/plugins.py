@@ -238,8 +238,10 @@ class BaseAAAPlugin(object):
         try:
             if content['host'] != self.settings.get('service'):
                 raise self.reject('Bad host')
-            if ( content['method'] != bottle.request.method or
-                    content['path'] != urllib.quote(bottle.request.path ,'%/') ):
+            path = urllib.quote(bottle.request.path ,'%/')
+            if bottle.request.query_string:
+                path += '?' + bottle.request.query_string
+            if content['method'] != bottle.request.method or content['path'] != path:
                 raise self.reject( 'Bad authorization data')
         except KeyError, e:
             raise self.reject( 'Missing authentication data: %s' %e)
