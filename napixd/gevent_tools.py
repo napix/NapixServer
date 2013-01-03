@@ -13,10 +13,8 @@ logger = logging.getLogger( 'Napix.gevent')
 
 class Chrono(object):
     def __init__(self):
-        self.running_times = None
         self.start = None
         self.end = None
-
     def __repr__(self):
         if self.start is None:
             return '<Chrono unstarted>'
@@ -50,6 +48,9 @@ class Greenlet(gevent.greenlet.Greenlet):
         for t in i:
             yield t, next(i, now)
 
+    def get_running_time(self):
+        return sum( end-start for start, end in self.get_running_intervals())
+
 class Pool( gevent.pool.Pool):
     greenlet_class = Greenlet
 
@@ -61,6 +62,7 @@ class Tracer(object):
             return
         from_, to = who
         if self.last is not None:
+            self.last.add_time()
             self.last = None
 
         if isinstance( to, Greenlet):
@@ -92,7 +94,8 @@ class AddGeventTimeHeader(object):
                 proc = Greenlet.spawn( callback, *args, **kw)
                 resp = proc.get()
             resp.headers['x-total-time'] = timing.total
-            resp.headers['x-running-time'] = sum( end-start for start, end in proc.get_running_intervals())
+            resp.headers['x-running-time'] = proc.get_running_time()
+
             return resp
         return inner_gevent_time_header
 
