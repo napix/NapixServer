@@ -238,15 +238,13 @@ class NapixdBottle(bottle.Bottle):
             for service in services:
                 service.setup_bottle( self)
 
-        self.notify_thread = False
-
         self.on_stop = []
         self.setup_bottle()
 
-        if 'notify' in self.options and Conf.get_default('Napix.notify.url'):
+        if 'notify' in self.options:
             notifier = Notifier( self)
             self.on_stop.append( notifier.stop)
-            gevent.spawn( notifier.loop)
+            notifier.start()
 
     def doc_set_root(self, root):
         self.route('/_napix_autodoc<filename:path>',

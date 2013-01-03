@@ -17,6 +17,11 @@ class Notifier(object):
         self.app = app
         self._alive = False
 
+        if not Conf.get_default('Napix.notify.url'):
+            logger.error('Notifier has not configuration options')
+            self.post_url = None
+            return
+
         post_url = Conf.get_default( 'Napix.notify.url')
         post_url_bits = urlparse.urlsplit( post_url )
         self.post_url = post_url_bits.path
@@ -30,6 +35,8 @@ class Notifier(object):
             logger.warning( 'Notification delay is below 1s, the minimum rate is 1s')
 
     def start(self):
+        if self.post_url is None:
+            return
         self._alive = True
         self.job = self._start()
 
