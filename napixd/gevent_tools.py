@@ -8,6 +8,7 @@ import logging
 import gevent
 import gevent.greenlet
 import gevent.pool
+import gevent.hub
 
 logger = logging.getLogger( 'Napix.gevent')
 
@@ -71,13 +72,13 @@ class Tracer(object):
 
     def set_trace(self):
         logger.info( 'Set trace')
-        hub = gevent.get_hub()
+        hub = gevent.hub.get_hub()
         self.old_trace = hub.gettrace()
-        gevent.get_hub().settrace(self.trace)
+        gevent.hub.get_hub().settrace(self.trace)
 
     def unset_trace(self):
         logger.info( 'Unset trace')
-        hub = gevent.get_hub()
+        hub = gevent.hub.get_hub()
         hub.settrace( self.old_trace)
 
 class AddGeventTimeHeader(object):
