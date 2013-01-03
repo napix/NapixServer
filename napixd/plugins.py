@@ -62,9 +62,8 @@ class ConversationPlugin(object):
                 if isinstance(result,HTTPResponse):
                     exception = result
                 elif isinstance( result, Response):
-                    bottle.response.headers.update( result.headers)
                     result.seek(0)
-                    return result
+                    return HTTPResponse( result, header=result.headers)
             except HTTPError,e:
                 exception = e
 
