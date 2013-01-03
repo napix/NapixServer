@@ -91,12 +91,17 @@ class AddGeventTimeHeader(object):
     def apply(self, callback, route):
         @functools.wraps(callback)
         def inner_gevent_time_header(*args, **kw):
+            import bottle
+            before = bottle._lctx.__dict__
+            def bs(cb,*args,**kw):
+                bottle._lctx.__dict__.update( before)
+                return cb( *args, **kw)
+
             with Chrono() as timing:
-                proc = Greenlet.spawn( callback, *args, **kw)
+                proc = Greenlet.spawn( bs, callback, *args, **kw)
                 resp = proc.get()
             resp.headers['x-total-time'] = timing.total
             resp.headers['x-running-time'] = proc.get_running_time()
-
             return resp
         return inner_gevent_time_header
 
