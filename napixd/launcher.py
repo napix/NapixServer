@@ -157,10 +157,11 @@ Non-default:
         return dict( Conf.get_default().get('Napix.daemon'))
 
     def get_server(self):
-        if 'gevent' in self.options:
-            return 'gevent'
-        elif 'rocket' in self.options:
+        if 'rocket' in self.options:
             return 'rocket'
+        else:
+            from napixd.gevent_tools import GeventServer
+            return GeventServer
 
     def get_server_options(self):
         settings = self.get_settings()

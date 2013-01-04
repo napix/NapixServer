@@ -4,10 +4,13 @@
 import functools
 import time
 import logging
+import bottle
+from urllib import unquote
 
 import gevent
 import gevent.greenlet
 import gevent.pool
+import gevent.wsgi
 import gevent.hub
 
 logger = logging.getLogger( 'Napix.gevent')
@@ -104,5 +107,23 @@ class AddGeventTimeHeader(object):
             resp.headers['x-running-time'] = proc.get_running_time()
             return resp
         return inner_gevent_time_header
+
+class WSGIHandler(gevent.pywsgi.WSGIHandler):
+    def get_environ(self):
+        env = super( WSGIHandler, self).get_environ()
+        path, x, query = self.path.partition('?')
+        tokens = path.replace('%2f', '%2F').split('%2F')
+        env['PATH_INFO'] = '%2F'.join( map( unquote, tokens))
+        return env
+
+
+class GeventServer(bottle.ServerAdapter):
+    def run(self, handler):
+        log = None if self.quiet else 'default'
+        gevent.pywsgi.WSGIServer(
+                (self.host, self.port),
+                handler,
+                handler_class = WSGIHandler,
+                log=log).serve_forever()
 
 
