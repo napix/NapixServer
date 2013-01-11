@@ -14,7 +14,4 @@ from napixd.launcher import Setup
 options = set( sys.argv)
 options.add( 'silent')
 
-application = Setup(options).get_app()
-
-from napixd.plugins import PathInfoMiddleware
-application = PathInfoMiddleware( application)
+application = Setup(options).get_application()

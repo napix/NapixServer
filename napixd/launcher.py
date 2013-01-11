@@ -30,6 +30,7 @@ class Setup(object):
         'webclient', # the web client,
         #'executor', #The executor
         'gevent', #Use gevent
+        'cors', #Set CORS headers
     ])
 
     LOG_FILE = os.path.join( napixd.HOME, 'log',  'napix.log')
@@ -58,6 +59,7 @@ Default options:
     webclient:  The web interface accessible on /_napix_js/
     executor:   Launch the executor controler
     gevent:     Use gevent as the wsgi interface
+    uwsgi:      Use with uwsgi
 
 Non-default:
     silent:     Do not show the messages in the console
@@ -96,15 +98,15 @@ Non-default:
             return
 
         app = self.get_app()
-        server = self.get_server()
 
         logger.info('Starting')
         try:
             if 'app' in self.options :
                 server_options = self.get_server_options()
-                server_options['server'] = server
+                application = self.apply_middleware( app)
+
                 import bottle
-                bottle.run( app, **server_options)
+                bottle.run( application, **server_options)
         finally:
             console.info('Stopping')
             app.stop();
@@ -153,12 +155,26 @@ Non-default:
         napixd.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
         return napixd
 
+    def apply_middleware(self, application):
+        from napixd.plugins import PathInfoMiddleware, CORSMiddleware
+        if 'uwsgi' in self.options:
+            application = PathInfoMiddleware( application)
+        if 'cors' in self.options:
+            application =  CORSMiddleware( application)
+        return application
+
+    def get_application(self):
+        application = self.get_app()
+        return self.apply_middleware( application)
+
     def get_settings(self):
         return dict( Conf.get_default().get('Napix.daemon'))
 
     def get_server(self):
         if 'rocket' in self.options:
             return 'rocket'
+        elif 'uwsgi' in self.options:
+            return 'gevent'
         else:
             from napixd.gevent_tools import GeventServer
             return GeventServer
@@ -168,6 +184,7 @@ Non-default:
         return {
                 'host':settings.get('host', self.DEFAULT_HOST),
                 'port':settings.get('port', self.DEFAULT_PORT),
+                'server' : self.get_server(),
                 }
 
     def set_loggers(self):
