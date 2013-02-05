@@ -9,6 +9,7 @@ import json
 import logging
 import socket
 import urllib
+import urlparse
 import threading
 from cStringIO import StringIO
 
@@ -288,4 +289,12 @@ class AAAPlugin(BaseAAAPlugin):
             return callback(*args,**kwargs)
         return inner_aaa
 
+class PathInfoMiddleware(object):
+    def __init__(self, application):
+        self.application = application
+    def __call__(self, environ, start_response):
+        path = urlparse.urlparse(environ['REQUEST_URI']).path.replace('%2f', '%2F')
+        path_info = '%2F'.join( urllib.unquote( path_bit) for path_bit in path.split('%2F'))
+        environ['PATH_INFO'] = path_info
+        return self.application( environ, start_response)
 

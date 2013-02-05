@@ -4,13 +4,17 @@
 import sys
 import os
 import napixd
-from napixd.launcher import Setup
 
 path = os.path.realpath( os.path.join( os.path.dirname(__file__), '..' ))
 sys.path.append(path)
 napixd.HOME = path
 
+from napixd.launcher import Setup
+
 options = set( sys.argv)
-options.add( 'quiet')
 options.add( 'silent')
+
 application = Setup(options).get_app()
+
+from napixd.plugins import PathInfoMiddleware
+application = PathInfoMiddleware( application)
