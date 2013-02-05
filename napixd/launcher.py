@@ -18,7 +18,7 @@ def launch(options):
     Setup(options).run()
 
 class Setup(object):
-    DEFAULT_HOST='localhost'
+    DEFAULT_HOST='0.0.0.0'
     DEFAULT_PORT=8002
     DEFAULT_OPTIONS = set([
         'app', #Launch the application
@@ -32,7 +32,7 @@ class Setup(object):
         'gevent', #Use gevent
     ])
 
-    LOG_FILE =  '/tmp/napix.log'
+    LOG_FILE = os.path.join( napixd.HOME, 'log',  'napix.log')
     HELP_TEXT = '''
 napixd daemon runner.
 usage: napixd [(no)option] ...
@@ -172,6 +172,9 @@ Non-default:
 
     def set_loggers(self):
         formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
+        if not os.path.isdir( os.path.dirname(self.LOG_FILE)):
+            os.makedirs( os.path.dirname( self.LOG_FILE))
+
         self.log_file = file_handler = logging.FileHandler( self.LOG_FILE, mode='a')
         file_handler.setLevel( logging.INFO)
         file_handler.setFormatter( formatter)
