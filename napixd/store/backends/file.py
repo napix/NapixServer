@@ -7,14 +7,18 @@ import cPickle as pickle
 from napixd import get_path
 from napixd.store.backends import BaseStore
 
+PREFIX = 'stores'
+
 class FSStore( BaseStore):
-    def get_path(self):
-        return get_path( self.__class__.__name__)
+    def get_path(self, path):
+        return ( get_path( path)
+                if path else
+                get_path( os.path.join( PREFIX, self.__class__.__name__)))
 
 class FileStore( FSStore ):
     def __init__( self, collection, path = None ):
-        path = path if path is not None else self.get_path()
-        self.file_path = os.path.join( path , collection)
+        path = self.get_path(path)
+        self.file_path = os.path.join( path, collection)
         try:
             data = pickle.load( open(self.file_path, 'r'))
         except IOError:
@@ -31,8 +35,8 @@ class FileStore( FSStore ):
 
 class DirectoryStore( FSStore):
     def __init__( self, collection, path=None):
-        path = path or self.get_path()
-        self.dir_path = os.path.join( path, collection)
+        path = self.get_path(path)
+        self.dir_path = os.path.join( path, collection, '')
 
     def keys( self):
         try:
