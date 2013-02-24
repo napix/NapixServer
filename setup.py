@@ -12,8 +12,8 @@ setup(name="napixd",
                 'tests.*',
                 ]),
     install_requires=[
-        'bottle==0.10.8',
-        'gevent',
+        'bottle>=0.11',
+        'gevent>0.99',
         ],
     scripts=[
         'bin/napixd'
