@@ -1,0 +1,2 @@
+include conf/settings.json
+recursive-include web *

@@ -1,0 +1,31 @@
+{
+  "_napix_version": 1.0 ,
+  "Napix" : {
+    "debug" : true,
+    "daemon" : {
+      "host" : "0.0.0.0",
+      "port" : 8002
+    },
+    "loader" : {
+        "autoreload" : true
+    },
+    "storage" : {
+      "file" : {
+        "path" : "/tmp/napix"
+      },
+      "redis" : {
+        "host" : "redis.napix.nx"
+      }
+    },
+    "auth" : {
+      "auth_url" : "http://localhost:8003/auth/authorization/",
+      "service" : "localhost:8002"
+    },
+    "managers" : {
+      "hostfiles" : "napixd.examples.list_manager.HostFiles"
+    }
+  },
+  "hostfiles" : {
+    "url":"sample"
+  }
+}

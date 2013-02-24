@@ -7,3 +7,4 @@ auto
 doc/build/
 *.egg-info
 .project.vip
+venv

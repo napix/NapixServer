@@ -1,0 +1,18 @@
+{
+    "Napix" : {
+        "managers" : {
+            "router1" : "enix.managers.routers.ManagerForX480",
+            "router2" : "enix.managers.routers.ManagerForX480"
+        }
+    },
+    "router1" : {
+        "ip" : "10.20.40.254",
+        "login" : "root",
+        "password" : "wE%RZ34$mm"
+    },
+    "router2" : {
+        "ip" : "10.20.45.254",
+        "login" : "root",
+        "password" : "mp2*SD16$p"
+    }
+}
