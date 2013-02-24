@@ -3,7 +3,7 @@
 
 
 import sys
-from ..conf import Conf
+from napixd.conf import Conf
 
 class NoSuchStoreBackend(Exception):
     pass
@@ -32,11 +32,11 @@ def load_backend_factory(default_location, default_class, conf_key):
         return cache[backend]
     return load_backend
 
-store_loader = load_backend_factory( 'napixd.store.backends', 'FileStore', 'Napix.storage.store')
+store_loader = load_backend_factory( 'napixd.store.backends.file', 'FileStore', 'Napix.storage.store')
 def Store(collection, backend=None, **opts):
     return store_loader(backend)( collection, **opts )
 
-counter_loader = load_backend_factory( 'napixd.store.counters', 'LocalCounter', 'Napix.storage.counter')
+counter_loader = load_backend_factory( 'napixd.store.backends.local', 'LocalCounter', 'Napix.storage.counter')
 def Counter( name, backend=None, **opts):
     return counter_loader(backend)( name, **opts)
 

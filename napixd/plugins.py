@@ -19,8 +19,8 @@ from httplib import HTTPConnection
 import bottle
 from bottle import HTTPResponse,HTTPError
 
-from .conf import Conf
-from .http import Response
+from napixd.conf import Conf
+from napixd.http import Response
 
 
 __all__ = ['ExceptionsCatcher', 'ConversationPlugin', 'AAAPlugin', 'UserAgentDetector']
@@ -44,7 +44,7 @@ class ConversationPlugin(object):
                 except ValueError, e:
                     self.logger.warning( 'Got bad JSON object: %s', e)
                     self.logger.debug('JSON object is %s', request.body.getvalue())
-                    raise HTTPError(400, 'Unable to load JSON object', header={ 'content-type' : 'text/plain' })
+                    raise HTTPError(400, 'Unable to load JSON object', content_type= 'text/plain' )
             else:
                 request.data = request.forms
         else :
@@ -65,16 +65,16 @@ class ConversationPlugin(object):
                 elif isinstance( result, Response):
                     result.seek(0)
                     return HTTPResponse( result, header=result.headers)
-            except HTTPError,e:
+            except HTTPResponse,e:
                 exception = e
 
-            headers = []
+            headers = bottle.HeaderDict()
             content_type = ''
             if exception is not None:
-                result = exception.output
+                result = exception.body
                 status = exception.status
                 if exception.headers != None:
-                    headers.extend(exception.headers.iteritems())
+                    headers.update(exception.headers)
                     if 'content-type' in exception.headers :
                         content_type = exception.headers['content-type']
 
@@ -88,8 +88,8 @@ class ConversationPlugin(object):
                 content_type = ''
                 result = None
 
-            headers.append( ('Content-Type', content_type))
-            resp = HTTPResponse( result, status, header=headers)
+            headers.setdefault( 'Content-Type', content_type)
+            resp = HTTPResponse( result, status, **headers)
             return resp
         return inner_conversation
 
@@ -114,8 +114,8 @@ class ExceptionsCatcher(object):
         def inner_exception_catcher(*args,**kwargs):
             try:
                 return callback(*args,**kwargs) #Exception
-            except HTTPResponse :
-                raise
+            except HTTPResponse, e:
+                return e
             except Exception,e:
                 method = bottle.request.method
                 path = bottle.request.path
@@ -141,7 +141,7 @@ class ExceptionsCatcher(object):
                         'line': lineno,
                         'traceback' : extern_tb or all_tb,
                         }
-                raise HTTPError(500,res)
+                return HTTPError(500,res)
         return inner_exception_catcher
 
 class UserAgentDetector( object ):
@@ -157,7 +157,7 @@ class UserAgentDetector( object ):
             if ( request.headers.get('user_agent', '' ).startswith('Mozilla') and
                     not request.headers.get('X-Requested-With') == 'XMLHttpRequest' and
                     not ( 'authok' in request.GET or 'Authorization' in request.headers )):
-                raise HTTPError(401, '''
+                return HTTPError(401, '''
 <html><head><title>Request Not authorized</title></head><body>
 <h1> You need to sign your request</h1>
 <p>
@@ -169,7 +169,7 @@ Or you prefer going to the <a href="/_napix_js/help/high_level.html">the doc</a>
 <p>
 Anyway if you just want to explore the Napix server when it's in DEBUG mode, use the <a href="?authok">?authok GET parameter</a>
 </p>
-</body></html>''', header = [ ( 'CONTENT_TYPE', 'text/html' ) ])
+</body></html>''', Content_Type= 'text/html' )
             else:
                 return callback( *args, **kwargs)
         return inner_useragent
@@ -178,9 +178,9 @@ Anyway if you just want to explore the Napix server when it's in DEBUG mode, use
 
 class AAAChecker(object):
     logger = logging.getLogger('Napix.AAA.Checker')
-    def __init__(self, host, url, http_factory=HTTPConnection):
+    def __init__(self, host, url):
         self.logger.debug( 'Creating a new checker')
-        self.http_client = http_factory(host)
+        self.http_client = HTTPConnection(host)
         self.url = url
 
     def authserver_check(self, content):
@@ -254,18 +254,17 @@ class AAAPlugin(BaseAAAPlugin):
     """
     logger = logging.getLogger('Napix.AAA')
 
-    def __init__( self, conf=None, allow_bypass=False , auth_checker_factory=AAAChecker):
+    def __init__( self, conf=None, allow_bypass=False , ):
         super( AAAPlugin, self).__init__( conf, allow_bypass)
         auth_url_parts = urlsplit(self.settings.get('auth_url'))
         self.host = auth_url_parts.netloc
         self.url = urlunsplit(( '','',auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
         self._local = threading.local()
-        self.auth_checker_factory = auth_checker_factory
 
     @property
     def checker(self):
         if not hasattr( self._local, 'checker'):
-            self._local.checker = self.auth_checker_factory( self.host, self.url)
+            self._local.checker = AAAChecker( self.host, self.url)
         return self._local.checker
 
     def authserver_check(self, content):

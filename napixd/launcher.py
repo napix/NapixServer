@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 
-import napixd
+from napixd import get_file, get_path
 
 from napixd.conf import Conf
 
@@ -33,11 +33,11 @@ class Setup(object):
         'cors', #Set CORS headers
     ])
 
-    LOG_FILE = os.path.join( napixd.HOME, 'log',  'napix.log')
+    LOG_FILE = get_file( 'log/napix.log')
     HELP_TEXT = '''
 napixd daemon runner.
 usage: napixd [(no)option] ...
-       napixd help: show this message 
+       napixd help: show this message
        napixd [only] [(no)option] ... options: show enabled options
 
 option to enable the option.
@@ -78,10 +78,9 @@ Non-default:
 
         self.set_loggers()
 
-        console.info( 'Napixd Home is %s', napixd.HOME)
+        console.info( 'Napixd Home is %s', get_path() )
         console.info( 'Options are %s', ','.join(self.options))
         console.info( 'Starting process %s', os.getpid())
-        console.info( 'Found napixd home at %s', napixd.HOME)
         console.info( 'Logging activity in %s', self.LOG_FILE )
 
         if 'gevent' in self.options:
@@ -189,8 +188,6 @@ Non-default:
 
     def set_loggers(self):
         formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
-        if not os.path.isdir( os.path.dirname(self.LOG_FILE)):
-            os.makedirs( os.path.dirname( self.LOG_FILE))
 
         self.log_file = file_handler = logging.FileHandler( self.LOG_FILE, mode='a')
         file_handler.setLevel( logging.INFO)

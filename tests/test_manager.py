@@ -4,7 +4,7 @@
 import unittest2
 
 from napixd.managers import Manager
-from mock.manager import Words,ValidationError,NotFound
+from tests.mock.manager import Words,ValidationError,NotFound
 
 class TestManager(unittest2.TestCase):
     def setUp(self):
@@ -18,6 +18,25 @@ class TestManager(unittest2.TestCase):
 
     def testConfigure(self):
         self.manager.configure({'lol':'network'})
+
+    def testValidateMissingField(self):
+        with self.assertRaises( ValidationError):
+            self.manager.validate({
+                'letter_count' : 1
+                })
+
+    def testValidateField(self):
+        with self.assertRaises( ValidationError):
+            self.manager.validate({
+                'name' : '_napix_pouet'
+                })
+
+    def testValidateResource(self):
+        cleaned = self.manager.validate({
+            'name' : 'pouet',
+            'letter_count' : 13,
+            })
+        self.assertDictEqual( cleaned, { 'name' : 'pouet' })
 
     def testExampleResource(self):
         self.assertDictEqual(self.manager.get_example_resource(),
@@ -75,6 +94,3 @@ class TestDirectPlug( unittest2.TestCase):
         class ManagerTrue( Manager):
             managed_class = 'abc'
         self.assertEqual( ManagerTrue.direct_plug(), True)
-
-if __name__ == '__main__':
-    unittest2.main()

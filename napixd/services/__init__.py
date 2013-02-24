@@ -6,15 +6,15 @@ from urllib import quote
 
 import bottle
 
-from ..conf import Conf
-from .servicerequest import (ServiceCollectionRequest, ServiceResourceRequest,
-        ServiceActionRequest)
-from .plugins import ArgumentsPlugin
+from napixd.conf import Conf
+from napixd.services.servicerequest import (ServiceCollectionRequest,
+        ServiceResourceRequest, ServiceActionRequest)
+from napixd.services.plugins import ArgumentsPlugin
 
 """
 The service class ack like a proxy between bottle and napix resource Manager Component.
 
-It handle bottle registering, url routing and Manager configuration when needed.
+It handles bottle registering, url routing and Manager configuration when needed.
 """
 logger = logging.getLogger('Napix.service')
 
@@ -26,7 +26,7 @@ class Service(object):
     """
     The service objects make the interface between the end user's HTTP calls and the active modules.
     """
-    def __init__(self,collection, namespace = None, configuration = None ):
+    def __init__(self, collection, namespace = None, configuration = None ):
         """
         Create a base service for the given collection and its managed classes.
         collection MUST be a Manager subclass and configuration an instance of Conf
@@ -218,7 +218,7 @@ class CollectionService(object):
         """
         shortcut method to respond a ServiceRequest subclass with the path given
         """
-        return cls(bottle.request,path,self).handle()
+        return cls( path, self).handle()
 
     def as_resource(self,path):
         return self._respond(ServiceResourceRequest,path)
@@ -241,7 +241,7 @@ class CollectionService(object):
                     }
         return as_help_action
 
-    def _make_urls(self, path, all_urls):
+    def make_urls(self, path, all_urls):
         url = ''
         for service,id_ in zip(self.services,path):
             url += '/'+ service.get_token(id_)
@@ -254,7 +254,7 @@ class CollectionService(object):
         all_urls = list(x.get_name() for x in self.collection.get_managed_classes())
         if self.all_actions:
             all_urls.append('_napix_all_actions')
-        return self._make_urls(path, all_urls)
+        return self.make_urls(path, all_urls)
 
     def as_help( self, path):
         manager = self.collection

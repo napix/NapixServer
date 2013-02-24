@@ -4,7 +4,6 @@
 from napixd.managers import Manager
 from napixd.exceptions import NotFound,ValidationError,Duplicate
 
-
 class Words(Manager):
     resource_fields = {
             'name':{'description':'word','example':'four'},
@@ -14,6 +13,11 @@ class Words(Manager):
     def __init__(self,parent):
         super(Words,self).__init__(parent)
         self.objects = dict(parent['words'])
+
+    def validate_resource_name( self, name):
+        if name.startswith( '_napix_'):
+            raise ValidationError, 'Not word can start with _napix_'
+        return name
 
     def get_resource(self,id_):
         try:
@@ -55,5 +59,4 @@ class Words(Manager):
             max_  = filters['max']
             return [x for x in self.objects.keys() if x <= max_]
         return self.objects.keys()
-
 

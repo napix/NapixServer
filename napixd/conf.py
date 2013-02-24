@@ -10,13 +10,15 @@ from contextlib import contextmanager
 
 logger = logging.getLogger('Napix.conf')
 
+#So that it's overridable in the tests
+open = open
+
 class Conf(UserDict.UserDict):
     _default = None
 
-    open = staticmethod(open)
     paths = [
             '/etc/napixd/',
-            os.path.realpath( os.path.join( napixd.HOME, 'conf')),
+            napixd.get_path( 'conf'),
             os.path.join( os.path.expanduser('~'), '.napix')
             ]
 
@@ -35,7 +37,7 @@ class Conf(UserDict.UserDict):
         for path in cls.paths :
             path = os.path.join( path, 'settings.json')
             try:
-                handle = cls.open( path, 'r' )
+                handle = open( path, 'r' )
                 if conf:
                     logger.warning('Stumbled upon configuration file candidate %s,'+
                             ' but conf is already loaded', path)
@@ -50,7 +52,7 @@ class Conf(UserDict.UserDict):
         if not conf:
             logger.warning( 'Did not find any configuration, trying default conf')
             try:
-                conf = json.load( cls.open( 'default_conf/settings.json'))
+                conf = json.load( open( 'default_conf/settings.json'))
             except IOError:
                 logger.error( 'Did not find any configuration at all')
                 conf = {}

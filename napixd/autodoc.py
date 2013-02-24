@@ -4,7 +4,7 @@
 from contextlib import contextmanager
 import logging
 import os
-from napixd import HOME
+import napixd
 from napixd.managers import Manager
 
 try:
@@ -76,11 +76,7 @@ class Story(object):
 
 
 class Autodocument(object):
-    directory = os.path.join( HOME, 'doc')
-
-    def __init__(self):
-        if not os.path.isdir( self.directory):
-            os.mkdir( self.directory)
+    directory = napixd.get_path( 'doc')
 
     def generate_doc( self, managers):
         outdir=os.path.join(self.directory, 'build')

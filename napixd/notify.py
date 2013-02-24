@@ -6,9 +6,9 @@ import logging
 import socket
 import urlparse
 
-from .client import Client
-from .thread_manager import background
-from .conf import Conf
+from napixd.client import Client
+from napixd.thread_manager import background
+from napixd.conf import Conf
 
 logger = logging.getLogger('Napix.notifications')
 

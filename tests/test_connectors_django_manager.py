@@ -5,34 +5,26 @@ import unittest2
 import os
 import shutil
 
-from napixd.managers import Manager
 from napixd.exceptions import NotFound
 
-from napixd.connectors.django import ( DjangoImport,
-        DjangoReadOperations, DjangoWriteOperations,
-        DjangoRelatedModelManager, DjangoModelManager)
-
-with DjangoImport( 'tests.mock.django_settings'):
-    import mock.django_models as models
-    from django.conf import settings
+try:
+    from napixd.connectors.django import DjangoImport, DjangoModelManager
+    with DjangoImport( 'tests.mock.django_settings'):
+        from django.conf import settings
+        from tests.mock.django_managers import models, ROManager, WManager, CM, PM
+except ImportError:
+    django = None
 
 def tearDownModule():
-    os.unlink( settings.DATABASES['default']['NAME'])
+    if django is not None:
+        os.unlink( settings.DATABASES['default']['NAME'])
 
-class ROManager( DjangoReadOperations, Manager):
-    model = models.Car
-    resource_fields = {
-            'name' : {},
-            'owner' : {},
-            'max_speed' : {},
-            'created' : { 'computed' : True}
-            }
-    def get_queryset(self):
-        return self.model.objects.all()
-
+@unittest2.skipIf( django is None, 'Missing django dependency')
 class TestReadOperation(unittest2.TestCase):
     @classmethod
     def setUpClass( cls):
+        if django is None:
+            return
         db = settings.DATABASES['default']['NAME']
         shutil.copy( db+'.master', db)
 
@@ -48,17 +40,7 @@ class TestReadOperation(unittest2.TestCase):
         rom = ROManager(None)
         self.assertEqual( sorted( rom.list_resource()), [ 1, 2, 3])
 
-class WManager( DjangoWriteOperations, Manager):
-    model = models.Car
-    resource_fields = {
-            'name' : {},
-            'owner' : {},
-            'max_speed' : {},
-            'created' : { 'computed' : True}
-            }
-    def get_queryset(self):
-        return self.model.objects.all()
-
+@unittest2.skipIf( django is None, 'Missing django dependency')
 class TestWriteOperation( unittest2.TestCase):
     def setUp( cls):
         db = settings.DATABASES['default']['NAME']
@@ -93,6 +75,7 @@ class TestWriteOperation( unittest2.TestCase):
         self.assertEqual( jag.max_speed, 20)
 
 
+@unittest2.skipIf( django is None, 'Missing django dependency')
 class TestResourceFieldGeneration(unittest2.TestCase):
     def _make_class(self,**attrs):
         attrs['model'] = models.Car
@@ -138,16 +121,7 @@ class TestResourceFieldGeneration(unittest2.TestCase):
         self.assertEqual( cls.resource_fields['max_speed']['description'], 'The maximum speed ever')
         self.assertEqual( cls.resource_fields['color']['example'], 'yellow')
 
-
-class PM(DjangoModelManager):
-    model_fields = [ 'name' ]
-    model = models.Parent
-
-class CM(DjangoRelatedModelManager):
-    model_fields = [ 'name' ]
-    model = models.Child
-    related_to = models.Parent
-
+@unittest2.skipIf( django is None, 'Missing django dependency')
 class TestRelatedManager( unittest2.TestCase):
     def setUp(self):
         self.manager = CM(PM(None).get_resource(1))
@@ -157,7 +131,3 @@ class TestRelatedManager( unittest2.TestCase):
 
     def test_parent(self):
         self.assertEqual( set(self.manager.list_resource()), set( [1, 2, 3] ))
-
-if __name__ == '__main__':
-    unittest2.main()
-

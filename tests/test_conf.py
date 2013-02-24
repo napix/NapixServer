@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+
 import unittest2
-import os.path
-import __builtin__
+import napixd
 from cStringIO import StringIO
+import mock
 
 from napixd.conf import Conf
 
@@ -40,25 +42,22 @@ class TestConf(unittest2.TestCase):
         self.assertEqual( self.conf.get('a').get('a1').get('a1a'), 'foo')
         self.assertEqual( self.conf.get('a').get('a2'), { 'x' : 1 ,'y' : 2 })
 
+    def test_not_truthy(self):
+        self.assertFalse( bool( self.conf.get('d')))
+    def test_truthy(self):
+        self.assertTrue( bool( self.conf.get('a')))
+        self.assertTrue( bool( self.conf.get('c')))
+
 class TestConfLoader( unittest2.TestCase ):
     good_json1 = '{"json" : { "v" : 1 } }'
     good_json2 = '{"json" : { "v" : 2 } }'
     bad_json = '{"badjson'
-    conf_file = os.path.realpath( os.path.join( os.path.dirname( __file__), '..', 'conf', 'settings.json'))
-
-    @classmethod
-    def setUpClass( cls ):
-        cls.old_open = Conf.open
-    @classmethod
-    def tearDownClass( cls):
-        Conf.open = cls.old_open
+    conf_file = napixd.get_file( 'conf/settings.json', create=False)
 
     def setUp(self):
-        Conf.open = self._open
-        self.calls = []
+        self.patch_open = mock.patch('napixd.conf.open', side_effect = self._open)
 
     def _open(self, filename, mode='r'):
-        self.calls.append( filename )
         if not filename in self.filesystem:
             raise IOError, 'No such file or directory'
         else:
@@ -69,7 +68,8 @@ class TestConfLoader( unittest2.TestCase ):
                 '/etc/napixd/settings.json': self.bad_json,
                  self.conf_file : self.good_json2
                 }
-        conf = Conf.make_default()
+        with self.patch_open:
+            conf = Conf.make_default()
         self.assertTrue( 'v' in conf['json'])
         self.assertEqual( conf.get('json.v'), 2)
 
@@ -77,16 +77,19 @@ class TestConfLoader( unittest2.TestCase ):
         self.filesystem = {
                 '/etc/napixd/settings.json': self.good_json1,
                 }
-        conf = Conf.make_default()
+
+        with self.patch_open as patched_open:
+            conf = Conf.make_default()
         self.assertTrue( 'v' in conf['json'])
-        self.assertEqual( len( self.calls), 3)
+        self.assertEqual( len( patched_open.mock_calls), 3)
 
     def test_load_multiple(self):
         self.filesystem = {
                 '/etc/napixd/settings.json': self.good_json1,
                  self.conf_file : self.good_json2
                 }
-        conf = Conf.make_default()
+        with self.patch_open:
+            conf = Conf.make_default()
         self.assertTrue( 'v' in conf['json'])
         self.assertEqual( conf.get('json.v'), 1)
 
@@ -94,7 +97,8 @@ class TestConfLoader( unittest2.TestCase ):
         self.filesystem = {
                 self.conf_file : self.good_json2
                 }
-        conf = Conf.make_default()
+        with self.patch_open:
+            conf = Conf.make_default()
         self.assertTrue( 'v' in conf['json'])
 
     def test_get_default(self):
@@ -102,14 +106,16 @@ class TestConfLoader( unittest2.TestCase ):
                 '/etc/napixd/settings.json': self.good_json1,
                  self.conf_file : self.good_json2
                 }
-        Conf.make_default()
+        with self.patch_open:
+            Conf.make_default()
         self.assertEqual( Conf.get_default(), { 'json' : { 'v' : 1} } )
         self.assertEqual( Conf.get_default('json'), { 'v' : 1} )
         self.assertEqual( Conf.get_default('json.v'), 1)
 
     def test_no_file(self):
         self.filesystem = { }
-        conf = Conf.make_default()
+        with self.patch_open:
+            conf = Conf.make_default()
         self.assertEqual( conf.keys(), [])
 
 
@@ -117,7 +123,8 @@ class TestConfLoader( unittest2.TestCase ):
         self.filesystem = {
                 self.conf_file : self.good_json1
                 }
-        conf = Conf.make_default()
+        with self.patch_open:
+            conf = Conf.make_default()
         self.assertEqual( Conf.get_default('json.v'), 1)
         with conf.force( 'json.v', 3):
             self.assertEqual( Conf.get_default('json.v'), 3)

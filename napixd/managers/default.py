@@ -7,7 +7,7 @@ from threading import Lock
 from time import time
 
 from napixd.exceptions import NotFound,Duplicate,ValidationError
-from . import Manager
+from napixd.managers import Manager
 
 class ReadOnlyDictManager(Manager):
     """

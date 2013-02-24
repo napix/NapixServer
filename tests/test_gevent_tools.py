@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
-
-
 import time
 import unittest
 import gevent
@@ -104,5 +101,4 @@ class TestGeventHeaders(unittest.TestCase):
         for resp in resps:
             self.assertAlmostEquals( resp.headers['x-total-time'], .2, places=1)
             self.assertAlmostEquals( resp.headers['x-running-time'], .1, places=1)
-
 

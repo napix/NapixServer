@@ -9,12 +9,9 @@ import os
 
 try:
     import napixd
-    napixd.HOME = os.environ.get('NAPIXHOME', os.getcwd())
 except ImportError:
     path = os.path.realpath( os.path.join( os.path.dirname(__file__), '..' ))
     sys.path.append(path)
-    import napixd
-    napixd.HOME = path
 
 
 import napixd.launcher

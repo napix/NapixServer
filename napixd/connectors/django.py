@@ -10,10 +10,10 @@ import django
 import django.conf
 settings = django.conf.settings
 
-from ..conf import Conf
-from ..managers import Manager
-from ..managers.mixins import AttrResourceMixin
-from ..exceptions import ValidationError, NotFound
+from napixd.conf import Conf
+from napixd.managers import Manager
+from napixd.managers.mixins import AttrResourceMixin
+from napixd.exceptions import ValidationError, NotFound
 
 logger = logging.getLogger('Napix.connectors.django')
 

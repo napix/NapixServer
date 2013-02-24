@@ -9,7 +9,7 @@ import signal
 
 import bottle
 
-from .conf import Conf
+from napixd.conf import Conf
 
 try:
     import pyinotify

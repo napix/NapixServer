@@ -8,12 +8,12 @@ import sys
 import time
 import os
 
-from napixd import HOME
-from .conf import Conf
-from .services import Service
-from .managers import Manager
-from .autodoc import Autodocument
-from .notify import Notifier
+import napixd
+from napixd.conf import Conf
+from napixd.services import Service
+from napixd.managers import Manager
+from napixd.autodoc import Autodocument
+from napixd.notify import Notifier
 
 import bottle
 
@@ -23,13 +23,10 @@ class AllOptions(object):
 
 
 class Loader( object):
-    AUTO_DETECT_PATH = '/var/lib/napix/auto'
-
     def __init__( self):
         self.timestamp = 0
         self.paths = [
-                self.AUTO_DETECT_PATH,
-                os.path.join( HOME, 'auto')
+                napixd.get_path('auto'),
                 ]
         self._loading = None
 
@@ -231,8 +228,8 @@ class NapixdBottle(bottle.Bottle):
             services = self.make_services( load.managers )
             if 'doc' in self.options:
                 doc = Autodocument()
-                import gevent
-                gevent.spawn( doc.generate_doc, load.managers)
+                from napixd.thread_manager import run_background
+                run_background( doc.generate_doc, load.managers)
         else:
             self.root_urls.update( s.url for s in services )
             for service in services:
@@ -321,8 +318,9 @@ class NapixdBottle(bottle.Bottle):
                         skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
 
     def get_webclient_path(self):
-        for directory in [ Conf.get_default('Napix.webclient.path'),
-                os.path.join( HOME, 'web'),
+        for directory in [
+                Conf.get_default('Napix.webclient.path'),
+                napixd.get_path( 'web', create=False),
                 os.path.join( os.path.dirname( __file__), 'web')
                 ]:
             logger.debug( 'Try WebClient in directory %s', directory)

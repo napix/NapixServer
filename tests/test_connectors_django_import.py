@@ -2,14 +2,20 @@
 # -*- coding: utf-8 -*-
 
 import unittest2
-import django
 import napixd
+try:
+    import django
+    from napixd.connectors.django import DjangoImport
+except ImportError:
+    django = None
 
-from napixd.connectors.django import DjangoImport
 
+@unittest2.skipIf( django is None, 'Missing django dependency')
 class TestDjangoImport( unittest2.TestCase ):
     @classmethod
     def setUpClass( self):
+        if django is None:
+            return
         conf_ = reload(django.conf)
         napixd.connectors.django.settings = conf_.settings
 
@@ -47,7 +53,4 @@ class TestDjangoImport( unittest2.TestCase ):
             with DjangoImport({ 'MY_SETTING' : 5 }):
                 from django.conf import settings as re_settings
         self.assertRaises( RuntimeError, try_import)
-
-if __name__ == '__main__':
-    unittest2.main()
 

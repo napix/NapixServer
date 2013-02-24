@@ -3,8 +3,6 @@
 
 import functools
 
-from cStringIO import StringIO
-
 def view(format_):
     def inner(fn):
         fn._napix_view = format_

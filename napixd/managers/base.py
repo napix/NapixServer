@@ -304,17 +304,20 @@ class Manager(object):
 
     def validate(self, resource_dict):
         # Create a new dict to populate with validated data
+        target = {}
         for key, description in self.resource_fields.items():
+            if description.get('computed'):
+                continue
             if key not in resource_dict:
-                if "optional" in description or "computed" in description:
+                if "optional" in description:
                     continue
                 else:
                     raise ValidationError("Field %s is missing in the supplied resource"%key)
             validator = getattr(self, 'validate_resource_%s'%key,None)
             if validator:
-                resource_dict[key] = validator(resource_dict.get(key,None))
-        resource_dict = self.validate_resource( resource_dict)
-        return resource_dict
+                target[key] = validator(resource_dict.get(key,None))
+        target = self.validate_resource( target)
+        return target
 
     def is_up_to_date(self):
         """

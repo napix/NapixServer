@@ -3,21 +3,22 @@
 
 from urllib import unquote
 
+import bottle
 from bottle import HTTPError
 
-from ..http import Response
-from ..exceptions import NotFound,ValidationError,Duplicate
+from napixd.http import Response
+from napixd.exceptions import NotFound,ValidationError,Duplicate
 
 class ServiceRequest(object):
     """
     ServiceRequest is an abstract class that is created to serve a single request.
     """
-    def __init__(self,request,path,service):
+    def __init__(self,path,service):
         """
         Create the object that will handle the request for the path given on the collection
         """
-        self.request = request
-        self.method = request.method
+        self.request = bottle.request
+        self.method = self.request.method
         self.service = service
         #Parse the url components
         self.path = map( unquote, path)
@@ -79,7 +80,7 @@ class ServiceRequest(object):
             return getattr(manager,self.METHOD_MAP[self.method])
         except (AttributeError,KeyError):
             raise HTTPError(405, 'Method is not implemented',
-                    header=[ ('allow',','.join(self.available_methods(manager)))])
+                    allow= ','.join(self.available_methods(manager)))
     def call(self,callback,args):
         return callback(*args)
 
@@ -151,8 +152,7 @@ class ServiceCollectionRequest(ServiceRequest):
     def serialize( self, result):
         if self.method == 'POST':
             url = self.make_url(result)
-            return HTTPError(201, None, header={
-                'Location': url} )
+            return HTTPError(201, None, Location= url)
         elif self.method == 'GET':
             return map(self.make_url,result)
         else:
