@@ -3,24 +3,18 @@
 
 import os
 import cPickle as pickle
-from napixd.conf import Conf
 
+from napxid import get_path
 from napixd.store.backends import BaseStore
 
 class FSStore( BaseStore):
-    PATH =  '/var/lib/napix'
     def get_path(self):
-        return os.path.join(
-                (self.PATH or Conf.get_default().get( 'Napix.storage.file.directory')),
-                self.__class__.__name__)
-
+        return get_path( self.__class__.__name__)
 
 class FileStore( FSStore ):
     def __init__( self, collection, path = None ):
-        path = path != None and path or self.get_path()
+        path = path if path is not None else self.get_path()
         self.file_path = os.path.join( path , collection)
-        if not os.path.isdir( path):
-            os.makedirs( path, 0700)
         try:
             data = pickle.load( open(self.file_path, 'r'))
         except IOError:

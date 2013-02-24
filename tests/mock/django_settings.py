@@ -12,4 +12,6 @@ DATABASES = {
             }
         }
 
+SECRET_KEY = 'oo'
+
 
