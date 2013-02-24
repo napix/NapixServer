@@ -4,7 +4,7 @@
 import os
 import cPickle as pickle
 
-from napxid import get_path
+from napixd import get_path
 from napixd.store.backends import BaseStore
 
 class FSStore( BaseStore):

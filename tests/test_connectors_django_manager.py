@@ -8,6 +8,7 @@ import shutil
 from napixd.exceptions import NotFound
 
 try:
+    import django
     from napixd.connectors.django import DjangoImport, DjangoModelManager
     with DjangoImport( 'tests.mock.django_settings'):
         from django.conf import settings
