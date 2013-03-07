@@ -16,8 +16,8 @@ setup(
         author='Enix',
         author_email='gr@enix.org',
         install_requires=[
-            #'bottle>=0.11',
-            #'gevent>0.99',
+            'bottle>=0.11',
+            'gevent>0.99',
             ],
         include_package_data=True,
         scripts=[
