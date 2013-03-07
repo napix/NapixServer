@@ -13,6 +13,6 @@ def get_path( dirname='', create=True):
         path= HOME
     else:
         path = os.path.abspath( os.path.join( HOME, dirname, ''))
-    if not os.path.isdir( path):
+    if create and not os.path.isdir( path):
         os.makedirs( path)
     return path
