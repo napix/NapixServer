@@ -12,8 +12,6 @@ import napixd
 from napixd.conf import Conf
 from napixd.services import Service
 from napixd.managers import Manager
-from napixd.autodoc import Autodocument
-from napixd.notify import Notifier
 
 import bottle
 
@@ -227,6 +225,7 @@ class NapixdBottle(bottle.Bottle):
             load =  self.loader.load()
             services = self.make_services( load.managers )
             if 'doc' in self.options:
+                from napixd.autodoc import Autodocument
                 doc = Autodocument()
                 from napixd.thread_manager import run_background
                 run_background( doc.generate_doc, load.managers)
@@ -239,6 +238,7 @@ class NapixdBottle(bottle.Bottle):
         self.setup_bottle()
 
         if 'notify' in self.options:
+            from napixd.notify import Notifier
             notifier = Notifier( self)
             self.on_stop.append( notifier.stop)
             notifier.start()
