@@ -118,28 +118,40 @@ class TestConfLoader( unittest2.TestCase ):
             conf = Conf.make_default()
         self.assertEqual( conf.keys(), [])
 
+class TestForce(unittest2.TestCase):
+    def setUp(self):
+        self.conf = Conf({
+            'a' : {
+                'b' : 1,
+                'c' : {
+                    'd' : 'e'
+                    }
+                }
+            }
+            )
 
     def test_force(self):
-        self.filesystem = {
-                self.conf_file : self.good_json1
-                }
-        with self.patch_open:
-            conf = Conf.make_default()
-        with conf.force( 'json.v', 3):
-            self.assertEqual( Conf.get_default('json.v'), 3)
-        self.assertEqual( Conf.get_default('json.v'), 1)
+        with self.conf.force( 'a.b', 3):
+            self.assertEqual( self.conf['a.b'], 3)
+        self.assertEqual( self.conf['a.b'], 1)
 
     def test_force_dict(self):
-        self.filesystem = {
-                self.conf_file : self.good_json1
-                }
-        with self.patch_open:
-            conf = Conf.make_default()
-        with conf.force( 'json', { 'v' : 12, 'y': 14 }):
-            self.assertEqual( Conf.get_default('json.v'), 12)
-            self.assertEqual( Conf.get_default('json.y'), 14)
-        self.assertEqual( Conf.get_default('json.v'), 1)
-        self.assertFalse( bool( Conf.get_default('json.y')))
+        with self.conf.force( 'a.b', { 'f' : 12, 'y': 14 }):
+            self.assertEqual( self.conf['a.b.f'], 12)
+            self.assertEqual( self.conf['a.b.y'], 14)
+        self.assertEqual( self.conf['a.b'], 1)
+
+    def test_force_inexisting(self):
+        with self.conf.force( 'z.b.c', 'd'):
+            self.assertEqual( self.conf['z.b.c'],'d')
+        with self.assertRaises( KeyError):
+            self.conf['z']
+
+    def test_force_inexisting_inside(self):
+        with self.conf.force( 'a.k.j', 'd'):
+            pass
+        with self.assertRaises( KeyError):
+            self.conf['a.k']
 
 if __name__ == '__main__':
     unittest2.main()

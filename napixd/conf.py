@@ -67,6 +67,16 @@ class Conf(UserDict.UserDict):
         else:
             return self.data[item]
 
+    def __delitem__(self, item):
+        if '.' in item :
+            prefix, x, suffix = item.rpartition('.')
+            cont = self[prefix]
+            del cont[suffix]
+            if not cont:
+                del self[prefix]
+        else:
+            del self.data[item]
+
     def __nonzero__(self):
         return bool(self.data)
 
@@ -85,7 +95,7 @@ class Conf(UserDict.UserDict):
     def _do_set(self, dataset, item, value):
         if '.' in item :
             prefix, x, suffix = item.partition('.')
-            self._do_set( dataset[prefix], suffix, value )
+            self._do_set( dataset.setdefault( prefix, {}), suffix, value )
         else:
             dataset[item] = value
 
@@ -94,5 +104,8 @@ class Conf(UserDict.UserDict):
         old_value = self.get( param)
         self._set( param, value)
         yield
-        self._set( param, old_value)
+        if old_value:
+            self._set( param, old_value)
+        else:
+            del self[param]
 
