@@ -306,6 +306,7 @@ class Manager(object):
         # Create a new dict to populate with validated data
         target = {}
         for key, description in self.resource_fields.items():
+            value = resource_dict.get(key,None)
             if description.get('computed'):
                 continue
             if key not in resource_dict:
@@ -315,7 +316,8 @@ class Manager(object):
                     raise ValidationError("Field %s is missing in the supplied resource"%key)
             validator = getattr(self, 'validate_resource_%s'%key,None)
             if validator:
-                target[key] = validator(resource_dict.get(key,None))
+                value = validator( value)
+            target[key] = value
         target = self.validate_resource( target)
         return target
 

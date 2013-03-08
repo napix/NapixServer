@@ -10,9 +10,12 @@ class Words(Manager):
             'letter_count':{ 'computed':True, 'description':'Letter count'}
             }
 
-    def __init__(self,parent):
+    def __init__(self,parent = None):
         super(Words,self).__init__(parent)
-        self.objects = dict(parent['words'])
+        if parent:
+            self.objects = dict(parent['words'])
+        else:
+            self.objects = {}
 
     def validate_resource_name( self, name):
         if name.startswith( '_napix_'):

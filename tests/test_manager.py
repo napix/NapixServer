@@ -19,25 +19,6 @@ class TestManager(unittest2.TestCase):
     def testConfigure(self):
         self.manager.configure({'lol':'network'})
 
-    def testValidateMissingField(self):
-        with self.assertRaises( ValidationError):
-            self.manager.validate({
-                'letter_count' : 1
-                })
-
-    def testValidateField(self):
-        with self.assertRaises( ValidationError):
-            self.manager.validate({
-                'name' : '_napix_pouet'
-                })
-
-    def testValidateResource(self):
-        cleaned = self.manager.validate({
-            'name' : 'pouet',
-            'letter_count' : 13,
-            })
-        self.assertDictEqual( cleaned, { 'name' : 'pouet' })
-
     def testExampleResource(self):
         self.assertDictEqual(self.manager.get_example_resource(),
                 {'name':'four'})
@@ -65,6 +46,37 @@ class TestManager(unittest2.TestCase):
         self.manager.modify_resource(3,{'name':'drei'})
         self.assertDictEqual(self.manager.get_resource(3),
                 {'name':'drei','letter_count':4,'first_letter':'d'})
+
+
+class TestValidate( unittest2.TestCase):
+    def testValidateMissingField(self):
+        manager = Words()
+        with self.assertRaises( ValidationError):
+            manager.validate({
+                'letter_count' : 1
+                })
+
+    def testValidateField(self):
+        manager = Words()
+        with self.assertRaises( ValidationError):
+            manager.validate({
+                'name' : '_napix_pouet'
+                })
+
+    def testValidateResource(self):
+        manager = Words()
+        cleaned = manager.validate({
+            'name' : 'pouet',
+            'letter_count' : 13,
+            })
+        self.assertDictEqual( cleaned, { 'name' : 'pouet' })
+
+    def test_validate_noop(self):
+        class TestValidateManager( Manager):
+            resource_fields = { 'field1' : {} }
+        vm = TestValidateManager( None)
+        self.assertDictEqual( vm.validate({ 'field1' : 'abc' }), { 'field1' : 'abc' })
+
 
 class TestDirectPlug( unittest2.TestCase):
     class SubManager( Manager):
