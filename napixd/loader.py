@@ -315,10 +315,14 @@ class NapixdBottle(bottle.Bottle):
                         skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
 
     def get_webclient_path(self):
+        module_file = sys.modules[self.__class__.__module__].__file__
+        module_path = os.path.join( os.path.dirname( module_file), 'web')
+        napix_default = os.path.join( os.path.dirname( __file__ ), 'web')
         for directory in [
                 Conf.get_default('Napix.webclient.path'),
                 napixd.get_path( 'web', create=False),
-                os.path.join( os.path.dirname( __file__), 'web')
+                module_path,
+                napix_default,
                 ]:
             logger.debug( 'Try WebClient in directory %s', directory)
             if directory and os.path.isdir( directory):
