@@ -3,19 +3,24 @@
 
 from setuptools import setup, find_packages
 
-setup(name="napixd",
+setup(
+        name="napixd",
         version="0.2",
         packages=find_packages(
             exclude=[
                 'napixd.examples',
                 'tests',
                 'tests.*',
-                ]),
-    install_requires=[
-        'bottle>=0.11',
-        'gevent>0.99',
-        ],
-    scripts=[
-        'bin/napixd'
-        ],
-    )
+                ]
+            ),
+        author='Enix',
+        author_email='gr@enix.org',
+        install_requires=[
+            #'bottle>=0.11',
+            #'gevent>0.99',
+            ],
+        include_package_data=True,
+        scripts=[
+            'bin/napixd'
+            ],
+        )

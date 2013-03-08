@@ -1,2 +1,2 @@
 include conf/settings.json
-recursive-include web *
+recursive-include napixd/web *
