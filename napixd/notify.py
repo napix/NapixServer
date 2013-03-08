@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import time
+from gevent import sleep
 import logging
 import socket
 import urlparse
@@ -33,42 +33,30 @@ class Notifier(object):
         logger.info( 'Notify on %s every %ss', self.post_url, self.delay)
         if self.delay < 1:
             logger.warning( 'Notification delay is below 1s, the minimum rate is 1s')
+            self.delay = 1
 
     def start(self):
         if self.post_url is None:
             return
-        self._alive = True
         self.job = self._start()
 
     @background
     def _start(self):
+        self.run()
+
+    def run(self):
         for x in range(3):
             if self.send_first_notification():
                 break
-            time.sleep(2)
-            if not self._alive:
-                return
+            sleep(10)
         else:
             logger.error('Did not succeed to notifications')
             return
+
         logger.info('Running loop')
-        self.loop()
-
-    def loop( self):
-        count = 0
-        while self._alive:
-            if count > self.delay:
-                count = 0
-                self.send_notification()
-            else:
-                count += 1
-            time.sleep(1)
-
-    def stop(self):
-        if not self._alive:
-            return
-        self._alive = False
-        self.job.join()
+        while True:
+            sleep(self.delay)
+            self.send_notification()
 
     def send_first_notification(self):
         resp = self.send_request(  'POST', self.post_url)

@@ -240,7 +240,6 @@ class NapixdBottle(bottle.Bottle):
         if 'notify' in self.options:
             from napixd.notify import Notifier
             notifier = Notifier( self)
-            self.on_stop.append( notifier.stop)
             notifier.start()
 
     def doc_set_root(self, root):

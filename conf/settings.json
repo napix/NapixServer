@@ -19,9 +19,9 @@
         "host" : "redis.napix.nx"
       }
     },
-    "@notify" : {
+    "notify" : {
       "url" : "http://central.napix.nx/directory/",
-      "@credentials" : {
+      "credentials" : {
           "login" : "notification",
           "key" : "notification"
       },
