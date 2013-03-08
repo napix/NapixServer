@@ -211,6 +211,10 @@ class BaseAAAPlugin(object):
 
     def __init__( self, conf= None, allow_bypass=False):
         self.settings = conf or Conf.get_default('Napix.auth')
+        self.service = self.settings.get('service')
+        if not self.service:
+            self.service = ''
+            self.logger.error('Setting Napix.auth.service is empty')
         self.allow_bypass = allow_bypass
 
     def debug_check(self,request):
@@ -236,7 +240,7 @@ class BaseAAAPlugin(object):
 
     def host_check(self, content):
         try:
-            if content['host'] != self.settings.get('service'):
+            if content['host'] != self.service:
                 raise self.reject('Bad host')
             path = urllib.quote(bottle.request.path ,'%/')
             if bottle.request.query_string:
