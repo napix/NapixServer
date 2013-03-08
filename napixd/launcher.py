@@ -151,6 +151,15 @@ Non-default:
             from napixd.reload import Reloader
             Reloader( napixd).start()
 
+        if 'webclient' in self.options:
+            webclient_path = self.get_webclient_path()
+            if webclient_path:
+                from napixd.webclient import WebClient
+                logger.info( 'Using %s as webclient', webclient_path)
+                WebClient( webclient_path).setup_bottle( napixd)
+            else:
+                logger.warning( 'No webclient path found')
+
         napixd.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
         return napixd
 
@@ -185,6 +194,20 @@ Non-default:
                 'port':settings.get('port', self.DEFAULT_PORT),
                 'server' : self.get_server(),
                 }
+
+    def get_webclient_path(self):
+        module_file = sys.modules[self.__class__.__module__].__file__
+        module_path = os.path.join( os.path.dirname( module_file), 'web')
+        napix_default = os.path.join( os.path.dirname( __file__ ), 'web')
+        for directory in [
+                Conf.get_default('Napix.webclient.path'),
+                get_path( 'web', create=False),
+                module_path,
+                napix_default,
+                ]:
+            logger.debug( 'Try WebClient in directory %s', directory)
+            if directory and os.path.isdir( directory):
+                return directory
 
     def set_loggers(self):
         formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')

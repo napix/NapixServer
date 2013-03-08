@@ -306,34 +306,6 @@ class NapixdBottle(bottle.Bottle):
         self.error(400)(self._error_handler_factory(400))
         self.error(500)(self._error_handler_factory(500))
 
-        if 'webclient' in self.options:
-            webclient_path = self.get_webclient_path()
-            if webclient_path:
-                logger.info( 'Using %s as webclient', webclient_path)
-                self.route('/_napix_js<filename:path>',
-                        callback=self.static_factory( webclient_path),
-                        skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
-
-    def get_webclient_path(self):
-        module_file = sys.modules[self.__class__.__module__].__file__
-        module_path = os.path.join( os.path.dirname( module_file), 'web')
-        napix_default = os.path.join( os.path.dirname( __file__ ), 'web')
-        for directory in [
-                Conf.get_default('Napix.webclient.path'),
-                napixd.get_path( 'web', create=False),
-                module_path,
-                napix_default,
-                ]:
-            logger.debug( 'Try WebClient in directory %s', directory)
-            if directory and os.path.isdir( directory):
-                return directory
-
-    def static_factory(self, root):
-        def static( filename = 'index.html' ):
-            if filename.endswith('/'):
-                filename += 'index.html'
-            return bottle.static_file( filename, root =  root )
-        return static
 
     def slash(self):
         """
