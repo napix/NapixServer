@@ -125,9 +125,21 @@ class TestConfLoader( unittest2.TestCase ):
                 }
         with self.patch_open:
             conf = Conf.make_default()
-        self.assertEqual( Conf.get_default('json.v'), 1)
         with conf.force( 'json.v', 3):
             self.assertEqual( Conf.get_default('json.v'), 3)
+        self.assertEqual( Conf.get_default('json.v'), 1)
+
+    def test_force_dict(self):
+        self.filesystem = {
+                self.conf_file : self.good_json1
+                }
+        with self.patch_open:
+            conf = Conf.make_default()
+        with conf.force( 'json', { 'v' : 12, 'y': 14 }):
+            self.assertEqual( Conf.get_default('json.v'), 12)
+            self.assertEqual( Conf.get_default('json.y'), 14)
+        self.assertEqual( Conf.get_default('json.v'), 1)
+        self.assertFalse( bool( Conf.get_default('json.y')))
 
 if __name__ == '__main__':
     unittest2.main()
