@@ -267,8 +267,6 @@ class NapixdBottle(bottle.Bottle):
 
     def _start( self):
         Conf.make_default()
-        bottle.DEBUG = Conf.get_default('Napix.debug')
-        #self.services = list(self.loader)
 
     def reload(self):
         console = logging.getLogger( 'Napix.console')
