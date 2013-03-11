@@ -15,7 +15,7 @@ class WebClient( bottle.Bottle):
 
     def index(self):
         return bottle.static_file( 'index.html', root=self.root,
-                content_type = 'text/html; charset=UTF-8')
+                mimetype = 'text/html; charset=UTF-8')
 
     def static(self, filename):
         return bottle.static_file( filename, root=self.root )
