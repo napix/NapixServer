@@ -60,6 +60,11 @@ class TestCollectionServiceRequestOther( _TestSCR):
         self.assertEqual( set( resp.exception.headers['Allow'].split(',')),
                 set([ 'GET','POST','HEAD' ]))
 
+    def test_method_head(self):
+        self._make('HEAD')
+        resp = self.scr.handle()
+        self.assertEqual( resp, None)
+
     def test_method_create(self):
         self._make( 'POST', data={
             'lol': 1, 'blabla' : True
@@ -84,7 +89,7 @@ class _TestSRR( unittest2.TestCase):
         self.addCleanup( self.patch_request.stop)
 
 
-class TestCollectionServiceRequest( _TestSRR):
+class TestServiceResourceRequest( _TestSRR):
     def setUp(self):
         self._make( 'GET', GET={ })
 
@@ -98,3 +103,10 @@ class TestCollectionServiceRequest( _TestSRR):
             })
         self.manager().get_resource.assert_called_once_with( 'p1')
         self.managed().get_resource.assert_called_once_with( 'c2' )
+
+class TestServiceResourceRequestOther( _TestSRR):
+    def test_method_head(self):
+        self._make('HEAD')
+        resp = self.srr.handle()
+        self.assertEqual( resp, None)
+

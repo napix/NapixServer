@@ -150,7 +150,9 @@ class ServiceCollectionRequest(ServiceRequest):
         return tuple()
 
     def serialize( self, result):
-        if self.method == 'POST':
+        if self.method == 'HEAD':
+            return None
+        elif self.method == 'POST':
             url = self.make_url(result)
             return HTTPError(201, None, Location= url)
         elif self.method == 'GET':
@@ -170,6 +172,8 @@ class ServiceResourceRequest(ServiceRequest):
         }
 
     def serialize( self, result):
+        if self.method == 'HEAD':
+            return None
         if self.method == 'PUT' and result != None :
             new_url = self.make_url(result)
             if new_url != self.request.path:
