@@ -21,7 +21,7 @@ class TestServiceEmpty( unittest2.TestCase):
     def test_set_bottle(self):
         bottle = mock.Mock()
         self.service.setup_bottle( bottle)
-        self.assertSetEqual(set( mc[1][0] for mc in bottle.mock_calls ),
+        self.assertSetEqual(set( mc[0][0] for mc in bottle.route.call_args_list ),
                 set([
                     '/my-mock',
                     '/my-mock/',
@@ -43,7 +43,7 @@ class TestServiceWithManaged( unittest2.TestCase):
     def test_set_bottle(self):
         bottle = mock.Mock()
         self.service.setup_bottle( bottle)
-        self.assertSetEqual(set( mc[1][0] for mc in bottle.mock_calls ),
+        self.assertSetEqual(set( mc[0][0] for mc in bottle.route.call_args_list ),
                 set([
                     '/this-mock',
                     '/this-mock/',
@@ -52,6 +52,7 @@ class TestServiceWithManaged( unittest2.TestCase):
                     '/this-mock/_napix_new',
                     '/this-mock/_napix_resource_fields',
                     '/this-mock/:f0/',
+                    '/this-mock/:f0/my-mock',
                     '/this-mock/:f0/my-mock/',
                     '/this-mock/:f0/my-mock/:f1',
                     '/this-mock/:f0/my-mock/_napix_help',
@@ -71,7 +72,7 @@ class TestServiceWithManagedDirect( unittest2.TestCase):
     def test_set_bottle(self):
         bottle = mock.Mock()
         self.service.setup_bottle( bottle)
-        self.assertSetEqual(set( mc[1][0] for mc in bottle.mock_calls ),
+        self.assertSetEqual(set( mc[0][0] for mc in bottle.route.call_args_list ),
                 set([
                     '/this-mock',
                     '/this-mock/',

@@ -213,6 +213,9 @@ class CollectionService(object):
         if self.direct_plug == False :
             app.route(self.resource_url+'/',
                     callback = self.as_managed_classes , apply = arguments_plugin)
+            for manager in self.collection.get_managed_classes():
+                app.route( self.resource_url + '/' + manager.get_name(),
+                        callback=self.noop)
 
     def _respond(self,cls,path):
         """
@@ -283,6 +286,9 @@ class CollectionService(object):
         manager = self.collection
         return manager.get_example_resource()
 
+    def noop(self):
+        return None
+
 class FirstCollectionService(CollectionService):
     def __init__(self, collection, config, namespace):
         super(FirstCollectionService, self).__init__( None, collection, config, namespace)
@@ -296,9 +302,6 @@ class FirstCollectionService(CollectionService):
     def setup_bottle( self, app):
         app.route( '/'+self.url, callback = self.noop)
         super( FirstCollectionService, self).setup_bottle(app)
-
-    def noop(self):
-        return None
 
     def as_help_human_path(self):
         return '/_napix_autodoc/%s.html' % self.url
