@@ -27,9 +27,14 @@ class NapixDirectoryManager(Manager):
                 },
             'status' : {
                 'description' : 'OK if this server has notified recently, '
-                'WAITING if it is late of less than a period, '
-                'LOST after for ten periods',
+                    'WAITING if it is late of less than a period, '
+                    'LOST after for ten periods',
                 'computed' : True
+                },
+            'description' : {
+                'description' : 'Human readable description of the server',
+                'example' : 'This server is the Napix Services Index.',
+                'optional' : True,
                 }
             }
 
