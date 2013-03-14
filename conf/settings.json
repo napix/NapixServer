@@ -2,6 +2,7 @@
   "_napix_version": 1.0 ,
   "Napix" : {
     "debug" : false,
+    "description" : "The base Napix server",
     "daemon" : {
       "host" : "0.0.0.0",
       "port" : 8002

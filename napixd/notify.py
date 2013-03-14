@@ -79,5 +79,6 @@ class Notifier(object):
         return self.client.request( method, url,
                 body ={
                     'host' : Conf.get_default('Napix.auth.service') or socket.gethostname(),
+                    'description' : Conf.get_default('Napix.description') or '',
                     'managers' : list(self.app.root_urls),
                     })
