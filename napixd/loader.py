@@ -21,17 +21,21 @@ class AllOptions(object):
 
 
 class Loader( object):
-    def __init__( self):
+    def __init__( self, paths=None):
         self.timestamp = 0
-        self.paths = [
-                napixd.get_path('auto'),
-                ]
+        self.paths = paths if paths is not None else []
         self._loading = None
 
     def load( self):
         self._loading = Loading( self.timestamp, self.paths, self._loading)
         self.timestamp = time.time()
         return self._loading
+
+class AutoLoader(Loader):
+    def __init__(self):
+        super( AutoLoader, self).__init__([
+            napixd.get_path('auto'),
+            ])
 
 class Loading(object):
     def __init__( self, start, paths, previous = None):
@@ -201,7 +205,6 @@ class NapixdBottle(bottle.Bottle):
     Napix bottle application.
     This bottle contains the automatic detection of services.
     """
-    loader_class = Loader
 
     def __init__(self, services=None, no_conversation=False, options=None):
         """
@@ -221,7 +224,7 @@ class NapixdBottle(bottle.Bottle):
 
         self.loader = None
         if services is None:
-            self.loader = self.loader_class()
+            self.loader = self.get_loader()
             load =  self.loader.load()
             services = self.make_services( load.managers )
             if 'doc' in self.options:
@@ -241,6 +244,12 @@ class NapixdBottle(bottle.Bottle):
             from napixd.notify import Notifier
             notifier = Notifier( self)
             notifier.start()
+
+    def get_loader( self):
+        if 'auto' in self.options:
+            return AutoLoader()
+        else:
+            return Loader()
 
     def doc_set_root(self, root):
         self.route('/_napix_autodoc<filename:path>',

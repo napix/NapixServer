@@ -31,6 +31,7 @@ class Setup(object):
         #'executor', #The executor
         'gevent', #Use gevent
         'cors', #Set CORS headers
+        'auto',
     ])
 
     LOG_FILE = get_file( 'log/napix.log')
@@ -60,6 +61,7 @@ Default options:
     executor:   Launch the executor controler
     gevent:     Use gevent as the wsgi interface
     uwsgi:      Use with uwsgi
+    auto:       Load from HOME/auto/ directory
 
 Non-default:
     silent:     Do not show the messages in the console
