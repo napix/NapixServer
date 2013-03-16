@@ -69,6 +69,14 @@ class TestConversationWrap( unittest2.TestCase):
             raise exc
         return obj
 
+    def test_request_head_404(self):
+        with mock.patch('bottle.request', method='HEAD'):
+            resp = self.cb(bottle.HTTPError(404, body='pouet' ))
+        self.assertIsInstance(resp,  bottle.HTTPResponse)
+        self.assertEqual( resp.status_code, 404)
+        self.assertEqual( resp.headers['Content-Type'], '')
+        self.assertEqual( resp.body, None)
+
     def test_request_head(self):
         with mock.patch('bottle.request', method='HEAD'):
             resp = self.cb({ 'a': 'b' })

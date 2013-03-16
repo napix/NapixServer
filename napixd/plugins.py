@@ -60,8 +60,6 @@ class ConversationPlugin(object):
                 result = callback(*args,**kwargs) #Conv
                 status = 200
                 #result OK
-                if request.method == 'HEAD':
-                    result = None
                 if isinstance(result,HTTPResponse):
                     exception = result
                 elif isinstance( result, Response):
@@ -79,6 +77,10 @@ class ConversationPlugin(object):
                     headers.update(exception.headers)
                     if 'content-type' in exception.headers :
                         content_type = exception.headers['content-type']
+
+            if request.method == 'HEAD':
+                content_type = ''
+                result = None
 
             if status != 200 and isinstance( result, basestring):
                 if not content_type :
