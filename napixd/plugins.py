@@ -60,6 +60,8 @@ class ConversationPlugin(object):
                 result = callback(*args,**kwargs) #Conv
                 status = 200
                 #result OK
+                if request.method == 'HEAD':
+                    result = None
                 if isinstance(result,HTTPResponse):
                     exception = result
                 elif isinstance( result, Response):
