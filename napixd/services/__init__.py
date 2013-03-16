@@ -286,7 +286,7 @@ class CollectionService(object):
         manager = self.collection
         return manager.get_example_resource()
 
-    def noop(self):
+    def noop(self, **kw):
         return None
 
 class FirstCollectionService(CollectionService):
