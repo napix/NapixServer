@@ -10,7 +10,7 @@ def find_home( name, file):
         return HOME
 
     package_dir = os.path.dirname( file)
-    site_package = os.path.realpath( os.path.join( os.path.dirname( __file__), '..'))
+    site_package = os.path.realpath( os.path.join( os.path.dirname( file), '..'))
 
     if 'site-packages' in package_dir:
         #installed in a VENV
