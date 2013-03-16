@@ -1,0 +1,31 @@
+{
+  "#info" : "The default configuration for a Napix server. Directives starting by a # are comments.",
+  "Napix" : {
+    "description" : "The base Napix server",
+    "loader" : {
+        "autoreload" : true
+    },
+    "#auth" : {
+      "#info" : "The authentication section.",
+      "#auth_url" : "The authentication URL",
+      "auth_url" : "http://localhost:8003/auth/authorization/",
+      "#service" : "The name of the service of this host.",
+      "service" : "localhost:8002"
+    },
+    "#notify" : {
+      "#info" : "The notify section",
+      "#url" : "The URL of the notify server",
+      "url" : "http://central.napix.nx/directory/",
+      "credentials" : {
+          "#info" : "The credential used by this server to send notifications",
+          "login" : "",
+          "key" : ""
+      },
+      "#delay" : "The interval at which this sever sends notifications",
+      "delay" : 300
+    },
+    "managers" : {
+      "#info" : "The list of the managers in this server. They key is the URL prefix, the value is a dotted python path to the manager class"
+    }
+  }
+}

@@ -48,6 +48,17 @@ class TestConf(unittest2.TestCase):
         self.assertTrue( bool( self.conf.get('a')))
         self.assertTrue( bool( self.conf.get('c')))
 
+class TestConfComment( unittest2.TestCase):
+    def setUp(self):
+        self.conf = Conf({
+            'a' : 'abc',
+            '#a' : 'this is three letters'
+            })
+    def test_comment_items(self):
+        self.assertEqual( self.conf.items(), [( 'a', 'abc')])
+    def test_comment_keys(self):
+        self.assertEqual( self.conf.keys(), ['a'])
+
 class TestConfLoader( unittest2.TestCase ):
     good_json1 = '{"json" : { "v" : 1 } }'
     good_json2 = '{"json" : { "v" : 2 } }'
@@ -81,12 +92,12 @@ class TestConfLoader( unittest2.TestCase ):
         with self.patch_open as patched_open:
             conf = Conf.make_default()
         self.assertTrue( 'v' in conf['json'])
-        self.assertEqual( len( patched_open.mock_calls), 3)
+        self.assertEqual( len( patched_open.mock_calls), 2)
 
     def test_load_multiple(self):
         self.filesystem = {
-                '/etc/napixd/settings.json': self.good_json1,
-                 self.conf_file : self.good_json2
+                '/etc/napixd/settings.json': self.good_json2,
+                 self.conf_file : self.good_json1
                 }
         with self.patch_open:
             conf = Conf.make_default()
@@ -103,8 +114,8 @@ class TestConfLoader( unittest2.TestCase ):
 
     def test_get_default(self):
         self.filesystem = {
-                '/etc/napixd/settings.json': self.good_json1,
-                 self.conf_file : self.good_json2
+                '/etc/napixd/settings.json': self.good_json2,
+                 self.conf_file : self.good_json1
                 }
         with self.patch_open:
             Conf.make_default()

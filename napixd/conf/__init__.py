@@ -4,7 +4,7 @@
 import logging
 import json
 import os.path
-import UserDict
+import collections
 import napixd
 from contextlib import contextmanager
 
@@ -13,13 +13,19 @@ logger = logging.getLogger('Napix.conf')
 #So that it's overridable in the tests
 open = open
 
-class Conf(UserDict.UserDict):
+class Conf(collections.MutableMapping):
     _default = None
+    def __init__(self, data=None):
+        self.data = dict(data) if data else {}
+
+    def __iter__(self):
+        return ( key for key in self.data if not key.startswith('#') )
+    def __len__(self):
+        return len(self.data)
 
     paths = [
-            '/etc/napixd/',
-            napixd.get_path( 'conf'),
-            os.path.join( os.path.expanduser('~'), '.napix')
+            napixd.get_file( 'conf/settings.json'),
+            '/etc/napixd/settings.json',
             ]
 
     @classmethod
@@ -35,7 +41,6 @@ class Conf(UserDict.UserDict):
     def make_default(cls):
         conf = None
         for path in cls.paths :
-            path = os.path.join( path, 'settings.json')
             try:
                 handle = open( path, 'r' )
                 if conf:
@@ -52,7 +57,22 @@ class Conf(UserDict.UserDict):
         if not conf:
             logger.warning( 'Did not find any configuration, trying default conf')
             try:
-                conf = json.load( open( 'default_conf/settings.json'))
+                default_conf = os.path.join( os.path.dirname(__file__), 'settings.json' )
+                with open( default_conf, 'r') as handle:
+                    conf = json.load(handle)
+                for path in cls.paths :
+                    try:
+                        logger.info('Try to write default conf to %s', path)
+                        with open( path, 'w') as destination:
+                            with open(default_conf, 'r') as source:
+                                destination.write(source.read())
+                    except IOError:
+                        logger.warning('Failed to write conf in %s', path)
+                    else:
+                        logger.info('Conf written to %s', path)
+                        break
+                else:
+                    logger.error('Cannot write defaulf conf')
             except IOError:
                 logger.error( 'Did not find any configuration at all')
                 conf = {}
@@ -67,6 +87,9 @@ class Conf(UserDict.UserDict):
         else:
             return self.data[item]
 
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
     def __delitem__(self, item):
         if '.' in item :
             prefix, x, suffix = item.rpartition('.')
@@ -79,6 +102,9 @@ class Conf(UserDict.UserDict):
 
     def __nonzero__(self):
         return bool(self.data)
+
+    def __eq__(self, other):
+        return  isinstance( other, collections.Mapping) and other.keys() == self.keys() and other.values() == self.values()
 
     def get( self, section_id):
         try:
