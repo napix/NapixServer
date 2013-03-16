@@ -20,6 +20,8 @@ class Conf(collections.MutableMapping):
 
     def __iter__(self):
         return ( key for key in self.data if not key.startswith('#') )
+    def items(self):
+        return ( (key,value) for key,value in self.data.items() if not key.startswith('#') )
     def __len__(self):
         return len(self.data)
 
