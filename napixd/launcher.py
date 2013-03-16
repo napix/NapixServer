@@ -177,9 +177,6 @@ Non-default:
         application = self.get_app()
         return self.apply_middleware( application)
 
-    def get_settings(self):
-        return dict( Conf.get_default().get('Napix.daemon'))
-
     def get_server(self):
         if 'rocket' in self.options:
             return 'rocket'
@@ -190,10 +187,9 @@ Non-default:
             return GeventServer
 
     def get_server_options(self):
-        settings = self.get_settings()
         return {
-                'host':settings.get('host', self.DEFAULT_HOST),
-                'port':settings.get('port', self.DEFAULT_PORT),
+                'host': self.DEFAULT_HOST,
+                'port': self.DEFAULT_PORT,
                 'server' : self.get_server(),
                 }
 
