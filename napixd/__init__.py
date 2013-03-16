@@ -1,7 +1,25 @@
 import os
 
-HOME = ( os.environ.get('NAPIXHOME') or
-        os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..')))
+HOME = ''
+
+def find_home( name, file):
+    global HOME
+    env = os.environ.get('NAPIXHOME')
+    if env:
+        HOME=env
+        return HOME
+
+    package_dir = os.path.dirname( file)
+    site_package = os.path.realpath( os.path.join( os.path.dirname( __file__), '..'))
+
+    if 'site-packages' in package_dir:
+        #installed in a VENV
+        HOME = os.path.join( os.path.expanduser('~'), '.' + name)
+    else:
+        HOME = site_package
+    return HOME
+
+find_home( 'napixd', __file__)
 
 def get_file( path, create=True):
     dirname, filename = os.path.split( path)
