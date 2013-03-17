@@ -145,7 +145,7 @@ class ExceptionsCatcher(object):
                         'line': lineno,
                         'traceback' : extern_tb or all_tb,
                         }
-                return HTTPError(500,res)
+                return HTTPResponse(json.dumps(res), status=500, content_type='application/json')
         return inner_exception_catcher
 
 class UserAgentDetector( object ):

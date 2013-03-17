@@ -91,6 +91,7 @@ Non-default:
 
 
     def run( self):
+        self.set_debug()
         if 'help' in self.options:
             print self.HELP_TEXT
             return 1
@@ -139,6 +140,7 @@ Non-default:
             from napixd.gevent_tools import AddGeventTimeHeader
             napixd.install( AddGeventTimeHeader())
 
+        napixd.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
         napixd.install(ConversationPlugin())
 
         if 'useragent' in self.options:
@@ -162,7 +164,6 @@ Non-default:
             else:
                 logger.warning( 'No webclient path found')
 
-        napixd.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
         return napixd
 
     def apply_middleware(self, application):
