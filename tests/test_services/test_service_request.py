@@ -3,11 +3,13 @@
 
 from __future__ import absolute_import
 
+import types
 import unittest2
 import mock
 import bottle
 from tests.mock.managers import get_managers
 
+from napixd.managers.actions import action
 from napixd.exceptions import ValidationError, NotFound
 from napixd.conf import Conf
 from napixd.services import CollectionService, FirstCollectionService
@@ -109,4 +111,71 @@ class TestServiceResourceRequestOther( _TestSRR):
         self._make('HEAD')
         resp = self.srr.handle()
         self.assertEqual( resp, None)
+
+
+class TestServiceActionRequest( unittest2.TestCase):
+    def setUp( self):
+        self.patch_request = mock.patch( 'bottle.request', method='POST')
+        self.request = self.patch_request.start()
+
+        self.manager, self.managed, x = get_managers()
+        self.fcs = FirstCollectionService( self.manager, Conf(), 'parent')
+        self.cs = CollectionService( self.fcs, self.managed, Conf(), 'child')
+        self.sar = ServiceActionRequest([ 'p1', 'c2' ], self.cs, 'action')
+
+        self.manager().validate_id.side_effect = lambda y:y
+        self.managed().validate_id.side_effect = lambda y:y
+        self.addCleanup( self.patch_request.stop)
+
+    def _action(self, fn):
+        manager = self.managed()
+        manager.action = types.MethodType( action(fn), manager, manager.__class__)
+
+    def test_post_noarg(self):
+        self.request.data = {}
+        @self._action
+        def callback(self, r):
+            self.assertEqual( r, self.managed().get_resource.return_value)
+            return 1
+
+        resp = self.sar.handle()
+        self.assertEqual( resp, 1)
+        self.manager().get_resource.assert_called_once_with( 'p1')
+        self.managed().get_resource.assert_called_once_with( 'c2' )
+
+
+    def test_post_args(self):
+        self.request.data = { 'a' : 2 }
+        @self._action
+        def callback(self, r, a):
+            self.assertEqual( r, self.managed().get_resource.return_value)
+            return a
+
+        resp = self.sar.handle()
+        self.assertEqual( resp, 2)
+
+    def test_post_args_missing(self):
+        self.request.data = {}
+        @self._action
+        def callback(self, r, a):
+            return a
+        self.assertRaises( bottle.HTTPError, self.sar.handle)
+
+    def test_post_optional_missing(self):
+        self.request.data = {}
+        @self._action
+        def callback(self, r, a=123):
+            return a
+
+        resp = self.sar.handle()
+        self.assertEqual( resp, 123)
+
+    def test_post_optional(self):
+        self.request.data = { 'a' : 234 }
+        @self._action
+        def callback(self, r, a=123):
+            return a
+
+        resp = self.sar.handle()
+        self.assertEqual( resp, 234)
 

@@ -217,21 +217,15 @@ class CollectionService(object):
                 app.route( self.resource_url + '/' + manager.get_name(),
                         callback=self.noop)
 
-    def _respond(self,cls,path):
-        """
-        shortcut method to respond a ServiceRequest subclass with the path given
-        """
-        return cls( path, self).handle()
-
     def as_resource(self,path):
-        return self._respond(ServiceResourceRequest,path)
+        return ServiceResourceRequest( path, self).handle()
 
     def as_collection(self,path):
-        return self._respond(ServiceCollectionRequest,path)
+        return ServiceCollectionRequest( path, self).handle()
 
     def as_action_factory(self,action_name):
         def as_action(path):
-            return ServiceActionRequest(bottle.request, path, self, action_name).handle()
+            return ServiceActionRequest(path, self, action_name).handle()
         return as_action
 
     def as_help_action_factory(self,action):

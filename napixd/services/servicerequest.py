@@ -225,9 +225,9 @@ class ServiceActionRequest(ServiceResourceRequest):
     METHOD_MAP = {
             'POST' : 'get_resource',
         }
-    def __init__(self, request, path, service, action_name):
+    def __init__(self, path, service, action_name):
         self.action_name = action_name
-        super(ServiceActionRequest,self).__init__(request, path, service)
+        super(ServiceActionRequest,self).__init__(path, service)
 
     def get_args(self,data):
         return (self.resource_id, data)
