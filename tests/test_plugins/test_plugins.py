@@ -4,6 +4,7 @@
 import unittest2
 import bottle
 import mock
+import json
 
 from napixd.plugins import UserAgentDetector, ExceptionsCatcher
 
@@ -25,9 +26,10 @@ class TestExceptionCatcher( unittest2.TestCase):
 
     def test_raise(self):
         resp = self.cb( Exception())
-        self.assertIsInstance( resp, bottle.HTTPError)
-        self.assertIsInstance( resp.body, dict)
-        self.assertDictEqual( resp.body['request'], {
+        self.assertIsInstance( resp, bottle.HTTPResponse)
+        self.assertEqual( resp.headers['Content-type'], 'application/json')
+        body = json.loads( resp.body)
+        self.assertDictEqual( body['request'], {
             'method' : 'GET', 'path' : '/'
             })
 
