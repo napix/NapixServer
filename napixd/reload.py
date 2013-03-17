@@ -17,7 +17,7 @@ except ImportError:
     pyinotify = None
 
 
-logger = logging.getLogger()
+logger = logging.getLogger('Napix.reload')
 
 class Poll(object):
     """Le poll du pauvre"""
