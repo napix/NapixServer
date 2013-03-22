@@ -57,9 +57,9 @@ class Conf(collections.MutableMapping):
                 pass
 
         if not conf:
-            logger.warning( 'Did not find any configuration, trying default conf')
             try:
                 default_conf = os.path.join( os.path.dirname(__file__), 'settings.json' )
+                logger.warning( 'Did not find any configuration, trying default conf from %s', default_conf)
                 with open( default_conf, 'r') as handle:
                     conf = json.load(handle)
                 for path in cls.paths :
