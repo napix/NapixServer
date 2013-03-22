@@ -15,7 +15,7 @@ IDs
 
 Within Napix, every token between two ``/`` that does not start with _napix_ is an ID.
 
-Every thing that starts with _napix_ is reserved.
+Every thing that starts with ``_napix_`` is reserved.
 
 Collections
 ===========
@@ -23,7 +23,7 @@ Collections
 The collections are a set of resources.
 The collections have an URI ending with a ``/``.
 
-In Napix the managers subclasses of :class:`~managers.Manager` instances represent collections.
+In Napix the managers subclasses of :class:`~napixd.managers.base.Manager` instances represent collections.
 They are instantiated with the parent that spawned them.
 
 Resources

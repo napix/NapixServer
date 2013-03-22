@@ -1,5 +1,5 @@
 
-.. currentmodule:: managers.default
+.. currentmodule:: napixd.managers
 
 .. highlight:: python
 
@@ -39,15 +39,15 @@ For more details about the loading of modules inside Napix, see the :ref:`loadin
 Napix Class
 ^^^^^^^^^^^
 
-The base class behind every collection is :class:`managers.Manager`.
+The base class behind every collection is :class:`base.Manager`.
 It defines how the collection find, modify and make operations on its resources.
 
-For convenience, some subclasses of :class:`~managers.Manager` are defined in
-:mod:`managers.default` that ease the creation of a manager at the expense of higher consumption
+For convenience, some subclasses of :class:`~base.Manager` are defined in
+:mod:`napixd.managers.default` that ease the creation of a manager at the expense of higher consumption
 of CPU and RAM.
 
-:class:`DictManager` is the base class of the manager we will be writing.
-It's a subclass of :class:`managers.Manager` witch implements higher level construct:
+:class:`default.DictManager` is the base class of the manager we will be writing.
+It's a subclass of :class:`base.Manager` witch implements higher level construct:
 with this implementation, it is just needed to make a dict of resource by ID from a persisted data source and to save it back.
 
 For the hosts example, we will write an implementation of this class.
@@ -59,13 +59,13 @@ The file will be :file:`{HOME}/auto/hostmanager.py` in order to benefits from au
 Writing the meta-datas
 ^^^^^^^^^^^^^^^^^^^^^^
 
-First you need to write the :attr:`~managers.Manager.resource_fields` attribute that describes the resource.
+First you need to write the :attr:`~base.Manager.resource_fields` attribute that describes the resource.
 
 For our example, we will use two fields:
     * a string for the IP address
     * an array of hostnames related to this IP.
 
-For each of our fields, we add a key in the :attr:`~managers.Manager.resource_fields`
+For each of our fields, we add a key in the :attr:`~base.Manager.resource_fields`
 dictionary containing another dict describing the field.
 We add a description and an example.
 
@@ -75,13 +75,13 @@ We add a description and an example.
 .. note::
 
     The example key is not a default value, it's used when the user requests a
-    :meth:`~managers.Manager.get_example_resource`
+    :meth:`~base.Manager.get_example_resource`
     as a template to create a new one and for documentation purposes.
 
 Loading the resources
 ^^^^^^^^^^^^^^^^^^^^^
 
-In order to get the resources, you have to define the :meth:`ReadOnlyDictManager.load` method.
+In order to get the resources, you have to define the :meth:`default.ReadOnlyDictManager.load` method.
 This method must return a dictionary of the resources indexed by their keys.
 
 
@@ -99,7 +99,7 @@ Creating resources
 At this point, the resources can be listed, got, deleted and modified.
 In order to add new resources, the manager must be able to generate the corresponding ID
 of a new resources.
-You have to write the method :meth:`DictManager.generate_new_id` that will return the id of the new resource
+You have to write the method :meth:`default.DictManager.generate_new_id` that will return the id of the new resource
 knowing its dictionary.
 
 You may choose to get a UUID, a sequence number, a value from the dictionary, etc,
@@ -144,14 +144,14 @@ There's two kind of input to validate or transform:
 URL token validation
 ^^^^^^^^^^^^^^^^^^^^
 
-:meth:`~managers.Manager.validate_id` is the method which checks the url tokens
-(part **resource_id** of /manager/**resource_id1**).
+:meth:`~base.Manager.validate_id` is the method which checks the url tokens
+(part **resource_id** of /manager/**resource_id**).
 It takes the proposed user input and return the correct user input or, if it's wrong,
-raises a :exc:`~ValidationError` with a message describing the kind of error that has been done.
+raises a :exc:`napixd.exceptions.ValidationError` with a message describing the kind of error that has been done.
 
 In our example, we may want to keep the ids as integers
 
-.. warning:: It's not the time to check for the existence
+.. warning:: It's not the time to check for the presense
 
     This method should just check that the ID may be a valid ID for the rest of the methods.
     It's not the methods in which you should check that a value already exists or not.
@@ -167,12 +167,12 @@ Request body validation
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 There is two places where the strings are validated.
-First in the :meth:`validate_resource_*<managers.Manager.validate_resource_FIELDNAME>` methods that check each field individually.
-Then in the :meth:`~managers.Manager.validate_resource` that validate the whole data dictionary.
+First in the :meth:`validate_resource_*<base.Manager.validate_resource_FIELDNAME>` methods that check each field individually.
+Then in the :meth:`~base.Manager.validate_resource` that validate the whole data dictionary.
 It may be used to convert integers to strings, clean a string, ensure consistency etc.
 
 Those methods get the object (the whole dict or each field) to validate by argument and must return the correct value.
-When a value is incorrect, the method throws a :exc:`~ValidationError`
+When a value is incorrect, the method throws a :exc:`~napixd.exceptions.ValidationError`
 with a string describing the kind of error the user did.
 
 With the HostManager, we may want to check that users are sending an array of strings as the hostnames attribute
@@ -213,7 +213,7 @@ The Napix managers have a method configure that does nothing by default but is c
 with the configuration of the module if any.
 
 
-You may override the configure method of a Napix manager :meth:`~managers.Manager.configure`.
+You may override the configure method of a Napix manager :meth:`~base.Manager.configure`.
 This classmethod takes an argument which is the configuration found in the settings file.
 
 For the HostManager we may add a configuration option to set another hosts file path.

@@ -1,5 +1,5 @@
 
-.. currentmodule:: managers
+.. currentmodule:: napixd.managers
 
 ==================
 Managers Extension
@@ -45,14 +45,13 @@ We will use the following code to scan the port.
 The actions of the managers are in the ``actions`` key of the metadatas of the managers.
 Now, this array is empty because there isn't any action declared::
 
-    curl -s -X GET  "localhost:8002/hosts/_napix_help?authok"  | python -m json.tool
+    >> info /hosts/
     {
-        "absolute_url": "/hosts/*",
-        "actions": [],
-        "collection_methods": [
-            "POST",
-            "HEAD",
-            "GET"
+        actions: [ ],
+        collection_methods": [
+            POST
+            HEAD
+            GET
         ],
     ...
 
@@ -79,24 +78,24 @@ The following arguments are mandatory if they have not a default value, else the
 
 Now the action appears in the metadatas of the manager and in  the _napix_all_actions child of each of HostManager resources::
 
-    $ curl -s -X GET  "localhost:8002/hosts/_napix_help?authok"  | python -m json.tool
+    >> info /hosts/
     {
-        "absolute_url": "/hosts/*",
-        "actions": {
-            "scan" : "Scan the port and return OPEN or CLOSED."
+        actions = {
+            scan = Scan the port and return OPEN or CLOSED.
         },
     ...
+    >> get /hosts/sony_rssi/_napix_all_actions
+    [
+        scan
+    ]
 
-    $ curl -s -X GET  "localhost:8002/hosts/sony_rssi/_napix_all_actions?authok"
-    ["scan"]
 
-
-Actions have their own metadatas available at _napix_action/NAME/_napix_help.
+Actions have their own metadatas available at ``_napix_action/NAME/_napix_help``.
 The ``doc`` key gives the docstring of the method, ``mandatory`` lists the mandatory parameters,
 ``optional`` is a dict of the parameters of the function that have a default value.
 ``resource_fields`` takes the mandatory and optional parameters and their documentation (cf later)::
 
-    $ curl -s -X GET  "localhost:8002/hosts/sony_rssi/_napix_action/scan/_napix_help?authok" | python -m json.tool
+    >> info /hosts/localhost/_napix_action/scan/
     {
         "doc": "Scan the port and return OPEN or CLOSED.",
         "mandatory": [
@@ -121,18 +120,15 @@ Calling the action
 ------------------
 
 In order to call an action, send a dict containing the desired parameters to the action URL::
-    $ curl -s -X POST -H 'Content-Type: application/json' \
-        "localhost:8002/hosts/localhost/_napix_action/scan?authok" \
-        --data '{"port":22}'
-        "OPEN"
-    $ curl -s -X POST -H 'Content-Type: application/json' \
-        "localhost:8002/hosts/localhost/_napix_action/scan?authok" \
-        --data '{"port":4352}'
-        "CLOSED"
+
+    >> action /hosts/localhost/ scan port=22
+    OPEN
+    >> action /hosts/localhost/ scan port=4352
+    CLOSED
 
 The data returned by the action are encoded in JSON.
 
-The additional documentation on the parameters of the action can be set with :func:`parameter`
+The additional documentation on the parameters of the action can be set with :func:`action.parameter`
 
 .. code-block:: python
 
@@ -146,7 +142,7 @@ The additional documentation on the parameters of the action can be set with :fu
 
 Now, the resource_fields dict of the help is populated.::
 
-    $ curl -s -X GET  "localhost:8002/hosts/localhost/_napix_action/scan/_napix_help?authok" | python -m json.tools
+    >> info /hosts/localhost/_napix_action/scan/
     {
         "doc": "Scan the port and return OPEN or CLOSED.",
         "mandatory": [
@@ -186,7 +182,7 @@ Implementing the view
 If the manager implements a view, this view is requested with the
 ``format`` GET parameter::
 
-    $ curl -X GET 'localhost:8002/hosts/localhost?authok&format=png' -D /dev/stderr
+    $ curl -X GET 'localhost:8002/hosts/localhost&format=png' -D /dev/stderr
     HTTP/1.1 406 Not Acceptable
     Content-Length: 18
     Content-Type: text/plain

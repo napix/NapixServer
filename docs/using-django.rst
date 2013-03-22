@@ -1,4 +1,4 @@
-.. currentmodule:: connectors.django
+.. currentmodule:: napixd.connectors.django
 
 ===================
 Using Django models

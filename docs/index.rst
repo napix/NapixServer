@@ -11,23 +11,17 @@ Contents:
 .. toctree::
     :maxdepth: 2
 
+    quickstart
     deployment
-    authentication
     resources
     first_step
     high_level
     low_level
     submanagers
     extensions
-    store
     using-django
-    managers
-    managers.default
-    managers.actions
-    managers.views
     thread_manager
-    executor
-    central/index
+    module
 
 
 Indices and tables

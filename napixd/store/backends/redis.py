@@ -28,6 +28,12 @@ class BaseRedisStore( BaseStore ):
         self.redis.delete(self.collection)
 
 class RedisStore( BaseRedisStore ):
+    """
+    Store based on a key in a Redis server.
+
+    It takes optional `host` and `port` arguments to indicate to which server it connects to.
+    If they are not given, the configuration key ``Napix.storage.redis.{host,port}`` are used.
+    """
     def __init__(self, collection, options=None):
         super(RedisStore, self).__init__(collection, options)
         try:
@@ -40,6 +46,12 @@ class RedisStore( BaseRedisStore ):
         self.redis.set( self.collection, pickle.dumps( self.data ))
 
 class RedisHashStore(BaseRedisStore):
+    """
+    Store based on Redis Hashes.
+    Every value of the store is a value of a Redis hash.
+
+    cf :class:`RedisStore` for the keyword arguments and connection options.
+    """
     def __contains__( self, key):
         return self.redis.hexists( self.collection, key)
 
@@ -80,6 +92,12 @@ class RedisHashStore(BaseRedisStore):
         return self.redis.hincrby( self.collection, key, incr)
 
 class RedisKeyStore(BaseRedisStore):
+    """
+    Store based on Redis keys
+    Every value of the store is a value of a Redis key.
+
+    cf :class:`RedisStore` for the keyword arguments and connection options.
+    """
     def _make_key(self, key):
         return '{0}:{1}'.format( self.collection, key)
     def _all_keys( self):

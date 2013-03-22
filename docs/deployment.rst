@@ -3,48 +3,74 @@
 Install and deploy Napix
 ========================
 
-.. _installation:
-
 Installation
 ============
 
 The Napix daemon is hosted in a Mercurial repo at ssh://hg@the-book.enix.org/NapixServer.
+Builds are also available on http://builds.enix.org/napix/.
+If you intend to work on napixd, clone the repo.
+Else use the built version.
+Either way, You should use a virtual env
 
-.. code-block:: bash
+From the repo::
 
-    $ hg clone ssh://hg@the-book.enix.org/NapixServer
+    hg clone ssh://hg@the-book.enix.org/NapixServer
+    cd NapixServer
+    virtualenv venv
+    source venv/bin/activate
+    pip install requirements.txt
+    python setup.py develop
+
+From the package::
+
+    virtualenv napix
+    source napix/bin/activate
+    pip install git+git://github.com/SiteSupport/gevent.git
+    pip install http://builds.enix.org/napix/napixd-latest.tar.gz
+
+.. note::
+
+   If it failed in the gevent build step, install python-dev and cython::
+
+       # apt-get install python-dev
+       (venv)$ pip install cython
+
 
 Dependencies
-^^^^^^^^^^^^
+------------
 
 The napix daemon needs
 
+python
+    Versions 2.6 and 2.7 are supported
 bottle > 0.10
     Lightweight web framework
-rocket
-    Threaded wsgi server
-httplib2
-    Http client
+gevent
+    Green threads and event loop library
 redis-python (optional)
     Redis client (for the shared store)
 unittest2 (optional)
     Test framework (for the unit tests)
 pyinotify (optional)
     Detection of file modification (automatic reloading of modified source files)
-sphinx (optional)
-    Autogeneration of the documentation
-
-The installation procedure looks like this::
-
-    # apt-get install python python-virtualenv python-pip
-    $ virtualenv napix
-    $ source napix/bin/activate
-    (napix)$ pip install -r NapixServer/requirements.txt
-    (napix)$ NapixServer/bin/napixd
 
 
 Configuration
 =============
+
+The HOME
+--------
+
+Napix finds its configuration, its managers and save its logs and stored files in its ``HOME.``
+Napixd ty to guess where is its home.
+It looks in the parent directory of the code and in ``~/.napixd/``.
+
+Napix use the repo as its HOME, if you cloned the repo and in ``~/.napixd/`` if you installed the package.
+The ``HOME`` can be forced with the :envvar:`$NAPIXHOME`.
+Napix creates its ``HOME`` and a bunch of directories inside: ``conf``, ``logs`` and ``auto``.
+
+Configuration
+-------------
 
 Napix takes its configuration in the conf/settings.json.
 
@@ -52,13 +78,8 @@ Napix takes its configuration in the conf/settings.json.
     :language: javascript
 
 
-Napix.daemon
-^^^^^^^^^^^^
-
-The ``Napix.daemon`` key sets the listen address and port.
-
 Napix.auth
-^^^^^^^^^^
+..........
 
 The ``Napix.auth`` key sets the value of the authentication server.
 
@@ -68,12 +89,18 @@ The Napix server will check that it is the host at which the request is addresse
 
 The ``auth_url`` value will set the address at which the server will ask for the confirmation of the requests authenticity.
 
+.. note::
+
+   If you don't want to bother with the authentication, use ``noauth`` option::
+
+       $ napixd noauth
+
 
 Modules Loading
 ===============
 
 Loading by the configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------
 
 The configuration object ``Napix.managers`` is a hashmap
 where the keys are an alias and the value is the dotted python path to a Manager.
@@ -91,7 +118,7 @@ In this example, two X480 are managed by this Napix server, they use the same ma
 .. _auto-loading:
 
 Auto-loading
-^^^^^^^^^^^^
+------------
 
 If there is a file ending by **.py** in a auto-detect folder
 of the Napix setup (:file:`/var/lib/napix/auto` or :file:`NapixServer/auto`),
@@ -100,11 +127,10 @@ The auto loaded managers may override the classmethod :meth:`~managers.Manager.d
 which tells if the managers should be loaded.
 By default detect return True when the class is not a base method defined inside Napix.
 
-
 This feature does not allow neither multiple loading of the same manager nor the configuration.
 
 Reloading
-^^^^^^^^^
+---------
 
 Napix proposes an option to reload the modules without stopping the server.
 When the reload is triggered, the configuration is reparsed.

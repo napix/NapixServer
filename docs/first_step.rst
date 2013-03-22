@@ -1,6 +1,6 @@
 .. highlight:: python
 
-.. currentmodule:: managers.default
+.. currentmodule:: napixd.managers
 
 .. _first_step:
 
@@ -8,78 +8,105 @@
 First steps in the writing of a manager
 =======================================
 
-In Napix, managers behaves like collection and have the logic
-to maintain a set of resources.
+In Napix, managers behaves like collection and have the logic to maintain a set of resources.
 
 Napix uses the REST approach: an URI defines a resource and HTTP verbs ( GET, PUT, POST, etc) defines the action on it.
 PUT /htaccess/toto is used to modify the resource identified by /htaccess/toto with the data given in the request body.
 GET /htaccess/toto is used to retrieve the same resource.
 GET /htaccess/tata retrieves another resource.
 
-Napix uses :class:`~managers.Manager` subclasses to handle the collections logic.
+Napix uses :class:`~base.Manager` subclasses to handle the collections logic.
 Each Manager instance represents a collection and provides methods to manage the collection.
 
 Launch
 ======
 
 The first step is to launch the server as described in :ref:`installation`.
-Install pyinotify to enable the auto-reloading.::
+Install pyinotify to enable the auto-reloading, and the napix client to query the server::
 
     (napix)$ pip install pyinotify
+    (napix)$ pip install http://builds.enix.org/napix/NapixCLI-latest.tar.gz
 
 When launching the napixd daemon, it shows its PID (Starting process xx),
 its root directory (Found napixd home at /xxx),
 the log file ( Logging activity in /xxx),
 the socket on which it is listening ( Listening on http://xxx:xxx/).
 
-The server can be stopped by hitting Ctrl+c, and it may take up to 3 seconds to stop.::
+The server can be stopped by hitting Ctrl+c::
 
-    (napix)$ bin/napixd
-    Starting process 1482
-    Found napixd home at /home/user/NapixServer
-    Logging activity in /tmp/napix.log
-    Bottle server starting up (using RocketAndExecutor())...
+    (napix)$ bin/napixd nodoc debug print_exc noauth nonotify
+    Napixd Home is /home/napix/NapixServer/new_home
+    INFO:Napix.console:Napixd Home is /home/napix/NapixServer/new_home
+    Options are print_exc,auto,app,nodoc,reload,gevent,noauth,nonotify,cors,debug,useragent,webclient
+    INFO:Napix.console:Options are print_exc,auto,app,nodoc,reload,gevent,noauth,nonotify,cors,debug,useragent,webclient
+    Starting process 12528
+    INFO:Napix.console:Starting process 12528
+    Logging activity in /home/napix/NapixServer/new_home/log/napix.log
+    INFO:Napix.console:Logging activity in /home/napix/NapixServer/new_home/log/napix.log
+    INFO:Napix.conf:Using /home/napix/NapixServer/new_home/conf/settings.json configuration file
+    INFO:Napix.reload:Launch Napix autoreloader
+    INFO:Napix.Server:Using /home/napix/NapixServer/napixd/web as webclient
+    INFO:Napix.Server:Starting
+    Bottle v0.11.6 server starting up (using GeventServer())...
     Listening on http://0.0.0.0:8002/
     Hit Ctrl-C to quit.
 
-You can check that the server is up and responding by poking it with curl.  ::
+.. note::
 
-    $ curl -D /dev/stderr -X GET "localhost:8002/?authok" -s | python -m json.tool
-    HTTP/1.1 200 OK
-    Content-Length: 54
-    Content-Type: application/json
-    Date: Thu, 14 Jun 2012 10:26:43 GMT
-    Server: Rocket 1.2.4 Python/2.6.6
-    Connection: keep-alive
+   In this example ``HOME`` is ``/home/napix/NapixServer/``.
+   Yours may be different.
+   You can force your ``HOME`` with the environment variable :envvar:`$NAPIXHOME`.
+   For example set it inside your venv. Run ``napixd`` to create the structure inside::
 
+       (napix)$ export NAPIXHOME=$VIRTUAL_ENV
+       (napix)$ napixd only
+
+You can check that the server is up and responding by poking it with napix::
+
+    napix -s localhost:8002
+    >> ls
     [ ]
 
-``curl``
-    A classic command line HTTP client.
-``-D /dev/stderr``
-    Tells to curl to show the HTTP headers.
-``-X GET``
-    Sends a GET request
-``"localhost:8002/?authok"``
-    The host and url on which curl will send its request.
-    The authok GET parameter is a bypass of the napix authentication, while Napix run in debug mode.
-``-s``
-    tells to curl to be silent and thus avoids the progress bar.
-``| python -m json.tool``
-    Formats the output as a human readable json object.
+.. note::
 
+   if you have installed HelloWorld in :ref:`helloworld`, ``ls`` will show ``hello``
 
 Write a manager
 ===============
 
+.. note::
+
+   The examples below use differents snippet from different sessions.
+
+    Without a prompt, is python source code inside the :file:`HOME/auto/password.py`.
+
+    A ``(napix)$`` indicates a shell with the virtualenv loaded::
+
+            (napix)$ napixd noauth
+
+    A ``>>`` indicates an interactive session within the napix client::
+
+        (napix)$ napix -s localhost:8002
+        >> get /
+
+    A ``>>>`` indicates an interactive python shell
+
+        (napix)$ python
+        >>> import os
+
+
 The auto-loader directory is the auto-folder inside the root directory.
 Here it is /home/user/NapixServer/auto.
 
-Launch your favorite editor with and open a file in the auto-load directory :file:`vim /home/user/NapixServer/auto/password.py`.
+Launch your favorite editor with and open a file in the auto-load directory :file:`~/.napixd/auto/password.py`.
 Write the headers and save.
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 1-2
+
+.. warning::
+
+   :path:`~/.napixd/` is your default HOME. Change the path if you changed the HOME.
 
 The autoloader will detect the filesystem operation and launch a reload.
 A line ``Reloading`` will appear in the log of the napixd daemon console.::
@@ -94,18 +121,21 @@ A line ``Reloading`` will appear in the log of the napixd daemon console.::
 
     Reloading
 
-A curl request will still show an empty array, because there isn't a Manager yet to be loaded.
+A curl request will still show an empty array, because there isn't a Manager yet to be loaded::
+
+    >> get /
+    [ ]
 
 Continue writing in the previously opened file.
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 6
 
-The :class:`DictManager` class is a subclass of :class:`~managers.Manager`
+The :class:`default.DictManager` class is a subclass of :class:`~base.Manager`
 which simplifies the way of writing a Manager.
 Instead of writing a method to make a modification, retrieve a resource, create it, etc,
-the DictManager instance store an internal dict of all its resource indexed by id.
-The DictManager implements the method to modify, create, list, etc and does the operation on the internal dict.
+the :class:`~default.DictManager` instance store an internal dict of all its resource indexed by id.
+The :class:`~default.DictManager` implements the method to modify, create, list, etc and does the operation on the internal dict.
 
 Append the following lines in the password.py file.
 
@@ -113,11 +143,11 @@ Append the following lines in the password.py file.
     :lines: 12-15
 
 When you save the file, the daemon will reload the managers and find the one you created.
-A curl GET request will show you it.::
+A GET request will show you it.::
 
-    $ curl -X GET "localhost:8002/?authok" -s | python -m json.tool
+    >> get /
     [
-        "/basicpasswordfilemanager"
+        /basicpasswordfile
     ]
 
 If you make a mistake while writing a manager, and it causes the import to fail, Napix will forgive you.
@@ -127,7 +157,7 @@ return the error that cause the import to fail.
 
 For example: add a syntax error or a undeclared name in the file.
 
-.. code-block::
+.. code-block:: python
 
     class BasicPasswordFileManager(DictOopsIMadeAMistake):
         """
@@ -136,55 +166,73 @@ For example: add a syntax error or a undeclared name in the file.
 
 The requests will fail with an :exc:`ImportError` caused by a :exc:`NameError`::
 
-    $ curl -X GET "localhost:8002/basicpasswordfilemanager?authhok" -s | python -m json.tool
-    {
-        "error_class": "ImportError",
-        "error_text": "NameError(\"name 'DictOopsIMadeAMistake' is not defined\",)",
-        "filename": "/home/dude/NapixServer/napixd/loader.py",
-        "line": 352,
-        "request": {
-            "method": "GET",
-            "path": "/basicpasswordfilemanager"
-        },
-        "traceback": []
-    }
+    >> get /basicpasswordfile/
+    Napixd Error ImportError
+    /home/napix/NapixServer/napixd/plugins.py in inner_exception_catcher
+        120   return callback(*args,**kwargs) #Exception
+
+    /home/napix/NapixServer/napixd/plugins.py in inner_conversation
+        60   result = callback(*args,**kwargs) #Conv
+
+    /home/napix/NapixServer/napixd/plugins.py in inner_useragent
+        178   return callback( *args, **kwargs)
+
+    /home/napix/NapixServer/napixd/loader.py in inner
+        339   raise cause
+
+    ImportError: NameError("name 'DictOopsIMadeAMistake' is not defined",)
 
 Rollback to fix this error before continuing.
 
 An attempt to list the resources (using GET /``name of the manager``/) fails with a :exc:`NotImplementedError`
-because the load method that the developer must override is not yet written.::
+because the load method that the developer must override is not yet written::
 
-    $ curl -X GET "localhost:8002/basicpasswordfilemanager/?authok" -s -D /dev/stderr | python -m json.tool
-    HTTP/1.1 500 Internal Server Error
-    Content-Length: 219
-    Content-Type: application/json
-    Date: Thu, 14 Jun 2012 12:49:23 GMT
-    Server: Rocket 1.2.4 Python/2.6.6
-    Connection: keep-alive
 
-    {
-        "error_class": "NotImplementedError",
-        "error_text": "load",
-        "filename": "/home/napix/NapixServer/napixd/managers/default.py",
-        "line": 51,
-        "request": {
-            "method": "GET",
-            "path": "/basicpasswordfilemanager/"
-        },
-        "traceback": []
-    }
+    >> get /basicpasswordfile/
+    Napixd Error NotImplementedError
+    /home/napix/NapixServer/napixd/plugins.py in inner_exception_catcher
+        120   return callback(*args,**kwargs) #Exception
 
-You can here observe here the comportment of Napix when an uncaught exception is raised.
+    /home/napix/NapixServer/napixd/plugins.py in inner_conversation
+        60   result = callback(*args,**kwargs) #Conv
+
+    /home/napix/NapixServer/napixd/plugins.py in inner_useragent
+        178   return callback( *args, **kwargs)
+
+    /home/napix/NapixServer/napixd/services/plugins.py in inner_arguments
+        24   return callback(path)
+
+    /home/napix/NapixServer/napixd/services/__init__.py in as_collection
+        224   return ServiceCollectionRequest( path, self).handle()
+
+    /home/napix/NapixServer/napixd/services/servicerequest.py in handle
+        118   result = self.call(callback,args)
+
+    /home/napix/NapixServer/napixd/services/servicerequest.py in call
+        85   return callback(*args)
+
+    /home/napix/NapixServer/napixd/managers/default.py in list_resource
+        81   return self.resources.keys()
+
+    /home/napix/NapixServer/napixd/managers/default.py in _get_resources
+        67   self._resources = self.load(self.parent)
+
+    /home/napix/NapixServer/napixd/managers/default.py in load
+        63   raise NotImplementedError, 'load'
+
+    NotImplementedError: load
+
+You can here observe here the behavior of Napix when an uncaught exception is raised.
 It returns a 500 error, with the description of the exceptions serialized in JSON.
 
-The developer still have to write the metadatas of the manager (its documentation and the field of the resources it manages),
+The developer still have to write the metadatas of the manager (its documentation and the fields of the resources it manages),
 the methods to load and persist the internal dict and a method to tell what is the id of a newly created resource.
 
 The metadata
 ------------
 
 The metadatas of the Manager are composed of the docstring of the module
-which should describe what kind of resources it manages, and the :attr:`~managers.Manager.resource_fields` attribute
+which should describe what kind of resources it manages, and the :attr:`~base.Manager.resource_fields` attribute
 which documents the names of the attributes of the managed resources and metadatas about them.
 
 The metadatas of the managers have two main goals.
@@ -198,28 +246,28 @@ and the resource_dict given to the creation and modification method contains onl
 The resources of our manager will contain a ``username`` and the corresponding ``password``.
 The template object proposed to the users will be ``john:toto42``.
 
-This template object is retrieved at ``/basicpasswordfilemanager/_napix_new``::
+This template object is retrieved at ``/basicpasswordfile/_napix_new``::
 
-    $ curl -X GET "localhost:8002/basicpasswordfilemanager/_napix_new?authok" -s | python -m json.tool
+    >> get /basicpasswordfile/_napix_new
     {
-        "password": "toto42",
-        "username": "john"
+        password: toto42
+        username: john
     }
 
 The url namespace is basicpasswordfilemanager.
 It is the default value of the lower case class name.
-It can be changed by overriding the classmethod :meth:`~managers.Manager.get_name`.
+It can be changed by overriding the classmethod :meth:`~base.Manager.get_name`.
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 32-34
 
 The requests show that the old name is gone replaced by the new one.::
 
-    $ curl -X GET "localhost:8002/?authok" -s | python -m json.tool
+    >> get /
     [
-        "/passwords"
+        /passwords
     ]
-    $ curl -X GET "localhost:8002/passwords/_napix_new?authok" -s | python -m json.tool
+    >> get /basicpasswordfile/_napix_new
     {
         "password": "toto42",
         "username": "john"
@@ -255,35 +303,51 @@ Now the manager can be listed and consulted::
 
     $ echo 'sony_rssi:pikachu1' > /tmp/test
     $ echo 'sony_bigboss:password3' >> /tmp/test
-    $ curl -X GET "http://localhost:8002/passwords/?authok" | python -m json.tool
+    >> get /passwords/
     [
-        "/passwords/sony_rssi",
-        "/passwords/sony_bigboss"
+        /passwords/sony_rssi
+        /passwords/sony_bigboss"
     ]
-    $ curl -X GET "http://localhost:8002/passwords/sony_rssi?authok" | python -m json.tool
+    >> get /passwords/sony_rssi
     {
-        "password": "pikachu1",
-        "username": "sony_rssi"
+        password: pikachu1
+        username: sony_rssi
     }
 
 But an attempt to modify an existing object will fail.::
 
-    $ curl -s -X PUT -H 'Content-Type: application/json' \
-        "localhost:8002/passwords/sony_rssi?authok" \
-        --data '{"password":"s4fr34$er-","username":"tanderson"}' | python -m json.tool
-    {
-        "error_class": "NotImplementedError",
-        "error_text": "save",
-        "filename": "/home/napix/NapixServer/napixd/managers/default.py",
-        "line": 107,
-        "request": {
-            "method": "PUT",
-            "path": "/passwords/sony_rssi"
-        },
-        "traceback": []
-    }
+    >> put /passwords/sony_rssi password=s4fr34$er- username=sony_rssi
+    Napixd Error NotImplementedError
+    /home/napix/NapixServer/napixd/plugins.py in inner_exception_catcher
+        120   return callback(*args,**kwargs) #Exception
 
-Another :exc:`NotImplementedError` this time because we need to override the :meth:`~managers.default.DictManager.save`.
+    /home/napix/NapixServer/napixd/plugins.py in inner_conversation
+        60   result = callback(*args,**kwargs) #Conv
+
+    /home/napix/NapixServer/napixd/plugins.py in inner_useragent
+        178   return callback( *args, **kwargs)
+
+    /home/napix/NapixServer/napixd/services/plugins.py in inner_arguments
+        24   return callback(path)
+
+    /home/napix/NapixServer/napixd/services/__init__.py in as_resource
+        221   return ServiceResourceRequest( path, self).handle()
+
+    /home/napix/NapixServer/napixd/services/servicerequest.py in handle
+        120   self.end_request()
+
+    /home/napix/NapixServer/napixd/services/servicerequest.py in end_request
+        94   self.manager.end_request( self.request)
+
+    /home/napix/NapixServer/napixd/managers/default.py in end_request
+        130   self.save(self.parent,self.resources)
+
+    /home/napix/NapixServer/napixd/managers/default.py in save
+        112   raise NotImplementedError, 'save'
+
+    NotImplementedError: save
+
+Another :exc:`NotImplementedError` this time because we need to override the :meth:`~default.DictManager.save`.
 Save takes the parent (the same as in load) and the resources of the managers as argument and persists them to the disk.
 
 Like in the load method, we can ignore the parent argument.
@@ -293,36 +357,50 @@ Like in the load method, we can ignore the parent argument.
 
 Now the result is persisted::
 
-    $ curl -s -X PUT -H 'Content-Type: application/json' \
-        "localhost:8002/passwords/sony_rssi?authok" \
-        --data '{"password":"s4fr34$er-","username":"tanderson"}'
+    >> put /passwords/sony_rssi password=s4fr34$er- username=sony_rssi
     $ cat /tmp/test
     sony_bigboss:password3
     sony_rssi:s4fr34$er-
-    $ curl -X GET "http://localhost:8002/passwords/sony_rssi?authok" | python -m json.tool
-    {
-        "password": "s43fr34$er",
-        "username": "sony_rssi"
-    }
+    >> get /passwords/
+    [
+        /passwords/sony_bigboss
+        /passwords/sony_rssi
+    ]
 
 For the creation of a resource, a POST request is sent to the collection::
 
-    $ curl -s -X POST -H 'Content-Type: application/json' \
-        "localhost:8002/passwords/?authok" \
-        --data '{"password":"s4fr34$er-","username":"tanderson"}' | python -m json.tool
-    {
-        "error_class": "NotImplementedError",
-        "error_text": "generate_new_id",
-        "filename": "/home/napix/NapixServer/napixd/managers/default.py",
-        "line": 107,
-        "request": {
-            "method": "POST",
-            "path": "/passwords/"
-        },
-        "traceback": []
-    }
+    >> post /passwords/ password=neo username=tanderson
+    Napixd Error NotImplementedError
+    /home/napix/NapixServer/napixd/plugins.py in inner_exception_catcher
+        120   return callback(*args,**kwargs) #Exception
 
-A new NotImplementedError, this one comes from the :meth:`~managers.Manager.DictManager.generate_new_id` method.
+    /home/napix/NapixServer/napixd/plugins.py in inner_conversation
+        60   result = callback(*args,**kwargs) #Conv
+
+    /home/napix/NapixServer/napixd/plugins.py in inner_useragent
+        178   return callback( *args, **kwargs)
+
+    /home/napix/NapixServer/napixd/services/plugins.py in inner_arguments
+        24   return callback(path)
+
+    /home/napix/NapixServer/napixd/services/__init__.py in as_collection
+        224   return ServiceCollectionRequest( path, self).handle()
+
+    /home/napix/NapixServer/napixd/services/servicerequest.py in handle
+        118   result = self.call(callback,args)
+
+    /home/napix/NapixServer/napixd/services/servicerequest.py in call
+        85   return callback(*args)
+
+    /home/napix/NapixServer/napixd/managers/default.py in create_resource
+        148   resource_id = self.generate_new_id(resource_dict)
+
+    /home/napix/NapixServer/napixd/managers/default.py in generate_new_id
+        119   raise NotImplementedError, 'generate_new_id'
+
+    NotImplementedError: generate_new_id
+
+A new :exc:`NotImplementedError`, this one comes from the :meth:`~default.DictManager.generate_new_id` method.
 In order to create a new resource, the created resource dict will be stored in the internal resources dict.
 The id it will take may be a serial number, a field or a part of a field, a random number (like a GUID).
 
@@ -335,16 +413,11 @@ The objects can be created and are persisted.
 When an object is created, the napixd returns a 201 created code and
 send the URI of the newly created resource in the Location header ::
 
-    $ curl -s -X POST -H 'Content-Type: application/json' \
-        "localhost:8002/passwords/?authok" \
-        --data '{"password":"whiterabbit","username":"tanderson"}'
-    HTTP/1.1 201 Created
-    Content-Length: 0
-    Location: /passwords/tanderson
-    Date: Thu, 14 Jun 2012 17:09:45 GMT
-    Server: Rocket 1.2.4 Python/2.6.6
-    Connection: keep-alive
-
+    >> post /passwords/ password=whiterabbit username=tanderson
+    {
+     username = tanderson
+     password = whiterabbit
+     }
     $ cat /tmp/test
     sony_bigboss:password3
     sony_rssi:s4fr34$er-
@@ -353,25 +426,33 @@ send the URI of the newly created resource in the Location header ::
 At this moment, it is possible to create, delete, modify, list and retrieve the resource of our manager.
 But there is no validation and it could lead to injection, flaws, etc.
 
-For example if an attacker wants to create a Mallory account, he can set his password to something with a \n in it.::
+For example if an attacker wants to create a Mallory account, he can set his password to something with a ``\n`` in it.
+The ``\n`` cannot be written from the command line.
+But napix client will use an external editor if no arguments are given::
 
-    $ curl -s -X PUT -H 'Content-Type: application/json' \
-        "localhost:8002/passwords/sony_bigboss?authok" \
-        --data '{"password":"x\nmallory:y","username":"sony_bigboss"}' -D /dev/stderr
-    HTTP/1.1 200 OK
-    Content-Length: 0
-    Content-Type:
-    Date: Thu, 14 Jun 2012 17:17:10 GMT
-    Server: Rocket 1.2.4 Python/2.6.6
-    Connection: keep-alive
-
-    $ curl -s -X GET  "localhost:8002/passwords/?authok"  | python -m json.tool
+    >> put /passwords/sony_bigboss
+     1 {
+     2   "#_napix_info": [
+     3     "Napix Editor.",
+     4     "Quit with exit code different from 0 to cancel (:cq in vim)",
+     5     "Use the JSON syntax.",
+     6     "keys begining by a # are ignored. Like this one."
+     7   ],
+     8   "password": "a\nmallory:password",
+     9   "username": "sony_rssi"
+    10 }
+    :wq
+    >> get /
     [
-        "/passwords/mallory",
-        "/passwords/sony_bigboss",
-        "/passwords/tanderson",
-        "/passwords/sony_rssi"
+        /passwords/mallory
+        /passwords/sony_bigboss
+        /passwords/tanderson
+        /passwords/sony_rssi
     ]
+
+.. note::
+
+   The editor can be set with the environment variable :envvar:`$EDITOR`.
 
 He has created an access for Mallory with the password y.
 On another hand, the password are way too weak (No wonder why sony got owned by LulzSec).
@@ -380,7 +461,7 @@ We have to write validation methods.
 In Napix There is three places to make validation of user input.
 
 First, the manager may implement a method called
-:meth:`~managers.Manager.validate_resource_FIELDNAME` with ``FIELDNAME`` being a field of the resource.
+:meth:`~base.Manager.validate_resource_FIELDNAME` with ``FIELDNAME`` being a field of the resource.
 This method is used to clean each field individually.
 
 .. literalinclude:: /samples/basicpasswordfile.py
@@ -388,25 +469,29 @@ This method is used to clean each field individually.
 
 Now the managers responds with a 400 Error code when we submit a forged password.::
 
-    $ curl -s -X PUT -H 'Content-Type: application/json' \
-        "localhost:8002/passwords/sony_bigboss?authok" \
-        --data '{"password":"y\noscar:pass","username":"sony_bigboss"}' -D /dev/stderr
-    HTTP/1.1 400 Bad Request
-    Content-Length: 29
-    Content-Type: text/plain
-    Date: Fri, 15 Jun 2012 09:49:43 GMT
-    Server: Rocket 1.2.4 Python/2.6.6
-    Connection: keep-alive
+    >> put /passwords/sony_bigboss
+     1 {
+     2   "#_napix_info": [
+     3     "Napix Editor.",
+     4     "Quit with exit code different from 0 to cancel (:cq in vim)",
+     5     "Use the JSON syntax.",
+     6     "keys begining by a # are ignored. Like this one."
+     7   ],
+     8   "password": "a\np:pouet",
+     9   "username": "sony_rssi"
+    10 }
+    #Save and quit
+    :wq
+    #The editor reopens and this line appears
+    11 //Password cannot contain `\n`
+    :cq
 
-    Password cannot contain `\n`
-
-Secondly, the manager has a method :meth:`~managers.Manager.validate_resource`
+Secondly, the manager has a method :meth:`~base.Manager.validate_resource`
 which verifies the whole resource dict.
 
 In our case, we can implement a verification to avoid that the password contains the username
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :pyobject: BasicPasswordFileManager.validate_resource
-
 
 Download the whole python module here: :download:`/samples/basicpasswordfile.py`

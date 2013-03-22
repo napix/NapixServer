@@ -16,6 +16,14 @@ class FSStore( BaseStore):
                 get_path( os.path.join( PREFIX, self.__class__.__name__)))
 
 class FileStore( FSStore ):
+    """
+    Store based on files.
+    The collection is a file containing pickled datas.
+
+    It takes an optional `path` argument that indicates the directory which contains
+    the collections.
+    If it is not given, the configuration key ``Napix.storage.file.path`` is used.
+    """
     def __init__( self, collection, path = None ):
         path = self.get_path(path)
         self.file_path = os.path.join( path, collection)

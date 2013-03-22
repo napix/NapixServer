@@ -1,4 +1,4 @@
-.. module:: thread_manager
+.. module:: napixd.thread_manager
 
 ==================
 Asynchronous tasks

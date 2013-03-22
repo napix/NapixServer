@@ -3,6 +3,28 @@
 
 import collections
 
+"""
+=====================
+Store implementations
+=====================
+
+Implementations of :class:`StoreBackend`.
+
+Asynchronous implementations
+============================
+
+Synchronous implementations needs the user to call :meth:`.save<StoreBackend.save>`
+on the store after a modification has been made.
+
+Synchronous implementations
+===========================
+
+Asynchronous implementations directly commit the modifications to the underlying persistance support.
+Setting a value from a place and getting it after returns the same data,
+whatever the order of the creation of the stores.
+
+"""
+
 class BaseStore( collections.MutableMapping):
     def __init__( self, data):
         self.data = data or {}

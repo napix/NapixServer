@@ -1,4 +1,4 @@
-.. currentmodule:: managers
+.. currentmodule:: napixd.managers.base
 
 .. highlight:: python
 
@@ -56,7 +56,8 @@ This key won't be exported to the users who make a GET request,
 but it will be passed to the managed resources spawned.
 
 .. literalinclude:: /samples/protecteddir.py
-    :lines: 10-12,18-27,44-73
+    :language: python
+    :lines: 10-12,18-27,46-73,92-96
 
 
 PasswordsManager
@@ -132,25 +133,33 @@ Usage
 This is used like a normal manager::
 
     $ mkdir -p /var/http/{virtualhosts/client,passwords}
-
-    $ curl -s -X GET  "localhost:8002/htaccess/?authok" | python -m json.tool
+    $ napix
+    >> get /htaccess/
     [
-        "/htaccess/client"
+        /htaccess/client
     ]
-    $ curl -s -X GET  "localhost:8002/htaccess/client?authok" | python -m json.tool
+    >> get /htaccess/client
     {
-        "authname": "",
-        "enabled": false
+        authname =
+        enabled = false
     }
-    $ curl -s -D /dev/stderr  -X PUT  "localhost:8002/htaccess/client?authok" \
-        -H 'Content-type: application/json' \
-        --data '{"authname":"enter your password","enabled":true}'
-    HTTP/1.1 200 OK
-    Content-Length: 0
-    Content-Type:
-    Date: Tue, 19 Jun 2012 15:14:15 GMT
-    Server: Rocket 1.2.4 Python/2.6.6
-    Connection: keep-alive
+    >> post /htaccess/ authname="enter your password" enabled=1
+    {
+        authname = enter your password
+        enabled = true
+    }
+    >> get /htaccess/client/
+    [
+        "/htaccess/client/passwords"
+    ]
+    >> get /htaccess/client/passwords/
+    []
+
+    >> post /htaccess/client/passwords/ username=jason password=bourne09
+    {
+        password = bourne09
+        username = jason
+    }
 
     $ cat /var/http/virtualhosts/client/.htaccess
 
@@ -159,34 +168,6 @@ This is used like a normal manager::
         AuthName enter your password
         Require valid-user
 
-    $ curl -s -X GET  "localhost:8002/htaccess/client?authok" | python -m json.ool
-    {
-        "authname": "enter your password",
-        "enabled": true
-    }
+    $ cat /var/http/passwords/client
 
-    $ curl -s -X GET  "localhost:8002/htaccess/client/?authok" | python -m json.tool
-    [
-        "/htaccess/client/passwords"
-    ]
-
-    $ curl -s -X GET  "localhost:8002/htaccess/client/passwords/?authok" | python -m json.tool
-    []
-
-    $ curl -s -D /dev/stderr  -X POST  "localhost:8002/htaccess/client/passwords/?authok" \
-        -H 'Content-type: application/json' \
-        --data '{"username":"jason","password":"bourne09"}'
-    HTTP/1.1 201 Created
-    Content-Length: 0
-    Content-Type:
-    Location: /htaccess/client/passwords/jason
-    Date: Tue, 19 Jun 2012 15:18:44 GMT
-    Server: Rocket 1.2.4 Python/2.6.6
-    Connection: keep-alive
-
-    $ curl -s -X GET  "server.napix.nx:8002/htaccess/client/passwords/jason?authok" | python -m json.tool
-    {
-        "password": "bourne09",
-        "username": "jason"
-    }
-
+        jason:bourne09

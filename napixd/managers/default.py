@@ -1,6 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+
+Default Managers
+================
+
+
+This module provides some classes to implements default strategies for managers.
+
+They will load all the resources of the manager, allow the user to make requests
+and persist all the objects after.
+"""
+
 import os
 
 from threading import Lock

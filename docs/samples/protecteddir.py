@@ -90,13 +90,13 @@ AuthName {authname}
         handle.close()
 
     def list_resource( self ):
-        return list( self._list_resource())
+        return [ file
+                for file in os.listdir( self.VHOSTPATH)
+                if not file.startswith('.') ]
 
-    def _list_resource(self):
-        for file_ in os.listdir(self.VHOSTPATH):
-            if file_[0] == '.':
-                continue
-            yield file_
+
+
+
 
 
 class PasswordsManager(DictManager):

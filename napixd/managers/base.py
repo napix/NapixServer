@@ -181,6 +181,14 @@ class Manager(object):
     [ "section1" , "section2"]
     #Parser was passed to list_resource through parent
 
+    .. method:: validate_resource_FIELDNAME
+
+        Validate the content of the field ``FIELDNAME``
+
+        .. note::
+
+            validate_resource_FIELDNAME does not actually exists.
+            FIELDNAME have to be replace by an actual field of :attr:`resource_fields`
     """
 
     __metaclass__ = ManagerType

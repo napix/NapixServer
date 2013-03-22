@@ -1,6 +1,6 @@
 
 .. highlight:: python
-.. currentmodule:: managers
+.. currentmodule:: napixd.managers.base
 
 =======================================================
 Howto write a Napix module with the low level interface
