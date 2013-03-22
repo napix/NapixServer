@@ -23,7 +23,7 @@ class Setup(object):
     DEFAULT_OPTIONS = set([
         'app', #Launch the application
         'notify', # the thread of periodic notifications
-        'doc', # the autodocumentation generation
+        #'doc', # the autodocumentation generation
         'useragent', # the html page shown when a browser access directly
         'auth', # the auth interface
         'reload', #the reloader on signal page and automatic
