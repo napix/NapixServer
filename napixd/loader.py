@@ -312,6 +312,7 @@ class NapixdBottle(bottle.Bottle):
 
         #Error handling for not found and invalid
         self.error(404)(self._error_handler_factory(404))
+        self.error(405)(self._error_handler_factory(405))
         self.error(400)(self._error_handler_factory(400))
         self.error(500)(self._error_handler_factory(500))
 
@@ -331,7 +332,7 @@ class NapixdBottle(bottle.Bottle):
         def inner(exception):
             bottle.response.status = code
             bottle.response['Content-Type'] = 'text/plain'
-            return exception.output
+            return exception.body
         return inner
 
     def _error_service_factory( self, cause):
