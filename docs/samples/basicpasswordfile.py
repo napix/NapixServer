@@ -80,3 +80,5 @@ class BasicPasswordFileManager(DictManager):
     def validate_resource( self, resource_dict):
         if resource_dict['username'] in resource_dict['password']:
             raise ValidationError, 'Password must not contain the username'
+        #Always return the valid resource
+        return resource_dict

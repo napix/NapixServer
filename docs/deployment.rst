@@ -81,6 +81,10 @@ Napix takes its configuration in the conf/settings.json.
 Napix.auth
 ..........
 
+
+The authentication layer is provided by a plugin :class:`napixd.plugins.AAAPlugin`.
+This plugin is not automatically installed by the launcher.
+
 The ``Napix.auth`` key sets the value of the authentication server.
 
 The value ``service`` is the **public address** at which the Napix server is accessed.

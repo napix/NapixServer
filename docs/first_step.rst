@@ -106,7 +106,7 @@ Write the headers and save.
 
 .. warning::
 
-   :path:`~/.napixd/` is your default HOME. Change the path if you changed the HOME.
+   :file:`~/.napixd/` is your default HOME. Change the path if you changed the HOME.
 
 The autoloader will detect the filesystem operation and launch a reload.
 A line ``Reloading`` will appear in the log of the napixd daemon console.::
