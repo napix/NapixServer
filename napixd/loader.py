@@ -206,7 +206,7 @@ class NapixdBottle(bottle.Bottle):
     This bottle contains the automatic detection of services.
     """
 
-    def __init__(self, services=None, no_conversation=False, options=None):
+    def __init__(self, services=None, options=None):
         """
         Create a new bottle app.
         The services served by this bottle are either given in the services parameter or guessed
@@ -215,7 +215,6 @@ class NapixdBottle(bottle.Bottle):
         The service parameter is a list of Service instances that will be served by this app.
         When the paramater is not given or is None, the list is generated with the default conf.
 
-        the no_conversation parameter may be set to True to disable the ConversationPlugin.
         """
         self.options = options if options is not None else AllOptions()
         super(NapixdBottle,self).__init__(autojson=False)
