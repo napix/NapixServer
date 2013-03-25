@@ -1,4 +1,3 @@
-cython
 -r ../requirements.txt
 django
 redis
