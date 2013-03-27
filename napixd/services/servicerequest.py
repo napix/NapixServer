@@ -4,7 +4,6 @@
 from urllib import unquote
 
 import bottle
-from bottle import HTTPError
 
 from napixd.http import Response
 from napixd.exceptions import NotFound,ValidationError,Duplicate
@@ -17,12 +16,10 @@ class ServiceRequest(object):
         """
         Create the object that will handle the request for the path given on the collection
         """
-        self.request = bottle.request
-        self.method = self.request.method
+        self.method = bottle.request.method
         self.service = service
         #Parse the url components
         self.path = map( unquote, path)
-        self.all_managers = None
 
     @classmethod
     def available_methods(cls,manager):
@@ -36,20 +33,19 @@ class ServiceRequest(object):
                 available_methods.append(meth)
         return available_methods
 
-
-    def check_datas(self,collection):
+    def check_datas(self):
         """
         Filter and check the collection fields.
 
         Remove any field that is not in the collection's field
         Call the validator of the collection
         """
-        if self.request.method not in ('POST','PUT') :
+        if self.method not in ('POST','PUT') :
             return {}
         data = {}
-        for key, meta  in collection.resource_fields.items():
-            if key in self.request.data:
-                value = self.request.data[key]
+        for key, meta  in self.manager.resource_fields.items():
+            if key in bottle.request.data:
+                value = bottle.request.data[key]
             elif meta.get('optional',False) or meta.get('computed',False):
                 continue
             else:
@@ -61,40 +57,44 @@ class ServiceRequest(object):
                     raise ValidationError, 'key %s is not of type %s but type %s' %(
                             key, meta['type'].__name__, type(value).__name__)
             data[key] = value
-        data = collection.validate(data)
+        data = self.manager.validate(data)
         return data
 
     def get_manager(self):
         """
         Récupere la collection correspondante à la requete
         """
-        self.all_managers, self.manager = self.service.get_managers(self.path)
-        return self.manager
+        self.all_managers, manager = self.service.get_managers(self.path)
+        return manager
 
-    def get_callback(self,manager):
+    def get_callback(self):
         """
         recupere la callback de manager
         Si elle n'est pas disponible renvoie une erreur 405 avec les methodes possibles
         """
         try:
-            return getattr(manager,self.METHOD_MAP[self.method])
+            return getattr( self.manager,self.METHOD_MAP[self.method])
         except (AttributeError,KeyError):
-            raise HTTPError(405, 'Method is not implemented',
-                    allow= ','.join(self.available_methods(manager)))
-    def call(self,callback,args):
-        return callback(*args)
+            raise bottle.HTTPError(405, 'Method is not implemented',
+                    allow= ','.join(self.available_methods( self.manager)))
+
+    def call(self):
+        """
+        Make the actual call of the method
+        """
+        raise NotImplementedError
 
     def start_request( self):
         for m,i,r in self.all_managers:
-            m.start_request( self.request)
-            m.start_managed_request( self.request, i, r)
-        self.manager.start_request( self.request)
+            m.start_request( bottle.request)
+            m.start_managed_request( bottle.request, i, r)
+        self.manager.start_request( bottle.request)
 
     def end_request( self):
-        self.manager.end_request( self.request)
+        self.manager.end_request( bottle.request)
         for m,i,r in reversed(self.all_managers):
-            m.end_managed_request( self.request, i, r)
-            m.end_request( self.request)
+            m.end_managed_request( bottle.request, i, r)
+            m.end_request( bottle.request)
 
     def serialize( self, result):
         return result
@@ -106,25 +106,24 @@ class ServiceRequest(object):
         """
         try:
             #obtient l'object designé
-            manager = self.get_manager()
+            self.manager = self.get_manager()
             self.start_request()
 
             #recupère la vue qui va effectuer la requete
-            callback = self.get_callback(manager)
+            self.callback = self.get_callback()
             #recupère les données valides pour cet objet
-            datas =  self.check_datas(manager)
+            self.data =  self.check_datas()
             #recupere les arguments a passer a cette vue
-            args = self.get_args(datas)
-            result = self.call(callback,args)
+            result = self.call()
 
             self.end_request()
             return self.serialize(result)
         except ValidationError,e:
-            raise HTTPError(400,str(e))
+            raise bottle.HTTPError(400,str(e))
         except NotFound,e:
-            raise HTTPError(404,'`%s` not found'%str(e))
+            raise bottle.HTTPError(404,'`%s` not found'%str(e))
         except Duplicate,e:
-            raise HTTPError(409,'`%s` already exists'%str(e))
+            raise bottle.HTTPError(409,'`%s` already exists'%str(e))
 
     def make_url(self,result):
         url = ''
@@ -144,17 +143,18 @@ class ServiceCollectionRequest(ServiceRequest):
         'GET':'list_resource',
         'HEAD' : 'list_resource'
         }
-    def get_args(self,datas):
+    def call(self):
         if self.method == 'POST':
-            return (datas,)
-        return tuple()
+            return self.callback(self.data)
+        else:
+            return self.callback()
 
     def serialize( self, result):
         if self.method == 'HEAD':
             return None
         elif self.method == 'POST':
             url = self.make_url(result)
-            return HTTPError(201, None, Location= url)
+            return bottle.HTTPError(201, None, Location= url)
         elif self.method == 'GET':
             return map(self.make_url,result)
         else:
@@ -176,12 +176,12 @@ class ServiceResourceRequest(ServiceRequest):
             return None
         if self.method == 'PUT' and result != None :
             new_url = self.make_url(result)
-            if new_url != self.request.path:
-                return HTTPError(303, None, header={ 'Location': new_url} )
+            if new_url != bottle.request.path:
+                return bottle.HTTPError(303, None, Location= new_url )
             return None
         if self.method != 'GET':
             return result
-        format_ = self.request.GET.get('format', None )
+        format_ = bottle.request.GET.get('format', None )
         if not format_:
             return self.default_formatter( result)
         try:
@@ -193,7 +193,7 @@ class ServiceResourceRequest(ServiceRequest):
                 message = '{0} Available formats {1}: {2} '.format(
                         message, 'is' if len( all_formats) <= 1 else 'are',
                         ','.join(all_formats.keys()))
-            return HTTPError( 406, message)
+            return bottle.HTTPError( 406, message)
 
         response = Response()
         result = formatter( self.resource_id, result, response)
@@ -209,10 +209,12 @@ class ServiceResourceRequest(ServiceRequest):
                 resp[key] = meta['serializer'](resp[key])
         return resp
 
-    def get_args(self,datas):
+    def call(self):
         if self.method == 'PUT':
-            return (self.resource_id,datas)
-        return (self.resource_id,)
+            return self.callback(self.resource_id, self.data)
+        else:
+            return self.callback( self.resource_id)
+
     def get_manager(self):
         #get the last path token because we may not just want to GET the resource
         resource_id = self.path.pop()
@@ -229,25 +231,20 @@ class ServiceActionRequest(ServiceResourceRequest):
         self.action_name = action_name
         super(ServiceActionRequest,self).__init__(path, service)
 
-    def get_args(self,data):
-        return (self.resource_id, data)
+    def get_callback(self):
+        self.resource = self.manager.get_resource(self.resource_id)
+        return getattr( self.manager, self.action_name)
 
-    def get_callback(self, manager):
-        self.resource = manager.get_resource(self.resource_id)
-        callback = getattr(manager, self.action_name)
-        return callback
-
-    def check_datas(self, manager):
-        callback = getattr(manager, self.action_name)
-        supplied = set(self.request.data.keys())
+    def check_datas(self):
+        callback = getattr(self.manager, self.action_name)
+        supplied = set(bottle.request.data.keys())
         if not supplied.issuperset(callback.mandatory):
             raise ValidationError, 'missing mandatory parameters %s'%(
                     ','.join(set(callback.mandatory ).difference( supplied)))
         data = {}
         for key in callback.all_parameters.intersection(supplied):
-            data[key] = self.request.data[key]
+            data[key] = bottle.request.data[key]
         return data
 
-    def call(self, callback, data):
-        resource_id, action_args = data
-        return callback(self.resource, **action_args)
+    def call(self):
+        return self.callback(self.resource, **self.data)

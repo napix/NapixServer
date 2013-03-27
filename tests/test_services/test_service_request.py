@@ -81,7 +81,7 @@ class TestCollectionServiceRequestOther( _TestSCR):
 class _TestSRR( unittest2.TestCase):
     def _make( self, method, **kw):
         self.patch_request = mock.patch( 'bottle.request', method=method, **kw)
-        self.patch_request.start()
+        self.request = self.patch_request.start()
 
         self.manager, self.managed, x = get_managers()
         self.fcs = FirstCollectionService( self.manager, Conf(), 'parent')
@@ -111,6 +111,16 @@ class TestServiceResourceRequestOther( _TestSRR):
         self._make('HEAD')
         resp = self.srr.handle()
         self.assertEqual( resp, None)
+
+    def test_method_put(self):
+        self._make('PUT', data = { 'lol' : 1, 'blabla': 'ab' })
+        self.manager().validate_id.side_effect = lambda y:y
+        self.managed().validate_id.side_effect = lambda y:y
+        self.managed().validate.side_effect = lambda y:y
+        self.srr.handle()
+        self.managed().validate.assert_called_once_with({ 'lol' : 1, 'blabla': 'ab' })
+        self.managed().modify_resource.assert_called_once_with( 'c2', { 'lol' : 1, 'blabla': 'ab' })
+
 
 
 class TestServiceActionRequest( unittest2.TestCase):

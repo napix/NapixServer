@@ -418,7 +418,7 @@ class ManagerInterface(object):
         to a json object to build his response.
 
         Eg: GET /somehting/[...]/mymanager/42
-        call
+        calls
         mymanager.get_resource(self, '42')
 
         """
@@ -430,11 +430,12 @@ class ManagerInterface(object):
         Modify the ressource designed by resource_id by updating it with resource_dict
         defined values.
 
-        If modify_resource is not defined, it's emulated by calling delete/create sequentially.
-
         Eg: PUT /something/[...]/mymanager/42
         will be translated to :
         mymanager.modify_resource('42', { 'toto': 4242 })
+
+        The method MAY return an id.
+        If the ID changes the response will notify the client.
         """
         raise NotImplementedError
 
@@ -445,9 +446,17 @@ class ManagerInterface(object):
 
         Eg: GET /something/[...]/mymanager/
         will be translated to
-        mymanager.list_resource_id()
+        mymanager.list_resource()
+        """
+        raise NotImplementedError
 
-        After processing, the nAPIx daemon will always convert the list in a list of dict, and add
-        the _uri key with appropriate value (based on baseurl + _id).
+
+    def list_resource_filter(self, filters):
+        """
+        Return the list of ids of all managed resources matching the *filters*.
+
+        *filters* is the GET parameter of :data:`bottle.request`.
+        It behaves like a dict with an additional :meth:`getall(key)` method that returns a list of all the values
+        matching the given **key**.
         """
         raise NotImplementedError
