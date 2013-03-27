@@ -184,6 +184,7 @@ class AAAChecker(object):
     logger = logging.getLogger('Napix.AAA.Checker')
     def __init__(self, host, url):
         self.logger.debug( 'Creating a new checker')
+        self.host = host
         self.http_client = HTTPConnection(host)
         self.url = url
 
@@ -197,6 +198,9 @@ class AAAChecker(object):
                     body=body, headers=headers)
             resp = self.http_client.getresponse()
             content = resp.read()
+        except socket.gaierror, e:
+            self.logger.error( 'Auth server %s not found %s', self.host, e)
+            raise HTTPError( 500, 'Auth server did not respond')
         except socket.error, e:
             self.logger.error( 'Auth server did not respond, %r', e)
             raise HTTPError( 500, 'Auth server did not respond')
@@ -264,7 +268,9 @@ class AAAPlugin(BaseAAAPlugin):
 
     def __init__( self, conf=None, allow_bypass=False , ):
         super( AAAPlugin, self).__init__( conf, allow_bypass)
-        auth_url_parts = urlsplit(self.settings.get('auth_url'))
+        url = self.settings.get('auth_url')
+        auth_url_parts = urlsplit( url)
+        self.logger.info('Set up authentication with %s', url)
         self.host = auth_url_parts.netloc
         self.url = urlunsplit(( '','',auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
         self._local = threading.local()

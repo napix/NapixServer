@@ -15,7 +15,13 @@ console = logging.getLogger('Napix.console')
 
 def launch(options):
     sys.stdin.close()
-    Setup(options).run()
+    try:
+        Setup(options).run()
+    except Exception, e:
+        logger.critical( e)
+
+class CannotLaunch(Exception):
+    pass
 
 class Setup(object):
     DEFAULT_HOST='0.0.0.0'
@@ -121,11 +127,11 @@ Non-default:
 
     def set_auth_handler(self, app):
         conf =  Conf.get_default('Napix.auth')
-        if conf :
-            from napixd.plugins import AAAPlugin
-            app.install(AAAPlugin( conf, allow_bypass='debug' in self.options))
-        else:
-            logger.warning('No authentification configuration found.')
+        if not conf :
+            raise CannotLaunch('*auth* option is set and no configuration has been found (see Napix.auth key).')
+
+        from napixd.plugins import AAAPlugin
+        app.install(AAAPlugin( conf, allow_bypass='debug' in self.options))
 
     def get_app(self):
         """
