@@ -93,51 +93,53 @@ class Manager(object):
     If it's a single class, the resources are wrapper in this classe when going up a level in the URL
     When going up of a level in the url, children are wrapped in this class
 
-    example
-    >>>class FirstManager(Manager):
-    >>>     managed_class = SecondManager
+    example::
 
-    >>>class SecondManager(Manager):
-    >>>     def list_resource(self):
-    >>>         return {}
+        >>>class FirstManager(Manager):
+        >>>     managed_class = SecondManager
 
-    GET /first/second/third
-    >>>second_resource = FirstManager().get_resource('second') #/first
-    >>>second_manager = SecondManager(second_resource)  # [..]/second
-    >>>return second_manager.get_resource('third')  # [..]/third
+        >>>class SecondManager(Manager):
+        >>>     def list_resource(self):
+        >>>         return {}
+
+        GET /first/second/third
+        >>>second_resource = FirstManager().get_resource('second') #/first
+        >>>second_manager = SecondManager(second_resource)  # [..]/second
+        >>>return second_manager.get_resource('third')  # [..]/third
 
     If it's a tuple or a list of classes, the children have multiple subressource managers attached.
     The class in wich the children is wrapped depends on the url path
-    example
-    >>>class Main(Manager):
-    >>>     managed_class = [ManagerA,ManagerB]
-    >>>
-    >>>class ManagerA(Manager):
-    >>>     pass
-    >>>class ManagerB(Manager):
-    >>>     pass
+    example::
 
-    GET /main/1
-    >>>Main().get_resource(1)
+        >>>class Main(Manager):
+        >>>     managed_class = [ManagerA,ManagerB]
+        >>>
+        >>>class ManagerA(Manager):
+        >>>     pass
+        >>>class ManagerB(Manager):
+        >>>     pass
 
-    GET /main/1/
-    [ 'A', 'B' ]
+        GET /main/1
+        >>>Main().get_resource(1)
 
-    GET /main/1/A/
-    >>>ManagerA(Main().get_resource(1)).list_resource()
+        GET /main/1/
+        [ 'A', 'B' ]
 
-    GET /main/1/B/
-    >>>ManagerB(Main().get_resource(1)).list_resource()
+        GET /main/1/A/
+        >>>ManagerA(Main().get_resource(1)).list_resource()
 
-    GET /main/1/B/3
-    >>>ManagerB(Main().get_resource(1)).get_resource(3)
+        GET /main/1/B/
+        >>>ManagerB(Main().get_resource(1)).list_resource()
 
-    If it's not set, the manager does not have sub resources
+        GET /main/1/B/3
+        >>>ManagerB(Main().get_resource(1)).get_resource(3)
 
-    GET /first/second/third/
-    404 NOT FOUND
-    GET /first/second/third/fourth
-    404 NOT FOUND
+    If it's not set, the manager does not have sub resources::
+
+        GET /first/second/third/
+        404 NOT FOUND
+        GET /first/second/third/fourth
+        404 NOT FOUND
 
     Subclasses of this class MUST define their own list of fields
     in the class attribute resource_fields.
@@ -150,36 +152,38 @@ class Manager(object):
         -example : used for documentation and the example resource
         -description : describe the use of the resource
         -computed : This field is computed by the service and the user CAN NOT force it
-    example:
-    >>>class User(Manager):
-    >>>     resource_fields = {
-    >>>         'username':{'description':'POSIX username of the system account', 'example':'dritchie'},
-    >>>         'uid':{'description':'Unique identifier, will be generated if not given','optional':True},
-    >>>         'gecos':{'description':'Comment on the user name',example:'Dennis M. Ritchie'}
-    >>>         }
+    example::
+
+        >>>class User(Manager):
+        >>>     resource_fields = {
+        >>>         'username':{'description':'POSIX username of the system account', 'example':'dritchie'},
+        >>>         'uid':{'description':'Unique identifier, will be generated if not given','optional':True},
+        >>>         'gecos':{'description':'Comment on the user name',example:'Dennis M. Ritchie'}
+        >>>         }
 
     The resources may contains some fields that are not in the class' resource_fields.
     When the resource are serialized to be send in json,
     only the fields in resource_fields are extracted.
 
     This behavior may be usefull to pass privates values to the next managers.
-    exemple
-    >>>class SectionManager(Manager):
-    >>>     def list_resource(self):
-    >>>         return self.parent['parser'].get_sections()
-    >>>class File(Manager):
-    >>>     managed_class = SectionManager
-    >>>     fields = { 'path':'{} }
-    >>>     def get_resource(self,id):
-    >>>         return {'parser':Parser('/etc/'+id),'path':'/etc'+id}
+    exemple::
 
-    GET /file/file1
-    { "path" : "/etc/file1" }
-    #No parser field sent
+        >>>class SectionManager(Manager):
+        >>>     def list_resource(self):
+        >>>         return self.parent['parser'].get_sections()
+        >>>class File(Manager):
+        >>>     managed_class = SectionManager
+        >>>     fields = { 'path':'{} }
+        >>>     def get_resource(self,id):
+        >>>         return {'parser':Parser('/etc/'+id),'path':'/etc'+id}
 
-    GET /file/file1/
-    [ "section1" , "section2"]
-    #Parser was passed to list_resource through parent
+        GET /file/file1
+        { "path" : "/etc/file1" }
+        #No parser field sent
+
+        GET /file/file1/
+        [ "section1" , "section2"]
+        #Parser was passed to list_resource through parent
 
     .. method:: validate_resource_FIELDNAME
 
