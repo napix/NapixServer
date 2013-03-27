@@ -17,6 +17,8 @@ from napixd.services.servicerequest import ServiceActionRequest, ServiceResource
 
 class _TestSCR( unittest2.TestCase):
     def _make( self, method, **kw):
+        if not 'GET' in kw:
+            kw['GET'] = {}
         self.patch_request = mock.patch( 'bottle.request', method=method, **kw)
         self.patch_request.start()
 
@@ -66,6 +68,19 @@ class TestCollectionServiceRequestOther( _TestSCR):
         self._make('HEAD')
         resp = self.scr.handle()
         self.assertEqual( resp, None)
+
+    def test_list_filter(self):
+        self._make( 'GET', GET = {
+            'mpm': 'prefork'
+            })
+        self.managed().list_resource_filter.return_value = [ 1, 2, 3 ]
+        resp = self.scr.handle()
+        self.assertListEqual( resp, ['/parent/p1/child/1',
+            '/parent/p1/child/2',
+            '/parent/p1/child/3'])
+        self.managed().list_resource_filter.assert_called_once_with({
+            'mpm' : 'prefork'
+            })
 
     def test_method_create(self):
         self._make( 'POST', data={
@@ -120,8 +135,6 @@ class TestServiceResourceRequestOther( _TestSRR):
         self.srr.handle()
         self.managed().validate.assert_called_once_with({ 'lol' : 1, 'blabla': 'ab' })
         self.managed().modify_resource.assert_called_once_with( 'c2', { 'lol' : 1, 'blabla': 'ab' })
-
-
 
 class TestServiceActionRequest( unittest2.TestCase):
     def setUp( self):

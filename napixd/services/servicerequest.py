@@ -29,7 +29,7 @@ class ServiceRequest(object):
         """
         available_methods = []
         for meth,callback in cls.METHOD_MAP.items():
-            if hasattr(manager,callback):
+            if meth.isupper() and hasattr(manager,callback):
                 available_methods.append(meth)
         return available_methods
 
@@ -139,13 +139,24 @@ class ServiceCollectionRequest(ServiceRequest):
     """
     #association de verbes HTTP aux methodes python
     METHOD_MAP = {
+        'filter' : 'list_resource_filter',
         'POST':'create_resource',
         'GET':'list_resource',
         'HEAD' : 'list_resource'
         }
+
+    def get_callback(self):
+        if ( self.method == 'GET' and bottle.request.GET and
+                hasattr( self.manager, self.METHOD_MAP['filter']) ):
+            self.method = 'filter'
+        return super( ServiceCollectionRequest, self).get_callback()
+
+
     def call(self):
         if self.method == 'POST':
             return self.callback(self.data)
+        elif self.method == 'filter':
+            return self.callback( bottle.request.GET)
         else:
             return self.callback()
 
@@ -155,8 +166,8 @@ class ServiceCollectionRequest(ServiceRequest):
         elif self.method == 'POST':
             url = self.make_url(result)
             return bottle.HTTPError(201, None, Location= url)
-        elif self.method == 'GET':
-            return map(self.make_url,result)
+        elif self.method == 'GET' or self.method == 'filter' :
+            return map( self.make_url, result)
         else:
             return result
 
