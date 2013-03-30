@@ -1,6 +1,6 @@
 {
-  "#info" : "The default configuration for a Napix server. Directives starting by a # are comments.",
   "Napix" : {
+    "#info" : "The default configuration for a Napix server. Directives starting by a # are comments.",
     "description" : "The base Napix server",
     "loader" : {
         "autoreload" : true
