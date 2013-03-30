@@ -17,6 +17,7 @@ Contents:
     first_step
     high_level
     low_level
+    conf
     submanagers
     extensions
     using-django
