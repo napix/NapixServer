@@ -25,6 +25,8 @@ from napixd import get_file
 
 logger = logging.getLogger('Napix.GUID')
 
+open = open
+
 class NapixID(object):
     """
     The loader of uniquer identifier.
@@ -82,7 +84,7 @@ class NapixID(object):
             return None
 
         try:
-            return uuid.UUID( handle.read().trim())
+            return uuid.UUID( handle.read().strip())
         except ( IOError, ValueError) as e:
             logger.exception( e)
             raise ValueError('Cannot read the ID')
