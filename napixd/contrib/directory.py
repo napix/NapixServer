@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import time
+import uuid
 
 from napixd.managers import Manager
 from napixd.exceptions import NotFound, ValidationError
@@ -35,6 +36,10 @@ class NapixDirectoryManager(Manager):
                 'description' : 'Human readable description of the server',
                 'example' : 'This server is the Napix Services Index.',
                 'optional' : True,
+                },
+            'uid' : {
+                'description' : 'A Universal Unique IDentifier',
+                'example' : '2550ba7b-aec4-4a67-8047-2ce1ec8ca8ae'
                 }
             }
 
@@ -50,6 +55,13 @@ class NapixDirectoryManager(Manager):
                 not all( isinstance( x, basestring) for x in managers)) :
             raise ValidationError, ' managers should be a list of strings'
         return managers
+
+    def validate_resource_uid(self, uid):
+        try:
+            uuid.UUID( uid)
+        except ValueError:
+            raise ValidationError, 'uid is not an UUID'
+        return uid
 
     def get_resource(self, id_):
         try:
@@ -98,3 +110,4 @@ class NapixDirectoryManager(Manager):
         self.store[id_] = resource_dict
         self.store.save()
         return id_
+
