@@ -97,6 +97,9 @@ Non-default:
 
 
     def run( self):
+        """
+        Run the Napix Server
+        """
         self.set_debug()
         if 'help' in self.options:
             print self.HELP_TEXT
@@ -106,16 +109,6 @@ Non-default:
             return
 
         app = self.get_app()
-
-        if 'notify' in self.options:
-            from napixd.notify import Notifier
-            if not Conf.get_default('Napix.notify.url'):
-                raise CannotLaunch('Notifier has no configuration options')
-
-            logger.info('Set up notifier')
-            notifier = Notifier(app)
-            notifier.start()
-
 
         logger.info('Starting')
         try:
@@ -180,6 +173,15 @@ Non-default:
             else:
                 logger.warning( 'No webclient path found')
 
+        if 'notify' in self.options:
+            from napixd.notify import Notifier
+            if not Conf.get_default('Napix.notify.url'):
+                raise CannotLaunch('Notifier has no configuration options')
+
+            logger.info('Set up notifier')
+            notifier = Notifier(napixd)
+            notifier.start()
+
         return napixd
 
     def apply_middleware(self, application):
@@ -191,6 +193,9 @@ Non-default:
         return application
 
     def get_application(self):
+        """
+        Returns the wsgi application.
+        """
         application = self.get_app()
         return self.apply_middleware( application)
 
