@@ -262,7 +262,7 @@ class NapixdBottle(bottle.Bottle):
         return a list of Services instances
         """
         for alias, manager in managers:
-            config = Conf.get_default().get( alias )
+            config = Conf.get_default( alias )
             service = Service( manager, alias, config )
             logger.debug('Creating service %s', service.url)
             yield service
