@@ -17,11 +17,6 @@ class Notifier(object):
         self.app = app
         self._alive = False
 
-        if not Conf.get_default('Napix.notify.url'):
-            logger.error('Notifier has no configuration options')
-            self.post_url = None
-            return
-
         post_url = Conf.get_default( 'Napix.notify.url')
         post_url_bits = urlparse.urlsplit( post_url )
         self.post_url = post_url_bits.path

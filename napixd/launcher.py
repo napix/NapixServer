@@ -28,7 +28,7 @@ class Setup(object):
     DEFAULT_PORT=8002
     DEFAULT_OPTIONS = set([
         'app', #Launch the application
-        'notify', # the thread of periodic notifications
+        #'notify', # the thread of periodic notifications
         #'doc', # the autodocumentation generation
         'useragent', # the html page shown when a browser access directly
         'auth', # the auth interface
@@ -58,7 +58,6 @@ napixd options ... will show the options enabled in this configuration.
 options are:
 Default options:
     app:        Launch the application
-    notify:     Enable the notification thread
     doc:        Run the automatic documentation generation
     useragent:  The html page shown when a browser access directly
     auth:       The authentication component
@@ -70,6 +69,7 @@ Default options:
     auto:       Load from HOME/auto/ directory
 
 Non-default:
+    notify:     Enable the notification thread
     silent:     Do not show the messages in the console
     debug:      Run the DEBUG mode
     print_exc:  Show the exceptions in the console output
@@ -106,6 +106,15 @@ Non-default:
             return
 
         app = self.get_app()
+
+        if 'notify' in self.options:
+            from napixd.notify import Notifier
+            if not Conf.get_default('Napix.notify.url'):
+                raise CannotLaunch('Notifier has no configuration options')
+
+            notifier = Notifier(app)
+            notifier.start()
+
 
         logger.info('Starting')
         try:

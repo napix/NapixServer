@@ -239,11 +239,6 @@ class NapixdBottle(bottle.Bottle):
         self.on_stop = []
         self.setup_bottle()
 
-        if 'notify' in self.options:
-            from napixd.notify import Notifier
-            notifier = Notifier( self)
-            notifier.start()
-
     def get_loader( self):
         if 'auto' in self.options:
             return AutoLoader()
