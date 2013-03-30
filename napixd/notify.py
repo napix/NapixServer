@@ -9,6 +9,7 @@ import urlparse
 from napixd.client import Client
 from napixd.thread_manager import background
 from napixd.conf import Conf
+from napixd.guid import uid
 
 logger = logging.getLogger('Napix.notifications')
 
@@ -73,6 +74,7 @@ class Notifier(object):
     def send_request( self, method, url):
         return self.client.request( method, url,
                 body ={
+                    'uid' : str(uid),
                     'host' : Conf.get_default('Napix.auth.service') or socket.gethostname(),
                     'description' : Conf.get_default('Napix.description') or '',
                     'managers' : list(self.app.root_urls),
