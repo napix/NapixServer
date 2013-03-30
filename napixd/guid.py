@@ -68,7 +68,7 @@ class NapixID(object):
         return uuid.uuid4()
 
     def save(self):
-        logger.debug('Saving UUID in %s', self.id_file)
+        logger.info('Saving UUID in %s', self.id_file)
         try:
             handle = open( self.id_file, 'wb')
             with handle:
@@ -77,7 +77,7 @@ class NapixID(object):
             logger.exception(e)
 
     def load(self):
-        logger.debug('Loading UUID in %s', self.id_file)
+        logger.debug('Loading UUID from %s', self.id_file)
         try:
             handle = open( self.id_file, 'rb')
         except IOError, e:

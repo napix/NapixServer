@@ -112,6 +112,7 @@ Non-default:
             if not Conf.get_default('Napix.notify.url'):
                 raise CannotLaunch('Notifier has no configuration options')
 
+            logger.info('Set up notifier')
             notifier = Notifier(app)
             notifier.start()
 
