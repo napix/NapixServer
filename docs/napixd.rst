@@ -121,6 +121,12 @@ napixd Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`guid` Module
+------------------
+
+.. automodule:: napixd.guid
+    :members:
+
 
 Subpackages
 -----------
