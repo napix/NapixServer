@@ -11,13 +11,13 @@ First steps in the writing of a manager
 In Napix, managers behaves like collection and have the logic to maintain a set of resources.
 
 Napix uses the REST approach: an URI defines a resource and HTTP verbs ( GET, PUT, POST, etc) defines the action on it.
-PUT /htaccess/toto is used to modify the resource identified by /htaccess/toto with the data given in the request body.
-GET /htaccess/toto is used to retrieve the same resource.
-GET /htaccess/tata retrieves another resource.
+``PUT /htaccess/toto`` is used to modify the resource identified by /htaccess/toto with the data given in the request body.
+``GET /htaccess/toto`` is used to retrieve the same resource.
+``GET /htaccess/tata`` retrieves another resource.
 
 Napix uses :class:`~base.Manager` subclasses to handle the collections logic.
 Each Manager instance represents a collection and provides methods to manage the collection.
-Managers are listed in the top level of the URI, eg, GET /htaccess/toto will ask to the manager htaccess the resource toto.
+Managers are listed in the top level of the URI, eg, ``GET /htaccess/toto`` will ask to the manager *htaccess* the resource *toto*.
 
 Launch
 ======
@@ -66,7 +66,7 @@ The server can be stopped by hitting Ctrl+c::
 
 You can check that the server is up and responding by poking it with NapixCLI command line interface, called ``napix`` ::
 
-    napix -s localhost:8002
+    $ napix -s localhost:8002
     >> ls
     [ ]
 
@@ -81,13 +81,13 @@ Best way to understand how Napix works is to get your hands dirty, so we'll see 
 
 .. note::
 
-   The examples below use snippets from different sources : 
+   The examples below use snippets from different sources :
 
-    If there is no prompt, the test is from the example manager ``HOME/auto/password.py``
+    If there is no prompt, the snippet is from the example manager ``HOME/auto/password.py``
 
     A ``(napix)$`` indicates a shell with the virtualenv loaded::
 
-            (napix)$ napixd noauth
+    (napix)$ napixd noauth
 
     A ``>>`` indicates an interactive session within the napix client::
 
@@ -191,7 +191,7 @@ Any attempt to list the resources (using GET /``name of the manager``/) fails wi
 
     >> get /basicpasswordfile/
     Napixd Error NotImplementedError
-    
+
     [...]
 
     /home/napix/NapixServer/napixd/managers/default.py in _get_resources
@@ -205,7 +205,7 @@ Any attempt to list the resources (using GET /``name of the manager``/) fails wi
 
 .. note::
 
-  You can here observe here the behavior of Napix when an uncaught exception is raised.
+  You can observe here the behavior of Napix when an uncaught exception is raised.
   It returns a 500 error, with the description of the exceptions serialized in JSON.
 
 To fix this, we need to :
@@ -225,8 +225,10 @@ Metadatas are necessary so napix can auto-document your manager, and are used fo
 The resources that are sent to the user are stripped of the fields that are not in the `resource_fields`
 and the resource_dict given to the creation and modification method contains only fields in resource_fields.
 
-In our example, we also define a class constant so we don't have to write any configuration for our module. 
-;; FIXME. We have to change that. 
+In our example, we also define a class constant.
+We can also use a configuration option, but it requires to use the configuration loader
+and not the auto loader.
+See more details about the configuration in :ref:`configuration`.
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 16,21-30
@@ -248,7 +250,6 @@ The template object can be retrieved at ``/basicpasswordfile/_napix_new``::
 
 By default, the url namespace is class name, in lower case.
 It can be changed by overriding the classmethod :meth:`~base.Manager.get_name`.
-;; or in the configuration file FIXME ?
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 32-34
@@ -271,12 +272,12 @@ Loading datas
 
 To get our internal dict populated, we'll override the :meth:`~default.DictManager.load` method.
 
-The load method takes one parameters : the parent manager. 
+The load method takes one parameters : the parent manager.
 It can be used to write multi level manager, eg if we wanted to edit multiple files,
 we could have written a manager that list the files, and then instanciate a BasicPasswordFileManager for each file found.
 Anyway, in our case, we don't use this, and as our manager is a *first level* manager (directly under /), parent is set to :obj:`None`.
 
-The inheritance cases are treated in :ref:`inheritance`. 
+The inheritance cases are treated in :ref:`inheritance`.
 ;; FIXME not working
 
 .. literalinclude:: /samples/basicpasswordfile.py
@@ -426,8 +427,8 @@ He has created an access for ``mallory`` with the password ``rogueaccount`` due 
 To prevent that, we have to write some kind of validation. And as we don't want our user to use weak password, we'll add a little
 check to force them to use more than 6 chars.
 
-In Napix There is three places to make validation of user input.
-;; FIXME : Only 2 method listed bellow
+In Napix, there is two places to validate the user's input:
+each field and the whole object.
 
 First, the manager may implement a method called
 :meth:`~base.Manager.validate_resource_FIELDNAME` with ``FIELDNAME`` being a field of the resource.

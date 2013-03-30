@@ -9,19 +9,19 @@
 Howto write Napix modules
 =========================
 
-Considering that you already read :ref:`The first steps guide<first_step>`,
+Considering that you already read :ref:`the first steps guide<first_step>`,
 this page deals with more advanced topics.
 
 The example of this page is an host file manager.
 This manager get the hosts file, extracts from each line the IP and the hostnames.
 Even though it may be a questionable choice,
-the id is the number of the line in the file as it allow to keep the comments.
+the id is the number of the line in the file as it allows to keep the comments.
 
 Writing the module
 ==================
 
 Loading the file
-^^^^^^^^^^^^^^^^
+----------------
 
 In order to write this module you have to write a ``manager`` and install it in the Napix server.
 A Napix module may be in every place that is accessible in the python path.
@@ -37,7 +37,7 @@ The napixd daemon display its home in the log and the console.::
 For more details about the loading of modules inside Napix, see the :ref:`loading page<auto-loading>`
 
 Napix Class
-^^^^^^^^^^^
+-----------
 
 The base class behind every collection is :class:`base.Manager`.
 It defines how the collection find, modify and make operations on its resources.
@@ -47,8 +47,9 @@ For convenience, some subclasses of :class:`~base.Manager` are defined in
 of CPU and RAM.
 
 :class:`default.DictManager` is the base class of the manager we will be writing.
-It's a subclass of :class:`base.Manager` witch implements higher level construct:
-with this implementation, it is just needed to make a dict of resource by ID from a persisted data source and to save it back.
+It's a subclass of :class:`base.Manager` which implements higher level construct:
+with this implementation, it is just required to implement the extraction of a mapping of ID to a resource
+from a persisted data source and to save it back.
 
 For the hosts example, we will write an implementation of this class.
 We add a docstring for our class.
@@ -57,7 +58,7 @@ It will be used by Napix to document the service.
 The file will be :file:`{HOME}/auto/hostmanager.py` in order to benefits from auto-loading.
 
 Writing the meta-datas
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 First you need to write the :attr:`~base.Manager.resource_fields` attribute that describes the resource.
 
@@ -79,26 +80,23 @@ We add a description and an example.
     as a template to create a new one and for documentation purposes.
 
 Loading the resources
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 In order to get the resources, you have to define the :meth:`default.ReadOnlyDictManager.load` method.
 This method must return a dictionary of the resources indexed by their keys.
-
 
 For the manager we are writing, we will use the line number as an index.
 Since we install our manager in the root of the service,
 we will ignore the parent parameter in the load and save methods.
 
-
 .. literalinclude:: /samples/sample1.py
     :pyobject: HostManager.load
 
 Creating resources
-^^^^^^^^^^^^^^^^^^
+------------------
 
 At this point, the resources can be listed, got, deleted and modified.
-In order to add new resources, the manager must be able to generate the corresponding ID
-of a new resources.
+In order to add new resources, the manager must be able to generate the ID of a new resource.
 You have to write the method :meth:`default.DictManager.generate_new_id` that will return the id of the new resource
 knowing its dictionary.
 
@@ -112,23 +110,23 @@ so we will use the size of the file we already have.
     :pyobject: HostManager.generate_new_id
 
 Persisting the resources
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 The data can now be queried, modified, removed, added.
-In order to persist the modifications in the time, you will have to write a save method that will persist
+In order to persist the modifications in the time, you will have to write a
+:meth:`~default.ReadOnlyDictManager.save` method that will persist
 the data you modified.
 At every call of persist, you will save all the resources of the manager,
-not only those which have been modified.
+not just those which have been modified.
 
-
-For the files manager, we will write the hosts files.
+For the hosts manager, we will write the hosts files.
 As with the load method, we don't need the parent parameter, so it will be ignored.
 
 .. literalinclude:: /samples/sample1.py
     :pyobject: HostManager.save
 
 Resulting file
-^^^^^^^^^^^^^^
+--------------
 
 You can download the :download:`/samples/sample1.py` file.
 
@@ -142,7 +140,7 @@ There's two kind of input to validate or transform:
 * the id that the user wants to query, for example GET /manager/**resource_id1**.
 
 URL token validation
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 
 :meth:`~base.Manager.validate_id` is the method which checks the url tokens
 (part **resource_id** of /manager/**resource_id**).
@@ -161,10 +159,10 @@ In our example, we may want to keep the ids as integers
 
 .. note::
 
-    In order to make this snippet working, you have to remove the str in `load`, `save` and `generate_new_id`
+    In order to make this snippet working, you have to remove the ``str`` in ``load``, ``save`` and ``generate_new_id``
 
 Request body validation
-^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 There is two places where the strings are validated.
 First in the :meth:`validate_resource_*<base.Manager.validate_resource_FIELDNAME>` methods that check each field individually.
@@ -185,7 +183,7 @@ and a valid and clean IP address for the ip attribute.
     :pyobject: HostManager.validate_resource_ip
 
 Resulting file
-^^^^^^^^^^^^^^
+--------------
 
 You can download the :download:`/samples/sample1_validation.py` file.
 
@@ -193,21 +191,21 @@ Deployment and configuration
 ============================
 
 Install into Napix
-^^^^^^^^^^^^^^^^^^
+------------------
 
 To add the new module to the Napix server, you need to add the path to its class in
 the configuration file: :file:`conf/settings.json`.
 
-
 The key ``Napix.managers`` hold a dictionary of the manually activated modules.
 The key of this dict is the alias of the module, and the value is the path to the module.
-
 
 Mutliple aliases may refer to the same class, then it will launch multiples instances of the manager.
 It may be useful for example to load multiple hosts managers for different hosts files.
 
+.. _cofiguration:
+
 Configuration
-^^^^^^^^^^^^^
+-------------
 
 The Napix managers have a method configure that does nothing by default but is called
 with the configuration of the module if any.
@@ -219,6 +217,7 @@ This classmethod takes an argument which is the configuration found in the setti
 For the HostManager we may add a configuration option to set another hosts file path.
 
 The configure method get the dictionary that we set in :file:`conf/settings.json`.
+
 
 Test case
 =========

@@ -20,3 +20,11 @@ class HelloWorld(Manager):
     def get_resource(self, id):
         return { "hello" : "world" }
 
+class ConfiguredHelloWorld( HelloWorld):
+    def is_up_to_date(self):
+        return True
+    def configure(self, conf):
+        print conf
+        self.msg = conf.get('hello') or 'world'
+    def get_resource(self, id):
+        return { "hello" : self.msg }

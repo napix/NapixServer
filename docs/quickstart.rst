@@ -66,14 +66,47 @@ Install a module
 ================
 
 Modules come from two sources: the config file and the ``auto`` directory.
-In the config file, Module must be listed under the key ``Napix.managers``.
+In the config file, modules are listed in the mapping ``Napix.managers``.
 
 Edit ``HOME/conf/settings.json`` and add  the follwing inside the braces after ``managers`` inside ``Napix`` ::
 
-        "hello" : "napixd.contrib.helloworld.HelloWorld"
+    "hello" : "napixd.contrib.helloworld.HelloWorld"
 
 Stop the server by pressing ``Ctrl-C`` and restart it.
-Open a browser at http://127.0.0.1:8002/hello/?authok and http://127.0.0.1:8002/hello/world?authok .
+Open a browser at http://127.0.0.1:8002/hello/ and http://127.0.0.1:8002/hello/world .
 You can see the `hello world` module in action.
 
 See :ref:`first_step` to learn how to write your own modules.
+
+.. _configuration:
+
+Configure a module
+==================
+
+Module added by the config file may receive a configuration.
+The configuration is stored in the root object of the configuration.
+
+Edit ``HOME/conf/settings.json`` and add  the follwing inside the braces after ``managers`` inside ``Napix`` ::
+
+    "bonjour" : "napixd.contrib.helloworld.ConfiguredHelloWorld",
+    "gutentag" : "napixd.contrib.helloworld.ConfiguredHelloWorld",
+
+ConfiguredHelloWorld does the same as HelloWorld, but it takes a configuration.
+The configuration of ConfiguredHelloWorld contains a key **hello** that links to a localized hello world message.
+
+Add the configuration inside the root object, outside of ``Napix``::
+
+    {
+        "Napix" : {
+            ...
+        },
+        "bonjour" : {
+            "hello" : "Le monde"
+        },
+        "gutentag" : {
+            "hello" : "Die Welt"
+        }
+    }
+
+Restart the Napix Server and open your browser at http://127.0.0.1:8002/bonjour/world and http://127.0.0.1:8002/gutentag/world .
+You can see ``{ "hello" : "Le monde" }`` and ``{ "hello" : "Die Welt" }``
