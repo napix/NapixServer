@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+The napix Configuration class.
+"""
+
+
 import logging
 import json
 import os.path
@@ -17,6 +22,9 @@ class Conf(collections.MutableMapping):
     _default = None
     def __init__(self, data=None):
         self.data = dict(data) if data else {}
+
+    def __repr__(self):
+        return repr(self.data)
 
     def __iter__(self):
         return ( key for key in self.data if not key.startswith('#') )
@@ -52,11 +60,11 @@ class Conf(collections.MutableMapping):
             else:
                 try:
                     conf = json.load( handle )
+                    break
                 except ValueError, e:
-                    logger.error('Configuration file %s contains a bad JSON object (%s)', path, e)
+                    raise ValueError('Configuration file %s contains a bad JSON object (%s)'%( path, e))
                 finally:
                     handle.close()
-                    break
         else:
             try:
                 default_conf = os.path.join( os.path.dirname(__file__), 'settings.json' )
