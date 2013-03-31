@@ -18,7 +18,7 @@ Store
 
     The default Store class. This parameter is overriden by the configuration value :ref:`Napix.storage.store<conf.napix.storage>`.
 
-    The default is :class:`napixd.store.backend.file.FileBackend`.
+    The default is :class:`napixd.store.backends.file.FileBackend`.
 
 .. class:: Store( collection, backend='default', **options)
 
@@ -53,7 +53,7 @@ Counters
 
     The default Counter class. This parameter is overriden by the configuration value :ref:`Napix.storage.counter<conf.napix.storage>`.
 
-    The default is :class:`napixd.store.backend.local.LocalCounterBackend`.
+    The default is :class:`napixd.store.backends.local.LocalCounterBackend`.
 
 .. class:: Counter( name, backend='default', **options)
 
@@ -85,8 +85,8 @@ from napixd.conf import Conf
 
 __all__ = ( 'NoSuchStoreBackend', 'Store', 'Counter')
 
-DEFAULT_STORE = 'napixd.store.backend.file.FileBackend'
-DEFAULT_COUNTER = 'napixd.store.backend.local.LocalCounter'
+DEFAULT_STORE = 'napixd.store.backends.file.FileBackend'
+DEFAULT_COUNTER = 'napixd.store.backends.local.LocalCounter'
 
 class NoSuchStoreBackend(Exception):
     """Exception raised when a backend can not be imported."""
@@ -121,7 +121,7 @@ def Store(collection, backend='default', **opts):
         that_store.save()
 
     """
-    backend = loader.get_backend(backend, opts, DEFAULT_STORE)
+    backend = loader.get_store_backend(backend, opts)
     return backend( collection)
 
 def Counter( name, backend='default', **opts):
@@ -129,7 +129,7 @@ def Counter( name, backend='default', **opts):
     Returns a counter with the specified ``backend`` and the given ``name``.
     See :func:`Store` for more details.
     """
-    backend = loader.get_backend(backend, opts, DEFAULT_COUNTER)
+    backend = loader.get_counter_backend(backend, opts)
     return backend( name)
 
 class Loader(object):
@@ -159,7 +159,7 @@ class Loader(object):
 
     def _get_backend_conf(self, backend):
         if backend not in self._backend_cache:
-            self._backend_cache[backend] = self._get_backend( backend, self.conf.get( backend))
+            self._backend_cache[backend] = self._get_backend( backend, dict( self.conf.get( backend)))
         return self._backend_cache[backend]
 
     def get_backend(self, backend, opts, default):
@@ -175,5 +175,10 @@ class Loader(object):
             return self._get_backend( backend, opts)
         else:
             return self._get_backend_conf( backend)
+
+    def get_store_backend(self, backend, options=None):
+        return self.get_backend( backend, options, DEFAULT_STORE)
+    def get_counter_backend(self, backend, options=None):
+        return self.get_backend( backend, options, DEFAULT_COUNTER)
 
 loader = Loader()

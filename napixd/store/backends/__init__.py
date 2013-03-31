@@ -90,6 +90,34 @@ class BaseBackend( object):
         """
         return ( collection, ), {}
 
+    def keys(self):
+        """
+        List all the collections created by this backend.
+        """
+        raise NotImplementedError
+
+    def dump(self):
+        """
+        Dump all the collections and their content in a mapping of dicts.
+        """
+        return dict( ( collection, dict( self( collection).items()) ) for collection in self.keys() )
+
+    def load(self, collections):
+        """
+        Load the keys from a mapping of collections
+        """
+        for name, content in collections.items():
+            collection = self( name)
+            collection.update( content)
+            collection.save()
+
+    def drop(self):
+        """
+        Remove all the keys of this backend
+        """
+        for key in self.keys():
+            self(key).drop()
+
 class BaseStore( collections.MutableMapping):
     def __init__( self, collection):
         self.collection = collection

@@ -18,6 +18,13 @@ class FileBackend( BaseBackend):
     def get_class(self):
         return FileStore
 
+    def _root_content(self):
+        return ( path for path in os.listdir( self.root) if not path.startswith('.') )
+
+    def keys(self):
+        return [ path for path in self._root_content()
+                if os.path.isfile( os.path.join( self.root, path)) ]
+
 class FileStore( Store ):
     """
     Store based on files.
@@ -46,6 +53,9 @@ class FileStore( Store ):
 class DirectoryBackend( FileBackend):
     def get_class(self):
         return DirectoryStore
+    def keys(self):
+        return [ path for path in self._root_content()
+                if os.path.isdir( os.path.join( self.root, path)) ]
 
 class DirectoryStore( BaseStore):
     def __init__( self, collection, path):

@@ -3,8 +3,19 @@
 
 from threading import Lock
 
-def LocalBackend(opts):
-    return LocalCounter
+class LocalBackend(object):
+    def __init__(self, conf):
+        pass
+
+    def dump(self):
+        return {}
+    def load(self, values):
+        pass
+    def drop(self):
+        pass
+
+    def __call__(self):
+        return LocalCounter
 
 class LocalCounter(object):
     def __init__( self, name):

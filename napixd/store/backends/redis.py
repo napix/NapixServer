@@ -18,11 +18,20 @@ class RedisBackend( BaseBackend):
     It takes optional `host` and `port` options to indicate to which server it connects to.
     """
     def __init__( self, options):
+        if 'prefix' in options:
+            prefix = options.pop('prefix')
+        else:
+            prefix = self.__class__.__name__
+        self.prefix = prefix
+
         self.redis = redis.Redis( **options )
     def get_args(self, collection):
-        return ( collection, self.redis), {}
+        return ( self.prefix + ':' + collection, self.redis), {}
     def get_class(self):
         return RedisStore
+
+    def keys(self):
+        return self.redis.keys( self.prefix + ':*' )
 
 class RedisStore( Store):
     """
@@ -116,7 +125,9 @@ class RedisKeyStore(BaseStore):
         self.redis = redis
 
     def keys(self):
-        return [ x.partition(':')[2] for x in self.redis.keys( self._all_keys()) ]
+        #length of the collection key + length of separator
+        prefix = len( self.collection) + 1
+        return [ x[prefix:] for x in self.redis.keys( self._all_keys()) ]
 
     def _make_key(self, key):
         return '{0}:{1}'.format( self.collection, key)

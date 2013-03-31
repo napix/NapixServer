@@ -45,11 +45,11 @@
             "#infos" : "The FileBackend configuration"
         },
         "#counter" : "The default backend for counters",
-        "counter" : "napixd.store.backend.local.LocalCounter",
+        "counter" : "napixd.store.backends.local.LocalCounter",
         "#available counters" : {
-            "napixd.store.backend.local.LocalCounter":
+            "napixd.store.backends.local.LocalCounter":
                 "A local in-memory counter",
-            "napixd.store.backend.redis.RedisCounter" :
+            "napixd.store.backends.redis.RedisCounter" :
                 "A Redis backed counter"
         }
     }
