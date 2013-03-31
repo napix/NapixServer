@@ -11,47 +11,54 @@ try:
 except ImportError:
     raise NotImplementedError, 'store.redis needs redis library'
 
-from napixd.store.backends import BaseStore
-from napixd.conf import Conf
+from napixd.store.backends import BaseBackend, BaseStore, Store
 
-class BaseRedisStore( BaseStore ):
-    def get_default_options( self):
-        return Conf.get_default().get( 'Napix.storage.redis') or {}
-
-    def __init__( self, collection, options= None):
-        options = options != None and options or self.get_default_options()
+class RedisBackend( BaseBackend):
+    """
+    It takes optional `host` and `port` options to indicate to which server it connects to.
+    """
+    def __init__( self, options):
         self.redis = redis.Redis( **options )
-        self.collection = collection
+    def get_args(self, collection):
+        return ( collection, self.redis), {}
+    def get_class(self):
+        return RedisStore
 
-    def drop(self):
-        super(BaseRedisStore, self).drop()
-        self.redis.delete(self.collection)
-
-class RedisStore( BaseRedisStore ):
+class RedisStore( Store):
     """
     Store based on a key in a Redis server.
-
-    It takes optional `host` and `port` arguments to indicate to which server it connects to.
-    If they are not given, the configuration key ``Napix.storage.redis.{host,port}`` are used.
     """
-    def __init__(self, collection, options=None):
-        super(RedisStore, self).__init__(collection, options)
+    def __init__(self, collection, redis):
+        self.redis = redis
         try:
             data = self.redis.get( collection)
-            self.data = pickle.loads( data ) if data else {}
+            data = pickle.loads( data ) if data else {}
         except redis.ResponseError:
-            pass
+            data = None
+
+        super(RedisStore, self).__init__(collection, data)
+
+    def drop(self):
+        self.data = {}
+        self.redis.delete( self.collection)
 
     def save( self):
         self.redis.set( self.collection, pickle.dumps( self.data ))
 
-class RedisHashStore(BaseRedisStore):
+class RedisHashBackend(RedisBackend):
+    def get_class(self):
+        return RedisHashStore
+
+class RedisHashStore( BaseStore):
     """
     Store based on Redis Hashes.
     Every value of the store is a value of a Redis hash.
-
-    cf :class:`RedisStore` for the keyword arguments and connection options.
+    The values are strings
     """
+    def __init__(self, collection, redis):
+        super( RedisHashStore, self).__init__( collection)
+        self.redis = redis
+
     def __contains__( self, key):
         return self.redis.hexists( self.collection, key)
 
@@ -91,13 +98,26 @@ class RedisHashStore(BaseRedisStore):
     def incr(self, key, incr=1):
         return self.redis.hincrby( self.collection, key, incr)
 
-class RedisKeyStore(BaseRedisStore):
+    def drop(self):
+        self.redis.delete( self.collection)
+
+class RedisKeyBackend(RedisBackend):
+    def get_class(self):
+        return RedisKeyStore
+
+class RedisKeyStore(BaseStore):
     """
     Store based on Redis keys
     Every value of the store is a value of a Redis key.
-
-    cf :class:`RedisStore` for the keyword arguments and connection options.
+    The values are strings.
     """
+    def __init__(self, collection, redis):
+        super( RedisKeyStore, self).__init__( collection)
+        self.redis = redis
+
+    def keys(self):
+        return [ x.partition(':')[2] for x in self.redis.keys( self._all_keys()) ]
+
     def _make_key(self, key):
         return '{0}:{1}'.format( self.collection, key)
     def _all_keys( self):
@@ -115,17 +135,8 @@ class RedisKeyStore(BaseRedisStore):
             raise KeyError, item
         return value
 
-    def __iter__(self):
-        return iter(self.keys())
-
-    def __len__( self):
-        return len( self.keys())
-
     def __setitem__(self, item, value):
         return self.redis.set( self._make_key( item), value)
-
-    def keys(self):
-        return [ x.partition(':')[2] for x in self.redis.keys( self._all_keys()) ]
 
     def update( self, other_dict):
         self.redis.mset(self.collection, other_dict)
@@ -142,13 +153,15 @@ class RedisKeyStore(BaseRedisStore):
     def drop(self):
         for x in self.keys():
             del self[x]
+        self.redis.delete( self.collection)
+
+class RedisCounterBackend( RedisBackend):
+    def get_class(self):
+        return RedisCounter
 
 class RedisCounter(object):
-    def get_default_options( self):
-        return Conf.get_default().get( 'Napix.storage.redis') or {}
-    def __init__( self, name, options=None):
-        options = options != None and options or self.get_default_options()
-        self.redis = redis.Redis( **options )
+    def __init__( self, name, redis):
+        self.redis = redis
         self.name = name
 
     @property

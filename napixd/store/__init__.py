@@ -8,10 +8,19 @@ Persistent objects
 
 Napix provides a facility to make simple persistent objects.
 
+In this module, lie the objects used by the end users.
+See more details on the implementation strategies in :mod:`napixd.store.backends`.
+
 Store
 =====
 
-.. class:: StoreBackend( collection, options)
+.. data:: DEFAULT_STORE
+
+    The default Store class. This parameter is overriden by the configuration value :ref:`Napix.storage.store<conf.napix.storage>`.
+
+    The default is :class:`napixd.store.backend.file.FileBackend`.
+
+.. class:: Store( collection, backend='default', **options)
 
     Stored objects behaves like dict and store content for a given ``collection``.
 
@@ -40,8 +49,13 @@ Store
 Counters
 ========
 
+.. data:: DEFAULT_COUNTER
 
-.. class:: CounterBackend( name, options)
+    The default Counter class. This parameter is overriden by the configuration value :ref:`Napix.storage.counter<conf.napix.storage>`.
+
+    The default is :class:`napixd.store.backend.local.LocalCounterBackend`.
+
+.. class:: Counter( name, backend='default', **options)
 
     Counters are simple class that make atomic operations on an integer.
 
@@ -49,7 +63,7 @@ Counters
 
         id_generator = Counter('my-service-id')
         def generate_new_id(self, resource_dict):
-            return 'scp-%03i' % self.id_gen.increment()
+            return 'scp-%03i' % self.id_generator.increment()
 
     .. attribute:: value
 
@@ -71,36 +85,14 @@ from napixd.conf import Conf
 
 __all__ = ( 'NoSuchStoreBackend', 'Store', 'Counter')
 
+DEFAULT_STORE = 'napixd.store.backend.file.FileBackend'
+DEFAULT_COUNTER = 'napixd.store.backend.local.LocalCounter'
+
 class NoSuchStoreBackend(Exception):
     """Exception raised when a backend can not be imported."""
     pass
 
-def fake_store_factory(backend, cause):
-    def _fake_store(collection, **opts):
-        raise NoSuchStoreBackend, 'there is no backend `%s` available because of %s' % ( backend, cause)
-    return _fake_store
-
-def load_backend_factory(default_location, default_class, conf_key):
-    cache = {}
-    def load_backend(backend):
-        backend = backend or Conf.get_default(conf_key) or default_class
-        if backend not in cache:
-            if '.' in backend:
-                module, dot, classname = backend.rpartition('.')
-            else:
-                module = default_location
-                classname = backend
-                backend = '%s.%s' % ( module, classname)
-            try:
-                __import__(module)
-                cache[backend] = getattr( sys.modules[module], classname)
-            except Exception as e:
-                cache[backend] = fake_store_factory( backend, repr(e) )
-        return cache[backend]
-    return load_backend
-
-store_loader = load_backend_factory( 'napixd.store.backends.file', 'FileStore', 'Napix.storage.store')
-def Store(collection, backend=None, **opts):
+def Store(collection, backend='default', **opts):
     """
     Returns a store constructed with the given ``backend``.
 
@@ -129,14 +121,59 @@ def Store(collection, backend=None, **opts):
         that_store.save()
 
     """
-    return store_loader(backend)( collection, **opts )
+    backend = loader.get_backend(backend, opts, DEFAULT_STORE)
+    return backend( collection)
 
-counter_loader = load_backend_factory( 'napixd.store.backends.local', 'LocalCounter', 'Napix.storage.counter')
-def Counter( name, backend=None, **opts):
+def Counter( name, backend='default', **opts):
     """
     Returns a counter with the specified ``backend`` and the given ``name``.
     See :func:`Store` for more details.
     """
-    return counter_loader(backend)( name, **opts)
+    backend = loader.get_backend(backend, opts, DEFAULT_COUNTER)
+    return backend( name)
 
+class Loader(object):
+    """
+    Loader for the store and counter backends
+    """
+    def __init__(self):
+        self.conf = Conf.get_default('Napix.storage')
+        self._class_cache = {}
+        self._backend_cache = {}
 
+    def _get_class(self, fqdn):
+        if not fqdn in self._class_cache:
+            module, dot, classname = fqdn.rpartition('.')
+            if not module:
+                raise NoSuchStoreBackend('Cannot import %s, Only full dotted names can be used'%fqdn)
+            try:
+                __import__(module)
+                self._class_cache[fqdn] = getattr( sys.modules[module], classname)
+            except (ImportError, AttributeError):
+                raise NoSuchStoreBackend, fqdn
+        return self._class_cache[fqdn]
+
+    def _get_backend(self, backend, opts):
+        cls = self._get_class( backend)
+        return cls( opts)
+
+    def _get_backend_conf(self, backend):
+        if backend not in self._backend_cache:
+            self._backend_cache[backend] = self._get_backend( backend, self.conf.get( backend))
+        return self._backend_cache[backend]
+
+    def get_backend(self, backend, opts, default):
+        """
+        Get the backend name ``backend``.
+        If opts are specified, the backend is instanciated with those options.
+        Else the backend is created and cached with the options from the config.
+        """
+        if backend == 'default' or backend is None:
+            backend = default
+
+        if opts:
+            return self._get_backend( backend, opts)
+        else:
+            return self._get_backend_conf( backend)
+
+loader = Loader()

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import mock
 
-class MockStore(object):
-    def __init__(self, collection):
-        self.collection = collection
+MockBackend = mock.Mock()

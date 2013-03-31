@@ -24,6 +24,35 @@
       "#delay" : "The interval at which this sever sends notifications",
       "delay" : 300
     },
+    "#storage" : {
+        "#info" : "The configuration of the stores",
+        "#store" : "The default backend for Key value storage",
+        "store" : "napixd.store.backends.file.FileBackend",
+        "#available stores" : {
+            "#info" : "All the built-in stores",
+            "napixd.store.backends.file.FileBackend":
+                "Store each collection in a file",
+            "napixd.store.backends.file.DirectoryBackend" :
+                "Store each collection in a directory and each key in a file",
+            "napixd.store.backends.redis.RedisBackend" :
+                "Store each collection in a Redis key",
+            "napixd.store.backends.redis.RedisHashBackend" :
+                "Store each collection as a Redis Hash",
+            "napixd.store.backends.redis.RedisKeyBackend" :
+                "Store the list of the keys of a collection as a set and each key as a Redis key"
+        },
+        "napixd.store.backends.file.FileBackend" : {
+            "#infos" : "The FileBackend configuration"
+        },
+        "#counter" : "The default backend for counters",
+        "counter" : "napixd.store.backend.local.LocalCounter",
+        "#available counters" : {
+            "napixd.store.backend.local.LocalCounter":
+                "A local in-memory counter",
+            "napixd.store.backend.redis.RedisCounter" :
+                "A Redis backed counter"
+        }
+    }
     "managers" : {
       "#info" : "The list of the managers in this server. They key is the URL prefix, the value is a dotted python path to the manager class"
     }

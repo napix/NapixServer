@@ -3,6 +3,9 @@
 
 from threading import Lock
 
+def LocalBackend(opts):
+    return LocalCounter
+
 class LocalCounter(object):
     def __init__( self, name):
         self.name = name

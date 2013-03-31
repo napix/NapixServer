@@ -12,16 +12,16 @@ except NotImplementedError:
         pass
 else:
     class TestRedisCounter( _BaseTestCounter):
-        counter_class = redis.RedisCounter
+        counter_class = redis.RedisCounterBackend({})
 
     class TestRedisStore( _BaseTestStore):
-        store_class = redis.RedisStore
+        store_class = redis.RedisBackend({})
 
     class TestRedisHashStore( _BaseTestStore):
-        store_class = redis.RedisHashStore
+        store_class = redis.RedisHashBackend({})
         testNotSave = unittest2.expectedFailure( _BaseTestStore.testNotSave)
 
     class TestRedisKeyStore( _BaseTestStore):
-        store_class = redis.RedisKeyStore
+        store_class = redis.RedisKeyBackend({})
         testNotSave = unittest2.expectedFailure( _BaseTestStore.testNotSave)
 

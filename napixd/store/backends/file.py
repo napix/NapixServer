@@ -5,17 +5,20 @@ import os
 import cPickle as pickle
 
 from napixd import get_path
-from napixd.store.backends import BaseStore
+from napixd.store.backends import Store, BaseStore, BaseBackend
 
-PREFIX = 'stores'
 
-class FSStore( BaseStore):
-    def get_path(self, path):
-        return ( get_path( path)
-                if path else
-                get_path( os.path.join( PREFIX, self.__class__.__name__)))
+class FileBackend( BaseBackend):
+    ROOT = 'stores'
+    def __init__(self, options):
+        root = options.get('root')
+        self.root = get_path( root) if root else get_path( os.path.join( self.ROOT, self.__class__.__name__))
+    def get_args(self, collection):
+        return (collection, self.root), {}
+    def get_class(self):
+        return FileStore
 
-class FileStore( FSStore ):
+class FileStore( Store ):
     """
     Store based on files.
     The collection is a file containing pickled datas.
@@ -24,14 +27,13 @@ class FileStore( FSStore ):
     the collections.
     If it is not given, the configuration key ``Napix.storage.file.path`` is used.
     """
-    def __init__( self, collection, path = None ):
-        path = self.get_path(path)
+    def __init__( self, collection, path):
         self.file_path = os.path.join( path, collection)
         try:
             data = pickle.load( open(self.file_path, 'r'))
         except IOError:
             data = {}
-        super( FileStore, self).__init__( data )
+        super( FileStore, self).__init__(collection, data )
 
     def drop( self):
         super( FileStore, self).drop()
@@ -41,9 +43,13 @@ class FileStore( FSStore ):
     def save(self):
         pickle.dump( self.data, open( self.file_path, 'w'))
 
-class DirectoryStore( FSStore):
-    def __init__( self, collection, path=None):
-        path = self.get_path(path)
+class DirectoryBackend( FileBackend):
+    def get_class(self):
+        return DirectoryStore
+
+class DirectoryStore( BaseStore):
+    def __init__( self, collection, path):
+        super( DirectoryStore, self).__init__(collection)
         self.dir_path = os.path.join( path, collection, '')
 
     def keys( self):

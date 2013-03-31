@@ -109,6 +109,18 @@ delay
 url
     The address of the Napix Directory
 
+.. _conf.napix.storage:
+
+Napix.storage
+.............
+
+The configuration of stores.
+
+store
+    The default backend for Key-Value storage
+counter
+    The default backend for counters
+
 
 The other keys
 --------------
