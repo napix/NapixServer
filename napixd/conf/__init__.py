@@ -17,6 +17,7 @@ logger = logging.getLogger('Napix.conf')
 
 #So that it's overridable in the tests
 open = open
+DEFAULT_CONF = os.path.join( os.path.dirname(__file__), 'settings.json' )
 
 class Conf(collections.MutableMapping):
     _default = None
@@ -67,15 +68,14 @@ class Conf(collections.MutableMapping):
                     handle.close()
         else:
             try:
-                default_conf = os.path.join( os.path.dirname(__file__), 'settings.json' )
-                logger.warning( 'Did not find any configuration, trying default conf from %s', default_conf)
-                with open( default_conf, 'r') as handle:
+                logger.warning( 'Did not find any configuration, trying default conf from %s', DEFAULT_CONF)
+                with open( DEFAULT_CONF, 'r') as handle:
                     conf = json.load(handle)
                 for path in cls.paths :
                     try:
                         logger.info('Try to write default conf to %s', path)
                         with open( path, 'w') as destination:
-                            with open(default_conf, 'r') as source:
+                            with open(DEFAULT_CONF, 'r') as source:
                                 destination.write(source.read())
                     except IOError:
                         logger.warning('Failed to write conf in %s', path)

@@ -8,7 +8,7 @@ import napixd
 from cStringIO import StringIO
 import mock
 
-from napixd.conf import Conf
+from napixd.conf import Conf, DEFAULT_CONF
 
 class TestConf(unittest2.TestCase):
     def setUp(self):
@@ -74,10 +74,14 @@ class TestConfLoader( unittest2.TestCase ):
     conf_file = napixd.get_file( 'conf/settings.json', create=False)
 
     def setUp(self):
-        self.patch_open = mock.patch('napixd.conf.open', side_effect = self._open)
+        self.patch_open = mock.patch('napixd.conf.open', side_effect = self._open, spec=open)
 
     def _open(self, filename, mode='r'):
-        if not filename in self.filesystem:
+        if filename == DEFAULT_CONF and mode.startswith('r') :
+            return open( DEFAULT_CONF)
+        elif mode.startswith( 'w') :
+            return mock.MagicMock()
+        elif not filename in self.filesystem:
             raise IOError, 'No such file or directory'
         else:
             return StringIO( self.filesystem[filename])
@@ -131,11 +135,18 @@ class TestConfLoader( unittest2.TestCase ):
         self.assertEqual( Conf.get_default('json'), { 'v' : 1} )
         self.assertEqual( Conf.get_default('json.v'), 1)
 
+    def test_write_default(self):
+        self.filesystem = { }
+        with self.patch_open as open:
+            Conf.make_default()
+        self.assertTrue( mock.call( self.conf_file, 'w') in open.call_args_list)
+
     def test_no_file(self):
         self.filesystem = { }
         with self.patch_open:
             conf = Conf.make_default()
-        self.assertEqual( conf.keys(), [])
+        self.assertEqual( conf.keys(), [ 'Napix' ])
+        self.assertTrue( 'Napix.managers' in conf)
 
 class TestForce(unittest2.TestCase):
     def setUp(self):

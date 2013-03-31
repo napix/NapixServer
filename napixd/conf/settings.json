@@ -52,7 +52,7 @@
             "napixd.store.backends.redis.RedisCounter" :
                 "A Redis backed counter"
         }
-    }
+    },
     "managers" : {
       "#info" : "The list of the managers in this server. They key is the URL prefix, the value is a dotted python path to the manager class"
     }
