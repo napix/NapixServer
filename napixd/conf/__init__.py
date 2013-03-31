@@ -92,11 +92,14 @@ class Conf(collections.MutableMapping):
         return cls._default
 
     def __getitem__( self, item):
-        if '.' in item :
-            prefix, x, suffix = item.rpartition('.')
-            return self.get(prefix)[suffix]
-        else:
+        if item in self.data:
             return self.data[item]
+        if '.' in item :
+            prefix, x, suffix = item.partition('.')
+            base = self[prefix]
+            if isinstance( base, dict):
+                return Conf(base)[suffix]
+        raise KeyError, item
 
     def __setitem__(self, key, value):
         self.data[key] = value
@@ -110,6 +113,16 @@ class Conf(collections.MutableMapping):
                 del self[prefix]
         else:
             del self.data[item]
+
+    def __contains__(self, item):
+        if not self:
+            return False
+        if item in self.data:
+            return True
+        if '.' in item :
+            prefix, x, suffix = item.partition('.')
+            return suffix in self.get(prefix)
+        return False
 
     def __nonzero__(self):
         return bool(self.data)

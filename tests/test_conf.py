@@ -38,6 +38,14 @@ class TestConf(unittest2.TestCase):
         self.assertEqual( self.conf.get('a.a1.a1b'), 'bar')
         self.assertEqual( self.conf.get('b.mpm'), 'prefork')
 
+    def test_contains_in( self):
+        self.assertTrue( 'a' in self.conf)
+        self.assertTrue( 'a.a1.a1a' in self.conf)
+
+    def test_contains_not_in(self):
+        self.assertFalse( 'e' in self.conf)
+        self.assertFalse( 'a.a2.z' in self.conf)
+
     def test_inherit(self):
         self.assertEqual( self.conf.get('a').get('a1').get('a1a'), 'foo')
         self.assertEqual( self.conf.get('a').get('a2'), { 'x' : 1 ,'y' : 2 })
@@ -164,5 +172,35 @@ class TestForce(unittest2.TestCase):
         with self.assertRaises( KeyError):
             self.conf['a.k']
 
-if __name__ == '__main__':
-    unittest2.main()
+class TestDotted(unittest2.TestCase):
+    def setUp(self):
+        self.conf = Conf({
+            'a' : {
+                'b' : 1,
+                'c.d.e' : 2
+                },
+            'b' : {
+                'c' : {
+                    'd' : 4,
+                    },
+                'c.d' : 5
+                }
+            })
+
+    def test_get_dotted_prefix(self):
+        a = self.conf.get('a')
+        self.assertEqual( a.get('c.d.e'), 2)
+
+    def test_get_dotted(self):
+        self.assertEqual( self.conf.get('a.c.d.e'), 2)
+
+    def test_contains(self):
+        self.assertTrue( 'a.c.d.e' in self.conf)
+
+    def test_contains_not_in_prefix(self):
+        self.assertFalse( 'a.c.d' in self.conf)
+
+    def test_get_conflict(self):
+        self.assertEqual( self.conf.get('b.c.d'), 5)
+        self.assertEqual( self.conf.get('b.c'), { 'd' : 4 })
+
