@@ -13,6 +13,15 @@ Install the napix server::
     source napix/bin/activate
     pip install http://builds.enix.org/napix/napixd-latest.tar.gz
 
+.. note::
+
+   If you already have gevent installed from debian package, you can tell to virtual-env to use it ::
+       # virtualenv --system-site-package venv
+
+   If you want to get it directly from git (after activating the virtualenv)::
+       (napix)$ pip install cython -e git://github.com/surfly/gevent.git@1.0rc2#egg=gevent
+
+
 Run the napix server a first time so it initializes its internal structure::
 
     (napix)$ napixd only
@@ -37,8 +46,8 @@ Napix finds its configuration, its managers and save its logs and stored files i
 The HOME can be forced with ``NAPIXHOME`` environment variable.
 
 The :program:`napixd` program takes arguments.
-The arguments are options to enable or disable features.
-The ``only`` option disable all default options.
+The arguments are options to enable or disable features, processed sequencially.
+The ``only`` option disable everything. You can find a list of options HERE FIXME.
 
 The develop setup
 =================
@@ -49,22 +58,22 @@ In order to develop on napix without being embarrassed with extra features::
 
 This setup disable authentication and notifications and print the caught exceptions in the console.
 
-You can add python modules in ``HOME/auto``
+You can add Napix Managers in ``HOME/auto``
 
 .. _helloworld:
 
 Install a module
 ================
 
-Modules come from two sources: the configuration and the ``auto`` directory.
-Module are searched in the key ``Napix.managers``.
+Modules come from two sources: the config file and the ``auto`` directory.
+In the config file, Module must be listed under the key ``Napix.managers``.
 
 Edit ``HOME/conf/settings.json`` and add  the follwing inside the braces after ``managers`` inside ``Napix`` ::
 
         "hello" : "napixd.contrib.helloworld.HelloWorld"
 
 Stop the server by pressing ``Ctrl-C`` and restart it.
-Open a browser on use the ``napix`` client at http://127.0.0.1:8001/hello/ and http://127.0.0.1:8001/hello/world .
+Open a browser at http://127.0.0.1:8002/hello/?authok and http://127.0.0.1:8002/hello/world?authok .
 You can see the `hello world` module in action.
 
 See :ref:`first_step` to learn how to write your own modules.
