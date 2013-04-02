@@ -17,20 +17,23 @@ GET /htaccess/tata retrieves another resource.
 
 Napix uses :class:`~base.Manager` subclasses to handle the collections logic.
 Each Manager instance represents a collection and provides methods to manage the collection.
+Managers are listed in the top level of the URI, eg, GET /htaccess/toto will ask to the manager htaccess the resource toto.
 
 Launch
 ======
 
 The first step is to launch the server as described in :ref:`installation`.
-Install pyinotify to enable the auto-reloading, and the napix client to query the server::
+Install pyinotify to enable the auto-reloading (so you don't have to Ctrl+C / rerun all the time), and the napix client to query the server::
 
     (napix)$ pip install pyinotify
     (napix)$ pip install http://builds.enix.org/napix/NapixCLI-latest.tar.gz
 
-When launching the napixd daemon, it shows its PID (Starting process xx),
-its root directory (Found napixd home at /xxx),
-the log file ( Logging activity in /xxx),
-the socket on which it is listening ( Listening on http://xxx:xxx/).
+If you pay attention to napixd output, you'll see some valuable information when you start it :
+
+- pid (Starting process xx),
+- used ``HOME`` directory (Found napixd home at /xxx),
+- fullpath of the log file ( Logging activity in /xxx),
+- the listening socket ( Listening on http://xxx:xxx/).
 
 The server can be stopped by hitting Ctrl+c::
 
@@ -61,7 +64,7 @@ The server can be stopped by hitting Ctrl+c::
        (napix)$ export NAPIXHOME=$VIRTUAL_ENV
        (napix)$ napixd only
 
-You can check that the server is up and responding by poking it with napix::
+You can check that the server is up and responding by poking it with NapixCLI command line interface, called ``napix`` ::
 
     napix -s localhost:8002
     >> ls
@@ -69,16 +72,18 @@ You can check that the server is up and responding by poking it with napix::
 
 .. note::
 
-   if you have installed HelloWorld in :ref:`helloworld`, ``ls`` will show ``hello``
+   If you followed the :ref:`quickstart`, you'll see ``[ /hello ]`` as you installed HelloWorld Manager in :ref:`helloworld`.
 
 Write a manager
 ===============
 
+Best way to understand how Napix works is to get your hands dirty, so we'll see how to write a little plain text password manager step by step.
+
 .. note::
 
-   The examples below use differents snippet from different sessions.
+   The examples below use snippets from different sources : 
 
-    Without a prompt, is python source code inside the :file:`HOME/auto/password.py`.
+    If there is no prompt, the test is from the example manager ``HOME/auto/password.py``
 
     A ``(napix)$`` indicates a shell with the virtualenv loaded::
 
@@ -95,33 +100,26 @@ Write a manager
         >>> import os
 
 
-The auto-loader directory is the auto-folder inside the root directory.
-Here it is /home/user/NapixServer/auto.
+The auto-loader directory is the auto folder inside the ``HOME`` directory, by default in ``~/.napixd/auto``.
 
-Launch your favorite editor with and open a file in the auto-load directory :file:`~/.napixd/auto/password.py`.
+Launch your favorite editor with and open a file in the auto-load directory ``~/.napixd/auto/password.py``.
 Write the headers and save.
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 1-2
 
-.. warning::
-
-   :file:`~/.napixd/` is your default HOME. Change the path if you changed the HOME.
-
 The autoloader will detect the filesystem operation and launch a reload.
-A line ``Reloading`` will appear in the log of the napixd daemon console.::
+A line ``Reloading`` will appear in the log of the napixd daemon console you've previously launched::
 
-    (napix)$ bin/napixd
-    Starting process 1482
-    Found napixd home at /home/user/NapixServer
-    Logging activity in /tmp/napix.log
-    Bottle server starting up (using RocketAndExecutor())...
-    Listening on http://0.0.0.0:8002/
-    Hit Ctrl-C to quit.
-
+    (napix)$ napixd nodoc debug print_exc noauth nonotify
+    [...]
+    INFO:Napix.reload:Caught file change, reloading
+    INFO:Napix.conf:Using /home/krystal/.napixd/conf/settings.json configuration file
     Reloading
+    INFO:Napix.console:Reloading
 
-A curl request will still show an empty array, because there isn't a Manager yet to be loaded::
+
+A curl request will still show an empty array, because we didn't write any manager (yet!) in the file::
 
     >> get /
     [ ]
@@ -134,8 +132,9 @@ Continue writing in the previously opened file.
 The :class:`default.DictManager` class is a subclass of :class:`~base.Manager`
 which simplifies the way of writing a Manager.
 Instead of writing a method to make a modification, retrieve a resource, create it, etc,
-the :class:`~default.DictManager` instance store an internal dict of all its resource indexed by id.
-The :class:`~default.DictManager` implements the method to modify, create, list, etc and does the operation on the internal dict.
+the :class:`~default.DictManager` instance store an internal dict of all its resource indexed by their id.
+The :class:`~default.DictManager` implements the method to modify, create, list, etc and does the operation on the internal dict,
+so you just have to define a load and a save method to get things working (and an id generator, which we'll explain later).
 
 Append the following lines in the password.py file.
 
@@ -150,10 +149,13 @@ A GET request will show you it.::
         /basicpasswordfile
     ]
 
-If you make a mistake while writing a manager, and it causes the import to fail, Napix will forgive you.
+.. note::
+    You'll probably need to restart your napix client as it cache request by default.
+
+If you make a mistake while writing a manager, and cause the import to fail, Napix will forgive you.
 Just correct the error and save.
-If an import fails, and makes a manager unavailable, a placeholder will catch the calls and
-return the error that cause the import to fail.
+When an import fails, and makes a manager unavailable, a placeholder will catch the calls and
+return the error that cause the import to fail so you can get useful output in the CLI.
 
 For example: add a syntax error or a undeclared name in the file.
 
@@ -184,35 +186,13 @@ The requests will fail with an :exc:`ImportError` caused by a :exc:`NameError`::
 
 Rollback to fix this error before continuing.
 
-An attempt to list the resources (using GET /``name of the manager``/) fails with a :exc:`NotImplementedError`
-because the load method that the developer must override is not yet written::
-
+Now, we have a manager, but we didn't tell napix how we want to handle our ``resources`.
+Any attempt to list the resources (using GET /``name of the manager``/) fails with a :exc:`NotImplementedError`::
 
     >> get /basicpasswordfile/
     Napixd Error NotImplementedError
-    /home/napix/NapixServer/napixd/plugins.py in inner_exception_catcher
-        120   return callback(*args,**kwargs) #Exception
-
-    /home/napix/NapixServer/napixd/plugins.py in inner_conversation
-        60   result = callback(*args,**kwargs) #Conv
-
-    /home/napix/NapixServer/napixd/plugins.py in inner_useragent
-        178   return callback( *args, **kwargs)
-
-    /home/napix/NapixServer/napixd/services/plugins.py in inner_arguments
-        24   return callback(path)
-
-    /home/napix/NapixServer/napixd/services/__init__.py in as_collection
-        224   return ServiceCollectionRequest( path, self).handle()
-
-    /home/napix/NapixServer/napixd/services/servicerequest.py in handle
-        118   result = self.call(callback,args)
-
-    /home/napix/NapixServer/napixd/services/servicerequest.py in call
-        85   return callback(*args)
-
-    /home/napix/NapixServer/napixd/managers/default.py in list_resource
-        81   return self.resources.keys()
+    
+    [...]
 
     /home/napix/NapixServer/napixd/managers/default.py in _get_resources
         67   self._resources = self.load(self.parent)
@@ -222,31 +202,42 @@ because the load method that the developer must override is not yet written::
 
     NotImplementedError: load
 
-You can here observe here the behavior of Napix when an uncaught exception is raised.
-It returns a 500 error, with the description of the exceptions serialized in JSON.
 
-The developer still have to write the metadatas of the manager (its documentation and the fields of the resources it manages),
-the methods to load and persist the internal dict and a method to tell what is the id of a newly created resource.
+.. note::
+
+  You can here observe here the behavior of Napix when an uncaught exception is raised.
+  It returns a 500 error, with the description of the exceptions serialized in JSON.
+
+To fix this, we need to :
+
+- describe the resource we want to manage, by specifying its fields and their description in the manager's metadatas
+- write a load method to populate the internal dict we use in our ``DictManager``
+
 
 The metadata
 ------------
 
 The metadatas of the Manager are composed of the docstring of the module
 which should describe what kind of resources it manages, and the :attr:`~base.Manager.resource_fields` attribute
-which documents the names of the attributes of the managed resources and metadatas about them.
+which documents the field's name of the managed resources and metadatas about them.
 
-The metadatas of the managers have two main goals.
-They take part in the auto-documentation of the manager and for the filtering of the input and output.
+Metadatas are necessary so napix can auto-document your manager, and are used for basic filtering of users' input.
 The resources that are sent to the user are stripped of the fields that are not in the `resource_fields`
 and the resource_dict given to the creation and modification method contains only fields in resource_fields.
+
+In our example, we also define a class constant so we don't have to write any configuration for our module. FIXME. We have to change that. 
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 16,21-30
 
-The resources of our manager will contain a ``username`` and the corresponding ``password``.
-The template object proposed to the users will be ``john:toto42``.
+The resources of our manager will contain two field, a ``username`` and a ``password``.
+In the description, we comment our field to explain what they'll contain (quite obvious here),
+and we give an example a valid value. Example is used to build a template of the ressource, which
+can then be used by napixd client to help user fill correctly the resource.
 
-This template object is retrieved at ``/basicpasswordfile/_napix_new``::
+.. note::
+
+The template object can be retrieved at ``/basicpasswordfile/_napix_new``::
 
     >> get /basicpasswordfile/_napix_new
     {
@@ -254,9 +245,8 @@ This template object is retrieved at ``/basicpasswordfile/_napix_new``::
         username: john
     }
 
-The url namespace is basicpasswordfilemanager.
-It is the default value of the lower case class name.
-It can be changed by overriding the classmethod :meth:`~base.Manager.get_name`.
+By default, the url namespace is class name, in lower case.
+It can be changed by overriding the classmethod :meth:`~base.Manager.get_name` or in the configuration file FIXME ?
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 32-34
@@ -267,78 +257,54 @@ The requests show that the old name is gone replaced by the new one.::
     [
         /passwords
     ]
-    >> get /basicpasswordfile/_napix_new
+    >> get /passwords/_napix_new
     {
         "password": "toto42",
         "username": "john"
     }
 
-The load method have now to be written.
 
-It takes the parent manager that spawned this one.
-The parent is :obj:`None` if it is a first level manager when path is ``/manager/``.
+Loading datas
+-------------
 
-The inheritance cases are treated in :ref:`inheritance`.
+To get our internal dict populated, we'll override the :meth:`~default.DictManager.load` method.
+
+The load method takes one parameters : the parent manager. 
+It can be used to write multi level manager, eg if we wanted to edit multiple files,
+we could have written a manager that list the files, and then instanciate a BasicPasswordFileManager for each file found.
+Anyway, in our case, we don't use this, and as our manager is a *first level* manager (directly under /), parent is set to :obj:`None`.
+
+The inheritance cases are treated in :ref:`inheritance`. FIXME not working
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 4,12,16,36-49
 
-It returns a dict of id pointing to resources::
-
-    #The load method expect a parent argument.
-    >>> pfm = BasicPasswordFileManager(None)
-    >>> pfm.resources
-    {
-        'john' : {
-            'username' : 'john',
-            'password' : 'toto42'
-        },
-        'mwallace' : {
-            'username' : 'mwallace',
-            'password' : '666'
-        }
-    }
-
 Now the manager can be listed and consulted::
 
-    $ echo 'sony_rssi:pikachu1' > /tmp/test
-    $ echo 'sony_bigboss:password3' >> /tmp/test
+    $ echo 'bigbro_rssi:pikachu1' > /tmp/test
+    $ echo 'bigbro_bigboss:password3' >> /tmp/test
     >> get /passwords/
     [
-        /passwords/sony_rssi
-        /passwords/sony_bigboss"
+        /passwords/bigbro_rssi
+        /passwords/bigbro_bigboss"
     ]
-    >> get /passwords/sony_rssi
+    >> get /passwords/bigbro_rssi
     {
         password: pikachu1
-        username: sony_rssi
+        username: bigbro_rssi
     }
 
-But an attempt to modify an existing object will fail.::
+.. note::
+    The manager is instancied at each call, so you don't have to reload napix when you modify the file externally.
+    But as we don't check for lock and don't do any locking, this example is not safe for concurrent editing.
 
-    >> put /passwords/sony_rssi password=s4fr34$er- username=sony_rssi
+Still, as we don't write yet a :meth:`~default.DictManager.save` method, any attempt to modify an existing object will fail.::
+
+    >> put /passwords/bigbro_rssi password=s4fr34$er- username=bigbro_rssi
     Napixd Error NotImplementedError
-    /home/napix/NapixServer/napixd/plugins.py in inner_exception_catcher
-        120   return callback(*args,**kwargs) #Exception
-
-    /home/napix/NapixServer/napixd/plugins.py in inner_conversation
-        60   result = callback(*args,**kwargs) #Conv
-
-    /home/napix/NapixServer/napixd/plugins.py in inner_useragent
-        178   return callback( *args, **kwargs)
-
-    /home/napix/NapixServer/napixd/services/plugins.py in inner_arguments
-        24   return callback(path)
-
-    /home/napix/NapixServer/napixd/services/__init__.py in as_resource
-        221   return ServiceResourceRequest( path, self).handle()
-
-    /home/napix/NapixServer/napixd/services/servicerequest.py in handle
-        120   self.end_request()
-
-    /home/napix/NapixServer/napixd/services/servicerequest.py in end_request
-        94   self.manager.end_request( self.request)
-
+    
+    [ ... ]
+    
     /home/napix/NapixServer/napixd/managers/default.py in end_request
         130   self.save(self.parent,self.resources)
 
@@ -347,50 +313,49 @@ But an attempt to modify an existing object will fail.::
 
     NotImplementedError: save
 
-Another :exc:`NotImplementedError` this time because we need to override the :meth:`~default.DictManager.save`.
-Save takes the parent (the same as in load) and the resources of the managers as argument and persists them to the disk.
 
-Like in the load method, we can ignore the parent argument.
+Save Method
+-----------
+
+Save takes two arguments :
+
+- the parent (the same as in load), which we can ignore again as we are directly under the root
+- a dict, which contain the resources, so we can make this data persistent.
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :pyobject: BasicPasswordFileManager.save
 
 Now the result is persisted::
 
-    >> put /passwords/sony_rssi password=s4fr34$er- username=sony_rssi
+    >> put /passwords/bigbro_rssi password=s4fr34$er- username=bigbro_rssi
     $ cat /tmp/test
-    sony_bigboss:password3
-    sony_rssi:s4fr34$er-
+    bigbro_bigboss:password3
+    bigbro_rssi:s4fr34$er-
     >> get /passwords/
     [
-        /passwords/sony_bigboss
-        /passwords/sony_rssi
+        /passwords/bigbro_bigboss
+        /passwords/bigbro_rssi
     ]
 
-For the creation of a resource, a POST request is sent to the collection::
+.. note::
+   You can edit the resource with your favorite :envvar:`$EDITOR`. (get from environnement) if you don't specify any key=value value in your put::
+
+      >> put /passwords/bigbro_rssi
+      [ ... editor get executed and modify the file ... ]
+      [ ... object is saved ...]
+      >> get /passwords/bigbro_rssi
+      {
+       username = bigbro_rssi
+       password = password_from_editor
+       }
+
+
+But if we try to create a resource, with a POST request, this will fail miserably ::
 
     >> post /passwords/ password=neo username=tanderson
     Napixd Error NotImplementedError
-    /home/napix/NapixServer/napixd/plugins.py in inner_exception_catcher
-        120   return callback(*args,**kwargs) #Exception
 
-    /home/napix/NapixServer/napixd/plugins.py in inner_conversation
-        60   result = callback(*args,**kwargs) #Conv
-
-    /home/napix/NapixServer/napixd/plugins.py in inner_useragent
-        178   return callback( *args, **kwargs)
-
-    /home/napix/NapixServer/napixd/services/plugins.py in inner_arguments
-        24   return callback(path)
-
-    /home/napix/NapixServer/napixd/services/__init__.py in as_collection
-        224   return ServiceCollectionRequest( path, self).handle()
-
-    /home/napix/NapixServer/napixd/services/servicerequest.py in handle
-        118   result = self.call(callback,args)
-
-    /home/napix/NapixServer/napixd/services/servicerequest.py in call
-        85   return callback(*args)
+    [...]
 
     /home/napix/NapixServer/napixd/managers/default.py in create_resource
         148   resource_id = self.generate_new_id(resource_dict)
@@ -400,11 +365,13 @@ For the creation of a resource, a POST request is sent to the collection::
 
     NotImplementedError: generate_new_id
 
-A new :exc:`NotImplementedError`, this one comes from the :meth:`~default.DictManager.generate_new_id` method.
-In order to create a new resource, the created resource dict will be stored in the internal resources dict.
-The id it will take may be a serial number, a field or a part of a field, a random number (like a GUID).
 
-The method generate_new_id will return the id for the resource knowing the resource_dict of the resource to be created.
+This is due to the need for every resource in your manager to be identified by an unique id. Napixd has no way
+to guess how you want to discriminate your ressource, so it ask for you to do so, by writing a :meth:`~default.DictManager.generate_new_id`, which get the resource_dict as a parameters, and have to return an unique id.
+You could return anything, like a serial number, a random string, or something 
+generated from the resources field, but remember that you'll have to save it in your persistent storage.
+
+In our manager, as we don't want multiple user with same login, we'll use the username field to generate the id.
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :pyobject: BasicPasswordFileManager.generate_new_id
@@ -419,18 +386,16 @@ send the URI of the newly created resource in the Location header ::
      password = whiterabbit
      }
     $ cat /tmp/test
-    sony_bigboss:password3
-    sony_rssi:s4fr34$er-
+    bigbro_bigboss:password3
+    bigbro_rssi:s4fr34$er-
     tanderson:whiterabbit
 
 At this moment, it is possible to create, delete, modify, list and retrieve the resource of our manager.
-But there is no validation and it could lead to injection, flaws, etc.
+But there is no validation and could lead to injection, flaws, etc.
 
-For example if an attacker wants to create a Mallory account, he can set his password to something with a ``\n`` in it.
-The ``\n`` cannot be written from the command line.
-But napix client will use an external editor if no arguments are given::
+For example if an attacker wants to create a ``mallory`` account, he can set his password to something with a ``\n`` in it ::
 
-    >> put /passwords/sony_bigboss
+    >> put /passwords/bigbro_bigboss
      1 {
      2   "#_napix_info": [
      3     "Napix Editor.",
@@ -438,24 +403,24 @@ But napix client will use an external editor if no arguments are given::
      5     "Use the JSON syntax.",
      6     "keys begining by a # are ignored. Like this one."
      7   ],
-     8   "password": "a\nmallory:password",
-     9   "username": "sony_rssi"
+     8   "password": "a\nmallory:rogueaccount",
+     9   "username": "bigbro_rssi"
     10 }
     :wq
     >> get /
     [
         /passwords/mallory
-        /passwords/sony_bigboss
+        /passwords/bigbro_bigboss
         /passwords/tanderson
-        /passwords/sony_rssi
+        /passwords/bigbro_rssi
     ]
 
 .. note::
 
    The editor can be set with the environment variable :envvar:`$EDITOR`.
 
-He has created an access for Mallory with the password y.
-On another hand, the password are way too weak (No wonder why sony got owned by LulzSec).
+He has created an access for ``mallory`` with the password ``rogueaccount``.
+You could also want to check for strong password.
 
 We have to write validation methods.
 In Napix There is three places to make validation of user input.
@@ -469,7 +434,7 @@ This method is used to clean each field individually.
 
 Now the managers responds with a 400 Error code when we submit a forged password.::
 
-    >> put /passwords/sony_bigboss
+    >> put /passwords/bigbro_bigboss
      1 {
      2   "#_napix_info": [
      3     "Napix Editor.",
@@ -478,7 +443,7 @@ Now the managers responds with a 400 Error code when we submit a forged password
      6     "keys begining by a # are ignored. Like this one."
      7   ],
      8   "password": "a\np:pouet",
-     9   "username": "sony_rssi"
+     9   "username": "bigbro_rssi"
     10 }
     #Save and quit
     :wq

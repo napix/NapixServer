@@ -36,9 +36,9 @@ class BasicPasswordFileManager(DictManager):
     def load(self, parent):
         if not os.path.exists(self.FILE_PATH):
             return {}
-        # Read the file
+        # Open the file, read it
         content =  file(self.FILE_PATH)
-        # split the file in line
+        # then populate a dict we'll return as our internal dict.
         resources = {}
         for line in content.readlines():
             username, password = line.strip().split(':',1)
