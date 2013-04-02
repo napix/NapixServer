@@ -84,7 +84,7 @@ Now the action appears in the metadatas of the manager and in  the _napix_all_ac
             scan = Scan the port and return OPEN or CLOSED.
         },
     ...
-    >> get /hosts/sony_rssi/_napix_all_actions
+    >> get /hosts/bigbro_rssi/_napix_all_actions
     [
         scan
     ]
