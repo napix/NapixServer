@@ -225,7 +225,8 @@ Metadatas are necessary so napix can auto-document your manager, and are used fo
 The resources that are sent to the user are stripped of the fields that are not in the `resource_fields`
 and the resource_dict given to the creation and modification method contains only fields in resource_fields.
 
-In our example, we also define a class constant so we don't have to write any configuration for our module. FIXME. We have to change that. 
+In our example, we also define a class constant so we don't have to write any configuration for our module. 
+;; FIXME. We have to change that. 
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 16,21-30
@@ -246,7 +247,8 @@ The template object can be retrieved at ``/basicpasswordfile/_napix_new``::
     }
 
 By default, the url namespace is class name, in lower case.
-It can be changed by overriding the classmethod :meth:`~base.Manager.get_name` or in the configuration file FIXME ?
+It can be changed by overriding the classmethod :meth:`~base.Manager.get_name`.
+;; or in the configuration file FIXME ?
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 32-34
@@ -274,7 +276,8 @@ It can be used to write multi level manager, eg if we wanted to edit multiple fi
 we could have written a manager that list the files, and then instanciate a BasicPasswordFileManager for each file found.
 Anyway, in our case, we don't use this, and as our manager is a *first level* manager (directly under /), parent is set to :obj:`None`.
 
-The inheritance cases are treated in :ref:`inheritance`. FIXME not working
+The inheritance cases are treated in :ref:`inheritance`. 
+;; FIXME not working
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 4,12,16,36-49
@@ -337,12 +340,12 @@ Now the result is persisted::
         /passwords/bigbro_rssi
     ]
 
-.. note::
+.. tip::
    You can edit the resource with your favorite :envvar:`$EDITOR`. (get from environnement) if you don't specify any key=value value in your put::
 
       >> put /passwords/bigbro_rssi
       [ ... editor get executed and modify the file ... ]
-      [ ... object is saved ...]
+      [ ... resource is saved ...]
       >> get /passwords/bigbro_rssi
       {
        username = bigbro_rssi
@@ -415,7 +418,7 @@ For example if an attacker wants to create a ``mallory`` account, he can set his
         /passwords/bigbro_rssi
     ]
 
-.. note::
+.. tip::
 
    The editor can be set with the environment variable :envvar:`$EDITOR`.
 
@@ -430,7 +433,7 @@ First, the manager may implement a method called
 This method is used to clean each field individually.
 
 .. literalinclude:: /samples/basicpasswordfile.py
-    :lines: 17,63-78
+    :lines: 7,17,63-78
 
 Now the managers responds with a 400 Error code when we submit a forged password.::
 
