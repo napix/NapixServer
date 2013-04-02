@@ -422,11 +422,12 @@ For example if an attacker wants to create a ``mallory`` account, he can set his
 
    The editor can be set with the environment variable :envvar:`$EDITOR`.
 
-He has created an access for ``mallory`` with the password ``rogueaccount``.
-You could also want to check for strong password.
+He has created an access for ``mallory`` with the password ``rogueaccount`` due to the way we internally persist the data on disk.
+To prevent that, we have to write some kind of validation. And as we don't want our user to use weak password, we'll add a little
+check to force them to use more than 6 chars.
 
-We have to write validation methods.
 In Napix There is three places to make validation of user input.
+;; FIXME : Only 2 method listed bellow
 
 First, the manager may implement a method called
 :meth:`~base.Manager.validate_resource_FIELDNAME` with ``FIELDNAME`` being a field of the resource.
