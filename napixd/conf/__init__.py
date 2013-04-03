@@ -42,21 +42,22 @@ class Conf(collections.MutableMapping):
     @classmethod
     def make_default(cls):
         conf = None
-        for path in cls.paths :
+        paths = iter( cls.paths)
+        for path in paths:
             try:
                 handle = open( path, 'r' )
-                if conf:
-                    logger.warning('Stumbled upon configuration file candidate %s,'+
-                            ' but conf is already loaded', path)
-                    continue
                 logger.info( 'Using %s configuration file', path)
-                conf = json.load( handle )
-            except ValueError, e:
-                logger.error('Configuration file %s contains a bad JSON object (%s)', path, e)
             except IOError:
                 pass
-
-        if not conf:
+            else:
+                try:
+                    conf = json.load( handle )
+                except ValueError, e:
+                    logger.error('Configuration file %s contains a bad JSON object (%s)', path, e)
+                finally:
+                    handle.close()
+                    break
+        else:
             try:
                 default_conf = os.path.join( os.path.dirname(__file__), 'settings.json' )
                 logger.warning( 'Did not find any configuration, trying default conf from %s', default_conf)
