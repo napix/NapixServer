@@ -47,7 +47,7 @@ The HOME can be forced with ``NAPIXHOME`` environment variable.
 
 The :program:`napixd` program takes arguments.
 The arguments are options to enable or disable features, processed sequencially.
-The ``only`` option disable everything. You can find a list of options HERE FIXME.
+The ``only`` option disable everything. You can find a list of options by running ``napixd help``.
 
 The develop setup
 =================
