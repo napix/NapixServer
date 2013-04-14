@@ -460,3 +460,19 @@ class ManagerInterface(object):
         matching the given **key**.
         """
         raise NotImplementedError
+
+    def get_all_resources( self):
+        """
+        Return the tuple of ( id, resource) for all the managed resources.
+
+        See :meth:`list_resource` and :meth`get_resource`.
+        """
+
+    def get_all_resources_filter( self, filters):
+        """
+        Return the tuple of (id, resource) of all managed resources matching the *filters*.
+
+        See :meth:`list_resource_filter` and :meth:`get_all_resources`
+        """
+        raise NotImplementedError
+
