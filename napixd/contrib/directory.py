@@ -48,7 +48,7 @@ class NapixDirectoryManager(Manager):
 
     def __init__(self, parent):
         super( NapixDirectoryManager, self).__init__(parent)
-        self.store = Store( 'directory', backend='napixd.store.backends.file.FileStore')
+        self.store = Store( 'directory', backend='napixd.store.backends.file.FileBackend')
 
     def validate_resource_managers(self, managers):
         if ( not isinstance( managers, list) or
