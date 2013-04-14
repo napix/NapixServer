@@ -82,6 +82,7 @@ Counters
 
 import sys
 from napixd.conf import Conf
+from napixd.store.backends import BaseBackend
 
 __all__ = ( 'NoSuchStoreBackend', 'Store', 'Counter')
 
@@ -155,6 +156,8 @@ class Loader(object):
 
     def _get_backend(self, backend, opts):
         cls = self._get_class( backend)
+        if not issubclass( cls, BaseBackend):
+            raise ValueError( '%s is not a BaseBackend subclass' % backend )
         return cls( opts)
 
     def _get_backend_conf(self, backend):

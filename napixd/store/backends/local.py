@@ -2,18 +2,15 @@
 # -*- coding: utf-8 -*-
 
 from threading import Lock
+from napixd.store.backends import BaseBackend
 
-class LocalBackend(object):
-    def __init__(self, conf):
-        pass
-
+class LocalBackend(BaseBackend):
     def dump(self):
         return {}
     def load(self, values):
         pass
     def drop(self):
         pass
-
     def __call__(self):
         return LocalCounter
 
