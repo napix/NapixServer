@@ -7,6 +7,7 @@ import bottle
 
 from napixd.http import Response
 from napixd.exceptions import NotFound,ValidationError,Duplicate
+from napixd.services.methods import Implementation
 
 class ServiceRequest(object):
     """
@@ -140,22 +141,37 @@ class ServiceCollectionRequest(ServiceRequest):
     #association de verbes HTTP aux methodes python
     METHOD_MAP = {
         'filter' : 'list_resource_filter',
+        'getall' : 'get_all_resources',
+        'getall+filter' : 'get_all_resources_filter',
         'POST':'create_resource',
         'GET':'list_resource',
         'HEAD' : 'list_resource'
         }
 
+    def get_manager(self):
+        manager = super(ServiceCollectionRequest, self).get_manager()
+        return Implementation( manager)
+
     def get_callback(self):
-        if ( self.method == 'GET' and bottle.request.GET and
-                hasattr( self.manager, self.METHOD_MAP['filter']) ):
-            self.method = 'filter'
+        if ( self.method == 'GET' and bottle.request.GET ):
+            getall = 'getall' in bottle.request.GET
+            #remove ?getall= from GET examine other parameters
+            filter = ( len( bottle.request.GET) - int(getall) and
+                    hasattr( self.manager, self.METHOD_MAP['filter']))
+
+            if getall and filter:
+                self.method = 'getall+filter'
+            elif getall:
+                self.method = 'getall'
+            elif filter:
+                self.method = 'filter'
         return super( ServiceCollectionRequest, self).get_callback()
 
 
     def call(self):
         if self.method == 'POST':
             return self.callback(self.data)
-        elif self.method == 'filter':
+        elif 'filter' in self.method :
             return self.callback( bottle.request.GET)
         else:
             return self.callback()

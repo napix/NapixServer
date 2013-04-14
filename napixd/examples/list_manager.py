@@ -18,6 +18,10 @@ class HostManager(DictManager):
                 'example':'127.0.0.1'
                 }
             }
+    def list_resource_filter(self, filters):
+        ips = filters.getall( 'ip')
+        return set( self.resources.keys()).intersection(ips)
+
     def validate_resource_ip(self,proposed_ip):
         """
         Check if an IP submitted by the user in his request is valid

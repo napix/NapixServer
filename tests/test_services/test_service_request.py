@@ -55,6 +55,7 @@ class TestCollectionServiceRequest( _TestSCR):
             self.scr.handle()
         self.assertEqual( resp.exception.status_code, 404)
 
+
 class TestCollectionServiceRequestOther( _TestSCR):
     def test_method_not_implemented(self):
         self._make( 'DELETE')
@@ -81,6 +82,13 @@ class TestCollectionServiceRequestOther( _TestSCR):
         self.managed().list_resource_filter.assert_called_once_with({
             'mpm' : 'prefork'
             })
+
+    def test_get_all(self):
+        self._make( 'GET', GET = {
+            'getall': ''
+            })
+        self.scr.handle()
+        self.managed().get_all_resources.assert_called_once_with()
 
     def test_method_create(self):
         self._make( 'POST', data={
