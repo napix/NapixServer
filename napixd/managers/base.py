@@ -40,7 +40,7 @@ class ManagerType(type):
                 self._all_formats.update( base.get_all_formats() )
 
         for attribute_name, attribute in attrs.items():
-            if attribute_name[0] == '_':
+            if attribute_name.startswith('_'):
                 continue
             if (hasattr(attribute,'_napix_action') and attribute._napix_action
                     and callable(attribute)):
