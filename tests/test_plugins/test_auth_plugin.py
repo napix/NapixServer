@@ -157,7 +157,7 @@ class TestAAACheckerSuccess(_TestAAAChecker):
 
     def test_not_generate_permset(self):
         self.response.getheader.return_value = ''
-        self.assertFalse( self.checker.authserver_check({ 'path': '/test' }))
+        self.assertTrue( self.checker.authserver_check({ 'path': '/test' }))
 
     def test_generate_permset_empty(self):
         self.response.read.return_value = '[]'
