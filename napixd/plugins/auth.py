@@ -50,9 +50,11 @@ class AAAChecker(object):
         if resp.status != 200:
             return False
 
-        if resp.getheader('content-type', 'text/plain') == 'application/json':
-            bottle.request.permissions = PermSet( Perm( p['host'], p['methods'], p['path'])
-                    for p in json.loads( content))
+        if resp.getheader('content-type') == 'application/json':
+            perm_defs = json.loads( content)
+            self.logger.debug('Found %s permissions', len( perm_defs))
+            return PermSet( Perm( p['host'], p['methods'], p['path'])
+                    for p in perm_defs )
         return True
 
 class BaseAAAPlugin(object):
@@ -125,8 +127,9 @@ class AAAPlugin(BaseAAAPlugin):
 
     def authserver_check(self, content):
         check = self.checker.authserver_check(content)
-        if not check:
+        if check == False:
             raise self.reject( 'Access Denied')
+        return check
 
     def apply(self,callback,route):
         @functools.wraps(callback)
@@ -138,9 +141,18 @@ class AAAPlugin(BaseAAAPlugin):
 
             #self.logger.debug(msg)
             self.host_check( content)
-            self.authserver_check( content)
+            permissions = self.authserver_check( content)
+            path = bottle.request.path
+            method = bottle.request.method
+
+            resp = callback(*args,**kwargs)
+            if ( method == 'GET' and path.endswith('/') and
+                    isinstance( permissions, PermSet) and isinstance( resp, list) ):
+                self.logger.debug('Filtering %s urls', len(resp) )
+                resp = list( permissions.filter_paths( self.service, resp))
+                self.logger.debug('Filtered %s urls', len(resp) )
+            return resp
 
             # actually run the callback
-            return callback(*args,**kwargs)
         return inner_aaa
 

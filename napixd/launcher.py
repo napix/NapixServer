@@ -136,25 +136,37 @@ Non-default:
         from napixd.plugins import AAAPlugin
         app.install(AAAPlugin( conf, allow_bypass='debug' in self.options))
 
-    def get_app(self):
+    def get_bottle(self):
         """
         Return the bottle application for the napixd server.
         """
         from napixd.loader import NapixdBottle
-        from napixd.plugins import ExceptionsCatcher, ConversationPlugin
-
         napixd = NapixdBottle( options=self.options)
+        self.install_plugins( napixd)
+
+        return napixd
+
+    def install_plugins(self, app):
+        from napixd.plugins import ExceptionsCatcher, ConversationPlugin
 
         if 'times' in self.options:
             from napixd.gevent_tools import AddGeventTimeHeader
-            napixd.install( AddGeventTimeHeader())
+            app.install( AddGeventTimeHeader())
 
-        napixd.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
-        napixd.install(ConversationPlugin())
+        app.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
+        app.install(ConversationPlugin())
 
         if 'useragent' in self.options:
             from napixd.plugins import UserAgentDetector
-            napixd.install( UserAgentDetector() )
+            app.install( UserAgentDetector() )
+
+        return app
+
+    def get_app(self):
+        """
+        Return the bottle application with the plugins added
+        """
+        napixd = self.get_bottle()
 
         if 'auth' in self.options:
             self.set_auth_handler( napixd)
