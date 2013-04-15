@@ -157,25 +157,22 @@ class TestAAACheckerSuccess(_TestAAAChecker):
 
     def test_not_generate_permset(self):
         self.response.getheader.return_value = ''
-        self.checker.authserver_check({ 'path': '/test' })
-
-        self.assertTrue( self.request.permissions is None)
+        self.assertFalse( self.checker.authserver_check({ 'path': '/test' }))
 
     def test_generate_permset_empty(self):
         self.response.read.return_value = '[]'
         self.response.getheader.return_value = 'application/json'
-        self.checker.authserver_check({ 'path': '/test' })
+        permset = self.checker.authserver_check({ 'path': '/test' })
 
-        self.assertFalse( self.request.permissions is None)
-        self.assertEqual( len( self.request.permissions), 0)
+        self.assertEqual( len(permset), 0)
 
     def test_generate_permset(self):
         self.response.read.return_value = '[ { "host": "*", "methods" : [ "GET"], "path" : "/a/b" } ]'
         self.response.getheader.return_value = 'application/json'
-        self.checker.authserver_check({ 'path': '/test' })
+        permset = self.checker.authserver_check({ 'path': '/test' })
 
-        self.assertEqual( len( self.request.permissions), 1)
-        self.assertTrue( Perm( '*', 'GET', '/a/b') in self.request.permissions)
+        self.assertEqual( len( permset), 1)
+        self.assertTrue( Perm( '*', 'GET', '/a/b') in permset)
 
 class TestAAACheckerFail( _TestAAAChecker):
     def testFail(self):
