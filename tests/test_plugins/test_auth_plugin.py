@@ -9,11 +9,11 @@ import unittest2
 import mock
 import bottle
 
-from napixd.plugins import AAAPlugin, AAAChecker
+from napixd.plugins.auth import AAAPlugin, AAAChecker
 
 class AAAPluginBase( unittest2.TestCase):
     def setUp(self, status, allow_bypass=False):
-        self.AAAChecker = mock.patch('napixd.plugins.AAAChecker', spec=AAAChecker, **{
+        self.AAAChecker = mock.patch('napixd.plugins.auth.AAAChecker', spec=AAAChecker, **{
             'authserver_check.return_value' : status == 200
             })
         self.aaa_checker = self.AAAChecker.start()
@@ -122,7 +122,7 @@ class TestAAAPluginDenied(AAAPluginBase):
 
 class _TestAAAChecker(unittest2.TestCase):
     def setUp(self, status, exc=None):
-        self.con = mock.patch( 'napixd.plugins.HTTPConnection', spec=httplib.HTTPConnection, **{
+        self.con = mock.patch( 'napixd.plugins.auth.httplib.HTTPConnection', spec=httplib.HTTPConnection, **{
             'getresponse.return_value.status': status,
             'getresponse.side_effect' : exc,
             })

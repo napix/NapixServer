@@ -6,7 +6,7 @@ import bottle
 import mock
 import json
 
-from napixd.plugins import ConversationPlugin
+from napixd.plugins.conversation import ConversationPlugin, UserAgentDetector
 
 
 class TestConversationUnwrap( unittest2.TestCase):
@@ -116,4 +116,42 @@ class TestConversationWrap( unittest2.TestCase):
         resp = self.cb( None, bottle.HTTPResponse( 'I\'m a teapot',
             content_type='application/caffe+sugar'))
         self.assertEqual( resp.headers['content-type'], 'application/caffe+sugar')
+
+class TestHumanPlugin(unittest2.TestCase):
+    def setUp(self):
+        uad = UserAgentDetector()
+        self.cb = uad.apply( self.success, mock.Mock())
+
+    def success(self):
+        return 'ok'
+
+    def test_human_noauth(self):
+        with mock.patch( 'bottle.request', headers={
+            'user_agent' : 'Mozilla/5 blah blah'
+            }):
+            resp = self.cb()
+        self.assertEqual( resp.status_code, 401)
+
+    def test_human_debugauth(self):
+        with mock.patch( 'bottle.request', GET={ 'authok': '' }, headers={
+            'user_agent' : 'Mozilla/5 blah blah'
+            }):
+            resp = self.cb()
+        self.assertEqual( resp, 'ok')
+
+    def test_human_success_auth(self):
+        with mock.patch( 'bottle.request', GET={ 'authok': '' }, headers={
+            'user_agent' : 'Mozilla/5 blah blah',
+            'Authorization' : 'host=napix.test:sign',
+            }):
+            resp = self.cb()
+        self.assertEqual( resp, 'ok')
+
+    def test_bot_failed_auth(self):
+        with mock.patch( 'bottle.request', GET={ 'authok': '' }, headers={
+            'user_agent' : 'Mozilla/5 blah blah',
+            'Authorization' : 'host=napix.test:sign',
+            }):
+            resp = self.cb()
+        self.assertEqual( resp, 'ok')
 

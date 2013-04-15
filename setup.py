@@ -18,6 +18,7 @@ setup(
         install_requires=[
             'bottle>=0.11',
             'gevent>0.99',
+            'permissions>=0.1',
             ],
         include_package_data=True,
         scripts=[
