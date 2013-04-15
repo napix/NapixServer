@@ -7,16 +7,22 @@ import socket
 import httplib
 import unittest2
 import mock
+
 import bottle
+
+from permissions.models import Perm
 
 from napixd.plugins.auth import AAAPlugin, AAAChecker
 
 class AAAPluginBase( unittest2.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.patch_aaachecker = mock.patch('napixd.plugins.auth.AAAChecker', spec=AAAChecker)
+
     def setUp(self, status, allow_bypass=False):
-        self.AAAChecker = mock.patch('napixd.plugins.auth.AAAChecker', spec=AAAChecker, **{
-            'authserver_check.return_value' : status == 200
-            })
-        self.aaa_checker = self.AAAChecker.start()
+        self.AAAchecker = self.patch_aaachecker.start()
+        self.AAAchecker.return_value.authserver_check.return_value = status == 200
+
         plugin = AAAPlugin({
             'auth_url': 'http://auth.napix.local/auth/authorization/' ,
             'service' : 'napix.test'
@@ -26,7 +32,7 @@ class AAAPluginBase( unittest2.TestCase):
         self.cb = plugin.apply( self.success, None)
 
     def tearDown(self):
-        self.AAAChecker.stop()
+        self.patch_aaachecker.stop()
 
     def success(self):
         return ( 200, {}, 'ok')
@@ -121,44 +127,66 @@ class TestAAAPluginDenied(AAAPluginBase):
         self.assertEqual( result, 'Access Denied')
 
 class _TestAAAChecker(unittest2.TestCase):
-    def setUp(self, status, exc=None):
-        self.con = mock.patch( 'napixd.plugins.auth.httplib.HTTPConnection', spec=httplib.HTTPConnection, **{
-            'getresponse.return_value.status': status,
-            'getresponse.side_effect' : exc,
-            })
-        self.connection = self.con.start()
+    @classmethod
+    def setUpClass(cls):
+        cls.con = mock.patch( 'napixd.plugins.auth.httplib.HTTPConnection', spec=httplib.HTTPConnection)
+        cls.patch_request = mock.patch( 'bottle.request', permissions=None)
+
+    def setUp(self):
+        self.request = self.patch_request.start()
+
+        self.Connection = self.con.start()
+        self.connection = self.Connection.return_value
+        self.response = self.connection.getresponse.return_value
+        self.response.status = 200
+
         self.checker = AAAChecker( 'auth.napix.local', '/auth/authorization/')
 
     def tearDown( self):
         self.con.stop()
+        self.patch_request.stop()
 
 class TestAAACheckerSuccess(_TestAAAChecker):
-    def setUp(self):
-        super( TestAAACheckerSuccess, self).setUp( 200)
     def testSuccess( self):
         self.assertTrue( self.checker.authserver_check({ 'path': '/test' }))
-        self.connection.assert_called_once_with( 'auth.napix.local')
-        self.connection().request.assert_called_once_with( 'POST', '/auth/authorization/',
+        self.Connection.assert_called_once_with( 'auth.napix.local')
+        self.connection.request.assert_called_once_with( 'POST', '/auth/authorization/',
                 body='''{"path": "/test"}''', headers={
                     'Accept':'application/json',
                     'Content-type':'application/json', })
 
-class TestAAACheckerFail( _TestAAAChecker):
-    def setUp(self):
-        super( TestAAACheckerFail, self).setUp( 403)
+    def test_not_generate_permset(self):
+        self.response.getheader.return_value = ''
+        self.checker.authserver_check({ 'path': '/test' })
 
+        self.assertTrue( self.request.permissions is None)
+
+    def test_generate_permset_empty(self):
+        self.response.read.return_value = '[]'
+        self.response.getheader.return_value = 'application/json'
+        self.checker.authserver_check({ 'path': '/test' })
+
+        self.assertFalse( self.request.permissions is None)
+        self.assertEqual( len( self.request.permissions), 0)
+
+    def test_generate_permset(self):
+        self.response.read.return_value = '[ { "host": "*", "methods" : [ "GET"], "path" : "/a/b" } ]'
+        self.response.getheader.return_value = 'application/json'
+        self.checker.authserver_check({ 'path': '/test' })
+
+        self.assertEqual( len( self.request.permissions), 1)
+        self.assertTrue( Perm( '*', 'GET', '/a/b') in self.request.permissions)
+
+class TestAAACheckerFail( _TestAAAChecker):
     def testFail(self):
+        self.response.status = 403
         self.assertFalse( self.checker.authserver_check({ 'path': '/test' }))
 
-class TestAAACheckerError( _TestAAAChecker):
-    def setUp(self):
-        super( TestAAACheckerError, self).setUp( 504)
     def testError( self):
+        self.response.status = 504
         self.assertRaises( bottle.HTTPError, self.checker.authserver_check, { 'path': '/test' })
 
-class TestAAACheckerSockerError( _TestAAAChecker):
-    def setUp(self):
-        super( TestAAACheckerSockerError, self).setUp( None, socket.error('unclean pipe') )
     def testSocketError(self):
+        self.connection.getresponse.side_effect = socket.error('unclean pipe')
         self.assertRaises( bottle.HTTPError, self.checker.authserver_check, { 'path': '/test' })
 

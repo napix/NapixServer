@@ -13,6 +13,8 @@ import threading
 from napixd.conf import Conf
 import bottle
 
+from permissions.models import Perm
+from permissions.managers import PermSet
 
 class AAAChecker(object):
     logger = logging.getLogger('Napix.AAA.Checker')
@@ -48,6 +50,9 @@ class AAAChecker(object):
         if resp.status != 200:
             return False
 
+        if resp.getheader('content-type', 'text/plain') == 'application/json':
+            bottle.request.permissions = PermSet( Perm( p['host'], p['methods'], p['path'])
+                    for p in json.loads( content))
         return True
 
 class BaseAAAPlugin(object):
