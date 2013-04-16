@@ -25,7 +25,7 @@ setup(
             'bin/napixd'
             ],
         dependency_links=[
-            'http://builds.enix.org/napix/permissions-latest.tar.gz',
-            'git+git://github.com/surfly/gevent.git',
+            'http://builds.enix.org/napix/permissions-latest.tar.gz#egg=permissions-0.1',
+            'git+git://github.com/surfly/gevent.git#egg=gevent-1.0dev',
             ],
         )
