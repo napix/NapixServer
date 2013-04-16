@@ -26,5 +26,6 @@ setup(
             ],
         dependency_links=[
             'http://builds.enix.org/napix/permissions-latest.tar.gz',
+            'git+git://github.com/surfly/gevent.git',
             ],
         )
