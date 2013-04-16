@@ -24,4 +24,7 @@ setup(
         scripts=[
             'bin/napixd'
             ],
+        dependency_links=[
+            'http://builds.enix.org/napix/permissions-latest.tar.gz',
+            ],
         )
