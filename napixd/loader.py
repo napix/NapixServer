@@ -138,6 +138,8 @@ class FixedImporter(Importer):
                 manager, conf = spec
             except ValueError:
                 manager, conf = spec, {}
+
+            logger.info('Import fixed %s', manager)
             try:
                 manager = self.import_manager( manager)
             except NapixImportError, e:
@@ -160,7 +162,7 @@ class ConfImporter(Importer):
         for alias, manager_path in self.conf.get('Napix.managers').items():
             try:
                 manager = self.import_manager( manager_path )
-                logger.debug('load %s from conf', manager_path)
+                logger.info('load %s from conf', manager_path)
                 config = self.conf.get( alias)
                 import_ = ManagerImport( manager, alias, config)
             except NapixImportError, e:

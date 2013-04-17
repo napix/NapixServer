@@ -63,11 +63,30 @@ class BaseAAAPlugin(object):
 
     def __init__( self, conf= None, allow_bypass=False):
         self.settings = conf or Conf.get_default('Napix.auth')
+        self.allow_bypass = allow_bypass
+
+        hosts = self.settings.get('hosts')
+        if hosts:
+            if isinstance( hosts, list):
+                self.hosts = set(hosts)
+            elif isinstance( hosts, basestring):
+                self.hosts = set([ hosts ])
+            else:
+                self.logger.error( 'Napix.auth.hosts is not a string or a list of strings')
+                self.hosts = None
+        else:
+            self.logger.warning( 'No host settings, every host is allowed')
+            self.hosts = None
+
         self.service = self.settings.get('service')
         if not self.service:
-            self.service = ''
-            self.logger.error('Setting Napix.auth.service is empty')
-        self.allow_bypass = allow_bypass
+            self.logger.info('No setting Napix.auth.service, guessing from /etc/hostnams')
+            try:
+                with open( '/etc/hostname', 'r') as handle:
+                    self.service = handle.read()
+            except IOError:
+                self.logger.error( 'Cannot read hostname')
+                self.service = ''
 
     def debug_check(self,request):
         return self.allow_bypass and 'authok' in request.GET
@@ -92,13 +111,15 @@ class BaseAAAPlugin(object):
 
     def host_check(self, content):
         try:
-            if content['host'] != self.service:
+            if self.hosts is not None and content['host'] not in self.hosts:
                 raise self.reject('Bad host')
             path = urllib.quote(bottle.request.path ,'%/')
             if bottle.request.query_string:
                 path += '?' + bottle.request.query_string
-            if content['method'] != bottle.request.method or content['path'] != path:
-                raise self.reject( 'Bad authorization data')
+            if content['method'] != bottle.request.method:
+                raise self.reject( 'Bad authorization data method does not match')
+            if content['path'] != path:
+                raise self.reject( 'Bad authorization data path does not match')
         except KeyError, e:
             raise self.reject( 'Missing authentication data: %s' %e)
 
@@ -126,6 +147,7 @@ class AAAPlugin(BaseAAAPlugin):
         return self._local.checker
 
     def authserver_check(self, content):
+        content['host'] = self.service
         check = self.checker.authserver_check(content)
         if check == False:
             raise self.reject( 'Access Denied')
