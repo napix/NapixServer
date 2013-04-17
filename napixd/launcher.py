@@ -16,8 +16,16 @@ console = logging.getLogger('Napix.console')
 def launch(options):
     sys.stdin.close()
     try:
-        Setup(options).run()
+        setup = Setup(options)
     except Exception, e:
+        logger.exception( e)
+        logger.critical( e)
+
+    try:
+        setup.run()
+    except Exception, e:
+        if 'print_exc' in setup.options:
+            logger.exception( e)
         logger.critical( e)
 
 class CannotLaunch(Exception):
@@ -67,6 +75,7 @@ Default options:
     gevent:     Use gevent as the wsgi interface
     uwsgi:      Use with uwsgi
     auto:       Load from HOME/auto/ directory
+    conf:       Load from the Napix.managers section of the config
 
 Non-default:
     notify:     Enable the notification thread
@@ -140,11 +149,25 @@ Non-default:
         """
         Return the bottle application for the napixd server.
         """
-        from napixd.loader import NapixdBottle
-        napixd = NapixdBottle( options=self.options)
+        from napixd.application import NapixdBottle
+        from napixd.loader import Loader
+        loader = Loader( self.get_loaders())
+        napixd = NapixdBottle( loader=loader)
         self.install_plugins( napixd)
 
         return napixd
+
+    def get_loaders(self):
+        from napixd.loader import AutoImporter, ConfImporter
+        loaders = [ ]
+
+        if 'conf' in self.options:
+            ( ConfImporter, ( Conf.get_default(), ))
+        if 'auto' in self.options:
+            auto_path = get_path( 'auto')
+            logger.info('Using %s as auto directory', auto_path)
+            loaders.append( (AutoImporter, ( auto_path, ) ))
+        return loaders
 
     def install_plugins(self, app):
         from napixd.plugins import ExceptionsCatcher, ConversationPlugin

@@ -2,180 +2,78 @@
 # -*- coding: utf-8 -*-
 
 import logging
-logger = logging.getLogger('Napix.loader')
-
 import sys
 import time
 import os
+import collections
 
-import napixd
-from napixd.conf import Conf
-from napixd.services import Service
 from napixd.managers import Manager
 
-import bottle
+logger = logging.getLogger('Napix.loader')
 
-class AllOptions(object):
-    def __contains__(self, x):
-        return True
-
-
-class Loader( object):
-    def __init__( self, paths=None):
-        self.timestamp = 0
-        self.paths = paths if paths is not None else []
-        self._loading = None
-
-    def load( self):
-        self._loading = Loading( self.timestamp, self.paths, self._loading)
-        self.timestamp = time.time()
-        return self._loading
-
-class AutoLoader(Loader):
-    def __init__(self):
-        super( AutoLoader, self).__init__([
-            napixd.get_path('auto'),
-            ])
-
-class Loading(object):
-    def __init__( self, start, paths, previous = None):
-        self.paths = paths
-        self.timestamp = start
-        self.errors = {}
-
-        #every managers that we found
-        self.managers = set( self.find_managers())
-        for alias, manager in self.managers:
-            self.setup( manager )
-
-        #Every manager that we did not find
-        if previous is not None:
-            self.new_managers = self.managers - previous.managers
-            self.old_managers = previous.managers - self.managers
-        else:
-            self.new_managers = self.managers
-            self.old_managers = set()
-
-        self.error_managers = list()
-        if self.errors:
-            for alias, manager in self.old_managers:
-                if manager.__module__ in self.errors:
-                    self.error_managers.append( ( alias, manager, self.errors[ manager.__module__ ] ))
-            if previous and previous.error_managers:
-                for alias, manager, cause in previous.error_managers:
-                    if manager.__module__ in self.errors:
-                        self.error_managers.append( ( alias, manager, self.errors[ manager.__module__ ] ))
-
-    def setup( self, manager):
-        if manager.direct_plug() is None:
-            managed_classes = []
-        else:
-            managed_classes = [ self._setup( manager, submanager)
-                    for submanager in manager.get_managed_classes() ]
-        managed_classes = filter( bool, managed_classes)
-        manager.set_managed_classes(managed_classes)
-
-    def _setup(self, manager, manager_ref):
-        if isinstance( manager_ref, type):
-            self.setup( manager_ref )
-            return manager_ref
-        elif isinstance( manager_ref, basestring):
-            if '.' in manager_ref:
-                module, dot, manager_name = manager_ref.rpartition('.')
-                try:
-                    self._import(module)
-                    submanager = getattr( sys.modules[ module ], manager_name)
-                except ImportError:
-                    logger.error( 'Fail to load the managed class %s of %s from %s',
-                            manager_name, manager.get_name(), module )
-                    return
-                except AttributeError:
-                    logger.error( 'No managed class %s of %s inside %s',
-                            manager_name, manager.get_name(), module )
-                    return
-            else:
-                try:
-                    submanager = getattr( sys.modules[ manager.__module__ ], manager_ref)
-                except AttributeError:
-                    logger.error( 'Fail to load the managed class %s of %s from same module',
-                            manager_ref, manager.get_name() )
-                    return
-            self.setup( submanager )
-            return submanager
-        else:
-            logger.error( 'managed_class of %s (%s.%s) should be a string, a Manager subclass or a list of these',
-                    manager.get_name(), manager.__module__, manager.__name__)
-            return manager_ref
+class ManagerImport(object):
+    def __init__(self, manager, alias, config):
+        self.manager = manager
+        self.alias = alias
+        self.config = config
+    def __repr__(self):
+        return '{0} "{1}"'.format( self.manager, self.alias)
 
     def __iter__(self):
-        return iter( self.managers )
+        return iter( self._as_tuple())
+    def _as_tuple(self):
+        return ( self.manager, self.alias, self.config)
+    def __hash__( self):
+        return hash(( self.manager, self.alias))
+    def __eq__(self, other):
+        return isinstance( other, ManagerImport) and self._as_tuple() == other._as_tuple()
+    def __ne__(self, other):
+        return not self == other
 
-    def find_managers( self):
-        for manager in self.find_managers_from_conf():
-            yield manager
-        for manager in self.find_managers_auto():
-            yield manager
+ManagerError = collections.namedtuple( 'ManagerError', ( 'manager', 'alias', 'cause'))
+Load = collections.namedtuple( 'Load', [ 'old_managers', 'managers', 'new_managers', 'error_managers'])
 
-    def find_managers_from_conf(self):
-        """
-        Load the managers with the conf
-        return a list of Manager subclasses
-        """
-        managers_conf = Conf.get_default().get('Napix.managers')
-        for alias, manager_path in managers_conf.items():
-            module_path, x, manager_name = manager_path.rpartition('.')
-            try:
-                module = self._import( module_path )
-            except ImportError as e:
-                logger.error( 'Failed to import %s from conf: %s', module_path, str(e))
-                self.errors[ module_path ] = e
-                continue
-            logger.debug('load %s from conf', manager_path)
-            manager = getattr( module, manager_name)
-            yield alias, manager
+import_fn = __import__
 
-    def find_managers_auto( self):
-        for path in self.paths :
-            if os.path.isdir( path):
-                for x in self._load_auto_detect(path):
-                    yield x
+class NapixImportError( Exception):
+    pass
 
-    def _load_auto_detect( self, path ):
-        logger.debug( 'inspecting %s', path)
-        if not path in sys.path:
-            sys.path.append(path)
-        for filename in os.listdir(path):
-            if filename.startswith('.'):
-                continue
-            module_name, dot, py = filename.rpartition('.')
-            if not dot or py != 'py':
-                continue
-            try:
-                module = self._import(module_name)
-            except ImportError as e:
-                logger.error( 'Failed to import %s from autoload: %s', module_name, str(e))
-                self.errors[ module_name ] = e
-                continue
+class ModuleImportError(NapixImportError):
+    def __init__( self, module, cause):
+        super( ModuleImportError, self).__init__( module, cause)
+        self.module = module
+        self.cause = cause
 
-            content = getattr( module, '__all__', False) or dir( module)
-            for attr in content:
-                obj = getattr(module, attr)
-                if isinstance( obj, type) and issubclass( obj, Manager):
-                    if obj.detect():
-                        yield obj.get_name(), obj
+    def contains(self, manager):
+        return self.module == manager.__module__
 
-    def _import( self, module_path ):
-        if not module_path in sys.modules:
-            #first module import
-            logger.debug('import %s', module_path)
-            try:
-                __import__(module_path)
-            except ImportError:
-                raise
-            except Exception as e:
-                raise ImportError, repr(e)
-            return sys.modules[module_path]
+class ManagerImportError(NapixImportError):
+    def __init__( self, module, manager, cause):
+        super( ManagerImportError, self).__init__( module, manager, cause)
+        self.module = module
+        self.manager = manager
+        self.cause = cause
 
+    def contains(self, manager):
+        return self.module == manager.__module__ and self.manager == manager.__name__
+
+class Importer( object):
+    def __init__(self, timestamp=0):
+        self.timestamp = timestamp
+        self.errors = []
+
+    def first_import(self, module_path):
+        #first module import
+        logger.debug('import %s', module_path)
+        try:
+            import_fn(module_path)
+        except ImportError as e:
+            logger.error( 'Failed to import %s, %s', module_path, e)
+            raise ModuleImportError( module_path, e)
+        return sys.modules[module_path]
+
+    def reload(self, module_path):
+        logger.debug('reload %s', module_path)
         module = sys.modules[module_path]
         try:
             if module.__file__.endswith('pyc'):
@@ -185,8 +83,9 @@ class Loading(object):
 
             last_modif = os.stat(module_file).st_mtime
             logger.debug( 'Module %s last modified at %s', module_path, last_modif)
-        except OSError:
-            raise ImportError, 'Module does not exists anymore'
+        except OSError, e:
+            logger.error( 'Failed to get file %s, %s', module_path, e)
+            raise ModuleImportError( module_path, 'Module does not exists anymore')
 
         if last_modif > self.timestamp:
             #modified since last access
@@ -194,143 +93,212 @@ class Loading(object):
             try:
                 reload( module)
             except ImportError as e:
-                raise
-            except Exception as e:
-                raise ImportError, repr(e)
+                logger.error( 'Failed to reload %s, %s', module_path, e)
+                raise ModuleImportError( module_path, e)
         return module
 
-
-class NapixdBottle(bottle.Bottle):
-    """
-    Napix bottle application.
-    This bottle contains the automatic detection of services.
-    """
-
-    def __init__(self, services=None, options=None):
-        """
-        Create a new bottle app.
-        The services served by this bottle are either given in the services parameter or guessed
-        with the config of the application
-
-        The service parameter is a list of Service instances that will be served by this app.
-        When the paramater is not given or is None, the list is generated with the default conf.
-
-        """
-        self.options = options if options is not None else AllOptions()
-        super(NapixdBottle,self).__init__(autojson=False)
-        self._start()
-        self.root_urls = set()
-
-        self.loader = None
-        if services is None:
-            self.loader = self.get_loader()
-            load =  self.loader.load()
-            services = self.make_services( load.managers )
-            if 'doc' in self.options:
-                from napixd.autodoc import Autodocument
-                doc = Autodocument()
-                from napixd.thread_manager import run_background
-                run_background( doc.generate_doc, load.managers)
+    def import_module( self, module_path ):
+        if not isinstance( module_path, basestring):
+            raise TypeError, 'module_path is a string'
+        elif not module_path in sys.modules:
+            return self.first_import( module_path)
         else:
-            self.root_urls.update( s.url for s in services )
-            for service in services:
-                service.setup_bottle( self)
+            return self.reload( module_path)
 
-        self.on_stop = []
-        self.setup_bottle()
-
-    def get_loader( self):
-        if 'auto' in self.options:
-            return AutoLoader()
+    def import_manager(self, manager_path, reference=None):
+        logger.debug('Import Manager %s', manager_path)
+        if isinstance( manager_path, type) and issubclass( manager_path, Manager):
+            module_path = manager_path.__module__
+            manager_name = manager_path.__name__
         else:
-            return Loader()
+            module_path, x, manager_name = manager_path.rpartition('.')
 
-    def doc_set_root(self, root):
-        self.route('/_napix_autodoc<filename:path>',
-                callback= self.static_factory(root ),
-                skip = [ 'authentication_plugin', 'conversation_plugin', 'user_agent_detector' ] )
+        if not module_path:
+            if reference:
+                module_path = reference.__module__
+            else:
+                raise ValueError( 'manager_path must contains the module name')
 
-    def make_services( self, managers):
-        for service in self._make_services( managers ):
-            #add new routes
-            service.setup_bottle( self)
-            self.root_urls.add( service.url )
+        module = self.import_module( module_path)
+        try:
+            return getattr( module, manager_name)
+        except AttributeError as e:
+            logger.error( 'Module %s does not contain %s', module_path, manager_name)
+            raise ManagerImportError( module_path, manager_name, e)
 
-    def _make_services( self, managers ):
+class FixedImporter(Importer):
+    def __init__(self, managers, timestamp=0):
+        self.managers = managers
+        super( FixedImporter, self).__init__( timestamp)
+
+    def load( self):
+        managers, errors = [], []
+        for alias, spec in self.managers.items():
+            try:
+                manager, conf = spec
+            except ValueError:
+                manager, conf = spec, {}
+            try:
+                manager = self.import_manager( manager)
+            except NapixImportError, e:
+                errors.append( e)
+            else:
+                managers.append( ManagerImport( manager, alias, conf))
+        return managers, errors
+
+class ConfImporter(Importer):
+    def __init__( self, conf, timestamp=0 ):
+        super( ConfImporter, self).__init__( timestamp)
+        self.conf = conf
+
+    def load(self):
         """
-        Load the services with the managers found
-        return a list of Services instances
+        Load the managers with the conf
+        return a list of Manager subclasses
         """
-        for alias, manager in managers:
-            config = Conf.get_default( alias )
-            service = Service( manager, alias, config )
-            logger.debug('Creating service %s', service.url)
-            yield service
-
-    def _start( self):
-        Conf.make_default()
-
-    def reload(self):
-        console = logging.getLogger( 'Napix.console')
-        if self.loader is None:
-            return
-        self._start()
-        load = self.loader.load()
-        console.info( 'Reloading')
-
-        #remove old routes
-        for alias,manager in load.old_managers:
-            prefix = '/' + alias
-            self.routes = [ r for r in self.routes if not r.rule.startswith(prefix) ]
-            self.root_urls.discard( alias )
-
-        self.make_services( load.new_managers )
-
-        #reset the router
-        self.router = bottle.Router()
-        for route in self.routes:
-            self.router.add(route.rule, route.method, route, name=route.name)
-
-        #add errord routes
-        for alias, manager, cause in load.error_managers:
-            self.route( '/%s<catch_all:path>'%alias,
-                    callback=self._error_service_factory( cause ))
-            self.root_urls.add( alias )
-
-    def setup_bottle(self):
-        """
-        Register the services into the app
-        """
-        #/ route, give the services
-        self.route('/',callback=self.slash)
-
-        #Error handling for not found and invalid
-        self.error(404)(self._error_handler_factory(404))
-        self.error(405)(self._error_handler_factory(405))
-        self.error(400)(self._error_handler_factory(400))
-        self.error(500)(self._error_handler_factory(500))
+        managers, errors = [], []
+        for alias, manager_path in self.conf.get('Napix.managers').items():
+            try:
+                manager = self.import_manager( manager_path )
+                logger.debug('load %s from conf', manager_path)
+                config = self.conf.get( alias)
+                import_ = ManagerImport( manager, alias, config)
+            except NapixImportError, e:
+                errors.append(e)
+            else:
+                managers.append( import_)
+        return managers, errors
 
 
-    def slash(self):
-        """
-        /  view; return the list of the first level services of the app.
-        """
-        return ['/'+x for x in self.root_urls ]
+class AutoImporter(Importer):
+    def __init__(self, path, timestamp=0):
+        super( AutoImporter, self).__init__( timestamp)
+        self.path = path
+        if not self.path in sys.path:
+            sys.path.append( self.path)
 
-    def stop(self):
-        for stop in self.on_stop:
-            stop()
+    def load( self):
+        logger.debug( 'inspecting %s', self.path)
+        managers, errors = [], []
+        for filename in os.listdir(self.path):
+            if filename.startswith('.'):
+                continue
+            module_name, dot, py = filename.rpartition('.')
+            if not dot or py != 'py':
+                continue
 
-    def _error_handler_factory(self,code):
-        """ 404 view """
-        def inner(exception):
-            bottle.response.status = code
-            bottle.response['Content-Type'] = 'text/plain'
-            return exception.body
-        return inner
+            managers_, errors_ = self.load_module( module_name)
+            managers.extend( managers_)
+            errors.extend( errors_)
+        return managers, errors
 
-    def _error_service_factory( self, cause):
-        def inner( catch_all ):
-            raise cause
-        return inner
+    def load_module( self, module_name):
+        try:
+            module = self.import_module(module_name)
+        except NapixImportError as e:
+            logger.warning( 'Failed to import %s from autoload: %s', module_name, str(e))
+            return [], [ e ]
+
+        managers, errors = [], []
+        content = getattr( module, '__all__', False) or dir( module)
+        for manager_name in content:
+            try:
+                obj = getattr(module, manager_name)
+            except AttributeError as e:
+                errors.append( ManagerImportError( module_name, manager_name, e))
+                continue
+
+            if not isinstance( obj, type) or not issubclass( obj, Manager):
+                 continue
+
+            try:
+                detect= obj.detect()
+            except Exception as e:
+                logger.error( 'Error while running detect of manager %s.%s', module_name, manager_name)
+                errors.append( ManagerImportError( module_name, manager_name, e))
+                continue
+
+            if detect:
+                managers.append( ManagerImport( obj, obj.get_name(), {}))
+            else:
+                logger.info('Manager %s.%s not detected', module_name, manager_name)
+
+        return managers, errors
+
+class RelatedImpoter(Importer):
+    def __init__( self, reference, timestamp=0):
+        super( RelatedImpoter, self).__init__( timestamp)
+        self.reference = reference
+
+    def load(self, classes):
+        try:
+            managers = [ self.import_manager( cls, reference=self.reference) for cls in classes ]
+        except NapixImportError, e:
+            return [], [ e ]
+        else:
+            return managers, []
+
+class Loader( object):
+    def __init__(self, importers):
+        self.importers = importers.items() if isinstance( importers, dict) else list(importers)
+        self.managers = set()
+        self.errors = set()
+        self.timestamp = 0
+        self._already_loaded = set()
+
+    def get_paths(self):
+        return []
+
+    def load(self):
+        logger.info( 'Run a load')
+        managers = set()
+        import_errors = []
+
+        for Importer, args in self.importers:
+            importer = Importer( *args, timestamp=self.timestamp)
+            imports, errors_ = importer.load()
+
+            managers.update( imports)
+            import_errors.extend( errors_)
+
+        new_managers = managers.difference( self.managers)
+        old_managers = self.managers.difference( managers)
+
+        errors = set()
+        for old in old_managers:
+            for error in import_errors:
+                if error.contains(old.manager):
+                    errors.add( ManagerError( old.manager, old.alias,  error.cause))
+                    break
+
+        for import_ in list(new_managers):
+            try:
+                self.setup( import_.manager)
+            except NapixImportError as e:
+                managers.discard( import_)
+                new_managers.discard( import_)
+                old_managers.add( import_)
+                errors.add( ManagerError( import_.manager, import_.alias, e))
+
+        self.managers = managers
+        self.timestamp = time.time()
+        return Load( old_managers, managers, new_managers, errors)
+
+    def setup( self, manager):
+        if manager in self._already_loaded:
+            raise ManagerImportError( manager.__module__, manager, ValueError('Circular dependency'))
+        self._already_loaded.add( manager)
+
+        if manager.direct_plug() is None:
+            managed_classes = []
+        else:
+            importer = RelatedImpoter( manager, self.timestamp)
+            managed_classes, errors = importer.load( manager.get_managed_classes() )
+            if errors:
+                raise ManagerImportError( manager.__module__, manager, errors[0])
+            for managed_class in managed_classes:
+                self.setup( managed_class)
+
+        manager.set_managed_classes(managed_classes)
+        return manager
 

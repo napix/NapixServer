@@ -60,7 +60,7 @@ class Reloader(object):
     def setup_inotify(self):
         patch_select()
         watch_manager = pyinotify.WatchManager()
-        for path in self.app.loader.paths:
+        for path in self.app.loader.get_paths():
             if os.path.isdir( path):
                 watch_manager.add_watch( path, pyinotify.IN_CLOSE_WRITE)
         notifier = pyinotify.Notifier( watch_manager, self.on_file_change)
