@@ -13,10 +13,11 @@ from napixd.conf import Conf
 logger = logging.getLogger('Napix.Server')
 console = logging.getLogger('Napix.console')
 
-def launch(options):
+def launch(options, setup_class=None):
+    setup_class = setup_class or Setup
     sys.stdin.close()
     try:
-        setup = Setup(options)
+        setup = setup_class(options)
     except Exception, e:
         logger.exception( e)
         logger.critical( e)
