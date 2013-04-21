@@ -9,7 +9,7 @@ import mock
 from napixd.managers import Manager
 from napixd.managers.managed_classes import ManagedClass
 from napixd.loader import ( Loader,
-        Importer, FixedImporter, ConfImporter, AutoImporter,
+        Importer, FixedImporter, ConfImporter, AutoImporter, RelatedImporter,
         ModuleImportError, ManagerImportError,
         ManagerImport, ManagerError)
 from napixd.conf import Conf
@@ -226,6 +226,34 @@ class TestAutoImporter(unittest.TestCase):
         self.assertEqual( error.manager, 'B')
         self.assertTrue( isinstance( error.cause, ValueError))
 
+class TestRelatedImporter(unittest.TestCase):
+    def setUp(self):
+        ref = mock.Mock()
+        self.ri = RelatedImporter( ref)
+
+    def test_load(self):
+        mc1 = mock.Mock(spec=ManagedClass, path='a.b.C', manager_class=mock.Mock())
+        mc1.is_resolved.return_value = True
+        mc2 = mock.Mock(spec=ManagedClass, path='a.b.B', manager_class=mock.Mock())
+        mc1.is_resolved.return_value = False
+
+        m1 = mock.Mock()
+        m1.direct_plug.return_value=None
+
+        with mock.patch.object( self.ri, 'import_manager') as meth_import:
+            meth_import.side_effect = [ m1 ]
+            managers, errors = self.ri.load([ mc1, mc2 ])
+
+        mc1.resolve.assert_called_once_with( m1)
+        self.assertEqual( managers, [ mc1.manager_class, mc2.manager_class ])
+
+    def test_load_error(self):
+        error = ManagerImportError( 'a.b.c', 'Manager', AttributeError('No Manager in a.b.c'))
+        with mock.patch.object( self.ri, 'import_manager', side_effect=error):
+            managers, errors = self.ri.load([ ManagedClass('a.b.C') ])
+        self.assertEqual( managers,[])
+        self.assertEqual( errors, [ error])
+
 class TestLoader(unittest.TestCase):
     def setUp(self):
         self.Importer = mock.Mock( name='Importer')
@@ -273,7 +301,7 @@ class TestLoader(unittest.TestCase):
                 )
         manager_class.direct_plug.return_value = None
         related_manager.is_resolved.return_value = False
-        with mock.patch( 'napixd.loader.RelatedImpoter') as Importer:
+        with mock.patch( 'napixd.loader.RelatedImporter') as Importer:
             importer = Importer.return_value
             importer.load.return_value = ( [ manager_class], [] )
             self.loader.setup( self.manager)
@@ -288,7 +316,7 @@ class TestLoader(unittest.TestCase):
         self.manager.get_managed_classes.return_value = [ 'a.b.C' ]
 
         error = ModuleImportError( 'a.b', ImportError())
-        with mock.patch( 'napixd.loader.RelatedImpoter') as Importer:
+        with mock.patch( 'napixd.loader.RelatedImporter') as Importer:
             importer = Importer.return_value
             importer.load.side_effect = error
             load = self.loader.load()
@@ -303,7 +331,7 @@ class TestLoader(unittest.TestCase):
         self.manager.direct_plug.return_value = True
         self.manager.get_managed_classes.return_value = [ self.manager ]
 
-        with mock.patch( 'napixd.loader.RelatedImpoter') as Importer:
+        with mock.patch( 'napixd.loader.RelatedImporter') as Importer:
             importer = Importer.return_value
             importer.load.return_value = ( [ self.manager ], [] )
             self.assertRaises( ManagerImportError, self.loader.setup, self.manager)

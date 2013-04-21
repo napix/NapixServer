@@ -227,9 +227,9 @@ class AutoImporter(Importer):
 
         return managers, errors
 
-class RelatedImpoter(Importer):
+class RelatedImporter(Importer):
     def __init__( self, reference, timestamp=0):
-        super( RelatedImpoter, self).__init__( timestamp)
+        super( RelatedImporter, self).__init__( timestamp)
         self.reference = reference
 
     def load(self, classes):
@@ -237,11 +237,12 @@ class RelatedImpoter(Importer):
         for cls in classes:
             if not cls.is_resolved():
                 try:
-                    managed_class = self.import_manager( cls.manager_class, reference=self.reference)
+                    managed_class = self.import_manager( cls.path, reference=self.reference)
                     cls.resolve( managed_class)
                 except NapixImportError, e:
                     return [], [ e ]
-            managed_classes.append( cls.managed_class)
+            managed_classes.append( cls.manager_class)
+        return managed_classes, []
 
 class Loader( object):
     def __init__(self, importers):
@@ -295,7 +296,7 @@ class Loader( object):
         self._already_loaded.add( manager)
 
         if manager.direct_plug() is not None:
-            importer = RelatedImpoter( manager, self.timestamp)
+            importer = RelatedImporter( manager, self.timestamp)
             managed_classes, errors = importer.load( manager.get_managed_classes() )
             if errors:
                 raise ManagerImportError( manager.__module__, manager, errors[0])
