@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+from napixd.managers.managed_classes import ManagedClass
 import mock
 
 def get_managers():
@@ -21,12 +22,21 @@ def get_managers():
                 'return_value.resource_fields' : resource_fields,
                 }
             )
+    managed_classes = [
+            mock.Mock(
+                spec=ManagedClass,
+                manager_class=managed,
+                **{
+                    'get_name.return_value' : 'my-middle-mock'
+                    }
+                )
+            ]
 
     manager = mock.Mock(
             name = 'manager',
             **{
                 'managed_class'  : [ managed ],
-                'get_managed_classes.return_value' : [ managed ],
+                'get_managed_classes.return_value' : managed_classes,
                 'direct_plug.return_value' : False,
                 'get_name.return_value' : 'this-mock',
                 'get_all_actions.return_value' : [],
@@ -40,7 +50,7 @@ def get_managers():
             name = 'manager_direct',
             **{
                 'managed_class'  : managed,
-                'get_managed_classes.return_value' : [ managed ],
+                'get_managed_classes.return_value' : managed_classes,
                 'direct_plug.return_value' : True,
                 'get_name.return_value' : 'this-mock',
                 'get_all_actions.return_value' : [],

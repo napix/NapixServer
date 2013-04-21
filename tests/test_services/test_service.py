@@ -52,12 +52,12 @@ class TestServiceWithManaged( unittest2.TestCase):
                     '/this-mock/_napix_new',
                     '/this-mock/_napix_resource_fields',
                     '/this-mock/:f0/',
-                    '/this-mock/:f0/my-mock',
-                    '/this-mock/:f0/my-mock/',
-                    '/this-mock/:f0/my-mock/:f1',
-                    '/this-mock/:f0/my-mock/_napix_help',
-                    '/this-mock/:f0/my-mock/_napix_new',
-                    '/this-mock/:f0/my-mock/_napix_resource_fields',
+                    '/this-mock/:f0/my-middle-mock',
+                    '/this-mock/:f0/my-middle-mock/',
+                    '/this-mock/:f0/my-middle-mock/:f1',
+                    '/this-mock/:f0/my-middle-mock/_napix_help',
+                    '/this-mock/:f0/my-middle-mock/_napix_new',
+                    '/this-mock/:f0/my-middle-mock/_napix_resource_fields',
                     ]))
 
 class TestServiceWithManagedDirect( unittest2.TestCase):

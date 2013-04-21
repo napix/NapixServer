@@ -22,7 +22,7 @@ class TestCollectionServiceManaged(unittest2.TestCase):
 
     def test_managed_classes(self):
         managed_classes_url = self.fcs.as_managed_classes([ 'p1'])
-        self.assertListEqual( managed_classes_url, [ '/parent/p1/my-mock' ])
+        self.assertListEqual( managed_classes_url, [ '/parent/p1/my-middle-mock' ])
         #Should be this one
         #self.assertListEqual( managed_classes_url, [ '/parent/p1/child/' ])
 

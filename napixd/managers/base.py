@@ -3,6 +3,7 @@
 
 import types
 from napixd.exceptions import ValidationError
+from napixd.managers.managed_classes import ManagedClass
 
 """
 Manager :
@@ -19,46 +20,62 @@ class ManagerType(type):
     def __init__(self, name, bases, attrs):
         super( ManagerType, self).__init__(name, bases, attrs)
 
-        if self.managed_class is None:
-            self._direct_plug = None
-        elif ( isinstance( self.managed_class, basestring) or isinstance( self.managed_class, type) ):
-            self._direct_plug = True
-        else:
-            self._direct_plug = False
+        self._direct_plug = self._cast_direct_plug()
+        self._managed_class = self._cast_managed_class()
 
-        if self.managed_class is None or self.direct_plug() == False and len(self.managed_class) == 0:
-            self._managed_class = []
-        else:
-            self._managed_class = [self.managed_class] if self.direct_plug() else self.managed_class
+        methods = [ (name,meth)
+                for name,meth in attrs.items()
+                if not name.startswith('_') and callable( meth) ]
 
-        self._all_actions = []
-        self._all_formats = {}
+        self._all_actions = self._cast_actions( bases, methods)
+        self._all_formats = self._cast_formats( bases, methods)
+
+    def _cast_actions(self, bases, attrs):
+        actions = []
         for base in bases:
             if hasattr( base, 'get_all_actions'):
-                self._all_actions.extend( base.get_all_actions())
+                actions.extend( base.get_all_actions())
+
+        for attribute_name, attribute in attrs:
+            if hasattr(attribute,'_napix_action') and attribute._napix_action:
+                actions.append( attribute)
+        return actions
+
+    def _cast_formats(self, bases, attrs):
+        formats = {}
+        for base in bases:
             if hasattr( base, 'get_all_formats'):
-                self._all_formats.update( base.get_all_formats() )
+                formats.update( base.get_all_formats() )
 
-        for attribute_name, attribute in attrs.items():
-            if attribute_name.startswith('_'):
+        formats.update( (attribute._napix_view, attribute)
+                for attribute_name, attribute in attrs
+                if hasattr(attribute,'_napix_view') and attribute._napix_view)
+        return formats
+
+    def _cast_direct_plug(self):
+        if self.managed_class is None:
+            return None
+        elif ( isinstance( self.managed_class, basestring) or isinstance( self.managed_class, type) ):
+            return True
+        else:
+            return False
+
+    def _cast_managed_class(self):
+        if self.managed_class is None or self.direct_plug() == False and len(self.managed_class) == 0:
+            return []
+
+        managed_classes = [self.managed_class] if self.direct_plug() else list( self.managed_class)
+        for i, managed_class in enumerate( managed_classes):
+            if isinstance( managed_class, ManagedClass):
                 continue
-            if (hasattr(attribute,'_napix_action') and attribute._napix_action
-                    and callable(attribute)):
-                self._all_actions.append( attribute)
-
-        self._all_formats.update( (attribute._napix_view, attribute)
-                for attribute_name, attribute in attrs.items()
-                if attribute_name[0] != '_' and hasattr(attribute,'_napix_view')
-                and attribute._napix_view and callable(attribute) )
+            managed_classes[i] = ManagedClass( managed_class)
+        return managed_classes
 
     def direct_plug( self ):
         return self._direct_plug
 
     def get_managed_classes(self):
         return self._managed_class
-    def set_managed_classes(self, managed_classes):
-        self._managed_class = managed_classes
-
     def get_all_actions(self):
         return self._all_actions
     def get_all_formats(self):
@@ -206,14 +223,12 @@ class Manager(object):
 
     @classmethod
     def get_name(cls):
-        return cls.name or cls._make_name()
-    @classmethod
-    def _make_name(cls):
+        if cls.name is not None:
+            return cls.name
         name = cls.__name__.lower()
         if name.endswith('manager'):
             name = name[:-len('manager')]
-        cls.name = name
-        return cls.name
+        return name
 
     def __init__(self,parent):
         """

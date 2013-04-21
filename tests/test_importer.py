@@ -7,6 +7,7 @@ import unittest
 import mock
 
 from napixd.managers import Manager
+from napixd.managers.managed_classes import ManagedClass
 from napixd.loader import ( Loader,
         Importer, FixedImporter, ConfImporter, AutoImporter,
         ModuleImportError, ManagerImportError,
@@ -264,16 +265,21 @@ class TestLoader(unittest.TestCase):
         self.manager.direct_plug.return_value = True
         self.manager.get_managed_classes.return_value = [ 'a.b.C' ]
 
-        related_manager = mock.Mock( name='related' )
-        related_manager.direct_plug.return_value = None
+        manager_class = mock.Mock(name='managed')
+        related_manager = mock.Mock(
+                name='related',
+                spec=ManagedClass,
+                manager_class=manager_class
+                )
+        manager_class.direct_plug.return_value = None
+        related_manager.is_resolved.return_value = False
         with mock.patch( 'napixd.loader.RelatedImpoter') as Importer:
             importer = Importer.return_value
-            importer.load.return_value = ( [ related_manager], [] )
+            importer.load.return_value = ( [ manager_class], [] )
             self.loader.setup( self.manager)
 
         Importer.assert_called_once_with( self.manager, 0)
         importer.load.assert_called_once_with([ 'a.b.C' ])
-        self.manager.set_managed_classes.assert_called_once_with([ related_manager ])
 
     def test_setup_error(self):
         m = ManagerImport( self.manager, 'alias', {})

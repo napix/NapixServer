@@ -233,12 +233,15 @@ class RelatedImpoter(Importer):
         self.reference = reference
 
     def load(self, classes):
-        try:
-            managers = [ self.import_manager( cls, reference=self.reference) for cls in classes ]
-        except NapixImportError, e:
-            return [], [ e ]
-        else:
-            return managers, []
+        managed_classes = []
+        for cls in classes:
+            if not cls.is_resolved():
+                try:
+                    managed_class = self.import_manager( cls.manager_class, reference=self.reference)
+                    cls.resolve( managed_class)
+                except NapixImportError, e:
+                    return [], [ e ]
+            managed_classes.append( cls.managed_class)
 
 class Loader( object):
     def __init__(self, importers):
@@ -291,9 +294,7 @@ class Loader( object):
             raise ManagerImportError( manager.__module__, manager, ValueError('Circular dependency'))
         self._already_loaded.add( manager)
 
-        if manager.direct_plug() is None:
-            managed_classes = []
-        else:
+        if manager.direct_plug() is not None:
             importer = RelatedImpoter( manager, self.timestamp)
             managed_classes, errors = importer.load( manager.get_managed_classes() )
             if errors:
@@ -301,6 +302,5 @@ class Loader( object):
             for managed_class in managed_classes:
                 self.setup( managed_class)
 
-        manager.set_managed_classes(managed_classes)
         return manager
 

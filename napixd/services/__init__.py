@@ -51,7 +51,9 @@ class Service(object):
     def create_collection_service(self, collection, previous_service ):
         if collection.managed_class != None:
             for managed_class in collection.get_managed_classes():
-                self.make_collection_service(previous_service, managed_class,
+                self.make_collection_service(
+                        previous_service,
+                        managed_class.manager_class,
                         managed_class.get_name() if not collection.direct_plug() else '' )
 
     def setup_bottle(self,app):
@@ -213,9 +215,8 @@ class CollectionService(object):
         if self.direct_plug == False :
             app.route(self.resource_url+'/',
                     callback = self.as_managed_classes , apply = arguments_plugin)
-            for manager in self.collection.get_managed_classes():
-                app.route( self.resource_url + '/' + manager.get_name(),
-                        callback=self.noop)
+            for managed_class in self.collection.get_managed_classes():
+                app.route( self.resource_url + '/' + managed_class.get_name(), callback=self.noop)
 
     def as_resource(self,path):
         return ServiceResourceRequest( path, self).handle()
