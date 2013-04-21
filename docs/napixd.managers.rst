@@ -49,3 +49,11 @@ managers Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`managed_classes` Module
+------------------
+
+.. automodule:: napixd.managers.managed_classes
+    :members:
+    :undoc-members:
+    :show-inheritance:
+

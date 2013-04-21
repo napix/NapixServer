@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Modules loader for napix.
+
+A :class:`Loader` instance finds and keeps tracks of modules
+for the duration of the server.
+
+It uses :class:`Importer` subclasses to find the its managers.
+"""
+
 import logging
 import sys
 import time
@@ -9,9 +18,20 @@ import collections
 
 from napixd.managers import Manager
 
+__all__ = ( 'Loader', 'Importer',
+    'FixedImporter', 'ConfImporter', 'AutoImporter', 'RelatedImporter',
+    'ManagerImport', 'NapixImportError', 'ManagerImportError',
+    'ManagerError', 'Load'
+    )
+
 logger = logging.getLogger('Napix.loader')
 
 class ManagerImport(object):
+    """
+    A manager import.
+
+    It defines a *manager class* under a *name* with a *config*.
+    """
     def __init__(self, manager, alias, config):
         self.manager = manager
         self.alias = alias
@@ -39,6 +59,10 @@ class NapixImportError( Exception):
     pass
 
 class ModuleImportError(NapixImportError):
+    """
+    An error when importing a module.
+    All manager inside this module are unavailable.
+    """
     def __init__( self, module, cause):
         super( ModuleImportError, self).__init__( module, cause)
         self.module = module
@@ -48,6 +72,11 @@ class ModuleImportError(NapixImportError):
         return self.module == manager.__module__
 
 class ManagerImportError(NapixImportError):
+    """
+    An error when importing a manager.
+
+    This manager is the only one impacted.
+    """
     def __init__( self, module, manager, cause):
         super( ManagerImportError, self).__init__( module, manager, cause)
         self.module = module
@@ -58,11 +87,30 @@ class ManagerImportError(NapixImportError):
         return self.module == manager.__module__ and self.manager == manager.__name__
 
 class Importer( object):
+    """
+    The base class of the manager importers.
+
+    Subclasse must define a :meth:`load` method that will use :meth:`import_manager`
+    and :meth:`import_module` to find on its location.
+    """
     def __init__(self, timestamp=0):
         self.timestamp = timestamp
         self.errors = []
 
+    def load(self):
+        """
+        Do the loading.
+
+        It must return a tuple of two iterables, *managers* and *errors*
+        *managers* is an iterable of :class:`~napixd.managers.base.Manager` sub-classes.
+        *errors* are the errors that happended during the loading.
+        """
+        raise NotImplementedError
+
     def first_import(self, module_path):
+        """
+        Import the module for the first time.
+        """
         #first module import
         logger.debug('import %s', module_path)
         try:
@@ -73,7 +121,9 @@ class Importer( object):
         return sys.modules[module_path]
 
     def reload(self, module_path):
-        logger.debug('reload %s', module_path)
+        """
+        Try to reload the module if it was modified since the last time.
+        """
         module = sys.modules[module_path]
         try:
             if module.__file__.endswith('pyc'):
@@ -82,7 +132,7 @@ class Importer( object):
                 module_file = module.__file__
 
             last_modif = os.stat(module_file).st_mtime
-            logger.debug( 'Module %s last modified at %s', module_path, last_modif)
+            logger.debug( 'Module %s last modified at %s > %s', module_path, last_modif, self.timestamp)
         except OSError, e:
             logger.error( 'Failed to get file %s, %s', module_path, e)
             raise ModuleImportError( module_path, 'Module does not exists anymore')
@@ -98,14 +148,25 @@ class Importer( object):
         return module
 
     def import_module( self, module_path ):
+        """
+        imports a module.
+        """
         if not isinstance( module_path, basestring):
             raise TypeError, 'module_path is a string'
-        elif not module_path in sys.modules:
+        elif not module_path in sys.modules or self.timestamp == 0:
             return self.first_import( module_path)
         else:
             return self.reload( module_path)
 
     def import_manager(self, manager_path, reference=None):
+        """
+        Imports a manager.
+
+        *manager_path* is a :class:`~napixd.managers.base.Manager`,
+        a full path to a Manager subclass or a name in the *reference* module.
+
+        *reference* is used only when *manager_path* is just a name.
+        """
         logger.debug('Import Manager %s', manager_path)
         if isinstance( manager_path, type) and issubclass( manager_path, Manager):
             module_path = manager_path.__module__
@@ -127,6 +188,18 @@ class Importer( object):
             raise ManagerImportError( module_path, manager_name, e)
 
 class FixedImporter(Importer):
+    """
+    Imports a list of managers.
+
+    It takes a *managers* dict of the service name mapping
+    to either a tuple ( :class:`Manager subclass<napixd.managers.base.Manager>`, config)
+    or just the Manager subclass.
+
+    >>>FixedImporter({
+        'this' : ( ThisManager, { 'a' : 1 }),
+        'that' : ThatManager
+        })
+    """
     def __init__(self, managers, timestamp=0):
         self.managers = managers
         super( FixedImporter, self).__init__( timestamp)
@@ -149,6 +222,11 @@ class FixedImporter(Importer):
         return managers, errors
 
 class ConfImporter(Importer):
+    """
+    Imports the manager as specified in the config file.:
+
+    It refers to the :ref:`conf.napix.managers` to find the managers name.
+    """
     def __init__( self, conf, timestamp=0 ):
         super( ConfImporter, self).__init__( timestamp)
         self.conf = conf
@@ -173,6 +251,12 @@ class ConfImporter(Importer):
 
 
 class AutoImporter(Importer):
+    """
+    Imports all the modules in a directory
+
+    It scans the directory for ``.py`` files,
+    imports them and find all the Manager subclasses.
+    """
     def __init__(self, path, timestamp=0):
         super( AutoImporter, self).__init__( timestamp)
         self.path = path
@@ -228,11 +312,15 @@ class AutoImporter(Importer):
         return managers, errors
 
 class RelatedImporter(Importer):
+    """
+    Imports the managed classes.
+    """
     def __init__( self, reference, timestamp=0):
         super( RelatedImporter, self).__init__( timestamp)
         self.reference = reference
 
     def load(self, classes):
+        logger.debug('loading related classes')
         managed_classes = []
         for cls in classes:
             if not cls.is_resolved():
@@ -245,6 +333,18 @@ class RelatedImporter(Importer):
         return managed_classes, []
 
 class Loader( object):
+    """
+    Finds and keeps track of the managers.
+
+    The loader takes a list of tuples ( :class:`Importer`, arguments).
+    Each time the loader runs a loading cycle,
+    it instanciates all the importers of the list with the given arguments.
+    Then it calls the :meth:`Importer.load` on each of them and gets
+    the managers and errors.
+
+    The managers set is compared to the previous and a :class:`Load` object is created
+    with the new and the olds managers
+    """
     def __init__(self, importers):
         self.importers = importers.items() if isinstance( importers, dict) else list(importers)
         self.managers = set()
@@ -256,7 +356,10 @@ class Loader( object):
         return []
 
     def load(self):
-        logger.info( 'Run a load')
+        """
+        Run a loading cycle
+        """
+        logger.info( 'Run a load at %s', self.timestamp)
         managers = set()
         import_errors = []
 
@@ -291,6 +394,9 @@ class Loader( object):
         return Load( old_managers, managers, new_managers, errors)
 
     def setup( self, manager):
+        """
+        Loads the managed classes of a manager
+        """
         if manager in self._already_loaded:
             raise ManagerImportError( manager.__module__, manager, ValueError('Circular dependency'))
         self._already_loaded.add( manager)

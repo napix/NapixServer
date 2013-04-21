@@ -171,3 +171,47 @@ This is used like a normal manager::
     $ cat /var/http/passwords/client
 
         jason:bourne09
+
+
+Configuration of the link
+=========================
+
+When the link between the parent and the managed class must be set more precisely,
+you can use the :class:`napixd.managers.managed_classes.ManagedClass` class.
+
+It defines two properties, the :meth:`name<napixd.managers.managed_classes.ManagedClass.get_name>`
+and the :meth:`~napixd.managers.managed_classes.ManagedClass.extractor`.
+
+:class:`~napixd.managers.managed_classes.ManagedClass` is usable with both the path
+and manager class designation and both in direct and with a list
+A managed_class list can contains ManagerClass instances, strings and Manager subclasses mixed.
+
+
+name
+----
+
+The name is the bit of namespace between the two resources.
+If the *direct_plug* method is used, this is not used.
+
+For example in order to set the url format to /htacces/``client``/htpasswd/``login``
+without changing the name of the manager, the name argument of the :class:`~napixd.managers.managed_classes.ManagedClass`
+can be used with inside class.
+
+.. code-block:: python
+
+    class HTAccessManager( Manager):
+        """ Manages the protection of the directories of the users """
+
+        VHOSTPATH = '/var/http/virtualhosts'
+        PASSPATH = '/var/http/passwords'
+
+        managed_class = [ 'PasswordsManager' ]
+
+
+extractor
+---------
+
+The extractor is a callback called with the parent and returning the arguments for the
+instanciation of the Sub manager.
+
+By default the extractor returns the parent.

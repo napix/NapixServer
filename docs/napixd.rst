@@ -65,6 +65,14 @@ napixd Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`application` Module
+--------------------
+
+.. automodule:: napixd.application
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`notify` Module
 --------------------
 
