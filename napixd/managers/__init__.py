@@ -2,3 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from napixd.managers.base import Manager
+from napixd.managers.managed_classes import ManagedClass
+
+__all__ = ( 'Manager', 'ManagedClass' )

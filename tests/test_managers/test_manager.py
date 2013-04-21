@@ -78,31 +78,3 @@ class TestValidate( unittest2.TestCase):
         self.assertDictEqual( vm.validate({ 'field1' : 'abc' }), { 'field1' : 'abc' })
 
 
-class TestDirectPlug( unittest2.TestCase):
-    class SubManager( Manager):
-        pass
-
-    def testNone( self):
-        class ManagerNone( Manager):
-            managed_class = None
-        self.assertEqual( ManagerNone.direct_plug(), None)
-
-    def testFalse( self):
-        class ManagerFalse( Manager):
-            managed_class = [ self.SubManager ]
-        self.assertEqual( ManagerFalse.direct_plug(), False)
-
-    def testFalseString( self):
-        class ManagerFalse( Manager):
-            managed_class = [ 'abc' ]
-        self.assertEqual( ManagerFalse.direct_plug(), False)
-
-    def testTrue( self):
-        class ManagerTrue( Manager):
-            managed_class = self.SubManager
-        self.assertEqual( ManagerTrue.direct_plug(), True)
-
-    def testTrueString( self):
-        class ManagerTrue( Manager):
-            managed_class = 'abc'
-        self.assertEqual( ManagerTrue.direct_plug(), True)

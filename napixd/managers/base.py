@@ -55,9 +55,17 @@ class ManagerType(type):
     def _cast_direct_plug(self):
         if self.managed_class is None:
             return None
-        elif ( isinstance( self.managed_class, basestring) or isinstance( self.managed_class, type) ):
+        elif ( isinstance( self.managed_class, basestring) or
+                isinstance( self.managed_class, type) or
+                isinstance( self.managed_class, ManagedClass)
+                ):
             return True
         else:
+            try:
+                iter(self.managed_class)
+            except ValueError:
+                raise TypeError('managed_class attribute must be None or one or an iterable of'
+                        'ManagedClass instance, class or string')
             return False
 
     def _cast_managed_class(self):
