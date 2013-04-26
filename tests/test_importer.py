@@ -68,6 +68,7 @@ class TestImporter(unittest.TestCase):
                 self.assertRaises( ModuleImportError, self.importer.reload, 'package')
 
     def test_import_reload(self):
+        self.importer.set_timestamp( 1000)
         with mock.patch.object( self.importer, 'reload') as meth_reload:
             mod = self.importer.import_module( 'package')
         self.assertEqual( mod, meth_reload.return_value)
@@ -173,6 +174,9 @@ class TestAutoImporter(unittest.TestCase):
         with mock.patch('sys.path'):
             self.ai = AutoImporter( '/a/b')
 
+    def test_get_paths(self):
+        self.assertEqual( self.ai.get_paths(), [ '/a/b' ])
+
     def test_auto_importer(self):
         module = mock.MagicMock(
                 spec=object(),
@@ -256,9 +260,8 @@ class TestRelatedImporter(unittest.TestCase):
 
 class TestLoader(unittest.TestCase):
     def setUp(self):
-        self.Importer = mock.Mock( name='Importer')
-        self.importer = self.Importer.return_value
-        self.loader = Loader([ (self.Importer, tuple() ) ])
+        self.importer = mock.Mock( name='Importer', spec=Importer)
+        self.loader = Loader([ self.importer ])
 
         self.manager = mock.MagicMock( __module__ = 'a.b', **{
             'direct_plug.return_value'  :  None
@@ -306,7 +309,7 @@ class TestLoader(unittest.TestCase):
             importer.load.return_value = ( [ manager_class], [] )
             self.loader.setup( self.manager)
 
-        Importer.assert_called_once_with( self.manager, 0)
+        Importer.assert_called_once_with( self.manager)
         importer.load.assert_called_once_with([ 'a.b.C' ])
 
     def test_setup_error(self):
@@ -321,7 +324,7 @@ class TestLoader(unittest.TestCase):
             importer.load.side_effect = error
             load = self.loader.load()
 
-        Importer.assert_called_once_with( self.manager, 0)
+        Importer.assert_called_once_with( self.manager)
         importer.load.assert_called_once_with([ 'a.b.C' ])
 
         me = ManagerError( m.manager, 'alias', error)

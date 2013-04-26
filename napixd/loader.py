@@ -93,9 +93,18 @@ class Importer( object):
     Subclasse must define a :meth:`load` method that will use :meth:`import_manager`
     and :meth:`import_module` to find on its location.
     """
-    def __init__(self, timestamp=0):
-        self.timestamp = timestamp
+    def __init__(self):
+        self.timestamp = 0
         self.errors = []
+
+    def get_paths(self):
+        """
+        Return the paths watched by this manager.
+        """
+        return []
+
+    def set_timestamp( self, timestamp):
+        self.timestamp = timestamp
 
     def load(self):
         """
@@ -200,9 +209,9 @@ class FixedImporter(Importer):
         'that' : ThatManager
         })
     """
-    def __init__(self, managers, timestamp=0):
+    def __init__(self, managers):
+        super( FixedImporter, self).__init__()
         self.managers = managers
-        super( FixedImporter, self).__init__( timestamp)
 
     def load( self):
         managers, errors = [], []
@@ -227,8 +236,8 @@ class ConfImporter(Importer):
 
     It refers to the :ref:`conf.napix.managers` to find the managers name.
     """
-    def __init__( self, conf, timestamp=0 ):
-        super( ConfImporter, self).__init__( timestamp)
+    def __init__( self, conf):
+        super( ConfImporter, self).__init__()
         self.conf = conf
 
     def load(self):
@@ -257,11 +266,14 @@ class AutoImporter(Importer):
     It scans the directory for ``.py`` files,
     imports them and find all the Manager subclasses.
     """
-    def __init__(self, path, timestamp=0):
-        super( AutoImporter, self).__init__( timestamp)
+    def __init__(self, path):
+        super( AutoImporter, self).__init__()
         self.path = path
         if not self.path in sys.path:
             sys.path.append( self.path)
+
+    def get_paths(self):
+        return [ self.path ]
 
     def load( self):
         logger.debug( 'inspecting %s', self.path)
@@ -315,8 +327,8 @@ class RelatedImporter(Importer):
     """
     Imports the managed classes.
     """
-    def __init__( self, reference, timestamp=0):
-        super( RelatedImporter, self).__init__( timestamp)
+    def __init__( self, reference):
+        super( RelatedImporter, self).__init__()
         self.reference = reference
 
     def load(self, classes):
@@ -346,14 +358,17 @@ class Loader( object):
     with the new and the olds managers
     """
     def __init__(self, importers):
-        self.importers = importers.items() if isinstance( importers, dict) else list(importers)
+        self.importers = importers
         self.managers = set()
         self.errors = set()
         self.timestamp = 0
         self._already_loaded = set()
 
     def get_paths(self):
-        return []
+        paths = []
+        for importer in self.importers:
+            paths.extend( importer.get_paths())
+        return paths
 
     def load(self):
         """
@@ -363,8 +378,8 @@ class Loader( object):
         managers = set()
         import_errors = []
 
-        for Importer, args in self.importers:
-            importer = Importer( *args, timestamp=self.timestamp)
+        for importer in self.importers:
+            importer.set_timestamp( self.timestamp)
             imports, errors_ = importer.load()
 
             managers.update( imports)
@@ -402,7 +417,7 @@ class Loader( object):
         self._already_loaded.add( manager)
 
         if manager.direct_plug() is not None:
-            importer = RelatedImporter( manager, self.timestamp)
+            importer = RelatedImporter( manager)
             managed_classes, errors = importer.load( manager.get_managed_classes() )
             if errors:
                 raise ManagerImportError( manager.__module__, manager, errors[0])

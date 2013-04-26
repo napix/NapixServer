@@ -164,11 +164,11 @@ Non-default:
         loaders = [ ]
 
         if 'conf' in self.options:
-            loaders.append(( ConfImporter, ( Conf.get_default(), )))
+            loaders.append( ConfImporter( Conf.get_default() ))
         if 'auto' in self.options:
             auto_path = get_path( 'auto')
             logger.info('Using %s as auto directory', auto_path)
-            loaders.append( (AutoImporter, ( auto_path, ) ))
+            loaders.append(AutoImporter( auto_path ) )
         return loaders
 
     def install_plugins(self, app):
