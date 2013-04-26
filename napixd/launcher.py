@@ -47,6 +47,7 @@ class Setup(object):
         'gevent', #Use gevent
         'cors', #Set CORS headers
         'auto',
+        'conf',
     ])
 
     LOG_FILE = get_file( 'log/napix.log')
@@ -163,7 +164,7 @@ Non-default:
         loaders = [ ]
 
         if 'conf' in self.options:
-            ( ConfImporter, ( Conf.get_default(), ))
+            loaders.append(( ConfImporter, ( Conf.get_default(), )))
         if 'auto' in self.options:
             auto_path = get_path( 'auto')
             logger.info('Using %s as auto directory', auto_path)
