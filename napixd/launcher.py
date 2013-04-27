@@ -175,6 +175,8 @@ Non-default:
         from napixd.plugins import ExceptionsCatcher, ConversationPlugin
 
         if 'times' in self.options:
+            if not 'gevent' in self.options:
+                raise CannotLaunch( '`times` option requires `gevent`')
             from napixd.gevent_tools import AddGeventTimeHeader
             app.install( AddGeventTimeHeader())
 
@@ -239,6 +241,8 @@ Non-default:
     def get_server(self):
         if 'rocket' in self.options:
             return 'rocket'
+        elif not 'gevent' in self.options:
+            return 'wsgiref'
         elif 'uwsgi' in self.options:
             return 'gevent'
         else:

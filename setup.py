@@ -17,7 +17,6 @@ setup(
         author_email='gr@enix.org',
         install_requires=[
             'bottle>=0.11',
-            'gevent>0.99',
             'permissions>=0.1',
             ],
         include_package_data=True,
@@ -26,6 +25,5 @@ setup(
             ],
         dependency_links=[
             'http://builds.enix.org/napix/permissions-latest.tar.gz#egg=permissions-0.1',
-            'git+git://github.com/surfly/gevent.git#egg=gevent-1.0dev',
             ],
         )

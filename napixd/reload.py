@@ -4,7 +4,11 @@
 import os
 import select
 import logging
-import gevent.select
+
+try:
+    from gevent import select
+except ImportError:
+    import select
 import signal
 
 import bottle
@@ -33,14 +37,12 @@ class Poll(object):
 
     def poll( self, timeout):
         if self.fd != -1:
-            read, write, empty = gevent.select.select( [self.fd], [], [], timeout)
+            read, write, empty = select.select( [self.fd], [], [], timeout)
         return [ ( self.fd, select.POLLIN ) ]
 
 def patch_select():
     if not hasattr( select, 'poll'):
         select.poll = Poll
-
-
 
 class Reloader(object):
 

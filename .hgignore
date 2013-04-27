@@ -10,3 +10,4 @@ doc/build/
 venv
 docs/_build
 venv-docs/
+venv-nogevent

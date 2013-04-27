@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import gevent
+try:
+    import gevent
+    with_gevent = True
+except ImportError:
+    with_gevent = False
+    import threading
+
 import logging
 
 logger = logging.getLogger( 'Napix.background')
@@ -13,4 +19,9 @@ def background( fn):
 
 def run_background( fn, *args, **kw):
     logger.info( 'Start in background')
-    return gevent.spawn( fn, *args, **kw)
+    if with_gevent:
+        return gevent.spawn( fn, *args, **kw)
+    else:
+        thread = threading.Thead( target=fn, args=args, kwargs=kw)
+        thread.start()
+        return thread

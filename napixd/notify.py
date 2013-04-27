@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from gevent import sleep
+try:
+    from gevent import sleep
+except ImportError:
+    from time import sleep
+
 import logging
 import socket
 import urlparse
