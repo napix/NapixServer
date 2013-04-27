@@ -22,7 +22,7 @@ class ConversationPlugin(object):
     logger = logging.getLogger('Napix.conversations')
     def unwrap(self, request):
         #unserialize the request
-        if int(request.get('CONTENT_LENGTH',0)) != 0:
+        if int(request.get('CONTENT_LENGTH') or 0) != 0:
             if 'CONTENT_TYPE' in request and request['CONTENT_TYPE'].startswith('application/json'):
                 try:
                     request.data = json.load(request.body)
