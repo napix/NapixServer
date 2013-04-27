@@ -10,12 +10,17 @@ import logging
 
 import bottle
 
+import napixd
+
 class ExceptionsCatcher(object):
     name = 'exceptions_catcher'
     api = 2
     logger = logging.getLogger('Napix.Errors')
+
     def __init__(self, show_errors=False):
         self.show_errors = show_errors
+        self.napix_path = os.path.dirname( napixd.__file__)
+
     def apply(self,callback,route):
         """
         This plugin run the view and catch the exception that are not HTTPResponse.
@@ -35,11 +40,10 @@ class ExceptionsCatcher(object):
                 filename, lineno, function_name, text = traceback.extract_tb(last_traceback)[-1]
                 if self.show_errors:
                     traceback.print_exc()
-                napix_path = os.path.realpath( os.path.join( os.path.dirname( __file__)))
                 all_tb = [ dict( zip( ('filename', 'line', 'in', 'call'), x))
                         for x in traceback.extract_tb( last_traceback ) ]
                 extern_tb = [ x for x in all_tb
-                        if x['filename'].startswith(napix_path) ]
+                        if not x['filename'].startswith(self.napix_path) ]
                 self.logger.error('%s on %s failed with %s (%s)',  method, path,
                         e.__class__.__name__, str(e) )
                 res = {
