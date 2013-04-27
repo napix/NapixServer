@@ -41,6 +41,7 @@ class AAAChecker(object):
             self.logger.error( 'Auth server did not respond, %r', e)
             raise bottle.HTTPError( 500, 'Auth server did not respond')
         finally:
+            self.http_client.close()
             self.logger.debug('Finished the request to the auth server')
 
         if resp.status != 200 and resp.status != 403 :
