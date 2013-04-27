@@ -43,17 +43,17 @@ class Service(object):
     def _append_service( self, service):
         self.collection_services.append(service)
 
-    def make_collection_service( self, previous_service, collection, namespace ):
-        service = CollectionService(previous_service, collection, self.configuration, namespace)
+    def make_collection_service( self, previous_service, managed_class, namespace ):
+        service = CollectionService(previous_service, managed_class, self.configuration, namespace)
         self._append_service( service )
-        self.create_collection_service( collection, service)
+        self.create_collection_service( managed_class.manager_class, service)
 
     def create_collection_service(self, collection, previous_service ):
         if collection.managed_class != None:
             for managed_class in collection.get_managed_classes():
                 self.make_collection_service(
                         previous_service,
-                        managed_class.manager_class,
+                        managed_class,
                         managed_class.get_name() if not collection.direct_plug() else '' )
 
     def setup_bottle(self,app):
@@ -64,7 +64,7 @@ class Service(object):
         for service in self.collection_services:
             service.setup_bottle(app)
 
-class CollectionService(object):
+class BaseCollectionService(object):
 
     collection_request_class = ServiceCollectionRequest
     resource_request_class = ServiceResourceRequest
@@ -149,15 +149,15 @@ class CollectionService(object):
         #but not for self.
         managers_list = []
         for id_,service in zip( path, self.services):
-            manager = service._generate_manager(resource)
+            manager = service.generate_manager(resource)
             id_ = manager.validate_id( id_ )
             resource = manager.get_resource( id_ )
             managers_list.append( ( manager, id_, resource) )
         #The manager for self is generated here.
-        manager = self._generate_manager( resource)
+        manager = self.generate_manager( resource)
         return managers_list, manager
 
-    def _generate_manager(self,resource):
+    def generate_manager(self,resource):
         """
         instanciate a manager for the given resource
         """
@@ -284,14 +284,14 @@ class CollectionService(object):
     def noop(self, **kw):
         return None
 
-class FirstCollectionService(CollectionService):
+class FirstCollectionService(BaseCollectionService):
     def __init__(self, collection, config, namespace):
         super(FirstCollectionService, self).__init__( None, collection, config, namespace)
         self._cache = None
 
-    def _generate_manager( self, resource):
+    def generate_manager( self, resource):
         if self._cache is None or not self._cache.is_up_to_date():
-            self._cache = super(FirstCollectionService, self)._generate_manager(resource)
+            self._cache = super(FirstCollectionService, self).generate_manager(resource)
         return self._cache
 
     def setup_bottle( self, app):
@@ -301,3 +301,15 @@ class FirstCollectionService(CollectionService):
     def as_help_human_path(self):
         return '/_napix_autodoc/%s.html' % self.url
 
+
+class CollectionService( BaseCollectionService):
+    def __init__(self, previous_service, managed_class, config, namespace):
+        super( CollectionService, self).__init__( previous_service, managed_class.manager_class, config, namespace)
+        self.extractor = managed_class.extractor
+
+    def generate_manager(self,resource):
+        """
+        instanciate a manager for the given resource
+        """
+        resource = self.extractor( resource)
+        return super( CollectionService, self).generate_manager( resource)

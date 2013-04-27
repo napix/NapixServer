@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pysource)
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
@@ -7,14 +7,14 @@ import mock
 import unittest2
 
 from tests.mock.managers import manager, managed, manager_direct
-from napixd.services import Service, CollectionService
+from napixd.services import Service, BaseCollectionService
 
 class TestServiceEmpty( unittest2.TestCase):
     def setUp(self):
         self.service = Service( managed)
 
     def test_collection_service(self):
-        self.assertTrue(all( isinstance( s, CollectionService )
+        self.assertTrue(all( isinstance( s, BaseCollectionService )
             for s in self.service.collection_services ))
         self.assertEqual( len( self.service.collection_services), 1)
 
@@ -36,7 +36,7 @@ class TestServiceWithManaged( unittest2.TestCase):
         self.service = Service( manager)
 
     def test_collection_service(self):
-        self.assertTrue(all( isinstance( s, CollectionService )
+        self.assertTrue(all( isinstance( s, BaseCollectionService)
             for s in self.service.collection_services ))
         self.assertEqual( len( self.service.collection_services), 2)
 
@@ -65,7 +65,7 @@ class TestServiceWithManagedDirect( unittest2.TestCase):
         self.service = Service( manager_direct)
 
     def test_collection_service(self):
-        self.assertTrue(all( isinstance( s, CollectionService )
+        self.assertTrue(all( isinstance( s, BaseCollectionService )
             for s in self.service.collection_services ))
         self.assertEqual( len( self.service.collection_services), 2)
 

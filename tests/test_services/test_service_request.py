@@ -12,7 +12,7 @@ from tests.mock.managers import get_managers
 from napixd.managers.actions import action
 from napixd.exceptions import ValidationError, NotFound
 from napixd.conf import Conf
-from napixd.services import CollectionService, FirstCollectionService
+from napixd.services import BaseCollectionService, FirstCollectionService
 from napixd.services.servicerequest import ServiceActionRequest, ServiceResourceRequest, ServiceCollectionRequest
 
 class _TestSCR( unittest2.TestCase):
@@ -24,7 +24,7 @@ class _TestSCR( unittest2.TestCase):
 
         self.manager, self.managed, x = get_managers()
         self.fcs = FirstCollectionService( self.manager, Conf(), 'parent')
-        self.cs = CollectionService( self.fcs, self.managed, Conf(), 'child')
+        self.cs = BaseCollectionService( self.fcs, self.managed, Conf(), 'child')
         self.scr = ServiceCollectionRequest([ 'p1'], self.cs)
 
         self.addCleanup( self.patch_request.stop)
@@ -108,7 +108,7 @@ class _TestSRR( unittest2.TestCase):
 
         self.manager, self.managed, x = get_managers()
         self.fcs = FirstCollectionService( self.manager, Conf(), 'parent')
-        self.cs = CollectionService( self.fcs, self.managed, Conf(), 'child')
+        self.cs = BaseCollectionService( self.fcs, self.managed, Conf(), 'child')
         self.srr = ServiceResourceRequest([ 'p1', 'c2' ], self.cs)
 
         self.addCleanup( self.patch_request.stop)
@@ -151,7 +151,7 @@ class TestServiceActionRequest( unittest2.TestCase):
 
         self.manager, self.managed, x = get_managers()
         self.fcs = FirstCollectionService( self.manager, Conf(), 'parent')
-        self.cs = CollectionService( self.fcs, self.managed, Conf(), 'child')
+        self.cs = BaseCollectionService( self.fcs, self.managed, Conf(), 'child')
         self.sar = ServiceActionRequest([ 'p1', 'c2' ], self.cs, 'action')
 
         self.manager().validate_id.side_effect = lambda y:y
