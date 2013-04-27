@@ -2,17 +2,18 @@
 # -*- coding: utf-8 -*-
 
 import os
-import select
+import select as original_select
 import logging
+import signal
 
 try:
     from gevent import select
 except ImportError:
-    import select
-import signal
+    select = original_select
 
 import bottle
 
+from napixd.thread_manager import run_background
 from napixd.conf import Conf
 
 try:
@@ -41,8 +42,8 @@ class Poll(object):
         return [ ( self.fd, select.POLLIN ) ]
 
 def patch_select():
-    if not hasattr( select, 'poll'):
-        select.poll = Poll
+    if not hasattr( original_select, 'poll'):
+        original_select.poll = Poll
 
 class Reloader(object):
 
@@ -66,7 +67,7 @@ class Reloader(object):
             if os.path.isdir( path):
                 watch_manager.add_watch( path, pyinotify.IN_CLOSE_WRITE)
         notifier = pyinotify.Notifier( watch_manager, self.on_file_change)
-        gevent.spawn( notifier.loop)
+        run_background( notifier.loop)
 
 
     def on_sighup(self, signum, frame):
