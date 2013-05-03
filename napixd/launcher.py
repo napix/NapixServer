@@ -21,6 +21,7 @@ def launch(options, setup_class=None):
     except Exception, e:
         logger.exception( e)
         logger.critical( e)
+        return
 
     try:
         setup.run()
