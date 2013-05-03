@@ -22,6 +22,7 @@ def run_background( fn, *args, **kw):
     if with_gevent:
         return gevent.spawn( fn, *args, **kw)
     else:
-        thread = threading.Thead( target=fn, args=args, kwargs=kw)
+        thread = threading.Thread( target=fn, args=args, kwargs=kw)
+        thread.daemon = True
         thread.start()
         return thread
