@@ -22,7 +22,7 @@ class ConversationPlugin(object):
     logger = logging.getLogger('Napix.conversations')
 
     def __init__(self, pprint=False):
-        self.pprint = None if pprint else 4
+        self.pprint = 4 if pprint else None
 
     def unwrap(self, request):
         #unserialize the request

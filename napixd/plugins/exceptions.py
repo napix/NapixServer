@@ -20,7 +20,7 @@ class ExceptionsCatcher(object):
     def __init__(self, show_errors=False, pprint=False):
         self.show_errors = show_errors
         self.napix_path = os.path.dirname( napixd.__file__)
-        self.pprint = None if pprint else 4
+        self.pprint = 4 if pprint else None
 
     def apply(self,callback,route):
         """
