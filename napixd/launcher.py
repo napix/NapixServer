@@ -87,6 +87,7 @@ Non-default:
     print_exc:  Show the exceptions in the console output
     rocket:     Use Rocket as the server
     times:      Add custom header to show the running time and the total time
+    pprint      Enable pretty printing of output
         '''
     def __init__(self, options):
         nooptions = [ opt[2:] for opt in options if opt.startswith('no') ]
@@ -174,6 +175,7 @@ Non-default:
 
     def install_plugins(self, app):
         from napixd.plugins import ExceptionsCatcher, ConversationPlugin
+        pprint = 'pprint' in self.options
 
         if 'times' in self.options:
             if not 'gevent' in self.options:
@@ -181,8 +183,8 @@ Non-default:
             from napixd.gevent_tools import AddGeventTimeHeader
             app.install( AddGeventTimeHeader())
 
-        app.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options)))
-        app.install(ConversationPlugin())
+        app.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options), pprint=pprint))
+        app.install(ConversationPlugin( pprint=pprint))
 
         if 'useragent' in self.options:
             from napixd.plugins import UserAgentDetector

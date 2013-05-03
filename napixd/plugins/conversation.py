@@ -20,6 +20,10 @@ class ConversationPlugin(object):
     name = "conversation_plugin"
     api = 2
     logger = logging.getLogger('Napix.conversations')
+
+    def __init__(self, pprint=False):
+        self.pprint = None if pprint else 4
+
     def unwrap(self, request):
         #unserialize the request
         if int(request.get('CONTENT_LENGTH') or 0) != 0:
@@ -72,7 +76,7 @@ class ConversationPlugin(object):
                     content_type = 'text/plain'
             elif result is not None:
                 content_type = 'application/json'
-                result = self._json_encode(result)
+                result = self.json_encode(result)
             else:
                 content_type = ''
                 result = None
@@ -82,9 +86,9 @@ class ConversationPlugin(object):
             return resp
         return inner_conversation
 
-    def _json_encode(self,res):
+    def json_encode(self,res):
         buff = StringIO()
-        json.dump(res,buff)
+        json.dump( res, buff, indent=self.pprint)
         return buff.getvalue()
 
 class UserAgentDetector( object ):

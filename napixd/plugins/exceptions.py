@@ -17,9 +17,10 @@ class ExceptionsCatcher(object):
     api = 2
     logger = logging.getLogger('Napix.Errors')
 
-    def __init__(self, show_errors=False):
+    def __init__(self, show_errors=False, pprint=False):
         self.show_errors = show_errors
         self.napix_path = os.path.dirname( napixd.__file__)
+        self.pprint = None if pprint else 4
 
     def apply(self,callback,route):
         """
@@ -57,6 +58,9 @@ class ExceptionsCatcher(object):
                         'line': lineno,
                         'traceback' : extern_tb or all_tb,
                         }
-                return bottle.HTTPResponse(json.dumps(res), status=500, content_type='application/json')
+                return bottle.HTTPResponse(
+                        json.dumps(res, indent=self.pprint),
+                        status=500,
+                        content_type='application/json')
         return inner_exception_catcher
 
