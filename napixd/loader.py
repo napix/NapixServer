@@ -125,7 +125,7 @@ class Importer( object):
         logger.debug('import %s', module_path)
         try:
             import_fn(module_path)
-        except Exception as e:
+        except (Exception, ImportError) as e:
             if self.raise_on_first_import:
                 raise
             logger.error( 'Failed to import %s, %s', module_path, e)

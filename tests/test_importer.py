@@ -29,7 +29,12 @@ class TestImporter(unittest.TestCase):
 
     def test_first_import_error(self):
         with mock.patch('napixd.loader.import_fn', side_effect=ImportError()):
-            self.assertRaises( ModuleImportError, self.importer.first_import, 'package')
+            self.assertRaises( ImportError, self.importer.first_import, 'package')
+
+    def test_first_import_error_ignore(self):
+        importer = Importer( False)
+        with mock.patch('napixd.loader.import_fn', side_effect=ImportError()):
+            self.assertRaises( ModuleImportError, importer.first_import, 'package')
 
     def test_first_import(self):
         with mock.patch('napixd.loader.import_fn') as import_fn:
