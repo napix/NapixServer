@@ -18,7 +18,7 @@ class TestConversationUnwrap( unittest2.TestCase):
             'read.return_value' : body
             })
         request = mock.MagicMock( body=body)
-        request.get = lambda y,z:headers.get(y, z)
+        request.get = headers.get
         request.__getitem__ = lambda self,key: headers[key]
         request.__contains__ = lambda self,key: key in headers
         return request
