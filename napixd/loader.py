@@ -93,9 +93,10 @@ class Importer( object):
     Subclasse must define a :meth:`load` method that will use :meth:`import_manager`
     and :meth:`import_module` to find on its location.
     """
-    def __init__(self):
+    def __init__(self, raise_on_first_import=True):
         self.timestamp = 0
         self.errors = []
+        self.raise_on_first_import = raise_on_first_import
 
     def get_paths(self):
         """
@@ -124,7 +125,9 @@ class Importer( object):
         logger.debug('import %s', module_path)
         try:
             import_fn(module_path)
-        except ImportError as e:
+        except Exception as e:
+            if self.raise_on_first_import:
+                raise
             logger.error( 'Failed to import %s, %s', module_path, e)
             raise ModuleImportError( module_path, e)
         return sys.modules[module_path]
@@ -267,7 +270,7 @@ class AutoImporter(Importer):
     imports them and find all the Manager subclasses.
     """
     def __init__(self, path):
-        super( AutoImporter, self).__init__()
+        super( AutoImporter, self).__init__( False)
         self.path = path
         if not self.path in sys.path:
             sys.path.append( self.path)
