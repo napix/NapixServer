@@ -154,7 +154,7 @@ class Importer( object):
             logger.debug( 'Reloading module %s', module_path)
             try:
                 reload( module)
-            except ImportError as e:
+            except Exception as e:
                 logger.error( 'Failed to reload %s, %s', module_path, e)
                 raise ModuleImportError( module_path, e)
         return module
