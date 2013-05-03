@@ -39,7 +39,7 @@ class Poll(object):
     def poll( self, timeout):
         if self.fd != -1:
             read, write, empty = select.select( [self.fd], [], [], timeout)
-        return [ ( self.fd, select.POLLIN ) ]
+        return [ ( self.fd, original_select.POLLIN ) ]
 
 def patch_select():
     if not hasattr( original_select, 'poll'):

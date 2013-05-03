@@ -68,7 +68,7 @@ class NapixdBottle(bottle.Bottle):
         console.info( 'Reloading')
 
         #remove old routes
-        for manager, alias in load.old_managers:
+        for manager, alias, config in load.old_managers:
             prefix = '/' + alias
             self.routes = [ r for r in self.routes if not r.rule.startswith(prefix) ]
             self.root_urls.discard( alias )
