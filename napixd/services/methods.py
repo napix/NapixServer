@@ -84,7 +84,7 @@ class ByFilter_list_resource(object):
     require = [ 'list_resource_filter']
     def __init__(self, manager):
         self.manager = manager
-    def __call__(self, manager):
+    def __call__(self):
         return self.manager.list_resource_filter({})
 
 class Combined_get_all_resources_filter(object):
