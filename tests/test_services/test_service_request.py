@@ -106,9 +106,12 @@ class _TestSRR( unittest2.TestCase):
         self.patch_request = mock.patch( 'bottle.request', method=method, **kw)
         self.request = self.patch_request.start()
 
+        self.fcs_conf = mock.Mock( spec=Conf, name='fcs_conf')
+        self.cs_conf = mock.Mock( spec=Conf, name='cs_conf')
+
         self.manager, self.managed, x = get_managers()
-        self.fcs = FirstCollectionService( self.manager, Conf(), 'parent')
-        self.cs = BaseCollectionService( self.fcs, self.managed, Conf(), 'child')
+        self.fcs = FirstCollectionService( self.manager, self.fcs_conf, 'parent')
+        self.cs = BaseCollectionService( self.fcs, self.managed, self.cs_conf, 'child')
         self.srr = ServiceResourceRequest([ 'p1', 'c2' ], self.cs)
 
         self.addCleanup( self.patch_request.stop)
@@ -128,6 +131,13 @@ class TestServiceResourceRequest( _TestSRR):
             })
         self.manager().get_resource.assert_called_once_with( 'p1')
         self.managed().get_resource.assert_called_once_with( 'c2' )
+
+    def test_get_configure(self):
+        self.managed().get_resource.return_value = { 'lol' : 1, 'blabla' : 'ping' }
+        self.srr.handle()
+
+        self.manager().configure.assert_called_once_with( self.fcs_conf)
+        self.managed().configure.assert_called_once_with( self.cs_conf)
 
 class TestServiceResourceRequestOther( _TestSRR):
     def test_method_head(self):
