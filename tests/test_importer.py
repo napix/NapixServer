@@ -187,14 +187,17 @@ class TestAutoImporter(unittest.TestCase):
                 spec=object(),
                 __all__ = ( 'A', 'B' ,'C' ),
                 A=object(),
-                B=type( 'Manager', (Manager, ), {}),
+                B=type( 'Manager', (Manager, ), {
+                    'name' : 'my_manager',
+                    'configure' : mock.MagicMock( __doc__='{ "a" : 1 }')
+                    }),
                 )
         with mock.patch('os.listdir', return_value=['b.pyc', 'b.py', '.b.swp' ]):
             with mock.patch.object( self.ai, 'import_module', return_value=module) as meth_import:
                 modules, errors = self.ai.load()
 
         meth_import.assert_called_once_with( 'b')
-        self.assertEqual( modules, [ ManagerImport( module.B, '', {}) ])
+        self.assertEqual( modules, [ ManagerImport( module.B, 'my_manager', { 'a' : 1 }) ])
         self.assertEqual( len( errors), 1)
         error = errors[0]
         self.assertEqual( error.module, 'b')
@@ -234,6 +237,14 @@ class TestAutoImporter(unittest.TestCase):
         self.assertEqual( error.module, 'b')
         self.assertEqual( error.manager, 'B')
         self.assertTrue( isinstance( error.cause, ValueError))
+
+    def test_get_config_from( self):
+        mgr = type( 'Manager', (Manager, ), {
+            'name' : 'my_manager',
+            'configure' : mock.MagicMock( __doc__='{ "a : 1 }')
+            })
+        self.assertEqual( self.ai.get_config_from( mgr), {} )
+
 
 class TestRelatedImporter(unittest.TestCase):
     def setUp(self):

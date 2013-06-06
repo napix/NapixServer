@@ -15,6 +15,7 @@ import sys
 import time
 import os
 import collections
+import json
 
 from napixd.managers import Manager
 
@@ -37,7 +38,7 @@ class ManagerImport(object):
         self.alias = alias
         self.config = config
     def __repr__(self):
-        return '{0} "{1}"'.format( self.manager, self.alias)
+        return '<Import {0} "{1}">'.format( self.manager, self.alias)
 
     def __iter__(self):
         return iter( self._as_tuple())
@@ -320,11 +321,22 @@ class AutoImporter(Importer):
                 continue
 
             if detect:
-                managers.append( ManagerImport( obj, obj.get_name(), {}))
+                managers.append( ManagerImport( obj, obj.get_name(), self.get_config_from( obj)))
             else:
                 logger.info('Manager %s.%s not detected', module_name, manager_name)
 
         return managers, errors
+
+    def get_config_from( self, manager):
+        try:
+            doc_string = manager.configure.__doc__
+            if doc_string:
+                return json.loads( doc_string)
+        except ( ValueError, AttributeError) as e:
+            logger.debug( 'Auto configuration of %s from docstring failed because %s', manager, e)
+
+        return {}
+
 
 class RelatedImporter(Importer):
     """
