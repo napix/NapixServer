@@ -19,6 +19,8 @@ logger = logging.getLogger('Napix.conf')
 open = open
 DEFAULT_CONF = os.path.join( os.path.dirname(__file__), 'settings.json' )
 
+_sentinel = object()
+
 class Conf(collections.MutableMapping):
     _default = None
     def __init__(self, data=None):
@@ -130,10 +132,12 @@ class Conf(collections.MutableMapping):
     def __eq__(self, other):
         return  isinstance( other, collections.Mapping) and other.keys() == self.keys() and other.values() == self.values()
 
-    def get( self, section_id):
+    def get( self, section_id, default_value=_sentinel):
         try:
             value = self[section_id]
         except (KeyError,ValueError):
+            if default_value is not _sentinel:
+                return default_value
             return Conf()
         if isinstance( value, dict):
             return Conf(value)

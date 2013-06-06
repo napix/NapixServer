@@ -34,6 +34,10 @@ class TestConf(unittest2.TestCase):
     def test_get_inexisting( self):
         self.assertEqual( self.conf.get('d'), {})
 
+    def test_get_default( self):
+        self.assertEqual( self.conf.get('d', None), None)
+        self.assertEqual( self.conf.get('d', 123), 123)
+
     def test_get_dotted(self):
         self.assertEqual( self.conf.get('a.a1.a1b'), 'bar')
         self.assertEqual( self.conf.get('b.mpm'), 'prefork')
