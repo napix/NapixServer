@@ -16,10 +16,12 @@ from tests.mock.managers import manager, managed
 class TestCollectionServiceManaged(unittest2.TestCase):
     def setUp(self):
         managed.reset_mock()
-        self.fcs = FirstCollectionService( manager, Conf(), 'parent')
+        self.fcs_conf = mock.Mock( spec=Conf, name='fcs_conf')
+        self.cs_conf = mock.Mock( spec=Conf, name='cs_conf')
+        self.fcs = FirstCollectionService( manager, self.fcs_conf, 'parent')
         self.managed_class = mock.Mock( spec=ManagedClass, manager_class=managed)
         self.managed_class.extractor.side_effect = lambda x:x
-        self.cs = CollectionService( self.fcs, self.managed_class, Conf(), 'child')
+        self.cs = CollectionService( self.fcs, self.managed_class, self.cs_conf, 'child')
 
     def test_service_stack(self):
         self.assertListEqual( self.cs.services, [ self.fcs, self.cs ])
@@ -36,6 +38,7 @@ class TestCollectionServiceManaged(unittest2.TestCase):
 
         manager_, id, resource = all[0]
         self.assertEqual( manager(), manager_)
+        manager().configure.assert_called_once_with( self.fcs_conf)
         manager().validate_id.assert_called_once_with( 'p1')
         self.assertEqual( id, manager().validate_id())
         manager().get_resource.assert_called_once_with( id)

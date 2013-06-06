@@ -80,14 +80,11 @@ class BaseCollectionService(object):
         """
         self.previous_service = previous_service
         self.collection = collection
+        self.config = config
 
         #Recursive list of services.
         self.services = list(self._services_stack())
         self.services.reverse()
-
-        self.config = dict( config
-                if len( self.services) == 1
-                else config.get(self._get_services_prefix()) )
 
         self.direct_plug = self.collection.direct_plug()
         #url is added if append_url is True
