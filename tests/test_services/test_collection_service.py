@@ -50,3 +50,8 @@ class TestCollectionServiceManaged(unittest2.TestCase):
         self.cs.generate_manager( resource)
         self.managed_class.extractor.assert_called_once_with( resource)
         managed.assert_called_once_with( resource)
+
+    def test_get_name_fcs(self):
+        self.assertEqual( self.fcs.get_name(), 'parent')
+    def test_get_name_cs(self):
+        self.assertEqual( self.cs.get_name(), 'parent.child')

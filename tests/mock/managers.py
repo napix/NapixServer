@@ -20,6 +20,7 @@ def get_managers():
                 'get_all_actions.return_value' : [],
                 'resource_fields' : resource_fields,
                 'return_value.resource_fields' : resource_fields,
+                'direct_plug.return_value' : None,
                 }
             )
     managed_classes = [

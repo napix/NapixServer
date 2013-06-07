@@ -44,12 +44,17 @@ class Service(object):
         self.collection_services.append(service)
 
     def make_collection_service( self, previous_service, managed_class, namespace ):
-        service = CollectionService(previous_service, managed_class, self.configuration, namespace)
+        config_key = '{0}.{1}'.format( previous_service.get_name(), namespace or managed_class.get_name() )
+        service = CollectionService(
+                previous_service,
+                managed_class,
+                self.configuration.get( config_key),
+                namespace)
         self._append_service( service )
         self.create_collection_service( managed_class.manager_class, service)
 
     def create_collection_service(self, collection, previous_service ):
-        if collection.managed_class != None:
+        if collection.direct_plug() != None:
             for managed_class in collection.get_managed_classes():
                 self.make_collection_service(
                         previous_service,
@@ -112,11 +117,8 @@ class BaseCollectionService(object):
                     else:
                         field_meta[callable_] = field_meta[callable_].__name__
 
-    def _get_services_prefix(self):
-        return '.'.join( x.get_name() for x in self.services[1:]) or ''
-
     def get_name(self):
-        return self.collection.get_name()
+        return '.'.join( s.url for s in self.services)
 
     def get_prefix(self):
         """
