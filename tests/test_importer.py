@@ -110,7 +110,7 @@ class TestImporter(unittest.TestCase):
 
 class TestFixedImporter(unittest.TestCase):
     def test_fixed_importer(self):
-        conf = mock.Mock()
+        conf = mock.Mock( spec=Conf)
         fi = FixedImporter({
             'my' : ( 'a.b.c.Manager', conf),
             })
@@ -120,6 +120,17 @@ class TestFixedImporter(unittest.TestCase):
         meth_import.assert_called_once_with( 'a.b.c.Manager')
         self.assertEqual( managers, [ ManagerImport( meth_import.return_value, 'my', conf) ])
 
+    def test_fixed_importer_conf_convert(self):
+        fi = FixedImporter({
+            'my' : ( 'a.b.c.Manager', { "a" : 1 }),
+            })
+        with mock.patch.object( fi, 'import_manager') as meth_import:
+            managers, errors = fi.load()
+
+        meth_import.assert_called_once_with( 'a.b.c.Manager')
+        self.assertEqual( managers, [ ManagerImport( meth_import.return_value, 'my', Conf({ 'a' : 1 })) ])
+        self.assertTrue( isinstance( managers[0].config, Conf))
+
     def test_fixed_importer_no_conf(self):
         fi = FixedImporter({
             'my' : 'a.b.c.Manager',
@@ -128,7 +139,8 @@ class TestFixedImporter(unittest.TestCase):
             managers, errors = fi.load()
 
         meth_import.assert_called_once_with( 'a.b.c.Manager')
-        self.assertEqual( managers, [ ManagerImport( meth_import.return_value, 'my', {}) ])
+        self.assertEqual( managers, [ ManagerImport( meth_import.return_value, 'my', Conf()) ])
+        self.assertTrue( isinstance( managers[0].config, Conf))
 
     def test_fixed_importer_error(self):
         fi = FixedImporter({
@@ -243,7 +255,10 @@ class TestAutoImporter(unittest.TestCase):
             'name' : 'my_manager',
             'configure' : mock.MagicMock( __doc__='{ "a : 1 }')
             })
-        self.assertEqual( self.ai.get_config_from( mgr), {} )
+
+        conf = self.ai.get_config_from( mgr)
+        self.assertEqual( conf, {})
+        self.assertTrue( isinstance( conf, Conf))
 
 
 class TestRelatedImporter(unittest.TestCase):

@@ -18,6 +18,7 @@ import collections
 import json
 
 from napixd.managers import Manager
+from napixd.conf import Conf
 
 __all__ = ( 'Loader', 'Importer',
     'FixedImporter', 'ConfImporter', 'AutoImporter', 'RelatedImporter',
@@ -223,7 +224,10 @@ class FixedImporter(Importer):
             try:
                 manager, conf = spec
             except ValueError:
-                manager, conf = spec, {}
+                manager, conf = spec, Conf()
+            else:
+                if not isinstance( conf, Conf):
+                    conf = Conf( conf)
 
             logger.info('Import fixed %s', manager)
             try:
@@ -331,11 +335,11 @@ class AutoImporter(Importer):
         try:
             doc_string = manager.configure.__doc__
             if doc_string:
-                return json.loads( doc_string)
+                return Conf( json.loads( doc_string))
         except ( ValueError, AttributeError) as e:
             logger.debug( 'Auto configuration of %s from docstring failed because %s', manager, e)
 
-        return {}
+        return Conf({})
 
 
 class RelatedImporter(Importer):
