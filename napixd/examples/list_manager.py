@@ -11,11 +11,13 @@ class HostManager(DictManager):
     resource_fields = {
             'hostnames':{
                 'description':'List of hostname resolving to that IP',
-                'example':['localhost','localhost.localdomain']
+                'example':['localhost','localhost.localdomain'],
+                'type' : list,
                 },
             'ip':{
                 'description':'IP of the host',
-                'example':'127.0.0.1'
+                'example':'127.0.0.1',
+                'type' : str,
                 }
             }
     def list_resource_filter(self, filters):
