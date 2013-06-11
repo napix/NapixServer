@@ -83,11 +83,18 @@ Default options:
 Non-default:
     notify:     Enable the notification thread
     silent:     Do not show the messages in the console
+    verbose:    Augment the ouptut of the loggers
     debug:      Run the DEBUG mode
     print_exc:  Show the exceptions in the console output
     rocket:     Use Rocket as the server
     times:      Add custom header to show the running time and the total time
-    pprint      Enable pretty printing of output
+    pprint:     Enable pretty printing of output
+    cors:       Add Cross-Site Request Service headers
+
+Meta-options:
+    only:       Disable default options
+    help:       Show this message and quit
+    options:    Show the enabled options and quit
         '''
     def __init__(self, options):
         nooptions = [ opt[2:] for opt in options if opt.startswith('no') ]
