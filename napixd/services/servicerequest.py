@@ -50,13 +50,15 @@ class ServiceRequest(object):
             elif meta.get('optional',False) or meta.get('computed',False):
                 continue
             else:
-                raise ValidationError, 'Missing argument `%s`' % key
+                raise ValidationError({ key : u'Missing argument `{0}`'.format( key) })
             if 'unserializer' in meta:
                 value = meta['unserializer'](value)
             if 'type' in meta:
                 if not isinstance( value, meta['type']):
-                    raise ValidationError, 'key %s is not of type %s but type %s' %(
+                    raise ValidationError({
+                        key : u'Bad type: {0} has type {2} but should be {1}'.format(
                             key, meta['type'].__name__, type(value).__name__)
+                        })
             data[key] = value
         data = self.manager.validate(data)
         return data
@@ -120,7 +122,7 @@ class ServiceRequest(object):
             self.end_request()
             return self.serialize(result)
         except ValidationError,e:
-            raise bottle.HTTPError(400,str(e))
+            raise bottle.HTTPError(400, dict(e) )
         except NotFound,e:
             raise bottle.HTTPError(404,'`%s` not found'%str(e))
         except Duplicate,e:
@@ -266,8 +268,8 @@ class ServiceActionRequest(ServiceResourceRequest):
         callback = getattr(self.manager, self.action_name)
         supplied = set(bottle.request.data.keys())
         if not supplied.issuperset(callback.mandatory):
-            raise ValidationError, 'missing mandatory parameters %s'%(
-                    ','.join(set(callback.mandatory ).difference( supplied)))
+            missing_keys = set(callback.mandatory ).difference( supplied)
+            raise ValidationError(dict( ( key, 'Missing key') for key in missing_keys ))
         data = {}
         for key in callback.all_parameters.intersection(supplied):
             data[key] = bottle.request.data[key]

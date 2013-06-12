@@ -14,7 +14,25 @@ class ValidationError(Exception):
     """
     Thrown when a validation fails on a element submitted by the user
     """
-    pass
+    def __init__( self, error=''):
+        if isinstance( error, ValidationError):
+            error = dict( error)
+        elif isinstance( error, Exception):
+            error = unicode( error)
+
+        if isinstance( error, dict):
+            self.errors = error
+            error = ''
+        else:
+            self.errors = { '_napix_' : error }
+
+        super( ValidationError, self).__init__( error )
+
+    def __iter__(self):
+        return iter( self.errors.items())
+
+
+
 
 class NotFound(Exception):
     """

@@ -348,10 +348,17 @@ class Manager(object):
                 if "optional" in description:
                     continue
                 else:
-                    raise ValidationError("Field %s is missing in the supplied resource"%key)
+                    raise ValidationError({
+                        key : u'Field {0} is missing in the supplied resource'.format( key)
+                        })
             validator = getattr(self, 'validate_resource_%s'%key,None)
             if validator:
-                value = validator( value)
+                try:
+                    value = validator( value)
+                except ValidationError, e:
+                    raise ValidationError({
+                        key : unicode(e)
+                        })
             target[key] = value
         target = self.validate_resource( target)
         return target

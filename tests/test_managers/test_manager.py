@@ -4,7 +4,8 @@
 import unittest2
 
 from napixd.managers import Manager
-from tests.mock.manager import Words,ValidationError,NotFound
+from napixd.exceptions import ValidationError, NotFound
+from tests.mock.manager import Words
 
 class TestManager(unittest2.TestCase):
     def setUp(self):
@@ -51,17 +52,22 @@ class TestManager(unittest2.TestCase):
 class TestValidate( unittest2.TestCase):
     def testValidateMissingField(self):
         manager = Words()
-        with self.assertRaises( ValidationError):
+        with self.assertRaises( ValidationError) as error:
             manager.validate({
                 'letter_count' : 1
                 })
 
+        self.assertDictEqual( dict( error.exception), { 'name':  u'Field name is missing in the supplied resource' })
+
+
     def testValidateField(self):
         manager = Words()
-        with self.assertRaises( ValidationError):
+        with self.assertRaises( ValidationError) as error:
             manager.validate({
                 'name' : '_napix_pouet'
                 })
+
+        self.assertDictEqual( dict( error.exception), { 'name':  'Not word can start with _napix_' })
 
     def testValidateResource(self):
         manager = Words()
