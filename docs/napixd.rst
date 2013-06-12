@@ -116,10 +116,12 @@ napixd Package
 :mod:`wsgi` Module
 ------------------
 
-.. automodule:: napixd.wsgi
-    :members:
-    :undoc-members:
-    :show-inheritance:
+The napixd.wsgi module contains the WSGI application.
+
+.. data:: application
+
+   The napixd WSGI application.
+   The parameters are extracted from :data:`sys.argv`
 
 :mod:`conf` Module
 ------------------
