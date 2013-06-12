@@ -109,7 +109,11 @@ class BaseCollectionService(object):
         self.all_actions = list(self.collection.get_all_actions())
 
         self.resource_fields = dict( (x,dict(y)) for x,y in self.collection.resource_fields.items())
-        for field_meta in self.resource_fields.values():
+        for field, field_meta in self.resource_fields.items():
+            validation_method = getattr( self.collection, 'validate_resource_' + field, None)
+            if hasattr( validation_method, '__doc__'):
+                field_meta['validation'] = validation_method.__doc__
+
             for callable_ in ( 'unserializer', 'serializer', 'type'):
                 if callable_ in field_meta:
                     if field_meta[callable_] in ( str, basestring, unicode):
