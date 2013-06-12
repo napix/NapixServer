@@ -122,10 +122,47 @@ counter
     The default backend for counters
 
 
-The other keys
---------------
+Configuration of the managers
+=============================
 
-Every other key stored in the root of the configuration object are used for the managers.
+The configuration source of a manager depends on its :class:`loader<napixd.loader.Importer>`.
 
-The key of the mapping is the alias of the module
-and the value is the fully qualified name to the class.
+When the :class:`napixd.services.Service` instantiates a manager,
+it calls its :meth:`napixd.managers.base.Manager.configure` method with the configuration.
+The method is called with a :class:`napixd.conf.Conf` instance.
+
+Multiple services with the same Manager class can run with different configurations.
+
+
+Configuration of the submanagers
+--------------------------------
+
+The configuration of each sub-manager of a manager is found in its parent's configuration.
+The key is the name of the sub-manager.
+
+Example
+.......
+
+.. code-block:: python
+
+    class VHostManager( Manager):
+        managed_class = [ 'PasswordManagers' ]
+        name = 'vhost'
+        def configure( self, conf):
+            self.conf_dir = conf.get('conf_dir', '/etc/httpd' )
+            self.var_dir = conf.get('var_dir', '/var/www')
+    class PasswordManagers( Manager):
+        name = 'passwords'
+        def configure( self, conf):
+            self.min_pass_size = conf.get('min_pass_size', 8)
+
+.. code-block:: javascript
+
+   {
+        "conf_dir" : "/etc/apache.d",
+        "passwords" : {
+            "min_pass_size" : 5
+        }
+   }
+
+PasswordManagers is configured with **min_pass_size** = 5.

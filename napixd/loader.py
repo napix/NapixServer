@@ -58,6 +58,9 @@ Load = collections.namedtuple( 'Load', [ 'old_managers', 'managers', 'new_manage
 import_fn = __import__
 
 class NapixImportError( Exception):
+    """
+    Base Exception of loading errors.
+    """
     pass
 
 class ModuleImportError(NapixImportError):
@@ -243,6 +246,8 @@ class ConfImporter(Importer):
     Imports the manager as specified in the config file.:
 
     It refers to the :ref:`conf.napix.managers` to find the managers name.
+
+    The config of each manager is found in the :mod:`default configuration<napixd.conf>` of Napix.
     """
     def __init__( self, conf):
         super( ConfImporter, self).__init__()
@@ -284,6 +289,11 @@ class AutoImporter(Importer):
         return [ self.path ]
 
     def load( self):
+        """
+        Explore the path to find modules.
+
+        Any file with a ``.py`` extension is loaded.
+        """
         logger.debug( 'inspecting %s', self.path)
         managers, errors = [], []
         for filename in os.listdir(self.path):
@@ -299,6 +309,13 @@ class AutoImporter(Importer):
         return managers, errors
 
     def load_module( self, module_name):
+        """
+        Explore a module and search for :class:`napixd.managers.base.Manager` subclasses.
+        The method :meth:`~napixd.managers.base.Manager.detect` is called and
+        if it returns False, the manager is ignored.
+
+        The configuration is loaded from the docstring of the :meth:`~napixd.managers.base.Manager.configure`  method.
+        """
         try:
             module = self.import_module(module_name)
         except NapixImportError as e:
@@ -345,6 +362,10 @@ class AutoImporter(Importer):
 class RelatedImporter(Importer):
     """
     Imports the managed classes.
+
+    The *reference* parameter is a manager class.
+    The submanager classes are searched in the same module than the *reference* class
+    if the path does not contains ``.``
     """
     def __init__( self, reference):
         super( RelatedImporter, self).__init__()
@@ -367,10 +388,9 @@ class Loader( object):
     """
     Finds and keeps track of the managers.
 
-    The loader takes a list of tuples ( :class:`Importer`, arguments).
+    The loader takes a list of :class:`Importer` instances.
     Each time the loader runs a loading cycle,
-    it instanciates all the importers of the list with the given arguments.
-    Then it calls the :meth:`Importer.load` on each of them and gets
+    it calls the :meth:`Importer.load` on each of them and gets
     the managers and errors.
 
     The managers set is compared to the previous and a :class:`Load` object is created
@@ -384,6 +404,9 @@ class Loader( object):
         self._already_loaded = set()
 
     def get_paths(self):
+        """
+        List the paths to watch with :mod:`napixd.reload`
+        """
         paths = []
         for importer in self.importers:
             paths.extend( importer.get_paths())

@@ -3,6 +3,13 @@
 
 """
 The napix Configuration class.
+
+The Napix Configuration is a :class:`collections.MutableMapping`.
+Keys are accessible by their name, or their path.
+Their path are composed of each descendant joined by a ``.``.
+
+The defautl configuration is loaded from a JSON file :path:`NAPIXHOME/conf/settings.json`
+
 """
 
 
@@ -22,6 +29,18 @@ DEFAULT_CONF = os.path.join( os.path.dirname(__file__), 'settings.json' )
 _sentinel = object()
 
 class Conf(collections.MutableMapping):
+    """
+    Configuration Object
+
+    The configuration object are dict like values.
+
+    An access can span multiple keys
+
+    .. code-block:: python
+
+        c = Conf({ 'a': { 'b' : 1 }})
+        c.get('a.b) == 1
+    """
     _default = None
     def __init__(self, data=None):
         self.data = dict(data) if data else {}
@@ -43,6 +62,9 @@ class Conf(collections.MutableMapping):
 
     @classmethod
     def get_default(cls, value = None):
+        """
+        Get a value on the default conf instance.
+        """
         if cls._default is None:
             cls.make_default()
         if value is None:
@@ -52,6 +74,11 @@ class Conf(collections.MutableMapping):
 
     @classmethod
     def make_default(cls):
+        """
+        Load the configuration from the default file.
+
+        If the configuration file does not exists, a new configuration file is created.
+        """
         conf = None
         paths = iter( cls.paths)
         for path in paths:
@@ -133,6 +160,12 @@ class Conf(collections.MutableMapping):
         return  isinstance( other, collections.Mapping) and other.keys() == self.keys() and other.values() == self.values()
 
     def get( self, section_id, default_value=_sentinel):
+        """
+        Return the value pointed at **section_id**.
+
+        If the key does not exist, **default_value** is returned.
+        If default_value is left by default, an empty :class:`Conf` instance is returned.
+        """
         try:
             value = self[section_id]
         except (KeyError,ValueError):
@@ -155,6 +188,20 @@ class Conf(collections.MutableMapping):
 
     @contextmanager
     def force(self, param, value):
+        """
+        Forces the param to be set to value for the duration of the context manager.
+
+        .. warning::
+
+            This method is meant to be used in testing/debug and not in production
+
+        >>> c = Conf({ 'a' : 1 })
+        >>> with c.force( 'a', 2):
+        >>>     c.get('a')
+        2
+        >>> c.get('a')
+        1
+        """
         old_value = self.get( param)
         self._set( param, value)
         yield
