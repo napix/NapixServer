@@ -255,10 +255,7 @@ class BaseCollectionService(object):
 
     def as_help( self, path):
         manager = self.collection
-        if 'human' in bottle.request.GET:
-            bottle.redirect( self.as_help_human_path() )
         return {
-                'human' : self.as_help_human_path(),
                 'doc' : (manager.__doc__ or '').strip(),
                 'direct_plug' : self.direct_plug,
                 'views' : dict( (format_, (cb.__doc__ or '').strip())
@@ -270,8 +267,6 @@ class BaseCollectionService(object):
                 'resource_methods' : ServiceResourceRequest.available_methods(manager),
                 'resource_fields' : self.resource_fields
                 }
-    def as_help_human_path( self):
-        return self.previous_service.as_help_human_path()
 
     def as_resource_fields(self,path):
         return self.resource_fields
@@ -296,10 +291,6 @@ class FirstCollectionService(BaseCollectionService):
     def setup_bottle( self, app):
         app.route( '/'+self.url, callback = self.noop)
         super( FirstCollectionService, self).setup_bottle(app)
-
-    def as_help_human_path(self):
-        return '/_napix_autodoc/%s.html' % self.url
-
 
 class CollectionService( BaseCollectionService):
     def __init__(self, previous_service, managed_class, config, namespace):
