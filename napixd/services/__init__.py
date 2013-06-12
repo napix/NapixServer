@@ -111,8 +111,10 @@ class BaseCollectionService(object):
         self.resource_fields = dict( (x,dict(y)) for x,y in self.collection.resource_fields.items())
         for field, field_meta in self.resource_fields.items():
             validation_method = getattr( self.collection, 'validate_resource_' + field, None)
-            if hasattr( validation_method, '__doc__'):
+            if hasattr( validation_method, '__doc__') and validation_method.__doc__ is not None:
                 field_meta['validation'] = validation_method.__doc__
+            else:
+                field_meta['validation'] = ''
 
             for callable_ in ( 'unserializer', 'serializer', 'type'):
                 if callable_ in field_meta:
