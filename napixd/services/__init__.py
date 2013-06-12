@@ -4,7 +4,7 @@
 import logging
 from urllib import quote
 
-import bottle
+import sys
 
 from napixd.conf import Conf
 from napixd.services.servicerequest import (ServiceCollectionRequest,
@@ -271,7 +271,12 @@ class BaseCollectionService(object):
                     for action in self.all_actions ),
                 'collection_methods' : ServiceCollectionRequest.available_methods(manager),
                 'resource_methods' : ServiceResourceRequest.available_methods(manager),
-                'resource_fields' : self.resource_fields
+                'resource_fields' : self.resource_fields,
+                'source' : {
+                    'class' : self.collection.__name__,
+                    'module' : self.collection.__module__,
+                    'file' : sys.modules[ self.collection.__module__].__file__,
+                    },
                 }
 
     def as_resource_fields(self,path):
