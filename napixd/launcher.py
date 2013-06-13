@@ -18,7 +18,10 @@ def launch(options, setup_class=None):
     sys.stdin.close()
     try:
         setup = setup_class(options)
-    except Exception, e:
+    except CannotLaunch as e:
+        logger.critical( e)
+        return
+    except Exception as e:
         logger.exception( e)
         logger.critical( e)
         return
@@ -112,8 +115,12 @@ Meta-options:
         console.info( 'Logging activity in %s', self.LOG_FILE )
 
         if 'gevent' in self.options:
-            from gevent.monkey import patch_all
-            patch_all()
+            try:
+                from gevent.monkey import patch_all
+            except ImportError:
+                raise CannotLaunch( u'Gevent is not installed, maybe use *nogevent* option')
+            else:
+                patch_all()
 
 
     def run( self):
