@@ -17,7 +17,7 @@ class HostManager(DictManager):
             'ip':{
                 'description':'IP of the host',
                 'example':'127.0.0.1',
-                'type' : str,
+                'type' : unicode,
                 }
             }
     def list_resource_filter(self, filters):
