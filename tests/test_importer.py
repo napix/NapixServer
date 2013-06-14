@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import unittest
+import imp
 import mock
 
 from napixd.managers import Manager
@@ -194,10 +195,35 @@ class TestAutoImporter(unittest.TestCase):
     def test_get_paths(self):
         self.assertEqual( self.ai.get_paths(), [ '/a/b' ])
 
+    def test_import_module_error(self):
+        with mock.patch( 'napixd.loader.imp') as pimp:
+            pimp.load_module.side_effect=  SyntaxError();
+
+            with mock.patch( 'napixd.loader.open') as Open:
+                open = Open.return_value
+                open.__enter__.return_value = open
+                self.assertRaises( ModuleImportError, self.ai.import_module, 'b.py')
+
+
+    def test_import_module(self):
+        with mock.patch( 'napixd.loader.imp') as pimp:
+            with mock.patch( 'napixd.loader.open') as Open:
+                open = Open.return_value
+                open.__enter__.return_value = open
+                self.ai.import_module( 'b.py')
+
+        pimp.load_module.assert_called_once_with(
+                'napixd.auto.b',
+                open,
+                '/a/b/b.py',
+                ( 'py', 'U', pimp.PY_SOURCE)
+                )
+
     def test_auto_importer(self):
         module = mock.MagicMock(
                 spec=object(),
                 __all__ = ( 'A', 'B' ,'C' ),
+                __name__ = 'napixd.auto.module',
                 A=object(),
                 B=type( 'Manager', (Manager, ), {
                     'name' : 'my_manager',
@@ -208,11 +234,11 @@ class TestAutoImporter(unittest.TestCase):
             with mock.patch.object( self.ai, 'import_module', return_value=module) as meth_import:
                 modules, errors = self.ai.load()
 
-        meth_import.assert_called_once_with( 'b')
+        meth_import.assert_called_once_with( 'b.py')
         self.assertEqual( modules, [ ManagerImport( module.B, 'my_manager', { 'a' : 1 }) ])
         self.assertEqual( len( errors), 1)
         error = errors[0]
-        self.assertEqual( error.module, 'b')
+        self.assertEqual( error.module, 'napixd.auto.module')
 
     def test_auto_importer_mod_error(self):
         error = ModuleImportError( 'b', ImportError())
@@ -224,6 +250,7 @@ class TestAutoImporter(unittest.TestCase):
 
     def test_auto_importer_no_detect(self):
         module = mock.MagicMock(
+                __name__ = 'napixd.auto.module',
                 spec=object(),
                 B=type( 'Manager', (Manager, ), { 'detect' : mock.Mock( return_value=False ) }),
                 )
@@ -236,6 +263,7 @@ class TestAutoImporter(unittest.TestCase):
 
     def test_auto_importer_detect_error(self):
         module = mock.MagicMock(
+                __name__ = 'napixd.auto.module',
                 spec=object(),
                 B=type( 'Manager', (Manager, ), { 'detect' : mock.Mock( side_effect=ValueError('oops') ) }),
                 )
@@ -246,7 +274,7 @@ class TestAutoImporter(unittest.TestCase):
         self.assertEqual( modules, [])
         self.assertEqual( len( errors), 1)
         error = errors[0]
-        self.assertEqual( error.module, 'b')
+        self.assertEqual( error.module, 'napixd.auto.module')
         self.assertEqual( error.manager, 'B')
         self.assertTrue( isinstance( error.cause, ValueError))
 

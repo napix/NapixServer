@@ -10,6 +10,7 @@ for the duration of the server.
 It uses :class:`Importer` subclasses to find the its managers.
 """
 
+import imp
 import logging
 import sys
 import time
@@ -56,6 +57,7 @@ ManagerError = collections.namedtuple( 'ManagerError', ( 'manager', 'alias', 'ca
 Load = collections.namedtuple( 'Load', [ 'old_managers', 'managers', 'new_managers', 'error_managers'])
 
 import_fn = __import__
+open = open
 
 class NapixImportError( Exception):
     """
@@ -294,21 +296,43 @@ class AutoImporter(Importer):
 
         Any file with a ``.py`` extension is loaded.
         """
+        import napixd.auto
         logger.debug( 'inspecting %s', self.path)
         managers, errors = [], []
         for filename in os.listdir(self.path):
-            if filename.startswith('.'):
-                continue
-            module_name, dot, py = filename.rpartition('.')
-            if not dot or py != 'py':
+            if filename.startswith('.') or not filename.endswith('.py'):
                 continue
 
-            managers_, errors_ = self.load_module( module_name)
+            try:
+                module = self.import_module( filename)
+            except NapixImportError as e:
+                logger.warning( 'Failed to import %s from autoload: %s', filename, str(e))
+                errors.append( e)
+                continue
+
+            managers_, errors_ = self.load_module( module)
             managers.extend( managers_)
             errors.extend( errors_)
         return managers, errors
 
-    def load_module( self, module_name):
+    def import_module( self, filename):
+        module_name, x = filename.split('.')
+        path = os.path.join( self.path, filename)
+
+        name = 'napixd.auto.' + module_name
+        with open( path, 'U') as handle:
+            try:
+                module = imp.load_module(
+                        name,
+                        handle,
+                        path,
+                        ( 'py', 'U', imp.PY_SOURCE),
+                        )
+            except ( Exception, ImportError) as e:
+                raise ModuleImportError( name, e)
+        return module
+
+    def load_module( self, module):
         """
         Explore a module and search for :class:`napixd.managers.base.Manager` subclasses.
         The method :meth:`~napixd.managers.base.Manager.detect` is called and
@@ -316,11 +340,6 @@ class AutoImporter(Importer):
 
         The configuration is loaded from the docstring of the :meth:`~napixd.managers.base.Manager.configure`  method.
         """
-        try:
-            module = self.import_module(module_name)
-        except NapixImportError as e:
-            logger.warning( 'Failed to import %s from autoload: %s', module_name, str(e))
-            return [], [ e ]
 
         managers, errors = [], []
         content = getattr( module, '__all__', False) or dir( module)
@@ -328,7 +347,7 @@ class AutoImporter(Importer):
             try:
                 obj = getattr(module, manager_name)
             except AttributeError as e:
-                errors.append( ManagerImportError( module_name, manager_name, e))
+                errors.append( ManagerImportError( module.__name__, manager_name, e))
                 continue
 
             if not isinstance( obj, type) or not issubclass( obj, Manager):
@@ -337,14 +356,14 @@ class AutoImporter(Importer):
             try:
                 detect= obj.detect()
             except Exception as e:
-                logger.error( 'Error while running detect of manager %s.%s', module_name, manager_name)
-                errors.append( ManagerImportError( module_name, manager_name, e))
+                logger.error( 'Error while running detect of manager %s.%s', module.__name__, manager_name)
+                errors.append( ManagerImportError( module.__name__, manager_name, e))
                 continue
 
             if detect:
                 managers.append( ManagerImport( obj, obj.get_name(), self.get_config_from( obj)))
             else:
-                logger.info('Manager %s.%s not detected', module_name, manager_name)
+                logger.info('Manager %s.%s not detected', module.__name__, manager_name)
 
         return managers, errors
 
