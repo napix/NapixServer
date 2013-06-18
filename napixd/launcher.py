@@ -112,7 +112,11 @@ Meta-options:
         console.info( 'Logging activity in %s', self.LOG_FILE )
 
         if 'gevent' in self.options:
-            from gevent.monkey import patch_all
+            try:
+                from gevent.monkey import patch_all
+            except ImportError, e:
+                console.error("Cannot import gevent lib. Try to install it, or run napix with `nogevent` parameter")
+                sys.exit(1)
             patch_all()
 
 
