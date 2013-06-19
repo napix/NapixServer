@@ -12,9 +12,10 @@ from napixd.services.servicerequest import (ServiceCollectionRequest,
 from napixd.services.plugins import ArgumentsPlugin
 
 """
-The service class ack like a proxy between bottle and napix resource Manager Component.
+The service class is the interface between napix and Bottle.
 
-It handles bottle registering, url routing and Manager configuration when needed.
+The service plug itself in the url router of Bottle, and will instanciate the
+appropriate Napix Manager to handle the request.
 """
 logger = logging.getLogger('Napix.service')
 
@@ -28,7 +29,11 @@ class Service(object):
     """
     def __init__(self, collection, namespace = None, configuration = None ):
         """
-        Create a base service for the given collection and its managed classes.
+        Create a base service for the given collection (a Manager object) and its
+        submanager.
+        namespace is the manager name (could be forced in conf)
+        configuration parameters is the manager's config read from config file
+        FIXME : remplacer collection par manager dans le code PARTOUT
         collection MUST be a Manager subclass and configuration an instance of Conf
         for this collection
         """
@@ -44,6 +49,10 @@ class Service(object):
         self.collection_services.append(service)
 
     def make_collection_service( self, previous_service, managed_class, namespace ):
+        """
+        Called from create_collection as a recursive method to collect all submanager
+        of the root manager we want to manager with this service.
+        """
         config_key = '{0}.{1}'.format( previous_service.get_name(), namespace or managed_class.get_name() )
         service = CollectionService(
                 previous_service,
@@ -54,6 +63,8 @@ class Service(object):
         self.create_collection_service( managed_class.manager_class, service)
 
     def create_collection_service(self, collection, previous_service ):
+        # test if direct_plug is defined (to either True or False)
+        # if it's not then we don't have any managed class
         if collection.direct_plug() != None:
             for managed_class in collection.get_managed_classes():
                 self.make_collection_service(
@@ -71,6 +82,10 @@ class Service(object):
 
 class BaseCollectionService(object):
 
+    """
+    Abstract class used by FirstCollectionService and CollectionService
+    """
+
     collection_request_class = ServiceCollectionRequest
     resource_request_class = ServiceResourceRequest
 
@@ -81,7 +96,6 @@ class BaseCollectionService(object):
         previous_service is an instance of CollectionService that serve the Manager class below.
         previous_service is None when it's the base collection being served.
         config is the instance of Conf for this Service.
-        append_url is a boolean that add the URL token between the previous and this service.
         """
         self.previous_service = previous_service
         self.collection = collection
@@ -300,6 +314,7 @@ class FirstCollectionService(BaseCollectionService):
         return self._cache
 
     def setup_bottle( self, app):
+        # Nasty hack so /manager return a 200 response even if it don't act like a resource
         app.route( '/'+self.url, callback = self.noop)
         super( FirstCollectionService, self).setup_bottle(app)
 

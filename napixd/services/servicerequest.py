@@ -11,7 +11,7 @@ from napixd.services.methods import Implementation
 
 class ServiceRequest(object):
     """
-    ServiceRequest is an abstract class that is created to serve a single request.
+    ServiceRequest is an abstract class created to serve a single request.
     """
     def __init__(self,path,service):
         """
@@ -65,15 +65,17 @@ class ServiceRequest(object):
 
     def get_manager(self):
         """
-        Récupere la collection correspondante à la requete
+        Retreive the manager associated with the current request
         """
         self.all_managers, manager = self.service.get_managers(self.path)
         return manager
 
     def get_callback(self):
         """
-        recupere la callback de manager
-        Si elle n'est pas disponible renvoie une erreur 405 avec les methodes possibles
+        Retreive the method we'll call using self.METHOD_MAP and the user input
+        (ie the HTTP method used on the ressource)
+
+        Return 405 if the request is not implemented.
         """
         try:
             return getattr( self.manager,self.METHOD_MAP[self.method])
