@@ -18,7 +18,10 @@ def launch(options, setup_class=None):
     sys.stdin.close()
     try:
         setup = setup_class(options)
-    except Exception, e:
+    except CannotLaunch as e:
+        logger.critical( e)
+        return
+    except Exception as e:
         logger.exception( e)
         logger.critical( e)
         return
@@ -115,8 +118,8 @@ Meta-options:
             try:
                 from gevent.monkey import patch_all
             except ImportError, e:
-                console.error("Cannot import gevent lib. Try to install it, or run napix with `nogevent` parameter")
-                sys.exit(1)
+                raise CannotLaunch(u'Cannot import gevent lib. Try to install it, or run napix with *nogevent* option')
+
             patch_all()
 
 
