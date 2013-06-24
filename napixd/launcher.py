@@ -3,6 +3,7 @@
 
 
 import logging
+import logging.handlers
 import os
 import sys
 
@@ -290,7 +291,11 @@ Meta-options:
     def set_loggers(self):
         formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
 
-        self.log_file = file_handler = logging.FileHandler( self.LOG_FILE, mode='a')
+        self.log_file = file_handler = logging.handlers.RotatingFileHandler(
+                self.LOG_FILE,
+                maxBytes=5 * 10**6,
+                backupCount=10,
+                )
         file_handler.setLevel( logging.INFO)
         file_handler.setFormatter( formatter)
 
@@ -304,10 +309,11 @@ Meta-options:
 
         console_handler.setFormatter( formatter)
 
-        logging.getLogger('Rocket').addHandler( file_handler)
-        logging.getLogger('Rocket').setLevel( logging.DEBUG )
-        logging.getLogger('Rocket.Errors').setLevel(logging.DEBUG)
-        logging.getLogger('Rocket.Errors.ThreadPool').setLevel(logging.INFO)
+        if 'rocket' in self.options:
+            logging.getLogger('Rocket').addHandler( file_handler)
+            logging.getLogger('Rocket').setLevel( logging.DEBUG )
+            logging.getLogger('Rocket.Errors').setLevel(logging.DEBUG)
+            logging.getLogger('Rocket.Errors.ThreadPool').setLevel(logging.INFO)
 
         logging.getLogger('Napix').setLevel( logging.DEBUG )
         logging.getLogger('Napix').addHandler( console_handler )
