@@ -126,7 +126,7 @@ class BaseCollectionService(object):
         for field, field_meta in self.resource_fields.items():
             validation_method = getattr( self.collection, 'validate_resource_' + field, None)
             if hasattr( validation_method, '__doc__') and validation_method.__doc__ is not None:
-                field_meta['validation'] = validation_method.__doc__
+                field_meta['validation'] = validation_method.__doc__.strip()
             else:
                 field_meta['validation'] = ''
 
