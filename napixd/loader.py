@@ -420,7 +420,6 @@ class Loader( object):
         self.managers = set()
         self.errors = set()
         self.timestamp = 0
-        self._already_loaded = set()
 
     def get_paths(self):
         """
@@ -469,13 +468,17 @@ class Loader( object):
         self.timestamp = time.time()
         return Load( old_managers, managers, new_managers, errors)
 
-    def setup( self, manager):
+    def setup(self, manager):
+        return self._setup( manager, set())
+
+    def _setup( self, manager, _already_loaded):
         """
         Loads the managed classes of a manager
         """
-        if manager in self._already_loaded:
+
+        if manager in _already_loaded:
             raise ManagerImportError( manager.__module__, manager, ValueError('Circular dependency'))
-        self._already_loaded.add( manager)
+        _already_loaded.add( manager)
 
         if manager.direct_plug() is not None:
             importer = RelatedImporter( manager)
@@ -483,7 +486,7 @@ class Loader( object):
             if errors:
                 raise ManagerImportError( manager.__module__, manager, errors[0])
             for managed_class in managed_classes:
-                self.setup( managed_class)
+                self._setup( managed_class, _already_loaded)
 
         return manager
 
