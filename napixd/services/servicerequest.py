@@ -231,7 +231,7 @@ class ServiceResourceRequest(ServiceRequest):
         if result is None or result is response:
             return response
         else:
-            return result
+            return bottle.HTTPResponse( result, header=response.headers)
 
     def default_formatter(self, value):
         resp = self.manager.serialize( value )

@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 import unittest2
 import mock
+import bottle
 
 from napixd.conf import Conf
 from napixd.http import Response
@@ -35,6 +36,7 @@ class _TestManagerView(_TestDecorators):
 
         @view('object')
         def as_object( self, id, resource, response):
+            response.set_header('x-my-header', 'oh-snap')
             return { 'a' : 1 }
         self.as_object = as_object
 
@@ -74,7 +76,9 @@ class TestServiceView( _TestServiceView):
         with mock.patch( 'bottle.request', method='GET', GET={ 'format': 'object' }):
             self.srr = ServiceResourceRequest([ 'p1', 'c2' ], self.cs)
             resp = self.srr.handle()
-        self.assertEqual( resp, { 'a': 1})
+        self.assertIsInstance( resp, bottle.HTTPResponse)
+        self.assertEqual( resp.body, { 'a': 1})
+        self.assertEqual( resp.headers['x-my-header'], 'oh-snap')
 
     def test_call_serializer(self):
         with mock.patch( 'bottle.request', method='GET', GET={ 'format': 'text' }):
