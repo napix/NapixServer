@@ -232,11 +232,12 @@ Meta-options:
 
         if 'notify' in self.options:
             from napixd.notify import Notifier
-            if not Conf.get_default('Napix.notify.url'):
+            conf = Conf.get_default('Napix.notify')
+            if not 'url' in conf:
                 raise CannotLaunch('Notifier has no configuration options')
 
             logger.info('Set up notifier')
-            notifier = Notifier(napixd)
+            notifier = Notifier(napixd, conf)
             notifier.start()
 
         return napixd

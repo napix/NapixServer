@@ -18,19 +18,20 @@ from napixd.guid import uid
 logger = logging.getLogger('Napix.notifications')
 
 class Notifier(object):
-    def __init__( self, app, delay=None ):
+    def __init__( self, app, conf, delay=None ):
         self.app = app
-        self._alive = False
 
-        post_url = Conf.get_default( 'Napix.notify.url')
+        post_url = conf.get( 'url')
         post_url_bits = urlparse.urlsplit( post_url )
         self.post_url = post_url_bits.path
 
-        self.client = Client( post_url_bits.netloc, Conf.get_default( 'Napix.notify.credentials'))
+        credentials = conf.get( 'credentials')
+        self.client = Client( post_url_bits.netloc, credentials)
         self.put_url = None
 
-        self.delay = delay or Conf.get_default('Napix.notify.delay') or 300
-        logger.info( 'Notify on %s every %ss', self.post_url, self.delay)
+        self.delay = delay or conf.get('delay') or 300
+        logger.info( 'Notify on %s%s as %s every %ss', post_url_bits.netloc,
+                self.post_url, credentials.get('login', '<anon>'), self.delay)
         if self.delay < 1:
             logger.warning( 'Notification delay is below 1s, the minimum rate is 1s')
             self.delay = 1
