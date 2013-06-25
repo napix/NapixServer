@@ -34,10 +34,6 @@ class Client( object):
         self.noauth = noauth
         self.credentials = credentials
         self.key = str( credentials.get('key'))
-        self.connect();
-
-    def connect(self):
-        self.client = httplib.HTTPConnection(self.host)
 
     def request(self, method, url, body, headers_=None):
         headers = dict( self.HEADERS)
@@ -49,18 +45,18 @@ class Client( object):
             url += 'noauth'
         elif self.credentials:
             headers['Authorization'] = self._get_authorization( method, url)
-        
+
+        client = httplib.HTTPConnection(self.host)
         try:
-            logger.info('Start request %s%s', self.host, url)
-            self.client.request( method, url, 
+            logger.debug('Start request %s%s', self.host, url)
+            client.request( method, url,
                     body = json.dumps( body), headers = headers)
-            resp = self.client.getresponse()
+            resp = client.getresponse()
             resp.read()
-            logger.info('End request %s%s', self.host, url)
+            logger.debug('End request %s%s', self.host, url)
             return resp
         except socket.error:
             logger.error( 'Socket error, reconnecting')
-            self.connect()
         except Exception, e:
             logger.error( 'Request failed "%s"', repr(e))
             return None
