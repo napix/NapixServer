@@ -12,13 +12,14 @@ from napixd.services.servicerequest import ServiceResourceRequest
 from napixd.managers.base import ManagerType, Manager
 from napixd.managers.views import view, content_type
 
-class TestDecorators( unittest2.TestCase):
+class _TestDecorators( unittest2.TestCase):
     def setUp(self):
         @view('text')
         def as_text( self, id, resource, response):
             response.write('oh snap')
         self.fn = as_text
 
+class TestDecorators( _TestDecorators):
     def test_set_view(self):
         self.assertEqual( self.fn._napix_view, 'text')
 
@@ -28,15 +29,27 @@ class TestDecorators( unittest2.TestCase):
         as_text( None, None, None, resp)
         resp.set_header.assert_called_once_with( 'Content-Type', 'application/pip+pampoum')
 
-class TestManagerView(TestDecorators):
+class _TestManagerView(_TestDecorators):
     def setUp(self):
-        super( TestManagerView, self).setUp()
+        super( _TestManagerView, self).setUp()
+
+        @view('object')
+        def as_object( self, id, resource, response):
+            return { 'a' : 1 }
+        self.as_object = as_object
+
         self.manager = ManagerType( 'NewManager', ( Manager, ), {
             'as_text': self.fn,
+            'as_object': as_object,
             'get_resource' : mock.Mock(spec=True, return_value={ 'mpm': 'prefork' }),
             })
+
+class TestManagerView( _TestManagerView):
     def test_class_with_views(self):
-        self.assertDictEqual( self.manager.get_all_formats(), { 'text' : self.fn })
+        self.assertDictEqual( self.manager.get_all_formats(), {
+            'text' : self.fn,
+            'object': self.as_object,
+            })
 
     def test_class_with_inheritance(self):
         @view('xml')
@@ -48,12 +61,20 @@ class TestManagerView(TestDecorators):
 
         self.assertDictEqual( other_manager.get_all_formats(), {
             'text' : self.fn,
+            'object': self.as_object,
             'xml' : as_xml,
             })
-class TestServiceView( TestManagerView):
+class _TestServiceView( _TestManagerView):
     def setUp( self):
-        super( TestServiceView, self).setUp()
+        super( _TestServiceView, self).setUp()
         self.cs = FirstCollectionService( self.manager, Conf(), 'child')
+
+class TestServiceView( _TestServiceView):
+    def test_call_serializer_custom_object(self):
+        with mock.patch( 'bottle.request', method='GET', GET={ 'format': 'object' }):
+            self.srr = ServiceResourceRequest([ 'p1', 'c2' ], self.cs)
+            resp = self.srr.handle()
+        self.assertEqual( resp, { 'a': 1})
 
     def test_call_serializer(self):
         with mock.patch( 'bottle.request', method='GET', GET={ 'format': 'text' }):
