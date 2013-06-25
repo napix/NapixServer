@@ -18,11 +18,20 @@ class HostManager(DictManager):
                 'description':'IP of the host',
                 'example':'127.0.0.1',
                 'type' : unicode,
+                'display_order' : 10,
                 }
             }
     def list_resource_filter(self, filters):
         ips = filters.getall( 'ip')
         return set( self.resources.keys()).intersection(ips)
+
+    def validate_resource_hostnames( self, hostname):
+        """
+        Check that the hostname are a list of strings
+        """
+        if not all( isinstance( x, unicode) for x in hostname ):
+            raise ValidationError('hostname must be a list of strings')
+        return hostname
 
     def validate_resource_ip(self,proposed_ip):
         """

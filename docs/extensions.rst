@@ -182,7 +182,7 @@ Implementing the view
 If the manager implements a view, this view is requested with the
 ``format`` GET parameter::
 
-    $ curl -X GET 'localhost:8002/hosts/localhost&format=png' -D /dev/stderr
+    $ curl -X GET 'localhost:8002/hosts/localhost?format=png' -D /dev/stderr
     HTTP/1.1 406 Not Acceptable
     Content-Length: 18
     Content-Type: text/plain
@@ -259,6 +259,6 @@ Now the server has a format, it does not return anything yet::
         #does not return anything, the response object will be sent.
 
 
-The url localhost:8002/hosts/localhost?authok&format=png produces the following picture:
+The url localhost:8002/hosts/localhost?format=png produces the following picture:
 
 .. image:: /images/localhost.png
