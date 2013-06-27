@@ -18,6 +18,23 @@ Manager are created by the corresponding resource
 """
 
 class ManagerType(type):
+    """
+    Metaclass to create manager classes.
+
+    It does 2 things:
+
+    resource_fields transformation
+    ==============================
+
+    It instanciates a :class:`resource_fields.ResourceFields` property for the `Manager.resource_fields` attribute.
+
+
+    Forwarding of :mod:`actions` and :mod`views`
+    ============================================
+
+    The :func:`actions.action` and :func:`views.view` of the base classes are forwarded in the newly created class.
+
+    """
     def __new__( self, name, bases, attrs):
         try:
             rf = attrs.pop( 'resource_fields')
@@ -94,13 +111,34 @@ class ManagerType(type):
         return managed_classes
 
     def direct_plug( self ):
+        """
+        Direct plug describe how the sub-managers are linked from this one.
+
+        It can one of ``None`` when there is no sub-manager,
+        ``True`` when there is only one sub-manager and its name is not inserted bewteen eg ( ``/mgr1/<id1>/<id2>`` ),
+        or ``False`` when the name of the manager is bewteen the ids eg ( ``/mgr1/<id1>/sub/<id2>`` )
+
+        """
         return self._direct_plug
 
     def get_managed_classes(self):
+        """
+        List the managed classes of this manager.
+
+        It is always a list.
+        """
         return self._managed_class
     def get_all_actions(self):
+        """
+        Returns the list of UnboundMethods of all the action implemented by this class.
+        """
         return self._all_actions
     def get_all_formats(self):
+        """
+        Returns the dict of the formats implemented by this class.
+
+        The keys are the name of the views and the values are the corresponding methods.
+        """
         return self._all_formats
 
 class Manager(object):
@@ -224,6 +262,15 @@ class Manager(object):
         [ "section1" , "section2"]
         #Parser was passed to list_resource through parent
 
+    .. attribute:: resource_fields
+
+        The fields of the resources
+
+        Each manager must declare the fields of the resources it generates.
+        The resource_fields must be a :class:`dict`.
+        The keys are the name of the fields and the values are
+        dicts that are transformed to :class:`napixd.managers.resource_fields.ResourceField`
+
     .. method:: validate_resource_FIELDNAME
 
         Validate the content of the field ``FIELDNAME``
@@ -232,6 +279,7 @@ class Manager(object):
 
             validate_resource_FIELDNAME does not actually exists.
             FIELDNAME have to be replace by an actual field of :attr:`resource_fields`
+
     """
 
     __metaclass__ = ManagerType

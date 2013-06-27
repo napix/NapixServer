@@ -57,3 +57,11 @@ managers Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`resource_fields` Module
+------------------
+
+.. automodule:: napixd.managers.resource_fields
+    :members:
+    :undoc-members:
+    :show-inheritance:
+

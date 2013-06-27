@@ -31,3 +31,9 @@ Resources
 
 Resources are objects managed in Napix.
 They behave like dictionaries.
+
+
+Resources fields
+================
+
+All Napix Managers declare their :class:`~napixd.managers.base.Manager.resource_fields`.

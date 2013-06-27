@@ -1,11 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+ResourceFields is the property class of managers' resource_field.
+
+It makes the documentation and the poperty homogenous.
+"""
+
 import collections
 from napixd.exceptions import ImproperlyConfigured, ValidationError
 
-
 class ResourceFields( object):
+    """
+    The property object.
+
+    When accessing it as a class property, it returns a dict-like object of the resource_fields.
+
+    When it is accessed through a manager instance, it returns a :class:`ResourceFieldsDescriptor`.
+    """
     def __init__(self, resource_fields):
         self.values = [ ResourceField( name, meta) for name, meta in resource_fields.items() ]
 
@@ -15,6 +27,17 @@ class ResourceFields( object):
         return ResourceFieldsDescriptor( instance, self.values )
 
 class ResourceFieldsDict( collections.Mapping):
+    """
+    The class view of the resource_fields
+
+    It behaves as a dict.
+
+    The fields returned are a combination of the properties of the
+    :class:`ResourceField` and the :attr:`ResourceField.extra`
+    and the extra **validate** member extracted from
+    the corresponding :meth:`~napixd.managers.base.Manager.validate_resource_FIELDNAME`
+    if it exists.
+    """
     def __init__(self, manager_class, values):
         self.resource_fields = values
         self.values = {}
@@ -38,6 +61,11 @@ class ResourceFieldsDict( collections.Mapping):
         return iter( self.values)
 
     def get_example_resource(self):
+        """
+        Returns the example resource found with the :attr:`~ResourceField.example` field of the resource fields.
+
+        The :attr:`~ResourceField.computed` field are ignored.
+        """
         example = {}
         for field in self.resource_fields:
             if field.computed:
@@ -47,6 +75,11 @@ class ResourceFieldsDict( collections.Mapping):
 
 
 class ResourceFieldsDescriptor( collections.Sequence):
+    """
+    The instance view of resource_fields
+
+    This object manages the relations between a manager and its resource_fields.
+    """
     def __init__(self, manager, values):
         self.manager = manager
         self.values = values
@@ -58,6 +91,9 @@ class ResourceFieldsDescriptor( collections.Sequence):
         return len(self.values)
 
     def serialize(self, raw):
+        """
+        Prepare the data from **raw** to be serialized to JSON.
+        """
         dest = {}
         for k in self.values:
             try:
@@ -69,6 +105,9 @@ class ResourceFieldsDescriptor( collections.Sequence):
         return dest
 
     def unserialize(self, raw):
+        """
+        Extract the data from **raw**.
+        """
         dest = {}
         for k in self:
             try:
@@ -80,6 +119,21 @@ class ResourceFieldsDescriptor( collections.Sequence):
         return dest
 
     def validate(self, input, for_edit=False):
+        """
+        Validate the **input**.
+        If **for_edit** is set to True, the *input* is validated as the modification of an existing resource.
+
+        Field are ignored and remove from *input* if
+
+        * The property :attr:`ResourceField.computed` is set.
+        * The property :attr:`ResourceField.editable` is not set and **for_edit** is True.
+
+        A :exc:`napixd.exceptions.ValidationError` is raised when
+
+        * A field is missing and is :attr:`ResourceField.required`.
+        * A field does not satisfies :meth:`ResourceField.validate`.
+
+        """
         ouput = {}
         for resource_field in self:
             key = resource_field.name
@@ -102,6 +156,81 @@ class ResourceFieldsDescriptor( collections.Sequence):
 
 identity = lambda x:x
 class ResourceField( object):
+    """
+    The object for each resource_fields member.
+
+    It takes as arguments the name on the field and the :class:`dict`
+    of values defined in the creation of the :class:`napixd.managers.base.Manager` class.
+
+    Some members have conditions, if those conditions are not met,
+    :exc:`napixd.exceptions.ImproperlyConfigured` is raised.
+
+    .. attribute:: example
+
+        **Mandatory** unless :attr:`computed` and :attr:`type` are set.
+
+        If :attr:`type` is not defined, it is guessed from the example.
+        If :attr:`type` is defined, :type:`example` must be an instance of it.
+
+    .. attribute:: editable
+
+        Set to False if the field is not writeable once the object is created.
+        The field will be stripped from *resource_dict* before :meth:`napixd.managers.base.Manager.modify_resource` is called.
+
+        :attr:`editable` is False if :attr:`computed` is True.
+
+        Defaults to True
+
+    .. attribute:: optional
+
+        Set to True if the field is not required at all times.
+
+        Defaults to False
+
+    .. attribute:: default_on_null
+
+        Set to True if the validation method can take ``None`` as an input an generate a default value,
+        when the field is not present.
+
+        Defaults to False
+
+    .. attribute:: typing
+
+        One of **static** or **dynamic**.
+        When typing is static, the validation checks the :attr:`type` of the input
+        and raises a :exc:`~napixd.exceptions.ValidationError` if it does not match.
+
+        When it is dynamic, the type is not enforced.
+
+        Defaults to *static*
+
+    .. attribute:: type
+
+        The type of the field.
+
+        Defaults to ``type(example)``
+
+    .. attribute:: unserializer
+
+        The extractor from the serialized data.
+
+    .. attribute:: serialize
+
+        The serializer to the JSON representation.
+
+    .. attribute:: extra
+
+        All the fields from the resource_field which are not a property.
+        Those fields are not used by the Napix Server but may be usefull to the clients.
+
+        :description:
+            The goal of the field.
+
+        :display_order:
+            The priority of the field.
+            The fields with a lower *display_order* are shown first.
+
+    """
     def __init__(self, name, values):
         self.name = name
 
@@ -154,6 +283,11 @@ class ResourceField( object):
         self.extra = dict( (k, values[k]) for k in extra_keys )
 
     def check_type(self, value):
+        """
+        Check the :attr:`type` of **value**.
+
+        It is always returns True if :attr:`typing` is **dynamic**.
+        """
         if self._dynamic_typing:
             return True
         else:
@@ -161,6 +295,9 @@ class ResourceField( object):
 
     @property
     def required(self):
+        """
+        The field is :attr:`optional` or :attr:`computed`
+        """
         return not ( self.optional or self.computed)
 
     def resource_field(self):
@@ -193,6 +330,9 @@ class ResourceField( object):
 
 
     def validate( self, manager, value):
+        """
+        Validate the input **value**.
+        """
         if not self.check_type( value):
             raise ValidationError({
                     self.name : u'Bad type: {0} has type {2} but should be {1}'.format(
