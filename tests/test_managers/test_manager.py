@@ -48,6 +48,18 @@ class TestManager(unittest2.TestCase):
         self.assertDictEqual(self.manager.get_resource(3),
                 {'name':'drei','letter_count':4,'first_letter':'d'})
 
+    def test_serialize(self):
+        self.assertEqual(
+                self.manager.serialize({
+                    'garbage' : 'removed',
+                    'name':'four',
+                    'letter_count':4,
+                    'first_letter':'f'
+                    }),
+                {'name':'four','letter_count':4},
+                )
+
+
 
 class TestValidate( unittest2.TestCase):
     def testValidateMissingField(self):
@@ -79,7 +91,9 @@ class TestValidate( unittest2.TestCase):
 
     def test_validate_noop(self):
         class TestValidateManager( Manager):
-            resource_fields = { 'field1' : {} }
+            resource_fields = { 'field1' : {
+                'example':  'a'
+                } }
         vm = TestValidateManager( None)
         self.assertDictEqual( vm.validate({ 'field1' : 'abc' }), { 'field1' : 'abc' })
 
