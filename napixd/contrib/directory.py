@@ -24,13 +24,15 @@ class NapixDirectoryManager(Manager):
                 },
             'last_seen' : {
                 'description' : 'The last time it was seen',
-                'computed' : True
+                'computed' : True,
+                'type':  int,
                 },
             'status' : {
                 'description' : 'OK if this server has notified recently, '
                     'WAITING if it is late of less than a period, '
                     'LOST after for ten periods',
-                'computed' : True
+                'computed' : True,
+                'example': 'OK'
                 },
             'description' : {
                 'description' : 'Human readable description of the server',

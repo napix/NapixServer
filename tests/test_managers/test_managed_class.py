@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import unittest
 import mock
 
-from napixd.managers.base import Manager, ManagerType
+from napixd.managers.base import Manager
 from napixd.managers.managed_classes import ManagedClass
 
 
@@ -40,58 +40,3 @@ class TestManagedClass( unittest.TestCase):
         mc = ManagedClass( self.manager, extractor=extractor)
         self.assertEqual( mc.extractor, extractor)
 
-class TestBuilder( unittest.TestCase):
-    class SubManager( Manager):
-        pass
-
-    def testNone( self):
-        m = ManagerType( 'Manager', (Manager,), {
-            'managed_class': None
-            })
-        self.assertEqual( m.direct_plug(), None)
-        self.assertEqual( m.get_managed_classes(), [])
-
-    def testFalse( self):
-        m = ManagerType( 'Manager', (Manager,), {
-            'managed_class': [ self.SubManager ]
-            })
-        self.assertEqual( m.direct_plug(), False)
-        self.assertEqual( m.get_managed_classes(), [ ManagedClass( self.SubManager) ])
-
-    def testFalseManagedClass( self):
-        m = ManagerType( 'Manager', (Manager,), {
-            'managed_class': [ ManagedClass( self.SubManager, 'ploc') ]
-            })
-        self.assertEqual( m.direct_plug(), False)
-        self.assertEqual( m.get_managed_classes(), [ ManagedClass( self.SubManager, 'ploc' ) ])
-
-    def testFalseString( self):
-        m = ManagerType( 'Manager', (Manager,), {
-            'managed_class': [ 'abc' ]
-            })
-        self.assertEqual( m.direct_plug(), False)
-        self.assertEqual( m.get_managed_classes(), [ ManagedClass( 'abc' ) ])
-
-    def testTrue( self):
-        m = ManagerType( 'Manager', (Manager,), {
-            'managed_class': self.SubManager
-            })
-        self.assertEqual( m.direct_plug(), True)
-
-    def testTrueString( self):
-        m = ManagerType( 'Manager', (Manager,), {
-            'managed_class': 'abc'
-            })
-        self.assertEqual( m.direct_plug(), True)
-        self.assertEqual( m.get_managed_classes(), [
-            ManagedClass( 'abc')
-            ])
-
-    def testTrueManagedClass(self):
-        m = ManagerType( 'Manager', (Manager,), {
-            'managed_class': ManagedClass( 'abc', 'ploc')
-            })
-        self.assertEqual( m.direct_plug(), True)
-        self.assertEqual( m.get_managed_classes(), [
-            ManagedClass( 'abc', 'ploc')
-            ])

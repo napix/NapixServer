@@ -6,8 +6,16 @@ from napixd.exceptions import NotFound,ValidationError,Duplicate
 
 class Words(Manager):
     resource_fields = {
-            'name':{'description':'word','example':'four'},
-            'letter_count':{ 'computed':True, 'description':'Letter count'}
+            'name':{
+                'description':'word',
+                'example':'four'
+                },
+            'letter_count':{
+                'computed':True,
+                'description':'Letter count',
+                'type':  int,
+                'example' : 4,
+                }
             }
 
     def __init__(self,parent = None):

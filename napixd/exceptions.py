@@ -46,3 +46,11 @@ class Duplicate(Exception):
     When a new record was being created and another record was already present at that ID.
     """
     pass
+
+
+class ImproperlyConfigured( Exception):
+    """
+    When a piece of code is not as expected
+    """
+    pass
+

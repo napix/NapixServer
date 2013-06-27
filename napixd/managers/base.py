@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import types
-from napixd.exceptions import ValidationError
+from napixd.exceptions import ValidationError, ImproperlyConfigured
 from napixd.managers.managed_classes import ManagedClass
+from napixd.managers.resource_fields import ResourceFields
 
 """
 Manager :
@@ -17,6 +18,19 @@ Manager are created by the corresponding resource
 """
 
 class ManagerType(type):
+    def __new__( self, name, bases, attrs):
+        try:
+            rf = attrs.pop( 'resource_fields')
+        except KeyError:
+            pass
+        else:
+            try:
+                attrs['resource_fields'] = ResourceFields(rf )
+            except ImproperlyConfigured as e:
+                raise ImproperlyConfigured( 'In {0}, field {1}'.format( name, e))
+
+        return super( ManagerType, self).__new__( self, name, bases, attrs)
+
     def __init__(self, name, bases, attrs):
         super( ManagerType, self).__init__(name, bases, attrs)
 
@@ -38,7 +52,7 @@ class ManagerType(type):
 
         for attribute_name, attribute in attrs:
             if hasattr(attribute,'_napix_action') and attribute._napix_action:
-                actions.append( attribute)
+                actions.append( types.UnboundMethodType( attribute, None, self))
         return actions
 
     def _cast_formats(self, bases, attrs):
@@ -267,17 +281,12 @@ class Manager(object):
         pass
 
     @classmethod
-    def get_example_resource(self):
+    def get_example_resource( cls):
         """
         Generate an example of the resources managed by this manager
         Computed by the `example` of each resource field in Manager.resource_fields
         """
-        example = {}
-        for field,description in self.resource_fields.items():
-            if description.get('computed',False):
-                continue
-            example[field]= description.get('example',None)
-        return example
+        return cls.resource_fields.get_example_resource()
 
     @classmethod
     def detect(cls):
@@ -288,8 +297,9 @@ class Manager(object):
         return not cls.__module__.startswith('napixd.managers')
 
     def serialize(self, value):
-        result = dict( (k, value.get(k) ) for k in self.resource_fields )
-        return result
+        return self.resource_fields.serialize( value)
+    def unserialize(self, value):
+        return self.resource_fields.unserialize( value)
 
     def validate_id(self,id_):
         """
@@ -337,31 +347,10 @@ class Manager(object):
         """
         return resource_dict
 
-    def validate(self, resource_dict):
+    def validate(self, resource_dict, for_edit=False):
         # Create a new dict to populate with validated data
-        target = {}
-        for key, description in self.resource_fields.items():
-            value = resource_dict.get(key,None)
-            if description.get('computed'):
-                continue
-            if key not in resource_dict:
-                if "optional" in description:
-                    continue
-                else:
-                    raise ValidationError({
-                        key : u'Field {0} is missing in the supplied resource'.format( key)
-                        })
-            validator = getattr(self, 'validate_resource_%s'%key,None)
-            if validator:
-                try:
-                    value = validator( value)
-                except ValidationError, e:
-                    raise ValidationError({
-                        key : unicode(e)
-                        })
-            target[key] = value
-        target = self.validate_resource( target)
-        return target
+        resource_dict = self.resource_fields.validate( resource_dict, for_edit=for_edit)
+        return self.validate_resource( resource_dict)
 
     def is_up_to_date(self):
         """

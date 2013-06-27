@@ -43,25 +43,8 @@ class ServiceRequest(object):
         """
         if self.method not in ('POST','PUT') :
             return {}
-        data = {}
-        for key, meta  in self.manager.resource_fields.items():
-            if key in bottle.request.data:
-                value = bottle.request.data[key]
-            elif meta.get('optional',False) or meta.get('computed',False):
-                continue
-            else:
-                raise ValidationError({ key : u'Missing argument `{0}`'.format( key) })
-            if 'unserializer' in meta:
-                value = meta['unserializer'](value)
-            if 'type' in meta:
-                if not isinstance( value, meta['type']):
-                    raise ValidationError({
-                        key : u'Bad type: {0} has type {2} but should be {1}'.format(
-                            key, meta['type'].__name__, type(value).__name__)
-                        })
-            data[key] = value
-        data = self.manager.validate(data)
-        return data
+        data = self.manager.unserialize( bottle.request.data)
+        return self.manager.validate(data)
 
     def get_manager(self):
         """
@@ -235,9 +218,6 @@ class ServiceResourceRequest(ServiceRequest):
 
     def default_formatter(self, value):
         resp = self.manager.serialize( value )
-        for key,meta in self.manager.resource_fields.items():
-            if callable(meta.get('serializer')):
-                resp[key] = meta['serializer'](resp[key])
         return resp
 
     def call(self):

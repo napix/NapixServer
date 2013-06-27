@@ -10,9 +10,8 @@ from napixd.conf import Conf
 from napixd.managers.base import ManagerType, Manager
 from napixd.managers.actions import action, parameter
 from napixd.services import FirstCollectionService
-from napixd.services.servicerequest import ServiceActionRequest
 
-class TestDecorator( unittest2.TestCase):
+class _TestDecorator( unittest2.TestCase):
     def setUp(self):
         @action
         def send_mail(self, resource, dest, subject='export'):
@@ -20,6 +19,7 @@ class TestDecorator( unittest2.TestCase):
             return dest, subject
         self.fn = send_mail
 
+class TestDecorator( _TestDecorator):
     def test_decorated(self):
         self.assertTrue( self.fn._napix_action)
     def test_parameters(self):
@@ -38,21 +38,24 @@ class TestDecorator( unittest2.TestCase):
         fn = parameter( 'dest', example='you@mail.com')(self.fn)
         self.assertEqual( fn.resource_fields['dest']['example'], 'you@mail.com')
 
-class TestManagerAction( TestDecorator):
+class _TestManagerAction( _TestDecorator):
     def setUp(self):
-        super( TestManagerAction, self).setUp()
-        self.manager = ManagerType( 'NewManager', ( Manager, ), {
+        super( _TestManagerAction, self).setUp()
+        self.Manager = ManagerType( 'NewManager', ( Manager, ), {
             'send_mail': self.fn,
             'get_resource' : mock.Mock(spec=True, return_value={ 'mpm': 'prefork' }),
             })
-    def test_class_with_views(self):
-        self.assertEqual( self.manager.get_all_actions(), [ self.fn ])
 
-class TestServiceAction( TestManagerAction):
+class TestManagerAction( _TestManagerAction):
+    def test_class_with_actions(self):
+        self.assertEqual( self.Manager.get_all_actions(), [ self.Manager.send_mail ])
+
+class _TestServiceAction( _TestManagerAction):
     def setUp( self):
-        super( TestServiceAction, self).setUp()
-        self.cs = FirstCollectionService( self.manager, Conf(), 'my-mock')
+        super( _TestServiceAction, self).setUp()
+        self.cs = FirstCollectionService( self.Manager, Conf(), 'my-mock')
 
+class TestServiceAction( _TestServiceAction):
     def test_set_bottle(self):
         bottle = mock.Mock()
         self.cs.setup_bottle( bottle)

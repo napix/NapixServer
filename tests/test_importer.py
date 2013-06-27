@@ -96,11 +96,13 @@ class TestImporter(unittest.TestCase):
             self.assertRaises( ManagerImportError, self.importer.import_manager, 'package.Manager')
 
     def test_import_manager_class(self):
-        manager = type( 'MyManager', (Manager,), {})
+        manager = type( 'MyManager', (Manager,), {
+            '__module__' : 'napixd.auto.module'
+            })
         with mock.patch.object( self.importer, 'import_module') as meth_import:
             self.importer.import_manager( manager)
 
-        meth_import.assert_called_once_with( 'tests.test_importer')
+        meth_import.assert_called_once_with( 'napixd.auto.module')
 
     def test_import_manager_reference(self):
         with mock.patch.object( self.importer, 'import_module') as meth_import:
@@ -226,6 +228,7 @@ class TestAutoImporter(unittest.TestCase):
                 __name__ = 'napixd.auto.module',
                 A=object(),
                 B=type( 'Manager', (Manager, ), {
+                    '__module__' : 'napixd.auto.module',
                     'name' : 'my_manager',
                     'configure' : mock.MagicMock( __doc__='{ "a" : 1 }')
                     }),

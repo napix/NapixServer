@@ -296,6 +296,7 @@ class AutoImporter(Importer):
 
         Any file with a ``.py`` extension is loaded.
         """
+        #Placeholder module for all the auto imported modules
         import napixd.auto
         logger.debug( 'inspecting %s', self.path)
         managers, errors = [], []

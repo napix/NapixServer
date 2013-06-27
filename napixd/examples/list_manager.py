@@ -16,7 +16,7 @@ class HostManager(DictManager):
                 },
             'ip':{
                 'description':'IP of the host',
-                'example':'127.0.0.1',
+                'example': u'127.0.0.1',
                 'type' : unicode,
                 'display_order' : 10,
                 }
