@@ -1,9 +1,9 @@
 
 .. currentmodule:: napixd.managers
 
-==================
-Managers Extension
-==================
+===================
+Managers Extensions
+===================
 
 Napix allows to write quickly managers that can do CRUD operations with JSON objects.
 This page deals with extensions to thoses CRUD operations: the :ref:`actions<actions>`
@@ -171,7 +171,6 @@ Managers Views
 
 Views operate on a resource and are instance methods of a manager.
 
-They are declared by the decorator :func:`views.view`.
 
 For this example, we will use the HostManager written in
 :ref:`the high-level how-to<high_level>` and represent the host as picture.
@@ -225,6 +224,13 @@ Now the server has a format, it does not return anything yet::
     Connection: keep-alive
 
     Cannot render jpg. Available formats is: png
+
+
+The callback interface is documented in :mod:`views`.
+
+The response object is an instance of :class:`napixd.http.Response`.
+It behave like a :class:`StringIO.StringIO` for its body.
+It can be given to the **save** method of the PIL Image.
 
 
 .. code-block:: python
