@@ -120,9 +120,9 @@ class _TestSRR( unittest2.TestCase):
 class TestServiceResourceRequest( _TestSRR):
     def setUp(self):
         self._make( 'GET', GET={ })
+        self.managed.return_value.get_resource.return_value = { 'lol' : 1, 'blabla' : 'ping' }
 
     def test_get(self):
-        self.managed().get_resource.return_value = { 'lol' : 1, 'blabla' : 'ping' }
         self.manager().validate_id.side_effect = lambda y:y
         self.managed().validate_id.side_effect = lambda y:y
         s = self.srr.handle()
@@ -133,11 +133,17 @@ class TestServiceResourceRequest( _TestSRR):
         self.managed().get_resource.assert_called_once_with( 'c2' )
 
     def test_get_configure(self):
-        self.managed().get_resource.return_value = { 'lol' : 1, 'blabla' : 'ping' }
         self.srr.handle()
 
         self.manager().configure.assert_called_once_with( self.fcs_conf)
         self.managed().configure.assert_called_once_with( self.cs_conf)
+
+    def test_serialize(self):
+        self.srr.handle()
+        self.managed().serialize.assert_called_once_with({
+            'lol' : 1, 'blabla' : 'ping'
+            })
+
 
 class TestServiceResourceRequestOther( _TestSRR):
     def test_method_head(self):
