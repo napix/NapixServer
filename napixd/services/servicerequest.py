@@ -34,7 +34,7 @@ class ServiceRequest(object):
                 available_methods.append(meth)
         return available_methods
 
-    def check_datas(self):
+    def check_datas(self, for_edit):
         """
         Filter and check the collection fields.
 
@@ -44,7 +44,7 @@ class ServiceRequest(object):
         if self.method not in ('POST','PUT') :
             return {}
         data = self.manager.unserialize( bottle.request.data)
-        return self.manager.validate(data)
+        return self.manager.validate(data, for_edit=for_edit)
 
     def get_manager(self):
         """
@@ -154,6 +154,8 @@ class ServiceCollectionRequest(ServiceRequest):
                 self.method = 'filter'
         return super( ServiceCollectionRequest, self).get_callback()
 
+    def check_datas( self):
+        return super( ServiceCollectionRequest, self).check_datas( for_edit=False)
 
     def call(self):
         if self.method == 'POST':
@@ -233,6 +235,9 @@ class ServiceResourceRequest(ServiceRequest):
         #verifie l'identifiant de la resource aussi
         self.resource_id = manager.validate_id(resource_id)
         return manager
+
+    def check_datas( self):
+        return super( ServiceResourceRequest, self).check_datas( for_edit=True)
 
 class ServiceActionRequest(ServiceResourceRequest):
     METHOD_MAP = {
