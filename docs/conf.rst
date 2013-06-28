@@ -184,18 +184,18 @@ tries to parse JSON from the docstring of the configure method **of the root man
 .. code-block:: python
 
     class VHostManager( Manager):
-        """{
-        "conf_dir" : "/etc/apache.d",
-        "passwords" : {
-            "min_pass_size" : 5
-        }
-       }
-       """
        managed_class = [ 'PasswordManagers' ]
        name = 'vhost'
        def configure( self, conf):
-            self.conf_dir = conf.get('conf_dir', '/etc/httpd' )
-            self.var_dir = conf.get('var_dir', '/var/www')
+           """{
+            "conf_dir" : "/etc/apache.d",
+            "passwords" : {
+                "min_pass_size" : 5
+            }
+           }
+           """
+           self.conf_dir = conf.get('conf_dir', '/etc/httpd' )
+           self.var_dir = conf.get('var_dir', '/var/www')
     class PasswordManagers( Manager):
         name = 'passwords'
         def configure( self, conf):
