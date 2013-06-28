@@ -79,11 +79,18 @@ A human description of this Napix instance.
 Napix.managers
 ..............
 
+
 A mapping of alias to a fully qualified class name::
 
     "managers" : {
         "hello" : "napixd.contrib.helloworld.HelloWorld"
     }
+
+All the modules in the alias are loaded at the start of the Napix Server.
+If a module fails to import or load, the Napix server does not start.
+
+The path may be used multiple times with different aliases.
+Napix will run multiple instance of the same manager, on different paths.
 
 .. _conf.napix.auth:
 
@@ -125,8 +132,6 @@ counter
 Configuration of the managers
 =============================
 
-The configuration source of a manager depends on its :class:`loader<napixd.loader.Importer>`.
-
 When the :class:`napixd.services.Service` instantiates a manager,
 it calls its :meth:`napixd.managers.base.Manager.configure` method with the configuration.
 The method is called with a :class:`napixd.conf.Conf` instance.
@@ -166,3 +171,52 @@ Example
    }
 
 PasswordManagers is configured with **min_pass_size** = 5.
+
+
+Source of the configuration
+---------------------------
+
+The configuration source of a manager depends on its :class:`loader<napixd.loader.Importer>`.
+
+The :class:`auto-loader<napixd.loader.AutoImporter>` which is used with the files found in the `auto` folder,
+tries to parse JSON from the docstring of the configure method **of the root manager**.
+
+.. code-block:: python
+
+    class VHostManager( Manager):
+        """{
+        "conf_dir" : "/etc/apache.d",
+        "passwords" : {
+            "min_pass_size" : 5
+        }
+       }
+       """
+       managed_class = [ 'PasswordManagers' ]
+       name = 'vhost'
+       def configure( self, conf):
+            self.conf_dir = conf.get('conf_dir', '/etc/httpd' )
+            self.var_dir = conf.get('var_dir', '/var/www')
+    class PasswordManagers( Manager):
+        name = 'passwords'
+        def configure( self, conf):
+            self.min_pass_size = conf.get('min_pass_size', 8)
+
+The load from the :class:`configuration<napixd.loader.ConfImporter>` used with :ref:`conf.napix.managers`
+get the configuration from the same configuration file.
+The key is the same as the alias of the managers in the ``Napix.managers`` map.
+
+.. code-block:: javascript
+   :emphasize-lines: 4,7
+
+   {
+        "Napix": {
+            "managers" : {
+                "password" : "my.path.to.VHostManager"
+            }
+        },
+       "password" : {
+        "conf_dir" : "/etc/apache.d",
+        "passwords" : {
+            "min_pass_size" : 5
+        }
+   }
