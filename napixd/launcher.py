@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+The launcher define the infrastructure to prepare and run the Napix Server.
+
+:class:`Setup` is intended to be overidden to customize running
+as an integrated component or in a specialized server.
+"""
 
 import logging
 import logging.handlers
@@ -11,10 +17,22 @@ from napixd import get_file, get_path
 
 from napixd.conf import Conf
 
+__all__ = [ 'launch', 'Setup' ]
+
 logger = logging.getLogger('Napix.Server')
 console = logging.getLogger('Napix.console')
 
 def launch(options, setup_class=None):
+    """
+    Helper function to run Napix.
+
+    It creates a **setup_class** (by default :class:`Setup` instance with the given **options**.
+
+    **options** is an iterable.
+
+    The exceptions are caught and logged.
+    The function will block until the server is killed.
+    """
     setup_class = setup_class or Setup
     sys.stdin.close()
     try:
@@ -38,6 +56,12 @@ class CannotLaunch(Exception):
     pass
 
 class Setup(object):
+    """
+    The class that prepares and run a Napix server instance.
+
+    It takes its **options** as argument.
+    It is an iterable of strings.
+    """
     DEFAULT_HOST='0.0.0.0'
     DEFAULT_PORT=8002
     DEFAULT_OPTIONS = set([
@@ -161,6 +185,11 @@ Meta-options:
         bottle.debug( 'debug' in self.options )
 
     def set_auth_handler(self, app):
+        """
+        Load the authentication handler.
+
+        Takes the bottle application as **app**
+        """
         conf =  Conf.get_default('Napix.auth')
         if not conf :
             raise CannotLaunch('*auth* option is set and no configuration has been found (see Napix.auth key).')
@@ -181,6 +210,10 @@ Meta-options:
         return napixd
 
     def get_loaders(self):
+        """
+        Returns an array of :class:`napixd.loader.Importer`
+        used to find the the managers.
+        """
         from napixd.loader import AutoImporter, ConfImporter
         loaders = [ ]
 
@@ -193,6 +226,9 @@ Meta-options:
         return loaders
 
     def install_plugins(self, app):
+        """
+        Install the plugins in the bottle application.
+        """
         from napixd.plugins import ExceptionsCatcher, ConversationPlugin
         pprint = 'pprint' in self.options
 
@@ -247,6 +283,11 @@ Meta-options:
         return napixd
 
     def apply_middleware(self, application):
+        """
+        Add the WSGI middleware in the application.
+
+        Return the decorated application
+        """
         from napixd.plugins import PathInfoMiddleware, CORSMiddleware
         if 'uwsgi' in self.options:
             application = PathInfoMiddleware( application)
@@ -262,6 +303,9 @@ Meta-options:
         return self.apply_middleware( application)
 
     def get_server(self):
+        """
+        Get the bottle server adapter
+        """
         if 'rocket' in self.options:
             return 'rocket'
         elif not 'gevent' in self.options:
@@ -273,6 +317,9 @@ Meta-options:
             return GeventServer
 
     def get_server_options(self):
+        """
+        Returns a dict of the options of :func:`bottle.run`
+        """
         return {
                 'host': self.DEFAULT_HOST,
                 'port': self.DEFAULT_PORT,
@@ -280,6 +327,9 @@ Meta-options:
                 }
 
     def get_webclient_path(self):
+        """
+        Retrieve the web client interface statics path.
+        """
         module_file = sys.modules[self.__class__.__module__].__file__
         module_path = os.path.join( os.path.dirname( module_file), 'web')
         napix_default = os.path.join( os.path.dirname( __file__ ), 'web')
@@ -294,6 +344,9 @@ Meta-options:
                 return directory
 
     def set_loggers(self):
+        """
+        Defines the loggers
+        """
         formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
 
         self.log_file = file_handler = logging.handlers.RotatingFileHandler(
