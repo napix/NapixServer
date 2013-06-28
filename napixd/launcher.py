@@ -176,7 +176,6 @@ Meta-options:
                 bottle.run( application, **server_options)
         finally:
             console.info('Stopping')
-            app.stop();
 
         console.info('Stopped')
 
