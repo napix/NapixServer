@@ -13,6 +13,7 @@ Contents:
 
     quickstart
     deployment
+    running
     resources
     first_step
     high_level
