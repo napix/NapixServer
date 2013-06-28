@@ -166,6 +166,15 @@ class TestResourceField( unittest.TestCase):
         self.assertRaises( ImproperlyConfigured, ResourceField, 'f', {
             })
 
+    def test_example_unicode(self):
+        rf = ResourceField( 'f', {
+            'example': 'dudem',
+            'type': unicode
+            })
+        self.assertEqual( rf.type, unicode)
+        self.assertEqual( rf.example, u'dudem')
+        self.assertTrue( isinstance( rf.example, unicode))
+
     def test_no_example_ok(self):
         rf = ResourceField( 'f', {
             'computed' : True,
