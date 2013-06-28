@@ -266,10 +266,10 @@ class ResourceField( object):
         try:
             self.example = meta['example']
         except KeyError:
-            if not self.computed or not explicit_type:
-                raise ImproperlyConfigured( '{0}: Missing example'.format( self.name))
-            else:
+            if self.computed:
                 self.example = u''
+            else:
+                raise ImproperlyConfigured( '{0}: Missing example'.format( self.name))
 
         implicit_type = type(self.example)
         if implicit_type is str:
