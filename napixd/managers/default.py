@@ -180,7 +180,7 @@ class ListManager(DictManager):
             raise ValidationError('This resource ids are integers')
 
 
-def FileManager(DictManager):
+class FileManager(DictManager):
     """
     Manager that is attached to a file
     """
@@ -192,24 +192,30 @@ def FileManager(DictManager):
         """
         Return True if the file was written over since we last read/wrote it.
         """
+        if self.last_read is None:
+            return False
         filename = self.get_filename(self.parent)
         last_write = os.path.getmtime(filename)
         return self.last_read >= last_write
 
     def load(self,parent):
         """
-        Opens the file for reading, gives it to FileManager.parser
-        so that it extracs the datas
+        Opens the file for reading, gives it to :meth:`parser`
+        so that it extracs the data
         """
         filename = self.get_filename(parent)
-        with open(filename,'r') as fp:
-            self.last_read = time()
+        try:
+            handle = open(filename,'r')
+        except IOError:
+            return {}
+
+        self.last_read = time()
+        with handle as fp:
             return self.parse(fp)
 
     def save(self,parent,resources):
         """
-        Opens the file for writing and then gives it to write
-        so that it's written
+        Opens the file and then gives it to :meth:`write`
         """
         filename = self.get_filename(parent)
         with open(filename,'w') as fp:

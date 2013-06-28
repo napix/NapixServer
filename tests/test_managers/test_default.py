@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import unittest2
 import mock
 
-from napixd.managers.default import ReadOnlyDictManager, DictManager
+from napixd.managers.default import ReadOnlyDictManager, DictManager, FileManager
 from napixd.exceptions import NotFound,Duplicate
 
 
@@ -80,7 +80,7 @@ class TestDictManager( _TestDM):
         self.spy_gen.return_value = 'one'
         self.assertRaises( Duplicate, self.manager.create_resource, rd)
 
-    def test_delete_resource(self):
+    def test_delete_resource_not_found(self):
         self.assertRaises( NotFound, self.manager.delete_resource, 'apple')
 
     def test_delete_resource(self):
@@ -97,4 +97,56 @@ class TestDictManager( _TestDM):
         self.assertRaises( NotFound, self.manager.modify_resource, 'potato', {
             'german' : 'Kartofel'
             })
+
+class MyFileManager( FileManager):
+    def get_filename(self, parent):
+        return parent.fname
+    def write(self, fp, resources):
+        self.parent.write( fp, resources)
+    def parse( self, fp):
+        self.parent.parse( fp)
+
+class TestFileManager( unittest2.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        open_side_effect = lambda x,y: open(x,y) if isinstance( x, basestring) else mock.DEFAULT
+        cls.patch_open = mock.patch( '__builtin__.open', side_effect=open_side_effect)
+
+    def setUp(self):
+        self.parent = mock.Mock()
+        self.fm =  MyFileManager( self.parent)
+
+    def test_is_up_to_date_first(self):
+        self.assertFalse( self.fm.is_up_to_date())
+
+    def test_is_up_to_date(self):
+        with mock.patch( 'napixd.managers.default.time', return_value=2):
+            with self.patch_open:
+                self.fm.load( self.parent)
+        with mock.patch( 'os.path.getmtime', return_value=1):
+            self.assertTrue( self.fm.is_up_to_date())
+
+    def test_save(self):
+        resources = mock.Mock()
+
+        with self.patch_open as popen:
+            popen.return_value.__enter__.return_value = popen.return_value
+            self.fm.save( self.parent, resources)
+
+        popen.assert_called_once_with( self.parent.fname, 'w')
+        self.parent.write.assert_called_once_with( popen.return_value, resources)
+
+    def test_load(self):
+        with self.patch_open as popen:
+            popen.return_value.__enter__.return_value = popen.return_value
+            self.fm.load( self.parent)
+
+        popen.assert_called_once_with( self.parent.fname, 'r')
+        self.parent.parse.assert_called_once_with( popen.return_value)
+
+    def test_load_error(self):
+        with self.patch_open as popen:
+            popen.side_effect = IOError()
+            self.assertEqual( self.fm.resources, {})
+
 
