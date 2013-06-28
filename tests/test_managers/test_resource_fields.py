@@ -232,3 +232,41 @@ class TestResourceField( unittest.TestCase):
 
         vrf.assert_called_once_with( 132)
         self.assertEqual( r, vrf.return_value)
+
+    def test_choice_bad(self):
+        self.assertRaises( ImproperlyConfigured, ResourceField, 'f', {
+            'example' : 'mpm',
+            'choices' : 123
+            })
+
+    def test_choice(self):
+        rf = ResourceField( 'f', {
+            'example' : 'mpm',
+            'choices' : [
+                'prefork',
+                'worker'
+                ]
+            })
+        rf.check_choice( 'prefork')
+
+    def test_choice_false(self):
+        rf = ResourceField( 'f', {
+            'example' : 'mpm',
+            'choices' : [
+                'prefork',
+                'worker'
+                ]
+            })
+        self.assertRaises( ValidationError, rf.check_choice, 'patoum')
+
+    def test_choice_callable(self):
+        callable = mock.Mock( return_value=[
+            'prefork',
+            'worker'
+            ])
+        rf = ResourceField( 'f', {
+            'example' : 'mpm',
+            'choices' : callable
+            })
+        rf.check_choice( 'prefork')
+        callable.assert_called_once_with()

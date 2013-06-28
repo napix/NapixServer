@@ -307,7 +307,7 @@ class ResourceField( object):
         except KeyError:
             choices = None
         else:
-            if not callable( choices) or not hasattr( choices, '__iter__'):
+            if not callable( choices) and not hasattr( choices, '__iter__'):
                 raise ImproperlyConfigured('{0}: choices must be a callable or an iterable'.format( self.name))
         self.choices = choices
 
@@ -408,8 +408,9 @@ class ResourceField( object):
         else it checks that **value** is in :attr:`choices`.
         """
         choices = self.get_choices()
-        if not isinstance( value, collections.Iterable) and not isinstance( value, basestring):
+        if isinstance( value, basestring) or not hasattr( value, '__iter__'):
             value = [ value]
+
         for v in value:
             if not v in choices:
                 raise ValidationError({
