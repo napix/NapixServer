@@ -117,10 +117,14 @@ Meta-options:
 
         if 'gevent' in self.options:
             try:
-                from gevent.monkey import patch_all
-            except ImportError, e:
+                import gevent
+            except ImportError:
                 raise CannotLaunch(u'Cannot import gevent lib. Try to install it, or run napix with *nogevent* option')
 
+            if gevent.version_info < ( 1, 0):
+                raise CannotLaunch(u'Napix require gevent >= 1.0, Try to install it, or run napix with *nogevent* option')
+
+            from gevent.monkey import patch_all
             patch_all()
 
 
