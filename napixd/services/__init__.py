@@ -43,12 +43,12 @@ class Service(object):
 
         service = FirstCollectionService( collection, self.configuration, self.url)
         self._append_service( service)
-        self.create_collection_service( collection, service )
+        self.create_collection_service( collection, service, 0 )
 
     def _append_service( self, service):
         self.collection_services.append(service)
 
-    def make_collection_service( self, previous_service, managed_class, namespace ):
+    def make_collection_service( self, previous_service, managed_class, namespace, level ):
         """
         Called from create_collection as a recursive method to collect all submanager
         of the root manager we want to manager with this service.
@@ -60,17 +60,19 @@ class Service(object):
                 self.configuration.get( config_key),
                 namespace)
         self._append_service( service )
-        self.create_collection_service( managed_class.manager_class, service)
+        #level to avoid max recursion.
+        self.create_collection_service( managed_class.manager_class, service, level+1)
 
-    def create_collection_service(self, collection, previous_service ):
+    def create_collection_service(self, collection, previous_service, level ):
         # test if direct_plug is defined (to either True or False)
         # if it's not then we don't have any managed class
-        if collection.direct_plug() != None:
+        if collection.direct_plug() is not None and level < 30:
             for managed_class in collection.get_managed_classes():
                 self.make_collection_service(
                         previous_service,
                         managed_class,
-                        managed_class.get_name() if not collection.direct_plug() else '' )
+                        managed_class.get_name() if not collection.direct_plug() else '',
+                        level)
 
     def setup_bottle(self,app):
         """

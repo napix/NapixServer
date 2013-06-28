@@ -399,5 +399,7 @@ class TestLoader(unittest.TestCase):
         with mock.patch( 'napixd.loader.RelatedImporter') as Importer:
             importer = Importer.return_value
             importer.load.return_value = ( [ self.manager ], [] )
-            self.assertRaises( ManagerImportError, self.loader.setup, self.manager)
+            #self.assertRaises( ManagerImportError, self.loader.setup, self.manager)
+            self.loader.setup( self.manager)
 
+        Importer.assert_called_once_with( self.manager)

@@ -478,7 +478,9 @@ class Loader( object):
         """
 
         if manager in _already_loaded:
-            raise ManagerImportError( manager.__module__, manager, ValueError('Circular dependency'))
+            logger.info('Circular manager detected: %s', manager.get_name())
+            return manager
+            #raise ManagerImportError( manager.__module__, manager, ValueError('Circular dependency'))
         _already_loaded.add( manager)
 
         if manager.direct_plug() is not None:
