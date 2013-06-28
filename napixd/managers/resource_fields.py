@@ -10,6 +10,13 @@ It makes the documentation and the poperty homogenous.
 import collections
 from napixd.exceptions import ImproperlyConfigured, ValidationError
 
+__all__ = [
+        'ResourceFields',
+        'ResourceField',
+        'ResourceFieldsDict',
+        'ResourceFieldsDescriptor',
+        ]
+
 class ResourceFields( object):
     """
     The property object.
@@ -134,10 +141,10 @@ class ResourceFieldsDescriptor( collections.Sequence):
         * A field does not satisfies :meth:`ResourceField.validate`.
 
         """
-        ouput = {}
+        output = {}
         for resource_field in self:
             key = resource_field.name
-            if resource_field.computed or for_edit and resource_field.editable :
+            if resource_field.computed or for_edit and not resource_field.editable :
                 continue
             elif key not in input:
                 if resource_field.default_on_null:
@@ -151,8 +158,8 @@ class ResourceFieldsDescriptor( collections.Sequence):
             else:
                 value = input[key]
 
-            ouput[key] = resource_field.validate( self.manager, value)
-        return ouput
+            output[key] = resource_field.validate( self.manager, value)
+        return output
 
 identity = lambda x:x
 class ResourceField( object):
@@ -257,14 +264,18 @@ class ResourceField( object):
             raise ImproperlyConfigured( '{0}: type field must be a class'.format( self.name))
 
         try:
-            self.example = example = meta['example']
+            self.example = meta['example']
         except KeyError:
             if not self.computed or not explicit_type:
                 raise ImproperlyConfigured( '{0}: Missing example'.format( self.name))
             else:
-                self.example = ''
+                self.example = u''
 
-        self.type = explicit_type or type(example)
+        implicit_type = type(self.example)
+        if implicit_type is str:
+            implicit_type = unicode
+
+        self.type = explicit_type or implicit_type
         self.typing = meta['typing']
 
         if self.typing == 'dynamic':
@@ -272,7 +283,10 @@ class ResourceField( object):
         elif self.typing == 'static':
             self._dynamic_typing = False
             if type( self.example) != self.type and not self.computed:
-                raise ImproperlyConfigured('{0}: Example is not of type {1}'.format( self.name, self.type.__name__))
+                if self.type is unicode and isinstance( self.example, str):
+                    self.example = unicode(self.example)
+                else:
+                    raise ImproperlyConfigured('{0}: Example is not of type {1}'.format( self.name, self.type.__name__))
         else:
             raise ImproperlyConfigured('{0}: typing must be one of "static", "dynamic"'.format( self.name))
 
@@ -282,13 +296,18 @@ class ResourceField( object):
 
         self.extra = dict( (k, values[k]) for k in extra_keys )
 
+    def __repr__(self):
+        return 'Field <{0}>'.format( self.name)
+
     def check_type(self, value):
         """
         Check the :attr:`type` of **value**.
 
         It is always returns True if :attr:`typing` is **dynamic**.
         """
-        if self._dynamic_typing:
+        if value is None and self.default_on_null:
+            return True
+        elif self._dynamic_typing:
             return True
         else:
             return isinstance( value, self.type)

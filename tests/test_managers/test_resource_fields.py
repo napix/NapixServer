@@ -13,7 +13,7 @@ from napixd.exceptions import ValidationError, ImproperlyConfigured
 class X(object):
     rf = ResourceFields({
         'a' : {
-            'example' : 'aAaA',
+            'example' : u'aAaA',
             },
         'b' : {
             'example' : 123,
@@ -114,6 +114,17 @@ class TestResourceFieldsDescriptor(unittest.TestCase):
         self.assertEqual( v, {
             'f1' : self.f1.validate.return_value,
             'f2' : self.f2.validate.return_value,
+            })
+
+    def test_validate_non_editable(self):
+        self.f1.editable = True
+        self.f2.editable = False
+        v = self.rfd.validate({
+            'f1' : 1,
+            'f2' : 'oh snap'
+            }, for_edit=True)
+        self.assertEqual( v, {
+            'f1' : self.f1.validate.return_value,
             })
 
     def test_validate_remove_computed(self):
