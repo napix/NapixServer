@@ -1,6 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Napix proposes an option to reload the modules without stopping the server.
+When the reload is triggered, the configuration is reparsed.
+The autoload directories are scanned again.
+
+When inotify is available through :mod:`pyinotify`,
+it will listen to the filesystem changes to check if the auto-loaded directories changed,
+and it will then issue a reload.
+
+"""
+
 import os
 import select as original_select
 import logging
@@ -15,6 +26,8 @@ import bottle
 
 from napixd.thread_manager import run_background
 from napixd.conf import Conf
+
+__all__ = [ 'Reloader' ]
 
 try:
     import pyinotify
@@ -46,6 +59,10 @@ def patch_select():
         original_select.poll = Poll
 
 class Reloader(object):
+    """
+    An object that checks for signals: SIGHUP, file changes through :mod:`pyinotify`
+    or manual calls to :meth:`reload` and triggers a reloadin gof the application.
+    """
 
     def __init__(self, app ):
         self.app = app
@@ -71,10 +88,16 @@ class Reloader(object):
 
 
     def on_sighup(self, signum, frame):
+        """
+        Callback of the SIGHUP
+        """
         logger.info('Caught SIGHUP, reloading')
         self.app.reload()
 
     def on_file_change( self, event):
+        """
+        Callback of the inotify call.
+        """
         if ( event.dir or not event.name.endswith('.py')):
             return
         logger.info('Caught file change, reloading')

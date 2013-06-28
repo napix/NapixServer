@@ -2,38 +2,51 @@
 Resources, collections and ids
 ==============================
 
-Napix uses the REST structure to help you leverage your assets and monetize through efficient analytics and data-mining.
+Napix uses a few concepts with the REST structure.
+Objects are linked to an URI.
+There are two sort of objects, the collections and the resources.
 
-The REST method uses HTTP to invoke procedures on specified resources.
-The resources are designated by an URI.
-They are hierarchically sorted and separated by slashes.
-Every character are allowed in the URI, although they may need to be escaped
-For example, if a ``file`` manager takes file path as IDs. ``/file/%2Fusr%2fbin%2fgcc`` refers to the resource '/usr/bin/gcc'
+Resources and collections are separated by ``/``.
+An id containing ``/`` must escape them.
+If a ``file`` manager takes file path as IDs,
+``/file/%2Fusr%2fbin%2fgcc`` refers to the resource '/usr/bin/gcc'
 
-IDs
-===
+The escaping and unescaping is handled by the Napix server in input and output.
 
-Within Napix, every token between two ``/`` that does not start with _napix_ is an ID.
+.. note::
 
-Every thing that starts with ``_napix_`` is reserved.
+    The identifier cannot start with **_napix_**
+
+    Those identifiers are reserved.
 
 Collections
 ===========
 
-The collections are a set of resources.
-The collections have an URI ending with a ``/``.
+The URI of the resources ends by by a ``/``.
 
-In Napix the managers subclasses of :class:`~napixd.managers.base.Manager` instances represent collections.
-They are instantiated with the parent that spawned them.
+The collections are a set of resources.
+A collection is managed by a :class:`~napixd.managers.base.Manager`, and defines how to list its resources, create a new one,
+fetch, modify and remove each resource.
+
+A Manager is a *root* manager if it is the first manager after the slash.
+All the managers after the first are *sub-managers*.
+They hold a :attr:`~napixd.managers.base.Manager.parent` property
+that link to the resource that spawned them.
+
+For instance: ``/host/127.0.0.1/ports/``, ``/ports/`` sub-manager has been instanciated
+with the resource ``/host/127.0.0.1``.
+
 
 Resources
 =========
 
 Resources are objects managed in Napix.
-They behave like dictionaries.
+They contains a set of properties.
+The properties are defined from the :class:`~napixd.managers.base.Manager.resource_fields` of the class.
 
+The resource fields declaration tells to the Napix server how to extract,
+document, validate, etc the fields from and to the JSON representation.
 
-Resources fields
-================
+The resource fields are also used by the introspection to advise the consumers of the usage of each field.
 
-All Napix Managers declare their :class:`~napixd.managers.base.Manager.resource_fields`.
+See :mod:`napixd.managers.resource_fields` for the fields required and the options of the resource_fields.

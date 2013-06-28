@@ -49,8 +49,8 @@ The :program:`napixd` program takes arguments.
 The arguments are options to enable or disable features, processed sequencially.
 The ``only`` option disable everything. You can find a list of options by running ``napixd help``.
 
-The develop setup
-=================
+The development setup
+=====================
 
 In order to develop on napix without being embarrassed with extra features::
 

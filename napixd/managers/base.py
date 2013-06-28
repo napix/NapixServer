@@ -271,6 +271,12 @@ class Manager(object):
         The keys are the name of the fields and the values are
         dicts that are transformed to :class:`napixd.managers.resource_fields.ResourceField`
 
+    .. attribute:: parent
+
+        The resource that spawned this manager.
+
+        `None` for the root managers.
+
     .. method:: validate_resource_FIELDNAME
 
         Validate the content of the field ``FIELDNAME``
@@ -279,7 +285,6 @@ class Manager(object):
 
             validate_resource_FIELDNAME does not actually exists.
             FIELDNAME have to be replace by an actual field of :attr:`resource_fields`
-
     """
 
     __metaclass__ = ManagerType

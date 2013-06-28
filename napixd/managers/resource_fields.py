@@ -225,6 +225,18 @@ class ResourceField( object):
 
         The serializer to the JSON representation.
 
+    .. attribute:: choices
+
+        The valid values accepted for this field.
+
+        Two kind of arguments are accepted:
+
+        * A list, a set or an object with a __contains__ and a __iter__ method.
+        * A callable returning such an object
+
+        List is called with the object for the documentation of the manager.
+        ``in`` is caled to check is the value given by the user is a valid choice.
+
     .. attribute:: extra
 
         All the fields from the resource_field which are not a property.
@@ -379,13 +391,24 @@ class ResourceField( object):
         return value
 
     def get_choices(self):
-        if callable(  self.choices):
+        """
+        Returns the choices of this field.
+
+        If :attr:`choices` is a callable, it is called.
+        """
+        if callable(self.choices):
             return self.choices()
         return self.choices
 
     def check_choice(self, value):
+        """
+        Check that the value(s) fits the choices.
+
+        If value is an iterable ( except strings), it checks that **value** is a subset of :attr:`choices`
+        else it checks that **value** is in :attr:`choices`.
+        """
         choices = self.get_choices()
-        if not isinstance( value, collections.Iterable):
+        if not isinstance( value, collections.Iterable) and not isinstance( value, basestring):
             value = [ value]
         for v in value:
             if not v in choices:
