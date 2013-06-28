@@ -290,7 +290,15 @@ class ResourceField( object):
         else:
             raise ImproperlyConfigured('{0}: typing must be one of "static", "dynamic"'.format( self.name))
 
-        self.choices = meta.get( 'choices')
+        try:
+            choices = meta['choices']
+        except KeyError:
+            choices = None
+        else:
+            if not callable( choices) or not hasattr( choices, '__iter__'):
+                raise ImproperlyConfigured('{0}: choices must be a callable or an iterable'.format( self.name))
+        self.choices = choices
+
         self.unserialize = meta['unserializer']
         self.serialize = meta['serializer']
 
@@ -328,7 +336,7 @@ class ResourceField( object):
             'default_on_null' : self.default_on_null,
             'example' : self.example,
             'typing' : 'dynamic' if self._dynamic_typing else 'static',
-            'choices' : self.choices
+            'choices' : list( self.get_choices() ) if self.choices is not None else None
             })
         if self.unserialize in ( str, basestring, unicode):
             values['unserializer'] = 'string'
@@ -357,6 +365,9 @@ class ResourceField( object):
                     self.name : u'Bad type: {0} has type {2} but should be {1}'.format(
                         self.name, self.type.__name__, type(value).__name__)
                     })
+        if self.choices is not None:
+            self.check_choice( value)
+
         validator = getattr( manager, 'validate_resource_%s' % self.name, None)
         if validator:
             try:
@@ -366,3 +377,18 @@ class ResourceField( object):
                     self.name : unicode(e)
                     })
         return value
+
+    def get_choices(self):
+        if callable(  self.choices):
+            return self.choices()
+        return self.choices
+
+    def check_choice(self, value):
+        choices = self.get_choices()
+        if not isinstance( value, collections.Iterable):
+            value = [ value]
+        for v in value:
+            if not v in choices:
+                raise ValidationError({
+                    self.name : u'{0} is not one of the available choices'.format( v)
+                    })
