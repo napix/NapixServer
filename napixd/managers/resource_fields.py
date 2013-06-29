@@ -26,7 +26,14 @@ class ResourceFields( object):
     When it is accessed through a manager instance, it returns a :class:`ResourceFieldsDescriptor`.
     """
     def __init__(self, resource_fields):
-        self.values = [ ResourceField( name, meta) for name, meta in resource_fields.items() ]
+        self.values = []
+        for name, meta in  resource_fields.items():
+            try:
+                rf = ResourceField( name, meta)
+            except ImproperlyConfigured as e:
+                raise ImproperlyConfigured( '`{0}`: {1}'.format( name, e))
+
+            self.values.append( rf)
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -251,6 +258,8 @@ class ResourceField( object):
 
     """
     def __init__(self, name, values):
+        if not isinstance( values, collections.Mapping):
+            raise ImproperlyConfigured('Resource field declaration is not a dict')
         self.name = name
 
         meta = {
@@ -273,7 +282,7 @@ class ResourceField( object):
 
         explicit_type = meta.get('type')
         if explicit_type and not isinstance( explicit_type, type):
-            raise ImproperlyConfigured( '{0}: type field must be a class'.format( self.name))
+            raise ImproperlyConfigured( 'type field must be a class')
 
         try:
             self.example = meta['example']
@@ -281,7 +290,7 @@ class ResourceField( object):
             if self.computed:
                 self.example = u''
             else:
-                raise ImproperlyConfigured( '{0}: Missing example'.format( self.name))
+                raise ImproperlyConfigured( 'Missing example')
 
         implicit_type = type(self.example)
         if implicit_type is str:
@@ -298,9 +307,9 @@ class ResourceField( object):
                 if self.type is unicode and isinstance( self.example, str):
                     self.example = unicode(self.example)
                 else:
-                    raise ImproperlyConfigured('{0}: Example is not of type {1}'.format( self.name, self.type.__name__))
+                    raise ImproperlyConfigured('Example is not of type {0}'.format( self.type.__name__))
         else:
-            raise ImproperlyConfigured('{0}: typing must be one of "static", "dynamic"'.format( self.name))
+            raise ImproperlyConfigured('Typing must be one of "static", "dynamic"')
 
         try:
             choices = meta['choices']
@@ -308,7 +317,7 @@ class ResourceField( object):
             choices = None
         else:
             if not callable( choices) and not hasattr( choices, '__iter__'):
-                raise ImproperlyConfigured('{0}: choices must be a callable or an iterable'.format( self.name))
+                raise ImproperlyConfigured('choices must be a callable or an iterable')
         self.choices = choices
 
         self.unserialize = meta['unserializer']
