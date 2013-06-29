@@ -71,7 +71,9 @@ class NapixdBottle(bottle.Bottle):
 
     def register_error(self, me):
         self.route( '/%s'%me.alias, callback=self._error_service_factory( me.cause ))
+        self.route( '/%s/'%me.alias, callback=self._error_service_factory( me.cause ))
         self.route( '/%s/<catch_all:path>'%me.alias, callback=self._error_service_factory( me.cause ))
+
         self.root_urls.add( me.alias )
 
     def setup_bottle(self):

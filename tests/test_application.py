@@ -112,5 +112,5 @@ class TestReload( unittest.TestCase):
 
         self.bottle.reload()
 
-        self.assertEqual( len( self.bottle.routes), 6)
+        self.assertEqual( len( self.bottle.routes), 7)
         self.ms.assert_called_once_with([])
