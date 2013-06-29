@@ -211,7 +211,7 @@ class FileManager(DictManager):
 
         self.last_read = time()
         with handle as fp:
-            return self.parse(fp)
+            return dict( self.parse(fp))
 
     def save(self,parent,resources):
         """

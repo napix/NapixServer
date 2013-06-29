@@ -105,6 +105,7 @@ class MyFileManager( FileManager):
         self.parent.write( fp, resources)
     def parse( self, fp):
         self.parent.parse( fp)
+        return { 'a': 1}
 
 class TestFileManager( unittest2.TestCase):
     @classmethod
