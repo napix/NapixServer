@@ -111,6 +111,15 @@ class TestCollectionServiceRequestOther( _TestSCR):
         self.assertEqual( resp.status_code, 201)
         self.assertEqual( resp.headers['Location'], '/parent/p1/child/blue')
 
+    def test_method_create_escape(self):
+        self._make( 'POST', data={
+            'lol': 1,
+            'blabla' : True
+            })
+        self.managed.create_resource.return_value = 'lol / mpm'
+        resp = self.scr.handle()
+        self.assertEqual( resp.headers['Location'], '/parent/p1/child/lol%20%2F%20mpm')
+
 class _TestSRR( _Test):
     def _make( self, method, **kw):
         super( _TestSRR, self)._make( method, **kw)

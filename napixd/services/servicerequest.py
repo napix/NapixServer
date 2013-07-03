@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from urllib import unquote
-
+import urllib
 import bottle
 
 from napixd.http import Response
@@ -20,7 +19,7 @@ class ServiceRequest(object):
         self.method = bottle.request.method
         self.service = service
         #Parse the url components
-        self.path = map( unquote, path)
+        self.path = map( urllib.unquote, path)
 
     @classmethod
     def available_methods(cls,manager):
@@ -191,8 +190,8 @@ class ServiceResourceRequest(ServiceRequest):
         if self.method == 'HEAD':
             return None
         if self.method == 'PUT' and result != None :
-            new_url = self.make_url(result)
-            if new_url != bottle.request.path:
+            if result != self.resource_id:
+                new_url = self.make_url(result)
                 return bottle.HTTPError(303, None, Location= new_url )
             return None
         if self.method != 'GET':
