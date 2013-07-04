@@ -189,11 +189,11 @@ class ServiceResourceRequest(ServiceRequest):
     def serialize( self, result):
         if self.method == 'HEAD':
             return None
-        if self.method == 'PUT' and result != None :
-            if result != self.resource_id:
+        if self.method == 'PUT':
+            if result != None and result != self.resource_id:
                 new_url = self.make_url(result)
-                return bottle.HTTPError(303, None, Location= new_url )
-            return None
+                return bottle.HTTPError(205, None, Location= new_url )
+            return bottle.HTTPError( 204)
         if self.method != 'GET':
             return result
         format_ = bottle.request.GET.get('format', None )

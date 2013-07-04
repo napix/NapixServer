@@ -168,6 +168,27 @@ class TestServiceResourceRequestOther( _TestSRR):
         self.managed.validate.assert_called_once_with(self.managed.unserialize.return_value, for_edit=True)
         self.managed.modify_resource.assert_called_once_with( 'c2', self.managed.validate.return_value)
 
+    def test_method_put_same_id(self):
+        self._make('PUT', data = { 'lol' : 1, 'blabla': 'ab' })
+        self.managed.validate_id.side_effect = lambda y:y
+        self.managed.modify_resource.return_value = 'c2'
+        r = self.srr.handle()
+        self.assertEqual( r.status_code, 204)
+
+    def test_method_put_id_none(self):
+        self._make('PUT', data = { 'lol' : 1, 'blabla': 'ab' })
+        self.managed.modify_resource.return_value = None
+        r = self.srr.handle()
+        self.assertEqual( r.status_code, 204)
+
+    def test_method_put_id_different(self):
+        self._make('PUT', data = { 'lol' : 1, 'blabla': 'ab' })
+        self.managed.modify_resource.return_value = 'c1'
+        r = self.srr.handle()
+        self.assertEqual( r.status_code, 205)
+        self.assertEqual( r.headers['Location'], '/parent/p1/child/c1')
+
+
 class TestServiceActionRequest( _Test):
     def setUp( self):
         self._make( 'POST' )
