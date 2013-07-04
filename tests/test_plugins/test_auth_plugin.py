@@ -11,8 +11,9 @@ import mock
 import bottle
 
 from permissions.models import Perm
+from permissions.managers import PermSet
 
-from napixd.plugins.auth import AAAPlugin, AAAChecker
+from napixd.plugins.auth import AAAPlugin, AAAChecker, Success, Fail
 
 class TestAAAPluginHostCheck(unittest2.TestCase):
     def test_no_host(self):
@@ -56,7 +57,7 @@ class AAAPluginBase( unittest2.TestCase):
 
     def setUp(self, status, allow_bypass=False):
         self.AAAchecker = self.patch_aaachecker.start()
-        self.AAAchecker.return_value.authserver_check.return_value = status == 200
+        self.AAAchecker.return_value.authserver_check.return_value = Success(None) if status == 200 else Fail(None)
 
         plugin = AAAPlugin({
             'auth_url': 'http://auth.napix.local/auth/authorization/',
@@ -65,112 +66,116 @@ class AAAPluginBase( unittest2.TestCase):
             },
             allow_bypass=allow_bypass
             )
+        self.success = mock.MagicMock( __name__ = 'my_callback' )
         self.cb = plugin.apply( self.success, None)
 
     def tearDown(self):
         self.patch_aaachecker.stop()
 
-    def success(self):
-        return ( 200, {}, 'ok')
-
-    def _make_env( self, method, url, auth=None, query=''):
+    def _do_request( self, method, url, auth=None, query=''):
         env = {
                 'REMOTE_ADDR': '1.2.3.4',
                 }
         headers = { }
         if auth:
             headers['Authorization'] = auth
-        return mock.Mock( method=method, path=url,
+        env = mock.patch( 'bottle.request', method=method, path=url,
                 query_string=query,
                 GET={ query : '' },
                 environ=env, headers=headers,
                 )
 
-    def _do_request( self, env):
-        with mock.patch( 'bottle.request', env):
+        with env:
             try:
                 return self.cb()
             except bottle.HTTPError as e:
-                return e.status_code, e.headers, e.body
+                return e
 
 class TestAAAPluginSuccess(AAAPluginBase):
     def setUp(self):
         super( TestAAAPluginSuccess, self).setUp( 200)
 
     def testSuccess(self):
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' ))
-        self.assertEqual( result, 'ok')
+        resp = self._do_request( 'GET', '/', auth='method=GET&path=/&host=napix.test:sign' )
+        self.success.assert_called_once_with()
+        self.assertEqual( resp, self.success.return_value)
+
+    def test_success_filter(self):
+        pset =  mock.Mock( spec=PermSet)
+        pset.filter_paths.return_value=['/a/d']
+        self.AAAchecker.return_value.authserver_check.return_value = mock.Mock( spec=Success, content=pset)
+        self.success.return_value = [ '/a/b', '/a/c' ]
+        resp = self._do_request( 'GET', '/', auth='method=GET&path=/&host=napix.test:sign' )
+
+        self.success.assert_called_once_with()
+        self.assertEqual( resp, [ '/a/d'])
+        pset.filter_paths.assert_called_once_with( 'org.napix.test', [ '/a/b', '/a/c' ])
+
 
     def testBadHost(self):
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.other:sign' ))
-        self.assertEqual( status, 403)
-        self.assertEqual( result, 'Bad host')
+        response = self._do_request( 'GET', '/test', auth='method=GET&path=/test&host=napix.other:sign' )
+        self.assertEqual( response.status_code, 403)
+        self.assertEqual( response.body, 'Bad host')
 
     def testEmptyHost(self):
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='method=GET&path=/test&host=:sign' ))
-        self.assertEqual( status, 403)
-        self.assertEqual( result, 'Missing authentication data: \'host\'')
+        response = self._do_request( 'GET', '/test', auth='method=GET&path=/test&host=:sign' )
+        self.assertEqual( response.status_code, 403)
+        self.assertEqual( response.body, 'Missing authentication data: \'host\'')
 
     def testNoHost(self):
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='method=GET&path=/test&hast=napix.test:sign' ))
-        self.assertEqual( status, 403)
-        self.assertEqual( result, 'Missing authentication data: \'host\'')
+        response = self._do_request( 'GET', '/test', auth='method=GET&path=/test&hast=napix.test:sign' )
+        self.assertEqual( response.status_code, 403)
+        self.assertEqual( response.body, 'Missing authentication data: \'host\'')
 
     def testNoAuth(self):
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth= False))
-        self.assertEqual( status, 401)
-        self.assertEqual( result, 'You need to sign your request')
+        response = self._do_request( 'GET', '/test', auth= False)
+        self.assertEqual( response.status_code, 401)
+        self.assertEqual( response.body, 'You need to sign your request')
 
     def testNodebugNoAuth(self):
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth= False, query='authok'))
-        self.assertEqual( status, 401)
+        response = self._do_request( 'GET', '/test', auth= False, query='authok')
+        self.assertEqual( response.status_code, 401)
 
 class TestAAAPluginBypass(AAAPluginBase):
     def setUp(self):
         super( TestAAAPluginBypass, self).setUp( 403, allow_bypass=True)
 
     def testBadAuth(self):
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='lolnetwork' ))
-        self.assertEqual( status, 401)
-        self.assertEqual( result, 'Incorrect NAPIX Authentication')
+        response = self._do_request( 'GET', '/test', auth='lolnetwork' )
+        self.assertEqual( response.status_code, 401)
+        self.assertEqual( response.body, 'Incorrect NAPIX Authentication')
 
     def testDebugNoauth(self):
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth=False, query='authok'))
-        self.assertEqual( status, 200)
+        self._do_request( 'GET', '/test', auth=False, query='authok')
+        self.success.assert_called_once_with()
 
     def testMismatchMethod(self):
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='method=POST&path=/test&host=napix.test:sign' ))
-        self.assertEqual( status, 403)
-        self.assertEqual( result, 'Bad authorization data method does not match')
+        response = self._do_request( 'GET', '/test', auth='method=POST&path=/test&host=napix.test:sign' )
+        self.assertEqual( response.status_code, 403)
+        self.assertEqual( response.body, 'Bad authorization data method does not match')
 
 class TestAAAPluginDenied(AAAPluginBase):
     def setUp( self):
         super( TestAAAPluginDenied, self).setUp( 403)
 
     def testForbidden(self):
-        status, headers, result = self._do_request(
-                self._make_env('GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' ))
-        self.assertEqual( status, 403)
-        self.assertEqual( result, 'Access Denied')
+        response = self._do_request( 'GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' )
+        self.assertEqual( response.status_code, 403)
+        self.assertEqual( response.body, 'Access Denied')
+
+    def test_deny_commont_root(self):
+        self.AAAchecker.return_value.authserver_check.return_value = Fail([ '/a/', '/b/' ])
+        response = self._do_request( 'GET', '/test', auth='method=GET&path=/test&host=napix.test:sign' )
+        self.assertEqual( response.status_code, 203)
+        self.assertEqual( response.body, [ '/a/', '/b/' ])
+
 
 class _TestAAAChecker(unittest2.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.con = mock.patch( 'napixd.plugins.auth.httplib.HTTPConnection', spec=httplib.HTTPConnection)
-        cls.patch_request = mock.patch( 'bottle.request', permissions=None)
 
     def setUp(self):
-        self.request = self.patch_request.start()
-
         self.Connection = self.con.start()
         self.connection = self.Connection.return_value
         self.response = self.connection.getresponse.return_value
@@ -180,7 +185,6 @@ class _TestAAAChecker(unittest2.TestCase):
 
     def tearDown( self):
         self.con.stop()
-        self.patch_request.stop()
 
 class TestAAACheckerSuccess(_TestAAAChecker):
     def testSuccess( self):
@@ -198,15 +202,18 @@ class TestAAACheckerSuccess(_TestAAAChecker):
     def test_generate_permset_empty(self):
         self.response.read.return_value = '[]'
         self.response.getheader.return_value = 'application/json'
-        permset = self.checker.authserver_check({ 'path': '/test' })
+        check = self.checker.authserver_check({ 'path': '/test' })
 
-        self.assertEqual( len(permset), 0)
+        self.assertTrue( isinstance( check, Success))
+        self.assertEqual( check.content, None)
 
     def test_generate_permset(self):
         self.response.read.return_value = '[ { "host": "*", "methods" : [ "GET"], "path" : "/a/b" } ]'
         self.response.getheader.return_value = 'application/json'
-        permset = self.checker.authserver_check({ 'path': '/test' })
+        check = self.checker.authserver_check({ 'path': '/test' })
 
+        self.assertTrue( isinstance( check, Success))
+        permset = check.content
         self.assertEqual( len( permset), 1)
         self.assertTrue( Perm( '*', 'GET', '/a/b') in permset)
 

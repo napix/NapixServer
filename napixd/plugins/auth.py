@@ -16,6 +16,30 @@ import bottle
 from permissions.models import Perm
 from permissions.managers import PermSet
 
+class Check(object):
+    def __init__(self, content):
+        self.content = content
+
+class Success( Check):
+    def __init__(self, content):
+        if content and isinstance( content, list):
+            content =  PermSet( Perm( p['host'], p['methods'], p['path']) for p in content )
+        else:
+            content = None
+        super( Success, self).__init__( content)
+
+    def __nonzero__(self):
+        return True
+
+class Fail( Check):
+    def __init__(self, content):
+        if not content or not isinstance( content, list):
+            content = None
+        super( Fail, self).__init__( content)
+
+    def __nonzero__(self):
+        return False
+
 class AAAChecker(object):
     logger = logging.getLogger('Napix.AAA.Checker')
     def __init__(self, host, url):
@@ -48,15 +72,14 @@ class AAAChecker(object):
             self.logger.error( 'Auth server responded a %s', resp.status)
             self.logger.debug( 'Auth server said: %s', content)
             raise bottle.HTTPError(500, 'Auth server responded unexpected %s code'%resp.status)
-        if resp.status != 200:
-            return False
 
         if resp.getheader('content-type') == 'application/json':
-            perm_defs = json.loads( content)
-            self.logger.debug('Found %s permissions', len( perm_defs))
-            return PermSet( Perm( p['host'], p['methods'], p['path'])
-                    for p in perm_defs )
-        return True
+            content = json.loads( content)
+
+        if resp.status != 200:
+            return Fail( content)
+
+        return Success( content)
 
 class BaseAAAPlugin(object):
     name = 'authentication_plugin'
@@ -150,8 +173,11 @@ class AAAPlugin(BaseAAAPlugin):
     def authserver_check(self, content):
         content['host'] = self.service
         check = self.checker.authserver_check(content)
-        if check == False:
-            raise self.reject( 'Access Denied')
+        if not check:
+            if check.content is None:
+                raise self.reject( 'Access Denied')
+            else:
+                raise bottle.HTTPError( 203, check.content)
         return check
 
     def apply(self,callback,route):
@@ -164,13 +190,13 @@ class AAAPlugin(BaseAAAPlugin):
 
             #self.logger.debug(msg)
             self.host_check( content)
-            permissions = self.authserver_check( content)
+            check = self.authserver_check( content)
             path = bottle.request.path
             method = bottle.request.method
 
             resp = callback(*args,**kwargs)
-            if ( method == 'GET' and path.endswith('/') and
-                    isinstance( permissions, PermSet) and isinstance( resp, list) ):
+            if method == 'GET' and path.endswith('/') and check.content:
+                permissions = check.content
                 self.logger.debug('Filtering %s urls', len(resp) )
                 resp = list( permissions.filter_paths( self.service, resp))
                 self.logger.debug('Filtered %s urls', len(resp) )
