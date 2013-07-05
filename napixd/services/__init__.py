@@ -19,6 +19,8 @@ appropriate Napix Manager to handle the request.
 """
 logger = logging.getLogger('Napix.service')
 
+MAX_LEVEL = 5
+
 def urlencode(string):
     #like quote but alse encode the /
     return quote( string, '')
@@ -66,7 +68,7 @@ class Service(object):
     def create_collection_service(self, collection, previous_service, level ):
         # test if direct_plug is defined (to either True or False)
         # if it's not then we don't have any managed class
-        if collection.direct_plug() is not None and level < 30:
+        if collection.direct_plug() is not None and level < MAX_LEVEL:
             for managed_class in collection.get_managed_classes():
                 self.make_collection_service(
                         previous_service,
