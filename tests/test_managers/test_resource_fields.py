@@ -208,6 +208,13 @@ class TestResourceField( unittest.TestCase):
             })
         self.assertTrue( rf.check_type( 13))
 
+    def test_int_is_long(self):
+        rf = ResourceField( 'f', {
+            'example' : 123,
+            'type' : int
+            })
+        self.assertTrue( rf.check_type( long(13)))
+
     def test_check_type_static(self):
         rf = ResourceField( 'f', {
             'example' : 123,

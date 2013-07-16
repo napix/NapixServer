@@ -338,6 +338,8 @@ class ResourceField( object):
             return True
         elif self._dynamic_typing:
             return True
+        elif self.type == int and isinstance( value, long):
+            return True
         else:
             return isinstance( value, self.type)
 
