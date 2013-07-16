@@ -4,6 +4,16 @@
 from napixd.exceptions import ValidationError
 from napixd.managers.default import ReadOnlyDictManager,DictManager
 
+class HostFiles(ReadOnlyDictManager):
+    """
+    Host Files manager
+    """
+    managed_class = [ 'HostManager' ]
+    resource_fields = {'file': {'example':'/etc/hosts','description':'Path of the hosts file'}}
+    def load(self,parent):
+        return { '1' : {'file':'/tmp/hosts1'},
+                '2' : {'file':'/tmp/hosts2'} }
+
 class HostManager(DictManager):
     """
     Hosts manager
@@ -92,13 +102,3 @@ class HostManager(DictManager):
             file_.write('\t')
             file_.write(' '.join(resource['hostnames']))
             file_.write('\n')
-
-class HostFiles(ReadOnlyDictManager):
-    """
-    Host Files manager
-    """
-    managed_class = HostManager
-    resource_fields = {'file': {'example':'/etc/hosts','description':'Path of the hosts file'}}
-    def load(self,parent):
-        return { '1' : {'file':'/tmp/hosts1'},
-                '2' : {'file':'/tmp/hosts2'} }
