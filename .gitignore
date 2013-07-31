@@ -11,3 +11,5 @@ docs/_build
 venv-docs/
 venv-nogevent
 venv-oldgevent/
+conf/
+stores/
