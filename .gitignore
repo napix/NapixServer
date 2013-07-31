@@ -1,0 +1,13 @@
+*.sw?
+*.pyc
+build
+dist
+auto
+doc/build/
+*.egg-info
+.project.vip
+venv
+docs/_build
+venv-docs/
+venv-nogevent
+venv-oldgevent/
