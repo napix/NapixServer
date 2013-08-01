@@ -108,7 +108,7 @@ class TestServiceServiceCollection(unittest2.TestCase):
         self.config.get.side_effect = lambda x:x
         self.CS = CS = mock.Mock( spec=BaseCollectionService, side_effect=FakeCS)
 
-        self.manager = mock.Mock()
+        self.manager = mock.Mock( name='root')
         self.patch_cs = mock.patch.multiple( 'napixd.services', FirstCollectionService=CS, CollectionService=CS)
 
         self.m1 = mock.Mock( name='m1' )

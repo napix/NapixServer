@@ -33,7 +33,7 @@ class ServiceRequest(object):
                 available_methods.append(meth)
         return available_methods
 
-    def check_datas(self, for_edit):
+    def check_datas(self, for_edit=False):
         """
         Filter and check the collection fields.
 
@@ -112,13 +112,21 @@ class ServiceRequest(object):
         except Duplicate,e:
             raise bottle.HTTPError(409,'`%s` already exists'%( str(e) or 'object') )
 
-    def make_url(self,result):
-        url = ''
+    def make_url( self, result):
+        """
+        Create an url for the *list* **result**.
+        The url follow the services prefix
+        """
+        url = [ '' ]
         path = list(self.path)
         path.append(result)
-        for service,id_ in zip(self.service.services,path):
-            url += '/'+service.get_token(id_)
-        return url
+        services = ( s.url for s in self.service.services )
+        for id_ in path:
+            prefix = next( services, '')
+            if prefix:
+                url.append( prefix)
+            url.append( urllib.quote(str(id_), '' ))
+        return '/'.join( url)
 
 class ServiceCollectionRequest(ServiceRequest):
     """
@@ -174,6 +182,15 @@ class ServiceCollectionRequest(ServiceRequest):
             return map( self.make_url, result)
         else:
             return result
+
+class ServiceManagedClassesRequest( ServiceRequest):
+    def get_callback( self):
+        return self.service.collection.get_managed_classes
+    def call(self):
+        return self.callback()
+    def serialize( self, result):
+        return [ self.make_url( mc.get_name()) for mc in result ]
+
 
 class ServiceResourceRequest(ServiceRequest):
     """

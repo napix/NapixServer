@@ -2,13 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from urllib import quote
 
 import sys
 
 from napixd.conf import Conf
-from napixd.services.servicerequest import (ServiceCollectionRequest,
-        ServiceResourceRequest, ServiceActionRequest)
+from napixd.services.servicerequest import (
+        ServiceCollectionRequest,
+        ServiceManagedClassesRequest,
+        ServiceResourceRequest,
+        ServiceActionRequest
+        )
 from napixd.services.plugins import ArgumentsPlugin
 
 """
@@ -20,10 +23,6 @@ appropriate Napix Manager to handle the request.
 logger = logging.getLogger('Napix.service')
 
 MAX_LEVEL = 5
-
-def urlencode(string):
-    #like quote but alse encode the /
-    return quote( string, '')
 
 class Service(object):
     """
@@ -146,11 +145,6 @@ class BaseCollectionService(object):
             ''
         """
         return self.url and self.url + '/' or ''
-    def get_token(self,path):
-        """
-        get the url bit for a resource identified by path for this collection
-        """
-        return self.get_prefix()+urlencode(str(path))
 
     def get_managers( self, path):
         resource = {}
@@ -249,20 +243,11 @@ class BaseCollectionService(object):
                     }
         return as_help_action
 
-    def make_urls(self, path, all_urls):
-        url = ''
-        for service,id_ in zip(self.services,path):
-            url += '/'+ service.get_token(id_)
-        return [ '%s/%s'%(url,urlencode(name)) for name in all_urls ]
-
     def as_list_actions(self,path):
         return [ x.__name__ for x in self.all_actions ]
 
     def as_managed_classes(self,path):
-        all_urls = list(x.get_name() for x in self.collection.get_managed_classes())
-        if self.all_actions:
-            all_urls.append('_napix_all_actions')
-        return self.make_urls(path, all_urls)
+        return ServiceManagedClassesRequest( path, self).handle()
 
     def as_help( self, path):
         manager = self.collection
