@@ -100,6 +100,11 @@ class TestAAAPluginSuccess(AAAPluginBase):
         self.success.assert_called_once_with()
         self.assertEqual( resp, self.success.return_value)
 
+    def test_success_escape(self):
+        resp = self._do_request( 'GET', '/a b', auth='method=GET&path=%2Fa%2520b&host=napix.test:sign' )
+        self.success.assert_called_once_with()
+        self.assertEqual( resp, self.success.return_value)
+
     def test_success_filter(self):
         pset =  mock.Mock( spec=PermSet)
         pset.filter_paths.return_value=['/a/d']

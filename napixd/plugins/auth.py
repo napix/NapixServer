@@ -148,7 +148,7 @@ class BaseAAAPlugin(object):
         try:
             if self.hosts is not None and content['host'] not in self.hosts:
                 raise self.reject('Bad host')
-            path = urllib.quote(bottle.request.path ,'%/')
+            path = urllib.quote(bottle.request.path ,'/')
             if bottle.request.query_string:
                 path += '?' + bottle.request.query_string
             if content['method'] != bottle.request.method:
