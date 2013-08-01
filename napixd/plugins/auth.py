@@ -154,6 +154,9 @@ class BaseAAAPlugin(object):
             if content['method'] != bottle.request.method:
                 raise self.reject( 'Bad authorization data method does not match')
             if content['path'] != path:
+                self.logger.debug('Path raw(%s) signed(%s) refined(%s) source(%s)',
+                                  bottle.request.path, content['path'],
+                                  path, bottle.environ['PATH_INFO'])
                 raise self.reject( 'Bad authorization data path does not match')
         except KeyError, e:
             raise self.reject( 'Missing authentication data: %s' %e)
