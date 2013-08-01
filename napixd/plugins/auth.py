@@ -13,8 +13,19 @@ import threading
 from napixd.conf import Conf
 import bottle
 
-from permissions.models import Perm
-from permissions.managers import PermSet
+try:
+    from permissions.models import Perm
+    from permissions.managers import PermSet
+except ImportError:
+    class Perm(object):
+        def __init__(self, host, methods, path):
+            pass
+    class PermSet(object):
+        def __init__(self, perms):
+            logging.warning( 'permissions is not installed')
+
+        def filter_paths(self, service, paths):
+            return paths
 
 class Check(object):
     def __init__(self, content):
