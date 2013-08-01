@@ -5,7 +5,6 @@ import functools
 import time
 import logging
 import bottle
-from urllib import unquote
 
 import gevent
 import gevent.greenlet
@@ -108,8 +107,7 @@ class WSGIHandler(gevent.pywsgi.WSGIHandler):
     def get_environ(self):
         env = super( WSGIHandler, self).get_environ()
         path, x, query = self.path.partition('?')
-        tokens = path.replace('%2f', '%2F').split('%2F')
-        env['PATH_INFO'] = '%2F'.join( map( unquote, tokens))
+        env['PATH_INFO'] = path
         return env
 
 

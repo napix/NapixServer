@@ -19,7 +19,7 @@ class ServiceRequest(object):
         self.method = bottle.request.method
         self.service = service
         #Parse the url components
-        self.path = path
+        self.path = map(urllib.unquote, path)
 
     @classmethod
     def available_methods(cls,manager):

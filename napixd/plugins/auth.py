@@ -27,6 +27,7 @@ except ImportError:
         def filter_paths(self, service, paths):
             return paths
 
+
 class Check(object):
     def __init__(self, content):
         self.content = content
@@ -148,16 +149,15 @@ class BaseAAAPlugin(object):
         try:
             if self.hosts is not None and content['host'] not in self.hosts:
                 raise self.reject('Bad host')
-            path = urllib.quote(bottle.request.path ,'/')
+            path = bottle.request.path
             if bottle.request.query_string:
                 path += '?' + bottle.request.query_string
+
             if content['method'] != bottle.request.method:
                 raise self.reject( 'Bad authorization data method does not match')
-            if content['path'] != path:
-                self.logger.debug('Path raw(%s) signed(%s) refined(%s) source(%s)',
-                                  bottle.request.path, content['path'],
-                                  path, bottle.request.environ['PATH_INFO'])
-                raise self.reject( 'Bad authorization data path does not match')
+            signed = content['path']
+            if signed != path:
+                raise self.reject('Bad authorization data path does not match')
         except KeyError, e:
             raise self.reject( 'Missing authentication data: %s' %e)
 
