@@ -86,10 +86,7 @@ class ManagerType(type):
     def _cast_direct_plug(self):
         if self.managed_class is None:
             return None
-        elif ( isinstance( self.managed_class, basestring) or
-                isinstance( self.managed_class, type) or
-                isinstance( self.managed_class, ManagedClass)
-                ):
+        elif isinstance(self.managed_class, (basestring, type, ManagedClass)):
             return True
         else:
             try:

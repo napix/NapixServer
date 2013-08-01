@@ -43,64 +43,67 @@ class Implementation(object):
             return self.methods[ name]
         return getattr( self.manager, name)
 
-class Combined_get_all_resources(object):
-    implement = 'get_all_resources'
-    require = [ 'get_resource', 'list_resource']
+
+class BaseImplementer(object):
+
     def __init__(self, manager):
         self.manager = manager
+
+
+class Combined_get_all_resources(BaseImplementer):
+    implement = 'get_all_resources'
+    require = [ 'get_resource', 'list_resource']
+
     def __call__(self):
         return [ ( id, self.manager.get_resource(id))
                 for id in self.manager.list_resource() ]
 
-class ByFilter_get_all_resources(object):
+class ByFilter_get_all_resources(BaseImplementer):
     implement = 'get_all_resources'
     require = [ 'get_all_resources_filter' ]
-    def __init__(self, manager):
-        self.manager = manager
+
     def __call__(self):
         return self.manager.get_all_resources_filter({})
 
-class FromAll_get_resource(object):
+
+class FromAll_get_resource(BaseImplementer):
     implement = 'get_resource'
     require = [ 'get_all_resources' ]
-    def __init__(self, manager):
-        self.manager = manager
+
     def __call__(self, id_):
         for id, resource in self.get_all_resources():
             if id == id_:
                 return resource
         raise NotFound, id_
 
-class FromAll_list_resource(object):
+class FromAll_list_resource(BaseImplementer):
     implement = 'list_resource'
     require = [ 'get_all_resources' ]
-    def __init__(self, manager):
-        self.manager = manager
+
     def __call__(self, manager):
         return [ id for (id, resource) in self.manager.get_all_resources() ]
 
-class ByFilter_list_resource(object):
+class ByFilter_list_resource(BaseImplementer):
     implement = 'list_resource'
     require = [ 'list_resource_filter']
-    def __init__(self, manager):
-        self.manager = manager
+
     def __call__(self):
         return self.manager.list_resource_filter({})
 
-class Combined_get_all_resources_filter(object):
+
+class Combined_get_all_resources_filter(BaseImplementer):
     implement = 'get_all_resources_filter'
     require = [ 'list_resource_filter', 'get_resource']
-    def __init__(self, manager):
-        self.manager = manager
+
     def __call__(self, filters):
         return [ ( id, self.manager.get_resource(id))
                 for id in self.manager.list_resource_filter(filters) ]
 
-class CombinedFromAll_get_all_resources_filter(object):
+
+class CombinedFromAll_get_all_resources_filter(BaseImplementer):
     implement = 'get_all_resources_filter'
     require = [ 'list_resource_filter', 'get_all_resources']
-    def __init__(self, manager):
-        self.manager = manager
+
     def __call__(self, filters):
         ids = set(  self.manager.list_resource_filter(filters))
         return [ ( id, resource)
@@ -108,10 +111,10 @@ class CombinedFromAll_get_all_resources_filter(object):
                 if id in ids
                 ]
 
-class FromAll_list_resource_filter(object):
+
+class FromAll_list_resource_filter(BaseImplementer):
     implement = 'list_resource_filter'
     require = [ 'get_all_resources_filter' ]
-    def __init__(self, manager):
-        self.manager = manager
+
     def __call__(self, filters):
         return [ id for id in self.manager.get_all_resources_filter(filters) ]
