@@ -143,6 +143,7 @@ class BaseAAAPlugin(object):
             content[x] = content[x][0]
         content['msg'] = msg
         content['signature'] = signature
+        content['is_secure'] = True
         return content
 
     def host_check(self, content):
@@ -219,3 +220,29 @@ class AAAPlugin(BaseAAAPlugin):
             # actually run the callback
         return inner_aaa
 
+
+class NoSecureAAAPlugin(AAAPlugin):
+    def __init__(self, *args, **kw):
+        super(NoSecureAAAPlugin, self).__init__( *args, **kw)
+        self.token = self.settings.get('get_parameter', 'token')
+
+    def authorization_extract(self, request):
+        if self.token in request.GET:
+            login, l, signature = request.GET[self.token].partition(':')
+            if l != ':':
+                raise self.reject('Incorrect NAPIX non-secure Authentication', 401)
+            self.logger.debug('Not secured request')
+            return {
+                'method': bottle.request.method,
+                'path': bottle.request.path,
+                'login': login,
+                'signature': signature,
+                'is_secure': False
+            }
+
+        return super(NoSecureAAAPlugin, self).authorization_extract(request)
+
+    def host_check(self, content):
+        if not content['is_secure']:
+            return True
+        return super(NoSecureAAAPlugin, self).host_check(content)

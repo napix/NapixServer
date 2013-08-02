@@ -118,6 +118,7 @@ Non-default:
     times:      Add custom header to show the running time and the total time
     pprint:     Enable pretty printing of output
     cors:       Add Cross-Site Request Service headers
+    secure:     Disable the request tokeb signing
 
 Meta-options:
     only:       Disable default options
@@ -193,8 +194,13 @@ Meta-options:
         if not conf :
             raise CannotLaunch('*auth* option is set and no configuration has been found (see Napix.auth key).')
 
-        from napixd.plugins import AAAPlugin
-        app.install(AAAPlugin( conf, allow_bypass='debug' in self.options))
+        if 'secure' in self.options:
+            from napixd.plugins import AAAPlugin
+            app.install(AAAPlugin(conf, allow_bypass='debug' in self.options))
+        else:
+            logger.info('Installing not Secure auth plugin')
+            from napixd.plugins.auth import NoSecureAAAPlugin
+            app.install(NoSecureAAAPlugin(conf, allow_bypass='debug' in self.options))
 
     def get_bottle(self):
         """
@@ -213,6 +219,16 @@ Meta-options:
         Returns an array of :class:`napixd.loader.Importer`
         used to find the the managers.
         """
+        if 'test' in self.options:
+            from napixd.loader import FixedImporter
+            return [ FixedImporter({
+                'root' : 'napixd.examples.k132.Root',
+                'host' : (
+                    'napixd.examples.hosts.HostManager', {
+                        'file' : '/tmp/h1'
+                        })
+                }) ]
+
         from napixd.loader import AutoImporter, ConfImporter
         loaders = [ ]
 
@@ -353,7 +369,12 @@ Meta-options:
                 maxBytes=5 * 10**6,
                 backupCount=10,
                 )
-        file_handler.setLevel( logging.INFO)
+        file_handler.setLevel(
+                logging.DEBUG
+                if 'verbose' in self.options else
+                logging.WARNING
+                if 'silent' in self.options else
+                logging.INFO)
         file_handler.setFormatter( formatter)
 
         self.console = console_handler = logging.StreamHandler( )
