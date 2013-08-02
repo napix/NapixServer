@@ -101,6 +101,8 @@ auth_url
     The authentication URL. (A NapixCentral server)
 service
     The name of this service in the permissions
+get_parameter
+    The GET parameter used by non-secure authentication
 
 .. _conf.napix.notify:
 

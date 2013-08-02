@@ -125,6 +125,8 @@ Non-default
 :cors:
     Add Cross-Site Request Service headers
 
+:secure:
+    Use only signed authentication and not deny requests signed by a GET token
 
 
 
