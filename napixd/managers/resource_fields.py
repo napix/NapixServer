@@ -265,6 +265,34 @@ class ResourceField(object):
         ``in`` is called to check
         is the value given by the user is a valid choice.
 
+    .. attribute:: validators
+
+        A list of additional validators.
+        Validators are callback that takes a value and returns the validated value,
+        or raises a :exc:`napixd.exceptions.ValidationError`.
+
+        .. code-block::
+
+            def size_is_4(value):
+                if len(value) != 4:
+                    raise ValidationError('Size should be 4')
+                #Always return the value
+                return value
+
+            def looks_like_an_int(value):
+                if not value.isdigit():
+                    raise ValidationError('Value should be an int')
+                return value
+
+            class SecurityCards(Manager):
+                resource_fields = {
+                    'pin' : {
+                        'example': '1234',
+                        'validators': [ size_is_4, looks_like_an_int ]
+                    }
+                }
+
+
     .. attribute:: extra
 
         All the fields from the resource_field which are not a property.
@@ -293,6 +321,7 @@ class ResourceField(object):
             'typing': 'static',
             'unserializer': identity,
             'serializer': identity,
+            'validators': []
             }
         extra_keys = set(values).difference(meta)
         meta.update(values)
@@ -347,6 +376,8 @@ class ResourceField(object):
         self.unserialize = meta['unserializer']
         self.serialize = meta['serializer']
 
+        self.validators = list(meta['validators'])
+
         self.extra = dict((k, values[k]) for k in extra_keys)
 
     def __repr__(self):
@@ -383,7 +414,9 @@ class ResourceField(object):
             'default_on_null': self.default_on_null,
             'example': self.example,
             'typing': 'dynamic' if self._dynamic_typing else 'static',
-            'choices': list(self.get_choices()) if self.choices is not None else None
+            'choices': (list(self.get_choices())
+                        if self.choices is not None else None),
+            'validators': [validator.__help__ for validator in self.validators]
             })
         if self.unserialize in (str, basestring, unicode):
             values['unserializer'] = 'string'
@@ -422,6 +455,9 @@ class ResourceField(object):
                 raise ValidationError({
                     self.name: unicode(e)
                     })
+        for validator in self.validators:
+            value = validator(value)
+
         return value
 
     def get_choices(self):

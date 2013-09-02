@@ -14,6 +14,9 @@ class X(object):
     rf = ResourceFields({
         'a' : {
             'example' : u'aAaA',
+            'validators': [
+                mock.MagicMock(__help__='validator function')
+            ]
             },
         'b' : {
             'example' : 123,
@@ -43,7 +46,10 @@ class TestResourceFields( unittest.TestCase):
                 'typing': 'static',
                 'validation': '',
                 'optional': False,
-                'example': 'aAaA'
+                'example': 'aAaA',
+                'validators': [
+                    'validator function'
+                ]
                 },
             'b': {
                 'default_on_null': False,
@@ -55,7 +61,8 @@ class TestResourceFields( unittest.TestCase):
                 'validation': 'A b should be a B or a b',
                 'type': 'int',
                 'example': 123,
-                'computed': False
+                'computed': False,
+                'validators': []
                 }
             }
             )
@@ -248,6 +255,21 @@ class TestResourceField( unittest.TestCase):
 
         vrf.assert_called_once_with( 132)
         self.assertEqual( r, vrf.return_value)
+
+    def test_validate_validators(self):
+        validator1, validator2 = mock.Mock(), mock.Mock()
+        rf = ResourceField('f', {
+            'example': 123,
+            'type': int,
+            'validators': [
+                validator1,
+                validator2,
+            ]
+            })
+        r = rf.validate(mock.Mock(spec=object), 132)
+        validator1.assert_called_once_with(132)
+        validator2.assert_called_once_with(validator1.return_value)
+        self.assertEqual(r, validator2.return_value)
 
     def test_choice_bad(self):
         self.assertRaises( ImproperlyConfigured, ResourceField, 'f', {
