@@ -50,7 +50,7 @@ managers Package
     :show-inheritance:
 
 :mod:`managed_classes` Module
-------------------
+-----------------------------
 
 .. automodule:: napixd.managers.managed_classes
     :members:
@@ -58,9 +58,17 @@ managers Package
     :show-inheritance:
 
 :mod:`resource_fields` Module
-------------------
+-----------------------------
 
 .. automodule:: napixd.managers.resource_fields
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`validators` Module
+------------------------
+
+.. automodule:: napixd.managers.validators
     :members:
     :undoc-members:
     :show-inheritance:

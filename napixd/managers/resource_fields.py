@@ -151,8 +151,7 @@ class ResourceFieldsDescriptor(collections.Sequence):
         Field are ignored and remove from *input* if
 
         * The property :attr:`ResourceField.computed` is set.
-        * The property :attr:`ResourceField.editable` is not set and
-            **for_edit** is True.
+        * The property :attr:`ResourceField.editable` is not set and **for_edit** is True.
 
         A :exc:`napixd.exceptions.ValidationError` is raised when
 
@@ -271,7 +270,7 @@ class ResourceField(object):
         Validators are callback that takes a value and returns the validated value,
         or raises a :exc:`napixd.exceptions.ValidationError`.
 
-        .. code-block::
+        .. code-block:: python
 
             def size_is_4(value):
                 if len(value) != 4:

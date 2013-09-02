@@ -24,13 +24,13 @@ class ManagerType(type):
     It does 2 things:
 
     resource_fields transformation
-    ==============================
+    ------------------------------
 
     It instanciates a :class:`resource_fields.ResourceFields` property for the `Manager.resource_fields` attribute.
 
 
     Forwarding of :mod:`actions` and :mod`views`
-    ============================================
+    --------------------------------------------
 
     The :func:`actions.action` and :func:`views.view` of the base classes are forwarded in the newly created class.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__all__ = [ 'PermissionDenied', 'ValidationError', 'NotFound', 'Duplicate' ]
+__all__ = [ 'PermissionDenied', 'ValidationError', 'NotFound', 'Duplicate', 'ImproperlyConfigured' ]
 
 
 class PermissionDenied(Exception):

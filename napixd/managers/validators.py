@@ -1,16 +1,34 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
+"""
+This module defines generic validators to use
+with :attr:`napixd.managers.resource_fields.ResourceField.validators`.
+"""
+
 import re
 from napixd.exceptions import ValidationError
 
 
 class MatchRegexp(object):
+    """
+    Checks that the input matches the *source* regexp
+
+    If not, a :exc:`napixd.exceptions.ValidationError` is raised
+    with *error* text.
+    Error is formatted with :meth:`str.format` and two keyword:
+    **value**: the value that failed the validation and
+    **regex**: the regexp that it should match.
+
+    The *docstring* parameter defines the help of the validator,
+    it is used for introspection.
+    """
     def __init__(self, source, default=None, error=None, docstring=None):
         if not docstring:
             docstring = 'Field have to match regex {0}'.format(source)
         if not error:
-            error = 'Value {value} have to match {regex}'
+            error = 'Value {value} have to match {regex.pattern}'
         self.error = error
 
         self.__help__ = docstring
