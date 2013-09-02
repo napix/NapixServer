@@ -123,7 +123,10 @@ class BaseCollectionService(object):
         self.collection_url = base_url
         self.resource_url = base_url + ':f%i' % last
 
-        self.all_actions = list(self.collection.get_all_actions())
+        self.all_actions = [
+            ActionService(self, action)
+            for action in self.collection.get_all_actions()
+        ]
 
         self.resource_fields = dict(self.collection.resource_fields)
 
@@ -202,15 +205,13 @@ class BaseCollectionService(object):
             app.route(self.collection_url+'_napix_new',callback=self.as_example_resource,
                     method='GET',apply=arguments_plugin)
         if self.all_actions:
-            app.route(self.resource_url+'/_napix_all_actions',callback=self.as_list_actions,
-                    method='GET',apply=arguments_plugin)
+            app.route(self.resource_url+'/_napix_all_actions',
+                      callback=self.as_list_actions,
+                      method='GET',
+                      apply=arguments_plugin)
         for action in self.all_actions:
-            app.route( self.resource_url+'/_napix_action/'+action.__name__ +'/_napix_help',
-                    method='GET', callback = self.as_help_action_factory(action),
-                    apply = arguments_plugin)
-            app.route( self.resource_url+'/_napix_action/'+action.__name__ , method='POST',
-                    callback = self.as_action_factory(action.__name__ ),
-                    apply = arguments_plugin)
+            action.setup_bottle(app)
+
         app.route(self.collection_url,callback=self.as_collection,
                 method='ANY',apply=arguments_plugin)
         app.route(self.resource_url,callback=self.as_resource,
@@ -228,23 +229,8 @@ class BaseCollectionService(object):
     def as_collection(self,path):
         return ServiceCollectionRequest( path, self).handle()
 
-    def as_action_factory(self,action_name):
-        def as_action(path):
-            return ServiceActionRequest(path, self, action_name).handle()
-        return as_action
-
-    def as_help_action_factory(self,action):
-        def as_help_action(path):
-            return {
-                    'resource_fields' : action.resource_fields,
-                    'doc' : action.__doc__,
-                    'mandatory': action.mandatory,
-                    'optional' : action.optional
-                    }
-        return as_help_action
-
     def as_list_actions(self,path):
-        return [ x.__name__ for x in self.all_actions ]
+        return [ x.name for x in self.all_actions ]
 
     def as_managed_classes(self,path):
         return ServiceManagedClassesRequest( path, self).handle()
@@ -257,8 +243,8 @@ class BaseCollectionService(object):
                 'views' : dict( (format_, (cb.__doc__ or '').strip())
                     for (format_,cb) in self.collection.get_all_formats().items() ),
                 'managed_class' : [ mc.get_name() for mc in self.collection.get_managed_classes() ],
-                'actions' : dict( ( action.__name__, (action.__doc__ or '').strip())
-                    for action in self.all_actions ),
+                'actions': dict((action.name, action.doc)
+                                for action in self.all_actions ),
                 'collection_methods' : ServiceCollectionRequest.available_methods(manager),
                 'resource_methods' : ServiceResourceRequest.available_methods(manager),
                 'resource_fields' : self.resource_fields,
@@ -305,3 +291,45 @@ class CollectionService( BaseCollectionService):
         """
         resource = self.extractor( resource)
         return super( CollectionService, self).generate_manager( resource)
+
+
+class ActionService(object):
+    def __init__(self, collection_service, action):
+        self.service = collection_service
+        base_url = collection_service.resource_url
+        self.name = action.__name__
+        self.action = action
+        self.doc = (action.__doc__ or '').strip()
+        self.url = '{0}/_napix_action/{1}'.format(base_url, self.name)
+
+    def setup_bottle(self, app):
+        arguments_plugin = ArgumentsPlugin()
+        app.route(self.url + '/_napix_help',
+                  method='GET',
+                  callback=self.as_help,
+                  apply=arguments_plugin)
+        app.route(self.url,
+                  method='POST',
+                  callback=self.as_action,
+                  apply=arguments_plugin)
+
+    def get_managers(self, path):
+        return self.service.get_managers(path)
+
+    def as_action(self, path):
+        return ServiceActionRequest(path, self, self.name).handle()
+
+    def as_help(self, path):
+        action = self.action
+        return {
+            'resource_fields': action.resource_fields,
+            'doc': action.__doc__,
+            'mandatory': action.mandatory,
+            'optional': action.optional,
+            'source': {
+                'method': self.action.__name__,
+                'class': self.service.collection.__name__,
+                'module': self.service.collection.__module__,
+                'file': sys.modules[self.service.collection.__module__].__file__,
+            },
+        }
