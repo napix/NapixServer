@@ -7,6 +7,7 @@ doc/build/
 *.egg-info
 .project.vip
 venv
+venv-*
 docs/_build
 venv-docs/
 venv-nogevent
