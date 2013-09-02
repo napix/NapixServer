@@ -1,21 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import types
-from napixd.exceptions import ValidationError, ImproperlyConfigured
-from napixd.managers.managed_classes import ManagedClass
-from napixd.managers.resource_fields import ResourceFields
-
 """
 Manager :
     - manages a set of resources
-    - does it by defining create/delete/modify methods that act on those resources
+    - does it by defining create/delete/modify methods
+    that act on those resourcess
 Ressource :
     - MUST be a dict (or an emulation thereof) that hold a set of properties
     - They MAY have actions
 
 Manager are created by the corresponding resource
 """
+
+import types
+from napixd.exceptions import ValidationError, ImproperlyConfigured
+from napixd.managers.managed_classes import ManagedClass
+from napixd.managers.resource_fields import ResourceFields
+
 
 class ManagerType(type):
     """
@@ -26,61 +28,63 @@ class ManagerType(type):
     resource_fields transformation
     ------------------------------
 
-    It instanciates a :class:`resource_fields.ResourceFields` property for the `Manager.resource_fields` attribute.
-
+    It instanciates a :class:`resource_fields.ResourceFields`
+    property for the `Manager.resource_fields` attribute.
 
     Forwarding of :mod:`actions` and :mod`views`
     --------------------------------------------
 
-    The :func:`actions.action` and :func:`views.view` of the base classes are forwarded in the newly created class.
+    The :func:`actions.action` and :func:`views.view` of the base classes
+    are forwarded in the newly created class.
 
     """
-    def __new__( self, name, bases, attrs):
+    def __new__(self, name, bases, attrs):
         try:
-            rf = attrs.pop( 'resource_fields')
+            rf = attrs.pop('resource_fields')
         except KeyError:
             pass
         else:
             try:
-                attrs['resource_fields'] = ResourceFields(rf )
+                attrs['resource_fields'] = ResourceFields(rf)
             except ImproperlyConfigured as e:
-                raise ImproperlyConfigured( 'In {0}, field {1}'.format( name, e))
+                raise ImproperlyConfigured('In {0}, field {1}'.format(name, e))
 
-        return super( ManagerType, self).__new__( self, name, bases, attrs)
+        return super(ManagerType, self).__new__(self, name, bases, attrs)
 
     def __init__(self, name, bases, attrs):
-        super( ManagerType, self).__init__(name, bases, attrs)
+        super(ManagerType, self).__init__(name, bases, attrs)
 
         self._direct_plug = self._cast_direct_plug()
         self._managed_class = self._cast_managed_class()
 
-        methods = [ (name,meth)
-                for name,meth in attrs.items()
-                if not name.startswith('_') and callable( meth) ]
+        methods = [(attr_name, meth)
+                   for attr_name, meth in attrs.items()
+                   if not name.startswith('_') and callable(meth)]
 
-        self._all_actions = self._cast_actions( bases, methods)
-        self._all_formats = self._cast_formats( bases, methods)
+        self._all_actions = self._cast_actions(bases, methods)
+        self._all_formats = self._cast_formats(bases, methods)
 
     def _cast_actions(self, bases, attrs):
         actions = []
         for base in bases:
-            if hasattr( base, 'get_all_actions'):
-                actions.extend( base.get_all_actions())
+            if hasattr(base, 'get_all_actions'):
+                actions.extend(base.get_all_actions())
 
         for attribute_name, attribute in attrs:
-            if hasattr(attribute,'_napix_action') and attribute._napix_action:
-                actions.append( types.UnboundMethodType( attribute, None, self))
+            if hasattr(attribute, '_napix_action') and attribute._napix_action:
+                actions.append(types.UnboundMethodType(attribute, None, self))
         return actions
 
     def _cast_formats(self, bases, attrs):
         formats = {}
         for base in bases:
-            if hasattr( base, 'get_all_formats'):
-                formats.update( base.get_all_formats() )
+            if hasattr(base, 'get_all_formats'):
+                formats.update(base.get_all_formats())
 
-        formats.update( (attribute._napix_view, attribute)
-                for attribute_name, attribute in attrs
-                if hasattr(attribute,'_napix_view') and attribute._napix_view)
+        formats.update((attribute._napix_view, attribute)
+                       for attribute_name, attribute in attrs
+                       if (hasattr(attribute, '_napix_view') and
+                           attribute._napix_view))
         return formats
 
     def _cast_direct_plug(self):
@@ -92,28 +96,34 @@ class ManagerType(type):
             try:
                 iter(self.managed_class)
             except ValueError:
-                raise TypeError('managed_class attribute must be None or one or an iterable of'
-                        'ManagedClass instance, class or string')
+                raise TypeError('managed_class attribute must be None or one'
+                                'or an iterable of ManagedClass instance,'
+                                'class or string')
             return False
 
     def _cast_managed_class(self):
-        if self.managed_class is None or self.direct_plug() == False and len(self.managed_class) == 0:
+        if (self.managed_class is None or
+                self.direct_plug() is False and len(self.managed_class) == 0):
             return []
 
-        managed_classes = [self.managed_class] if self.direct_plug() else list( self.managed_class)
-        for i, managed_class in enumerate( managed_classes):
-            if isinstance( managed_class, ManagedClass):
+        managed_classes = ([self.managed_class]
+                           if self.direct_plug() else list(self.managed_class))
+        for i, managed_class in enumerate(managed_classes):
+            if isinstance(managed_class, ManagedClass):
                 continue
-            managed_classes[i] = ManagedClass( managed_class)
+            managed_classes[i] = ManagedClass(managed_class)
         return managed_classes
 
-    def direct_plug( self ):
+    def direct_plug(self):
         """
         Direct plug describe how the sub-managers are linked from this one.
 
-        It can one of ``None`` when there is no sub-manager,
-        ``True`` when there is only one sub-manager and its name is not inserted bewteen eg ( ``/mgr1/<id1>/<id2>`` ),
-        or ``False`` when the name of the manager is bewteen the ids eg ( ``/mgr1/<id1>/sub/<id2>`` )
+        It can one of
+            * ``None`` when there is no sub-manager,
+            * ``True`` when there is only one sub-manager and
+            its name is not inserted bewteen eg (``/mgr1/<id1>/<id2>`` )
+            * ``False`` when the name of the manager
+            is bewteen the ids eg (``/mgr1/<id1>/sub/<id2>`` )
 
         """
         return self._direct_plug
@@ -125,35 +135,45 @@ class ManagerType(type):
         It is always a list.
         """
         return self._managed_class
+
     def get_all_actions(self):
         """
-        Returns the list of UnboundMethods of all the action implemented by this class.
+        Returns the list of UnboundMethods of all the action
+        implemented by this class.
         """
         return self._all_actions
+
     def get_all_formats(self):
         """
         Returns the dict of the formats implemented by this class.
 
-        The keys are the name of the views and the values are the corresponding methods.
+        The keys are the name of the views and the values
+        are the corresponding methods.
         """
         return self._all_formats
+
 
 class Manager(object):
     """
     Base class of the managers
 
-    Managers are objects created to serve requests on a resource for its sub resources
+    Managers are objects created to serve requests
+    on a resource for its sub resources
     exemple:
     GET /physics/constants/c
-    A manager is created of the resource `physics`, this resource is asked for its child `constants`,
-    a manager for this resource `constant` is created, and this manager is asked for its child `c`.
+    A manager is created of the resource `physics`,
+    this resource is asked for its child `constants`,
+    a manager for this resource `constant` is created,
+    and this manager is asked for its child `c`.
     The resource got is serialized and sent back to the user
 
-    Managers cycle of life MAY contains multiple request, that MAY be executed simultaneously.
+    Managers cycle of life MAY contains multiple request,
+    that MAY be executed simultaneously.
 
     The cycle of life is :
     -Class creation
-    -Insertion into the application inside the root manager or through a parent manager
+    -Insertion into the application inside the root manager
+    or through a parent manager
     -Manager.configure is called with the settings of this class
     -\ An instance is generated for a resource
       | / start_request is called
@@ -164,8 +184,8 @@ class Manager(object):
     If set, it must be either a class inheriting from this same base class
     (or implementing its interface) or a iterable of thoses classes.
 
-    If it's a single class, the resources are wrapper in this classe when going up a level in the URL
-    When going up of a level in the url, children are wrapped in this class
+    If it's a single class, the resources are wrapped
+    in this class when going up a level in the URL.
 
     example::
 
@@ -181,7 +201,8 @@ class Manager(object):
         >>>second_manager = SecondManager(second_resource)  # [..]/second
         >>>return second_manager.get_resource('third')  # [..]/third
 
-    If it's a tuple or a list of classes, the children have multiple subressource managers attached.
+    If it's a tuple or a list of classes,
+    the children have multiple subressource managers attached.
     The class in wich the children is wrapped depends on the url path
     example::
 
@@ -218,24 +239,37 @@ class Manager(object):
     Subclasses of this class MUST define their own list of fields
     in the class attribute resource_fields.
 
-    This attribute is a dict where the keys are the fields names and the values are
-    the descriptions of those fields
+    This attribute is a dict where the keys are the fields names and the values
+    are the descriptions of those fields
 
     properties includes:
         -optional : if the value is optional
         -example : used for documentation and the example resource
         -description : describe the use of the resource
-        -computed : This field is computed by the service and the user CAN NOT force it
-    example::
+        -computed : This field is computed by the service and the user
+        CAN NOT force it
 
-        >>>class User(Manager):
-        >>>     resource_fields = {
-        >>>         'username':{'description':'POSIX username of the system account', 'example':'dritchie'},
-        >>>         'uid':{'description':'Unique identifier, will be generated if not given','optional':True},
-        >>>         'gecos':{'description':'Comment on the user name',example:'Dennis M. Ritchie'}
-        >>>         }
+    .. code-block:: python
 
-    The resources may contains some fields that are not in the class' resource_fields.
+        class User(Manager):
+            resource_fields = {
+                'username': {
+                    'description': 'POSIX username of the system account',
+                    'example': 'dritchie'
+                },
+                'uid':{
+                    'description': '''Unique identifier,
+                    will be generated if not given''',
+                    'optional':True
+                },
+                'gecos':{
+                    'description':'Comment on the user name',
+                    example:'Dennis M. Ritchie'
+                }
+            }
+
+    The resources may contains some fields
+    that are not in the class' resource_fields.
     When the resource are serialized to be send in json,
     only the fields in resource_fields are extracted.
 
@@ -265,8 +299,8 @@ class Manager(object):
 
         Each manager must declare the fields of the resources it generates.
         The resource_fields must be a :class:`dict`.
-        The keys are the name of the fields and the values are
-        dicts that are transformed to :class:`napixd.managers.resource_fields.ResourceField`
+        The keys are the name of the fields and the values are dicts that are
+        transformed to :class:`napixd.managers.resource_fields.ResourceField`
 
     .. attribute:: parent
 
@@ -281,7 +315,8 @@ class Manager(object):
         .. note::
 
             validate_resource_FIELDNAME does not actually exists.
-            FIELDNAME have to be replace by an actual field of :attr:`resource_fields`
+            FIELDNAME have to be replaced by an actual field
+            of :attr:`resource_fields`
     """
 
     __metaclass__ = ManagerType
@@ -302,7 +337,7 @@ class Manager(object):
             name = name[:-len('manager')]
         return name
 
-    def __init__(self,parent):
+    def __init__(self, parent):
         """
         intialize the Manager with the parent resource creating it
 
@@ -322,19 +357,21 @@ class Manager(object):
 
     def get_formatter(self, format_):
         #return the method instance of the formatter
-        return types.MethodType( self.__class__.get_all_formats()[format_], self, self.__class__)
+        return types.MethodType(self.__class__.get_all_formats()[format_],
+                                self, self.__class__)
 
-    def configure(self,conf):
+    def configure(self, conf):
         """
         Method called with the configuration of this class
         """
         pass
 
     @classmethod
-    def get_example_resource( cls):
+    def get_example_resource(cls):
         """
         Generate an example of the resources managed by this manager
-        Computed by the `example` of each resource field in Manager.resource_fields
+        Computed by the `example` of each resource field in
+        :attr:`Manager.resource_fields`
         """
         return cls.resource_fields.get_example_resource()
 
@@ -347,11 +384,12 @@ class Manager(object):
         return not cls.__module__.startswith('napixd.managers')
 
     def serialize(self, value):
-        return self.resource_fields.serialize( value)
-    def unserialize(self, value):
-        return self.resource_fields.unserialize( value)
+        return self.resource_fields.serialize(value)
 
-    def validate_id(self,id_):
+    def unserialize(self, value):
+        return self.resource_fields.unserialize(value)
+
+    def validate_id(self, id_):
         """
         Check that the id given as an argument is a valid ID
 
@@ -386,12 +424,14 @@ class Manager(object):
 
     def validate_resource(self, resource_dict):
         """
-        Validate a resource_dict (which can be directly a dict or an object emulating a dict) by
-        checking that every mandatory field specified in self.resource_fields is defined.
+        Validate a resource_dict (which can be directly a dict or an object
+        emulating a dict) by checking that every mandatory field specified
+        in self.resource_fields is defined.
 
-        If the current object implement self.validate_resource_<key> method, it'll be called with
-        the value of resource_dict[<key>] as parameters.
-        It shoud raise a ValidationError if the data isn't valid, else it must return a valid value
+        If the current object implement self.validate_resource_<key> method,
+        it'll be called with the value of resource_dict[<key>] as parameters.
+        It shoud raise a ValidationError if the data isn't valid,
+        else it must return a valid value
 
         Return a resource_dict.
         """
@@ -399,8 +439,9 @@ class Manager(object):
 
     def validate(self, resource_dict, for_edit=False):
         # Create a new dict to populate with validated data
-        resource_dict = self.resource_fields.validate( resource_dict, for_edit=for_edit)
-        return self.validate_resource( resource_dict)
+        resource_dict = self.resource_fields.validate(resource_dict,
+                                                      for_edit=for_edit)
+        return self.validate_resource(resource_dict)
 
     def is_up_to_date(self):
         """
@@ -425,16 +466,18 @@ class Manager(object):
         """
         pass
 
-    def start_request(self,request):
+    def start_request(self, request):
         """
         place holder method that is called at the start of each HTTP request
         """
         pass
-    def end_request(self,request):
+
+    def end_request(self, request):
         """
         place holder method that is called at the end of each HTTP request
         """
         pass
+
 
 class ManagerInterface(object):
     """
@@ -443,16 +486,17 @@ class ManagerInterface(object):
     This interface MUST NOT be inherited by the subclasses.
 
     The managers MAY not implement all the methods below.
-    The method not implemented will be answered by a 405 METHOD NOT ALLOWED response
-    with the list of methods auhorized computed according to the existing methods.
+    The method not implemented will be answered by a
+    405 METHOD NOT ALLOWED response with the list of methods auhorized
+    computed according to the existing methods.
 
-    If a attribute or a method of the manager has one of those methods name, the functionnality
-    will be considered being implemented.
+    If a attribute or a method of the manager has one of those methods name,
+    the functionnality will be considered being implemented.
 
     The manager MUST NOT define a method with a raise NotImplementedError
     to mean that the method is not supported.
     """
-    def delete_resource(self,resource_id):
+    def delete_resource(self, resource_id):
         """
         Delete a managed ressource.
 
@@ -468,7 +512,8 @@ class ManagerInterface(object):
         """
         Create a new managed ressource.
 
-        resource_dict is a dict populated with the data sent by the user after they have been cleanned
+        resource_dict is a dict populated with the data sent by the user after
+        they have been cleanned
 
         This method MUST return the id of the resource created
 
@@ -479,12 +524,12 @@ class ManagerInterface(object):
         """
         raise NotImplementedError
 
-    def get_resource(self,resource_id):
+    def get_resource(self, resource_id):
         """
         Get the ressource object corresponding to resource_id.
 
-        This object must be a dict or emulate it, as the nAPIxd will convert this dict
-        to a json object to build his response.
+        This object must be a dict or emulate it, as the nAPIxd will convert
+        this dict to a json object to build his response.
 
         Eg: GET /somehting/[...]/mymanager/42
         calls
@@ -493,11 +538,10 @@ class ManagerInterface(object):
         """
         raise NotImplementedError
 
-
-    def modify_resource(self,resource_id,resource_dict):
+    def modify_resource(self, resource_id, resource_dict):
         """
-        Modify the ressource designed by resource_id by updating it with resource_dict
-        defined values.
+        Modify the ressource designed by resource_id by updating it
+        with resource_dict defined values.
 
         Eg: PUT /something/[...]/mymanager/42
         will be translated to :
@@ -510,8 +554,9 @@ class ManagerInterface(object):
 
     def list_resource(self):
         """
-        Return the ids list of all managed resource. The result can be of 2 form : either a direct list
-        of string, representing each id, or a list of dict, defining at least '_id' and '_desc' as key.
+        Return the ids list of all managed resource.
+        It should return a list of string representing each id
+        of the collection.
 
         Eg: GET /something/[...]/mymanager/
         will be translated to
@@ -519,29 +564,28 @@ class ManagerInterface(object):
         """
         raise NotImplementedError
 
-
     def list_resource_filter(self, filters):
         """
         Return the list of ids of all managed resources matching the *filters*.
 
         *filters* is the GET parameter of :data:`bottle.request`.
-        It behaves like a dict with an additional :meth:`getall(key)` method that returns a list of all the values
-        matching the given **key**.
+        It behaves like a dict with an additional :meth:`getall(key)` method
+        that returns a list of all the values matching the given **key**.
         """
         raise NotImplementedError
 
-    def get_all_resources( self):
+    def get_all_resources(self):
         """
-        Return the tuple of ( id, resource) for all the managed resources.
+        Return the tuple of (id, resource) for all the managed resources.
 
         See :meth:`list_resource` and :meth`get_resource`.
         """
 
-    def get_all_resources_filter( self, filters):
+    def get_all_resources_filter(self, filters):
         """
-        Return the tuple of (id, resource) of all managed resources matching the *filters*.
+        Return the tuple of (id, resource) of all managed resources
+        matching the *filters*.
 
         See :meth:`list_resource_filter` and :meth:`get_all_resources`
         """
         raise NotImplementedError
-
