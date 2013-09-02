@@ -141,7 +141,7 @@ class DictManager(ReadOnlyDictManager):
         with self.resource_lock:
             resource = self.get_resource(resource_id)
             resource.update(resource_dict)
-            self._set_resource(resource_id,resource_dict)
+            self._set_resource(resource_id,resource)
 
     def create_resource(self,resource_dict):
         with self.resource_lock:
