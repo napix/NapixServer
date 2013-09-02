@@ -11,36 +11,40 @@ import collections
 from napixd.exceptions import ImproperlyConfigured, ValidationError
 
 __all__ = [
-        'ResourceFields',
-        'ResourceField',
-        'ResourceFieldsDict',
-        'ResourceFieldsDescriptor',
-        ]
+    'ResourceFields',
+    'ResourceField',
+    'ResourceFieldsDict',
+    'ResourceFieldsDescriptor',
+]
 
-class ResourceFields( object):
+
+class ResourceFields(object):
     """
     The property object.
 
-    When accessing it as a class property, it returns a dict-like object of the resource_fields.
+    When accessing it as a class property,
+    it returns a dict-like object of the resource_fields.
 
-    When it is accessed through a manager instance, it returns a :class:`ResourceFieldsDescriptor`.
+    When it is accessed through a manager instance,
+    it returns a :class:`ResourceFieldsDescriptor`.
     """
     def __init__(self, resource_fields):
         self.values = []
-        for name, meta in  resource_fields.items():
+        for name, meta in resource_fields.items():
             try:
-                rf = ResourceField( name, meta)
+                rf = ResourceField(name, meta)
             except ImproperlyConfigured as e:
-                raise ImproperlyConfigured( '`{0}`: {1}'.format( name, e))
+                raise ImproperlyConfigured('`{0}`: {1}'.format(name, e))
 
-            self.values.append( rf)
+            self.values.append(rf)
 
     def __get__(self, instance, owner):
         if instance is None:
-            return ResourceFieldsDict( owner, self.values )
-        return ResourceFieldsDescriptor( instance, self.values )
+            return ResourceFieldsDict(owner, self.values)
+        return ResourceFieldsDescriptor(instance, self.values)
 
-class ResourceFieldsDict( collections.Mapping):
+
+class ResourceFieldsDict(collections.Mapping):
     """
     The class view of the resource_fields
 
@@ -48,8 +52,8 @@ class ResourceFieldsDict( collections.Mapping):
 
     The fields returned are a combination of the properties of the
     :class:`ResourceField` and the :attr:`ResourceField.extra`
-    and the extra **validate** member extracted from
-    the corresponding :meth:`~napixd.managers.base.Manager.validate_resource_FIELDNAME`
+    and the extra **validate** member extracted from the corresponding
+    :meth:`~napixd.managers.base.Manager.validate_resource_FIELDNAME`
     if it exists.
     """
     def __init__(self, manager_class, values):
@@ -58,25 +62,30 @@ class ResourceFieldsDict( collections.Mapping):
         for resource_field in values:
             field = resource_field.name
             field_meta = resource_field.resource_field()
-            validation_method = getattr( manager_class, 'validate_resource_' + field, None)
+            validation_method = getattr(manager_class,
+                                        'validate_resource_' + field, None)
 
-            if hasattr( validation_method, '__doc__') and validation_method.__doc__ is not None:
+            if (hasattr(validation_method, '__doc__') and
+                    validation_method.__doc__ is not None):
                 field_meta['validation'] = validation_method.__doc__.strip()
             else:
                 field_meta['validation'] = ''
 
-            self.values[ field] = field_meta
+            self.values[field] = field_meta
 
     def __getitem__(self, item):
         return self.values[item]
+
     def __len__(self):
-        return len( self.values)
+        return len(self.values)
+
     def __iter__(self):
-        return iter( self.values)
+        return iter(self.values)
 
     def get_example_resource(self):
         """
-        Returns the example resource found with the :attr:`~ResourceField.example` field of the resource fields.
+        Returns the example resource found with the
+        :attr:`~ResourceField.example` field of the resource fields.
 
         The :attr:`~ResourceField.computed` field are ignored.
         """
@@ -84,15 +93,16 @@ class ResourceFieldsDict( collections.Mapping):
         for field in self.resource_fields:
             if field.computed:
                 continue
-            example[field.name]= field.example
+            example[field.name] = field.example
         return example
 
 
-class ResourceFieldsDescriptor( collections.Sequence):
+class ResourceFieldsDescriptor(collections.Sequence):
     """
     The instance view of resource_fields
 
-    This object manages the relations between a manager and its resource_fields.
+    This object manages the relations between a manager and its
+    resource_fields.
     """
     def __init__(self, manager, values):
         self.manager = manager
@@ -111,7 +121,7 @@ class ResourceFieldsDescriptor( collections.Sequence):
         dest = {}
         for k in self.values:
             try:
-                 value = raw[k.name]
+                value = raw[k.name]
             except KeyError:
                 pass
             else:
@@ -125,7 +135,7 @@ class ResourceFieldsDescriptor( collections.Sequence):
         dest = {}
         for k in self:
             try:
-                 value = raw[k.name]
+                value = raw[k.name]
             except KeyError:
                 pass
             else:
@@ -135,12 +145,14 @@ class ResourceFieldsDescriptor( collections.Sequence):
     def validate(self, input, for_edit=False):
         """
         Validate the **input**.
-        If **for_edit** is set to True, the *input* is validated as the modification of an existing resource.
+        If **for_edit** is set to True, the *input* is validated
+        as the modification of an existing resource.
 
         Field are ignored and remove from *input* if
 
         * The property :attr:`ResourceField.computed` is set.
-        * The property :attr:`ResourceField.editable` is not set and **for_edit** is True.
+        * The property :attr:`ResourceField.editable` is not set and
+            **for_edit** is True.
 
         A :exc:`napixd.exceptions.ValidationError` is raised when
 
@@ -151,7 +163,8 @@ class ResourceFieldsDescriptor( collections.Sequence):
         output = {}
         for resource_field in self:
             key = resource_field.name
-            if resource_field.computed or for_edit and not resource_field.editable :
+            if (resource_field.computed or
+                    for_edit and not resource_field.editable):
                 continue
             elif key not in input:
                 if resource_field.default_on_null:
@@ -160,21 +173,24 @@ class ResourceFieldsDescriptor( collections.Sequence):
                     continue
                 else:
                     raise ValidationError({
-                        key : u'Required'
+                        key: u'Required'
                         })
             else:
                 value = input[key]
 
-            output[key] = resource_field.validate( self.manager, value)
+            output[key] = resource_field.validate(self.manager, value)
         return output
 
-identity = lambda x:x
-class ResourceField( object):
+identity = lambda x: x
+
+
+class ResourceField(object):
     """
     The object for each resource_fields member.
 
     It takes as arguments the name on the field and the :class:`dict`
-    of values defined in the creation of the :class:`napixd.managers.base.Manager` class.
+    of values defined in the creation
+    of the :class:`napixd.managers.base.Manager` class.
 
     Some members have conditions, if those conditions are not met,
     :exc:`napixd.exceptions.ImproperlyConfigured` is raised.
@@ -189,7 +205,8 @@ class ResourceField( object):
     .. attribute:: editable
 
         Set to False if the field is not writeable once the object is created.
-        The field will be stripped from *resource_dict* before :meth:`napixd.managers.base.Manager.modify_resource` is called.
+        The field will be stripped from *resource_dict*
+        before :meth:`napixd.managers.base.Manager.modify_resource` is called.
 
         :attr:`editable` is False if :attr:`computed` is True.
 
@@ -203,7 +220,8 @@ class ResourceField( object):
 
     .. attribute:: default_on_null
 
-        Set to True if the validation method can take ``None`` as an input an generate a default value,
+        Set to True if the validation method can take ``None``
+        as an input an generate a default value,
         when the field is not present.
 
         Defaults to False
@@ -211,8 +229,10 @@ class ResourceField( object):
     .. attribute:: typing
 
         One of **static** or **dynamic**.
-        When typing is static, the validation checks the :attr:`type` of the input
-        and raises a :exc:`~napixd.exceptions.ValidationError` if it does not match.
+        When typing is static,
+        the validation checks the :attr:`type` of the input
+        and raises a :exc:`~napixd.exceptions.ValidationError`
+        if it does not match.
 
         When it is dynamic, the type is not enforced.
 
@@ -242,12 +262,14 @@ class ResourceField( object):
         * A callable returning such an object
 
         List is called with the object for the documentation of the manager.
-        ``in`` is caled to check is the value given by the user is a valid choice.
+        ``in`` is called to check
+        is the value given by the user is a valid choice.
 
     .. attribute:: extra
 
         All the fields from the resource_field which are not a property.
-        Those fields are not used by the Napix Server but may be usefull to the clients.
+        Those fields are not used by the Napix Server
+        but may be useful to the clients.
 
         :description:
             The goal of the field.
@@ -258,31 +280,32 @@ class ResourceField( object):
 
     """
     def __init__(self, name, values):
-        if not isinstance( values, collections.Mapping):
-            raise ImproperlyConfigured('Resource field declaration is not a dict')
+        if not isinstance(values, collections.Mapping):
+            raise ImproperlyConfigured(
+                'Resource field declaration is not a dict')
         self.name = name
 
         meta = {
-            'editable' : True,
-            'optional' : False,
-            'computed' : False,
-            'default_on_null' : False,
-            'typing' : 'static',
-            'unserializer' : identity,
-            'serializer' : identity,
+            'editable': True,
+            'optional': False,
+            'computed': False,
+            'default_on_null': False,
+            'typing': 'static',
+            'unserializer': identity,
+            'serializer': identity,
             }
-        extra_keys = set( values).difference( meta)
-        meta.update( values)
+        extra_keys = set(values).difference(meta)
+        meta.update(values)
 
         self.optional = meta['optional']
         self.computed = meta['computed']
         self.default_on_null = meta['default_on_null']
 
-        self.editable = not self.computed and meta.get( 'editable', True)
+        self.editable = not self.computed and meta.get('editable', True)
 
         explicit_type = meta.get('type')
-        if explicit_type and not isinstance( explicit_type, type):
-            raise ImproperlyConfigured( 'type field must be a class')
+        if explicit_type and not isinstance(explicit_type, type):
+            raise ImproperlyConfigured('type field must be a class')
 
         try:
             self.example = meta['example']
@@ -290,7 +313,7 @@ class ResourceField( object):
             if self.computed:
                 self.example = u''
             else:
-                raise ImproperlyConfigured( 'Missing example')
+                raise ImproperlyConfigured('Missing example')
 
         implicit_type = type(self.example)
         if implicit_type is str:
@@ -303,11 +326,12 @@ class ResourceField( object):
             self._dynamic_typing = True
         elif self.typing == 'static':
             self._dynamic_typing = False
-            if type( self.example) != self.type and not self.computed:
-                if self.type is unicode and isinstance( self.example, str):
+            if type(self.example) != self.type and not self.computed:
+                if self.type is unicode and isinstance(self.example, str):
                     self.example = unicode(self.example)
                 else:
-                    raise ImproperlyConfigured('Example is not of type {0}'.format( self.type.__name__))
+                    raise ImproperlyConfigured(
+                        'Example is not of type {0}'.format(self.type.__name__))
         else:
             raise ImproperlyConfigured('Typing must be one of "static", "dynamic"')
 
@@ -316,17 +340,17 @@ class ResourceField( object):
         except KeyError:
             choices = None
         else:
-            if not callable( choices) and not hasattr( choices, '__iter__'):
+            if not callable(choices) and not hasattr(choices, '__iter__'):
                 raise ImproperlyConfigured('choices must be a callable or an iterable')
         self.choices = choices
 
         self.unserialize = meta['unserializer']
         self.serialize = meta['serializer']
 
-        self.extra = dict( (k, values[k]) for k in extra_keys )
+        self.extra = dict((k, values[k]) for k in extra_keys)
 
     def __repr__(self):
-        return 'Field <{0}>'.format( self.name)
+        return 'Field <{0}>'.format(self.name)
 
     def check_type(self, value):
         """
@@ -338,66 +362,65 @@ class ResourceField( object):
             return True
         elif self._dynamic_typing:
             return True
-        elif self.type == int and isinstance( value, long):
+        elif self.type == int and isinstance(value, long):
             return True
         else:
-            return isinstance( value, self.type)
+            return isinstance(value, self.type)
 
     @property
     def required(self):
         """
         The field is :attr:`optional` or :attr:`computed`
         """
-        return not ( self.optional or self.computed)
+        return not (self.optional or self.computed)
 
     def resource_field(self):
-        values = dict( self.extra)
+        values = dict(self.extra)
         values.update({
-            'editable' : self.editable,
-            'optional' : self.optional,
-            'computed' : self.computed,
-            'default_on_null' : self.default_on_null,
-            'example' : self.example,
-            'typing' : 'dynamic' if self._dynamic_typing else 'static',
-            'choices' : list( self.get_choices() ) if self.choices is not None else None
+            'editable': self.editable,
+            'optional': self.optional,
+            'computed': self.computed,
+            'default_on_null': self.default_on_null,
+            'example': self.example,
+            'typing': 'dynamic' if self._dynamic_typing else 'static',
+            'choices': list(self.get_choices()) if self.choices is not None else None
             })
-        if self.unserialize in ( str, basestring, unicode):
+        if self.unserialize in (str, basestring, unicode):
             values['unserializer'] = 'string'
         elif self.unserialize is not identity:
             values['unserializer'] = self.unserialize.__name__
 
-        if self.type in ( str, basestring, unicode):
+        if self.type in (str, basestring, unicode):
             values['type'] = 'string'
         elif self.type is not identity:
             values['type'] = self.type.__name__
 
-        if self.serialize in ( str, basestring, unicode):
+        if self.serialize in (str, basestring, unicode):
             values['serializer'] = 'string'
         elif self.serialize is not identity:
             values['serializer'] = self.serialize.__name__
 
         return values
 
-
-    def validate( self, manager, value):
+    def validate(self, manager, value):
         """
         Validate the input **value**.
         """
-        if not self.check_type( value):
+        if not self.check_type(value):
             raise ValidationError({
-                    self.name : u'Bad type: {0} has type {2} but should be {1}'.format(
-                        self.name, self.type.__name__, type(value).__name__)
-                    })
+                self.name: u'Bad type: {0} has type {2} but should be {1}'.format(
+                    self.name, self.type.__name__, type(value).__name__)
+            })
         if self.choices is not None:
-            self.check_choice( value)
+            self.check_choice(value)
 
-        validator = getattr( manager, 'validate_resource_%s' % self.name, None)
+        validator = getattr(manager, 'validate_resource_%s' % self.name, None)
         if validator:
             try:
-                value = validator( value)
+                value = validator(value)
             except ValidationError, e:
                 raise ValidationError({
-                    self.name : unicode(e)
+                    self.name: unicode(e)
                     })
         return value
 
@@ -415,15 +438,16 @@ class ResourceField( object):
         """
         Check that the value(s) fits the choices.
 
-        If value is an iterable ( except strings), it checks that **value** is a subset of :attr:`choices`
+        If value is an iterable (except strings),
+        it checks that **value** is a subset of :attr:`choices`
         else it checks that **value** is in :attr:`choices`.
         """
         choices = self.get_choices()
-        if isinstance( value, basestring) or not hasattr( value, '__iter__'):
-            value = [ value]
+        if isinstance(value, basestring) or not hasattr(value, '__iter__'):
+            value = [value]
 
         for v in value:
             if not v in choices:
                 raise ValidationError({
-                    self.name : u'{0} is not one of the available choices'.format( v)
+                    self.name: u'{0} is not one of the available choices'.format(v)
                     })
