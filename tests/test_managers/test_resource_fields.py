@@ -15,7 +15,7 @@ class X(object):
         'a' : {
             'example' : u'aAaA',
             'validators': [
-                mock.MagicMock(__help__='validator function')
+                mock.MagicMock(__doc__='validator function')
             ]
             },
         'b' : {

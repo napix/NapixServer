@@ -415,7 +415,7 @@ class ResourceField(object):
             'typing': 'dynamic' if self._dynamic_typing else 'static',
             'choices': (list(self.get_choices())
                         if self.choices is not None else None),
-            'validators': [validator.__help__ for validator in self.validators]
+            'validators': [validator.__doc__ for validator in self.validators]
             })
         if self.unserialize in (str, basestring, unicode):
             values['unserializer'] = 'string'

@@ -16,7 +16,7 @@ class TestMatchRegexp(unittest.TestCase):
         self.re = Regexp.return_value
 
     def test_doctstring(self):
-        self.assertEqual(self.match_re.__help__, 'Match a1, a2, a3')
+        self.assertEqual(self.match_re.__doc__, 'Match a1, a2, a3')
 
     def test_re_pass(self):
         self.re.match.return_value = True

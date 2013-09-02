@@ -31,7 +31,7 @@ class MatchRegexp(object):
             error = 'Value {value} have to match {regex.pattern}'
         self.error = error
 
-        self.__help__ = docstring
+        self.__doc__ = docstring
         self.default = default
         self.regex = re.compile(source)
 
