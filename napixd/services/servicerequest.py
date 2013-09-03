@@ -66,7 +66,7 @@ class ServiceRequest(object):
         except (AttributeError, KeyError):
             raise bottle.HTTPError(
                 405, 'Method is not implemented',
-                allow=', '.join(self.available_methods(self.manager)))
+                allow=','.join(self.available_methods(self.manager)))
 
     def call(self):
         """
@@ -282,14 +282,7 @@ class ServiceActionRequest(ServiceResourceRequest):
 
     def check_datas(self):
         callback = getattr(self.manager, self.action_name)
-        supplied = set(bottle.request.data.keys())
-        if not supplied.issuperset(callback.mandatory):
-            missing_keys = set(callback.mandatory).difference(supplied)
-            raise ValidationError(dict((key, 'Missing key')
-                                       for key in missing_keys))
-        data = {}
-        for key in callback.all_parameters.intersection(supplied):
-            data[key] = bottle.request.data[key]
+        data = callback.resource_fields.validate(bottle.request.data)
         return data
 
     def call(self):

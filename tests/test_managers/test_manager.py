@@ -116,6 +116,6 @@ class TestManagerType( unittest.TestCase):
                 pass
 
 
-        self.assertEqual( M2.get_all_actions(), [ M2.a_m1, M2.a_m2 ])
+        self.assertEqual( M2.get_all_actions(), [ 'a_m1', 'a_m2' ])
 
 

@@ -17,6 +17,7 @@ import types
 from napixd.exceptions import ValidationError, ImproperlyConfigured
 from napixd.managers.managed_classes import ManagedClass
 from napixd.managers.resource_fields import ResourceFields
+from napixd.managers.actions import ActionProperty
 
 
 class ManagerType(type):
@@ -59,7 +60,7 @@ class ManagerType(type):
 
         methods = [(attr_name, meth)
                    for attr_name, meth in attrs.items()
-                   if not name.startswith('_') and callable(meth)]
+                   if not name.startswith('_')]
 
         self._all_actions = self._cast_actions(bases, methods)
         self._all_formats = self._cast_formats(bases, methods)
@@ -71,8 +72,8 @@ class ManagerType(type):
                 actions.extend(base.get_all_actions())
 
         for attribute_name, attribute in attrs:
-            if hasattr(attribute, '_napix_action') and attribute._napix_action:
-                actions.append(types.UnboundMethodType(attribute, None, self))
+            if isinstance(attribute, ActionProperty):
+                actions.append(attribute_name)
         return actions
 
     def _cast_formats(self, bases, attrs):
@@ -138,8 +139,7 @@ class ManagerType(type):
 
     def get_all_actions(self):
         """
-        Returns the list of UnboundMethods of all the action
-        implemented by this class.
+        Returns the list of all the action implemented by this class.
         """
         return self._all_actions
 

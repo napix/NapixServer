@@ -294,13 +294,14 @@ class CollectionService( BaseCollectionService):
 
 
 class ActionService(object):
-    def __init__(self, collection_service, action):
+    def __init__(self, collection_service, action_name):
         self.service = collection_service
         base_url = collection_service.resource_url
-        self.name = action.__name__
-        self.action = action
-        self.doc = (action.__doc__ or '').strip()
+        self.name = action_name
+        self.action = getattr(collection_service.collection, action_name)
+        self.doc = (self.action.__doc__ or '').strip()
         self.url = '{0}/_napix_action/{1}'.format(base_url, self.name)
+        self.resource_fields = dict(self.action.resource_fields)
 
     def setup_bottle(self, app):
         arguments_plugin = ArgumentsPlugin()
@@ -322,7 +323,7 @@ class ActionService(object):
     def as_help(self, path):
         action = self.action
         return {
-            'resource_fields': action.resource_fields,
+            'resource_fields': self.resource_fields,
             'doc': action.__doc__,
             'mandatory': action.mandatory,
             'optional': action.optional,

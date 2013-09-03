@@ -199,7 +199,7 @@ class TestServiceActionRequest( _Test):
 
     def _action(self, fn):
         manager = self.managed
-        manager.action = types.MethodType( action(fn), manager, manager.__class__)
+        manager.action = action(fn).__get__(manager, manager.__class__)
 
     def test_post_noarg(self):
         self.request.data = {}

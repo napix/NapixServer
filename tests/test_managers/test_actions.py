@@ -19,59 +19,44 @@ class _TestDecorator( unittest2.TestCase):
             return dest, subject
         self.fn = send_mail
 
-class TestDecorator( _TestDecorator):
-    def test_decorated(self):
-        self.assertTrue( self.fn._napix_action)
-    def test_parameters(self):
-        self.assertListEqual( self.fn.mandatory, ['dest' ])
-        self.assertDictEqual( self.fn.optional, { 'subject' :'export' })
-    def test_resource_fields(self):
-        self.assertDictEqual( self.fn.resource_fields, {
-            'dest': {
-                'example':'', 'description':''
-                },
-            'subject': {
-                'example':'', 'description':'', 'optional': True
-                }
-            })
-    def test_parameter(self):
-        fn = parameter( 'dest', example='you@mail.com')(self.fn)
-        self.assertEqual( fn.resource_fields['dest']['example'], 'you@mail.com')
 
-class _TestManagerAction( _TestDecorator):
+class _TestManagerAction(_TestDecorator):
     def setUp(self):
-        super( _TestManagerAction, self).setUp()
-        self.Manager = ManagerType( 'NewManager', ( Manager, ), {
+        super(_TestManagerAction, self).setUp()
+        self.Manager = ManagerType('NewManager', (Manager, ), {
             'send_mail': self.fn,
-            'get_resource' : mock.Mock(spec=True, return_value={ 'mpm': 'prefork' }),
+            'get_resource': mock.Mock(spec=True, return_value={'mpm': 'prefork'}),
             })
 
-class TestManagerAction( _TestManagerAction):
+
+class TestManagerAction(_TestManagerAction):
     def test_class_with_actions(self):
-        self.assertEqual( self.Manager.get_all_actions(), [ self.Manager.send_mail ])
+        self.assertEqual(self.Manager.get_all_actions(), ['send_mail'])
 
-class _TestServiceAction( _TestManagerAction):
-    def setUp( self):
-        super( _TestServiceAction, self).setUp()
-        self.cs = FirstCollectionService( self.Manager, Conf(), 'my-mock')
 
-class TestServiceAction( _TestServiceAction):
+class _TestServiceAction(_TestManagerAction):
+    def setUp(self):
+        super(_TestServiceAction, self).setUp()
+        self.cs = FirstCollectionService(self.Manager, Conf(), 'my-mock')
+
+
+class TestServiceAction(_TestServiceAction):
     def test_set_bottle(self):
         bottle = mock.Mock()
-        self.cs.setup_bottle( bottle)
-        self.assertSetEqual(set( mc[0][0] for mc in bottle.route.call_args_list ),
-                set([
-                    '/my-mock',
-                    '/my-mock/',
-                    '/my-mock/:f0',
-                    '/my-mock/_napix_help',
-                    '/my-mock/_napix_resource_fields',
-                    '/my-mock/:f0/_napix_all_actions',
-                    '/my-mock/:f0/_napix_action/send_mail',
-                    '/my-mock/:f0/_napix_action/send_mail/_napix_help',
-                    ]))
+        self.cs.setup_bottle(bottle)
+        self.assertSetEqual(
+            set(mc[0][0] for mc in bottle.route.call_args_list),
+            set([
+                '/my-mock',
+                '/my-mock/',
+                '/my-mock/:f0',
+                '/my-mock/_napix_help',
+                '/my-mock/_napix_resource_fields',
+                '/my-mock/:f0/_napix_all_actions',
+                '/my-mock/:f0/_napix_action/send_mail',
+                '/my-mock/:f0/_napix_action/send_mail/_napix_help',
+            ]))
 
     def test_all_action(self):
         all_actions = self.cs.as_list_actions('id')
-        self.assertEqual( all_actions, [ 'send_mail' ])
-
+        self.assertEqual(all_actions, ['send_mail'])
