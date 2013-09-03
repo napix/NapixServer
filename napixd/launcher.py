@@ -140,6 +140,7 @@ Meta-options:
         console.info( 'Starting process %s', os.getpid())
         console.info( 'Logging activity in %s', self.LOG_FILE )
 
+    def _patch_gevent(self):
         if 'gevent' in self.options:
             try:
                 import gevent
@@ -157,14 +158,16 @@ Meta-options:
         """
         Run the Napix Server
         """
-        self.set_debug()
+
         if 'help' in self.options:
             print self.HELP_TEXT
             return 1
         if 'options' in self.options:
-            print 'Enabled options are: ' + ' '.join( self.options)
+            print 'Enabled options are: ' + ' '.join(self.options)
             return
 
+        self._patch_gevent()
+        self.set_debug()
         app = self.get_app()
 
         logger.info('Starting')
@@ -314,6 +317,7 @@ Meta-options:
         """
         Returns the wsgi application.
         """
+        self._patch_gevent()
         application = self.get_app()
         return self.apply_middleware( application)
 
