@@ -98,14 +98,14 @@ class NapixdBottle(bottle.Bottle):
 
     def _error_handler_factory(self,code):
         """ 404 view """
-        def inner(exception):
+        def inner_error_handler(exception):
             bottle.response.status = code
             bottle.response['Content-Type'] = 'text/plain'
             return exception.body
-        return inner
+        return inner_error_handler
 
-    def _error_service_factory( self, cause):
-        def inner( catch_all ):
+    def _error_service_factory(self, cause):
+        def inner_error_service_factory(*catch_all):
             raise cause
-        return inner
+        return inner_error_service_factory
 
