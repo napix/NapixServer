@@ -306,5 +306,6 @@ class TestResourceField( unittest.TestCase):
             'example' : 'mpm',
             'choices' : callable
             })
+        assert not callable.reset_mock()
         rf.check_choice( 'prefork')
         callable.assert_called_once_with()

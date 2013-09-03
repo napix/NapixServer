@@ -28,20 +28,23 @@ class ResourceFields(object):
     When it is accessed through a manager instance,
     it returns a :class:`ResourceFieldsDescriptor`.
     """
-    def __init__(self, resource_fields):
+    def __init__(self, resource_fields, *overrides):
         self.values = []
-        for name, meta in resource_fields.items():
-            try:
-                rf = ResourceField(name, meta)
-            except ImproperlyConfigured as e:
-                raise ImproperlyConfigured('`{0}`: {1}'.format(name, e))
-
+        for rf in resource_fields:
+            if not isinstance(rf, ResourceField):
+                try:
+                    rf = ResourceField(rf, resource_fields[rf])
+                except ImproperlyConfigured as e:
+                    raise ImproperlyConfigured('`{0}`: {1}'.format(rf, e))
             self.values.append(rf)
+
+    def __iter__(self):
+        return iter(self.values)
 
     def __get__(self, instance, owner):
         if instance is None:
-            return ResourceFieldsDict(owner, self.values)
-        return ResourceFieldsDescriptor(instance, self.values)
+            return ResourceFieldsDict(owner, self)
+        return ResourceFieldsDescriptor(instance, self)
 
 
 class ResourceFieldsDict(collections.Mapping):
@@ -106,7 +109,7 @@ class ResourceFieldsDescriptor(collections.Sequence):
     """
     def __init__(self, manager, values):
         self.manager = manager
-        self.values = values
+        self.values = list(values)
 
     def __getitem__(self, item):
         return self.values[item]
@@ -196,7 +199,7 @@ class ResourceField(object):
 
     .. attribute:: example
 
-        **Mandatory** unless :attr:`computed` and :attr:`type` are set.
+        **Mandatory** unless :attr:`computed` or :attr:`choices` are used.
 
         If :attr:`type` is not defined, it is guessed from the example.
         If :attr:`type` is defined, :type:`example` must be an instance of it.
@@ -306,11 +309,27 @@ class ResourceField(object):
             The fields with a lower *display_order* are shown first.
 
     """
-    def __init__(self, name, values):
-        if not isinstance(values, collections.Mapping):
+    def __init__(self, name, values, **overrides):
+        if isinstance(values, ResourceField):
+            rf = values
+            values = {
+                'editable': values.editable,
+                'optional': values.optional,
+                'computed': values.computed,
+                'default_on_null': values.default_on_null,
+                'typing': values.typing,
+                'unserializer': values.unserialize,
+                'serializer': values.serialize,
+                'validators': values.validators,
+            }
+            values.update(rf.extra)
+        elif not isinstance(values, collections.Mapping):
             raise ImproperlyConfigured(
                 'Resource field declaration is not a dict')
         self.name = name
+
+        if overrides:
+            values.update(overrides)
 
         meta = {
             'editable': True,
@@ -336,10 +355,31 @@ class ResourceField(object):
             raise ImproperlyConfigured('type field must be a class')
 
         try:
+            choices = meta['choices']
+        except KeyError:
+            choices = None
+        else:
+            if not callable(choices) and not hasattr(choices, '__iter__'):
+                raise ImproperlyConfigured('choices must be a callable or an iterable')
+        self.choices = choices
+
+        if choices and not explicit_type:
+            types = set(type(choice) for choice in self.get_choices())
+            if len(types) != 1:
+                raise ImproperlyConfigured('The choices should all have the same type')
+            explicit_type = types.pop()
+
+        try:
             self.example = meta['example']
         except KeyError:
             if self.computed:
                 self.example = u''
+            elif choices:
+                choices_list = self.get_choices()
+                try:
+                    self.example = choices_list[0]
+                except IndexError:
+                    raise ImproperlyConfigured('There should be at least one choice')
             else:
                 raise ImproperlyConfigured('Missing example')
 
@@ -363,15 +403,6 @@ class ResourceField(object):
         else:
             raise ImproperlyConfigured('Typing must be one of "static", "dynamic"')
 
-        try:
-            choices = meta['choices']
-        except KeyError:
-            choices = None
-        else:
-            if not callable(choices) and not hasattr(choices, '__iter__'):
-                raise ImproperlyConfigured('choices must be a callable or an iterable')
-        self.choices = choices
-
         self.unserialize = meta['unserializer']
         self.serialize = meta['serializer']
 
@@ -393,6 +424,10 @@ class ResourceField(object):
         elif self._dynamic_typing:
             return True
         elif self.type == int and isinstance(value, long):
+            return True
+        elif self.type == str and isinstance(value, unicode):
+            return True
+        elif self.type == float and isinstance(value, (long, int)):
             return True
         else:
             return isinstance(value, self.type)
@@ -448,16 +483,19 @@ class ResourceField(object):
 
         validator = getattr(manager, 'validate_resource_%s' % self.name, None)
         if validator:
-            try:
-                value = validator(value)
-            except ValidationError, e:
-                raise ValidationError({
-                    self.name: unicode(e)
-                    })
+            value = self._run_callback(validator, value)
         for validator in self.validators:
-            value = validator(value)
+            value = self._run_callback(validator, value)
 
         return value
+
+    def _run_callback(self, callback, value):
+        try:
+            return callback(value)
+        except ValidationError, e:
+            raise ValidationError({
+                self.name: unicode(e)
+            })
 
     def get_choices(self):
         """
