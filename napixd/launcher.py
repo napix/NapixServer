@@ -289,6 +289,8 @@ Meta-options:
         if 'auth' in self.options:
             self.auth_handler = self.get_auth_handler()
             napixd.install(self.auth_handler)
+        else:
+            self.auth_handler = None
 
         #attach autoreloaders
         if 'reload' in self.options:
@@ -299,6 +301,8 @@ Meta-options:
             self.web_client = self.get_webclient()
             if self.web_client:
                 self.web_client.setup_bottle(napixd)
+        else:
+            self.web_client = None
 
         if 'notify' in self.options:
             from napixd.notify import Notifier
