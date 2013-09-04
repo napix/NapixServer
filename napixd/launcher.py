@@ -134,11 +134,13 @@ Meta-options:
         self.options = options = options.difference( nooptions)
 
         self.set_loggers()
+        self.service_name = self.get_service_name()
 
         console.info( 'Napixd Home is %s', get_path() )
         console.info( 'Options are %s', ','.join(self.options))
         console.info( 'Starting process %s', os.getpid())
         console.info( 'Logging activity in %s', self.LOG_FILE )
+        console.info( 'Service Name is %s', self.service_name)
 
     def _patch_gevent(self):
         if 'gevent' in self.options:
@@ -187,23 +189,36 @@ Meta-options:
         import bottle
         bottle.debug( 'debug' in self.options )
 
-    def set_auth_handler(self, app):
+    def get_service_name(self):
+        service = Conf.get_default('Napix.auth.service')
+        if not service:
+            logger.info('No setting Napix.auth.service, guessing from /etc/hostnams')
+            try:
+                with open('/etc/hostname', 'r') as handle:
+                    return handle.read().strip()
+            except IOError:
+                logger.error('Cannot read hostname')
+                return ''
+        return service
+
+    def get_auth_handler(self):
         """
         Load the authentication handler.
-
-        Takes the bottle application as **app**
         """
-        conf =  Conf.get_default('Napix.auth')
-        if not conf :
+        conf = Conf.get_default('Napix.auth')
+        if not conf:
             raise CannotLaunch('*auth* option is set and no configuration has been found (see Napix.auth key).')
 
         if 'secure' in self.options:
             from napixd.plugins import AAAPlugin
-            app.install(AAAPlugin(conf, allow_bypass='debug' in self.options))
+            return AAAPlugin(conf,
+                             allow_bypass='debug' in self.options,
+                             service_name=self.service_name,
+                             )
         else:
             logger.info('Installing not Secure auth plugin')
             from napixd.plugins.auth import NoSecureAAAPlugin
-            app.install(NoSecureAAAPlugin(conf, allow_bypass='debug' in self.options))
+            return NoSecureAAAPlugin(conf, allow_bypass='debug' in self.options)
 
     def get_bottle(self):
         """
@@ -272,7 +287,8 @@ Meta-options:
         napixd = self.get_bottle()
 
         if 'auth' in self.options:
-            self.set_auth_handler( napixd)
+            self.auth_handler = self.get_auth_handler()
+            napixd.install(self.auth_handler)
 
         #attach autoreloaders
         if 'reload' in self.options:
@@ -280,13 +296,9 @@ Meta-options:
             Reloader( napixd).start()
 
         if 'webclient' in self.options:
-            webclient_path = self.get_webclient_path()
-            if webclient_path:
-                from napixd.webclient import WebClient
-                logger.info( 'Using %s as webclient', webclient_path)
-                WebClient( webclient_path).setup_bottle( napixd)
-            else:
-                logger.warning( 'No webclient path found')
+            self.web_client = self.get_webclient()
+            if self.web_client:
+                self.web_client.setup_bottle(napixd)
 
         if 'notify' in self.options:
             from napixd.notify import Notifier
@@ -344,6 +356,15 @@ Meta-options:
                 'port': self.DEFAULT_PORT,
                 'server' : self.get_server(),
                 }
+
+    def get_webclient(self):
+        webclient_path = self.get_webclient_path()
+        if not webclient_path:
+            logger.warning('No webclient path found')
+
+        from napixd.webclient import WebClient
+        logger.info('Using %s as webclient', webclient_path)
+        return WebClient(webclient_path, self)
 
     def get_webclient_path(self):
         """

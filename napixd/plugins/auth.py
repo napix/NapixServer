@@ -97,7 +97,7 @@ class BaseAAAPlugin(object):
     name = 'authentication_plugin'
     api = 2
 
-    def __init__( self, conf= None, allow_bypass=False):
+    def __init__( self, conf= None, allow_bypass=False, service_name=''):
         self.settings = conf or Conf.get_default('Napix.auth')
         self.allow_bypass = allow_bypass
 
@@ -114,15 +114,7 @@ class BaseAAAPlugin(object):
             self.logger.warning( 'No host settings, every host is allowed')
             self.hosts = None
 
-        self.service = self.settings.get('service')
-        if not self.service:
-            self.logger.info('No setting Napix.auth.service, guessing from /etc/hostnams')
-            try:
-                with open( '/etc/hostname', 'r') as handle:
-                    self.service = handle.read()
-            except IOError:
-                self.logger.error( 'Cannot read hostname')
-                self.service = ''
+        self.service = service_name
 
     def debug_check(self,request):
         return self.allow_bypass and 'authok' in request.GET
@@ -170,8 +162,8 @@ class AAAPlugin(BaseAAAPlugin):
     """
     logger = logging.getLogger('Napix.AAA')
 
-    def __init__( self, conf=None, allow_bypass=False , ):
-        super( AAAPlugin, self).__init__( conf, allow_bypass)
+    def __init__( self, conf=None, allow_bypass=False, service_name='' ):
+        super( AAAPlugin, self).__init__( conf, allow_bypass, service_name=service_name)
         url = self.settings.get('auth_url')
         auth_url_parts = urlparse.urlsplit( url)
         self.logger.info('Set up authentication with %s', url)
