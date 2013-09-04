@@ -50,6 +50,9 @@ class NapixdBottle(bottle.Bottle):
         logger.info('Reloading')
 
         #remove old routes
+        if logger.isEnabledFor(logging.DEBUG) and load.old_managers:
+            logger.debug('Old services: %s',
+                         ', '.join(map(unicode, load.old_managers)))
         for mi in load.old_managers:
             rule = '/' + mi.alias
             prefix = rule + '/'
@@ -58,6 +61,9 @@ class NapixdBottle(bottle.Bottle):
                     if not r.rule.startswith(prefix) and r.rule != rule ]
             self.root_urls.discard( mi.alias )
 
+        if logger.isEnabledFor(logging.DEBUG) and load.new_managers:
+            logger.debug('New services: %s',
+                         u', '.join(map(unicode, load.new_managers)))
         self.make_services( load.new_managers )
 
         #reset the router
@@ -65,11 +71,15 @@ class NapixdBottle(bottle.Bottle):
         for route in self.routes:
             self.router.add(route.rule, route.method, route, name=route.name)
 
+        if logger.isEnabledFor(logging.DEBUG) and load.error_managers:
+            logger.debug('Error services: %s',
+                         u', '.join(map(unicode, load.error_managers)))
         #add errord routes
         for me in load.error_managers:
             self.register_error( me)
 
     def register_error(self, me):
+        logger.debug('Setup routes for error, %s', me.alias)
         self.route( '/%s'%me.alias, callback=self._error_service_factory( me.cause ))
         self.route( '/%s/'%me.alias, callback=self._error_service_factory( me.cause ))
         self.route( '/%s/<catch_all:path>'%me.alias, callback=self._error_service_factory( me.cause ))
@@ -105,7 +115,7 @@ class NapixdBottle(bottle.Bottle):
         return inner_error_handler
 
     def _error_service_factory(self, cause):
-        def inner_error_service_factory(*catch_all):
+        def inner_error_service_factory(*catch_all, **more_catch_all):
             raise cause
         return inner_error_service_factory
 
