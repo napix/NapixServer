@@ -391,6 +391,8 @@ class ResourceField(object):
         self.typing = meta['typing']
 
         if self.typing == 'dynamic':
+            if self.choices is not None:
+                raise ImproperlyConfigured('Choices are not usable with dynamic typing')
             self._dynamic_typing = True
         elif self.typing == 'static':
             self._dynamic_typing = False
