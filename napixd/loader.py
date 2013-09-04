@@ -475,6 +475,9 @@ class Loader( object):
                 if error.contains(previous_error.manager):
                     errors.add(ManagerError(
                         previous_error.manager, previous_error.alias, error.cause))
+                    break
+            else:
+                old_managers.add(previous_error)
 
         for import_ in list(new_managers):
             try:

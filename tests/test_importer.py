@@ -358,6 +358,25 @@ class TestLoader(unittest.TestCase):
         self.assertEqual( load.new_managers, set())
         self.assertEqual( load.error_managers, set([ me ]))
 
+    def test_load_module_error_fixed(self):
+        m = ManagerImport(self.manager, 'alias', {})
+        error = ImportError()
+        me = ManagerError( m.manager, 'alias', error)
+
+        self.importer.load.return_value = ([m], [])
+        self.loader.load()
+
+        self.importer.load.return_value = ([], [ModuleImportError('a.b', error)])
+        self.loader.load()
+
+        self.importer.load.return_value = ([m], [])
+        load = self.loader.load()
+
+        self.assertEqual(load.managers, set([m]))
+        self.assertEqual(load.old_managers, set([me]))
+        self.assertEqual(load.new_managers, set([m]))
+        self.assertEqual(load.error_managers, set([]))
+
     def test_load_module_error_new_error(self):
         m = ManagerImport( self.manager, 'alias', {})
         self.importer.load.return_value = ( [ m ], [ ])
