@@ -40,7 +40,7 @@ class ManagerImport(object):
         self.alias = alias
         self.config = config
     def __repr__(self):
-        return '<Import {0} "{1}">'.format( self.manager, self.alias)
+        return '<Import {0} "{1}">'.format( self.manager.__name__, self.alias)
 
     def __iter__(self):
         return iter( self._as_tuple())
@@ -139,24 +139,32 @@ class Importer( object):
             raise ModuleImportError( module_path, e)
         return sys.modules[module_path]
 
+    def has_been_modified(self, module_file, module_name):
+        try:
+            last_modif = os.stat(module_file).st_mtime
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('File %s last modified at %s %s %s',
+                             module_name, last_modif,
+                             self.timestamp,
+                             'reload' if last_modif > self.timestamp else ''
+                             )
+        except OSError, e:
+            logger.error('Failed to get file %s, %s', module_name, e)
+            raise ModuleImportError(module_name, 'Module does not exists anymore')
+
+        return last_modif > self.timestamp
+
     def reload(self, module_path):
         """
         Try to reload the module if it was modified since the last time.
         """
         module = sys.modules[module_path]
-        try:
-            if module.__file__.endswith('pyc'):
-                module_file = module.__file__[:-1]
-            else:
-                module_file = module.__file__
+        if module.__file__.endswith('pyc'):
+            module_file = module.__file__[:-1]
+        else:
+            module_file = module.__file__
 
-            last_modif = os.stat(module_file).st_mtime
-            logger.debug( 'Module %s last modified at %s > %s', module_path, last_modif, self.timestamp)
-        except OSError, e:
-            logger.error( 'Failed to get file %s, %s', module_path, e)
-            raise ModuleImportError( module_path, 'Module does not exists anymore')
-
-        if last_modif > self.timestamp:
+        if self.has_been_modified(module_file, module_path):
             #modified since last access
             logger.debug( 'Reloading module %s', module_path)
             try:
@@ -319,8 +327,12 @@ class AutoImporter(Importer):
     def import_module( self, filename):
         module_name, x = filename.split('.')
         path = os.path.join( self.path, filename)
-
         name = 'napixd.auto.' + module_name
+
+        if not self.has_been_modified(path, name):
+            return sys.modules[name]
+
+        logger.debug('Opening %s', path)
         with open( path, 'U') as handle:
             try:
                 module = imp.load_module(
@@ -352,7 +364,7 @@ class AutoImporter(Importer):
                 continue
 
             if not isinstance( obj, type) or not issubclass( obj, Manager):
-                 continue
+                continue
 
             try:
                 detect= obj.detect()
@@ -363,6 +375,8 @@ class AutoImporter(Importer):
 
             if detect:
                 managers.append( ManagerImport( obj, obj.get_name(), self.get_config_from( obj)))
+                logger.info('Found Manager %s.%s',
+                            module.__name__, manager_name)
             else:
                 logger.info('Manager %s.%s not detected', module.__name__, manager_name)
 
@@ -456,6 +470,12 @@ class Loader( object):
                     errors.add( ManagerError( old.manager, old.alias,  error.cause))
                     break
 
+        for previous_error in self.errors:
+            for error in import_errors:
+                if error.contains(previous_error.manager):
+                    errors.add(ManagerError(
+                        previous_error.manager, previous_error.alias, error.cause))
+
         for import_ in list(new_managers):
             try:
                 self.setup( import_.manager)
@@ -466,6 +486,7 @@ class Loader( object):
                 errors.add( ManagerError( import_.manager, import_.alias, e))
 
         self.managers = managers
+        self.errors = errors
         self.timestamp = time.time()
         return Load( old_managers, managers, new_managers, errors)
 

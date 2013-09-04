@@ -210,9 +210,10 @@ class TestAutoImporter(unittest.TestCase):
     def test_import_module(self):
         with mock.patch( 'napixd.loader.imp') as pimp:
             with mock.patch( 'napixd.loader.open') as Open:
-                open = Open.return_value
-                open.__enter__.return_value = open
-                self.ai.import_module( 'b.py')
+                with mock.patch.object(self.ai, 'has_been_modified', return_value=True):
+                    open = Open.return_value
+                    open.__enter__.return_value = open
+                    self.ai.import_module( 'b.py')
 
         pimp.load_module.assert_called_once_with(
                 'napixd.auto.b',
@@ -325,8 +326,11 @@ class TestLoader(unittest.TestCase):
         self.importer = mock.Mock( name='Importer', spec=Importer)
         self.loader = Loader([ self.importer ])
 
-        self.manager = mock.MagicMock( __module__ = 'a.b', **{
-            'direct_plug.return_value'  :  None
+        self.manager = mock.MagicMock(
+            __module__='a.b',
+            __name__='Manager',
+            **{
+                'direct_plug.return_value'  :  None
             })
 
     def test_load(self):
@@ -351,6 +355,26 @@ class TestLoader(unittest.TestCase):
 
         self.assertEqual( load.managers, set())
         self.assertEqual( load.old_managers, set([ m ]))
+        self.assertEqual( load.new_managers, set())
+        self.assertEqual( load.error_managers, set([ me ]))
+
+    def test_load_module_error_new_error(self):
+        m = ManagerImport( self.manager, 'alias', {})
+        self.importer.load.return_value = ( [ m ], [ ])
+        self.loader.load()
+
+        error = ImportError('First Error')
+        self.importer.load.return_value = ( [], [ ModuleImportError( 'a.b', error) ])
+        load = self.loader.load()
+
+        new_error = ImportError('New Error')
+        self.importer.load.return_value = ( [], [ ModuleImportError( 'a.b', new_error) ])
+        load = self.loader.load()
+
+        me = ManagerError( m.manager, 'alias', new_error)
+
+        self.assertEqual( load.managers, set())
+        self.assertEqual( load.old_managers, set())
         self.assertEqual( load.new_managers, set())
         self.assertEqual( load.error_managers, set([ me ]))
 
