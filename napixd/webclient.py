@@ -13,6 +13,8 @@ class WebClient( bottle.Bottle):
 
         if launcher.auth_handler:
             self.auth_server = getattr(launcher.auth_handler, 'host', '')
+        else:
+            self.auth_server = ''
 
         self.get('/', callback=self.index)
         self.get('/<filename:path>', callback=self.static)
