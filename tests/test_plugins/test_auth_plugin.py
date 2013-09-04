@@ -18,9 +18,11 @@ from napixd.plugins.auth import AAAPlugin, AAAChecker, Success, Fail
 class TestAAAPluginHostCheck(unittest2.TestCase):
     def test_no_host(self):
         plugin = AAAPlugin({
-                'auth_url': 'http://auth.napix.local/auth/authorization/',
-                'service' : 'org.napix.test',
-                })
+            'auth_url': 'http://auth.napix.local/auth/authorization/',
+        },
+            service_name='org.napix.test'
+        )
+
         with mock.patch('bottle.request', method='GET', path='/a/b', query_string=''):
             check =  plugin.host_check({
                 'host': 'a.b.c',
@@ -29,26 +31,6 @@ class TestAAAPluginHostCheck(unittest2.TestCase):
                 })
         self.assertEqual( check, None)
 
-    def test_service(self):
-        with mock.patch( '__builtin__.open') as my_open:
-            my_open.return_value.__enter__.return_value.read.return_value = 'my-host'
-            plugin = AAAPlugin({
-                'auth_url': 'http://auth.napix.local/auth/authorization/',
-                'host' : [ 'org.napix.test' ],
-                })
-
-        with mock.patch('napixd.plugins.auth.AAAChecker', spec=AAAChecker) as MyAAAChecker:
-            plugin.authserver_check({
-                'host': 'a.b.c',
-                'method' : 'GET',
-                'path': '/a/b'
-                })
-        MyAAAChecker.return_value.authserver_check.assert_called_once_with({
-                'host': 'my-host',
-                'method' : 'GET',
-                'path': '/a/b'
-                })
-        my_open.assert_called_once_with( '/etc/hostname', 'r')
 
 class AAAPluginBase( unittest2.TestCase):
     @classmethod
@@ -61,10 +43,10 @@ class AAAPluginBase( unittest2.TestCase):
 
         plugin = AAAPlugin({
             'auth_url': 'http://auth.napix.local/auth/authorization/',
-            'service' : 'org.napix.test',
             'hosts' : [ 'napix.test' ],
             },
-            allow_bypass=allow_bypass
+            allow_bypass=allow_bypass,
+            service_name='org.napix.test'
             )
         self.success = mock.MagicMock( __name__ = 'my_callback' )
         self.cb = plugin.apply( self.success, None)
