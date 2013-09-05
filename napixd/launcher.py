@@ -77,6 +77,7 @@ class Setup(object):
         'cors', #Set CORS headers
         'auto',
         'conf',
+        'time', #Show duration
     ])
 
     LOG_FILE = get_file( 'log/napix.log')
@@ -107,6 +108,7 @@ Default options:
     uwsgi:      Use with uwsgi
     auto:       Load from HOME/auto/ directory
     conf:       Load from the Napix.managers section of the config
+    time:       Add custom header to show the duration of the request
 
 Non-default:
     notify:     Enable the notification thread
@@ -115,7 +117,7 @@ Non-default:
     debug:      Run the DEBUG mode
     print_exc:  Show the exceptions in the console output
     rocket:     Use Rocket as the server
-    times:      Add custom header to show the running time and the total time
+    times:      Add custom header to show the running time and the total time (requires gevent)
     pprint:     Enable pretty printing of output
     cors:       Add Cross-Site Request Service headers
     secure:     Disable the request tokeb signing
@@ -211,14 +213,17 @@ Meta-options:
 
         if 'secure' in self.options:
             from napixd.plugins import AAAPlugin
-            return AAAPlugin(conf,
-                             allow_bypass='debug' in self.options,
-                             service_name=self.service_name,
-                             )
+            aaa_class = AAAPlugin
         else:
             logger.info('Installing not Secure auth plugin')
             from napixd.plugins.auth import NoSecureAAAPlugin
-            return NoSecureAAAPlugin(conf, allow_bypass='debug' in self.options)
+            aaa_class = NoSecureAAAPlugin
+
+        return aaa_class(conf,
+                         allow_bypass='debug' in self.options,
+                         service_name=self.service_name,
+                         with_chrono='time' in self.options,
+                         )
 
     def get_bottle(self):
         """
@@ -262,6 +267,10 @@ Meta-options:
         """
         Install the plugins in the bottle application.
         """
+        if 'time' in self.options:
+            from napixd.plugins import TimePlugin
+            app.install(TimePlugin('x-total-time'))
+
         from napixd.plugins import ExceptionsCatcher, ConversationPlugin
         pprint = 'pprint' in self.options
 

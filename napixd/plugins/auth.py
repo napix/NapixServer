@@ -11,6 +11,7 @@ import functools
 import threading
 
 from napixd.conf import Conf
+from napixd.chrono import Chrono
 import bottle
 
 try:
@@ -162,7 +163,7 @@ class AAAPlugin(BaseAAAPlugin):
     """
     logger = logging.getLogger('Napix.AAA')
 
-    def __init__( self, conf=None, allow_bypass=False, service_name='' ):
+    def __init__( self, conf=None, allow_bypass=False, service_name='', with_chrono=False):
         super( AAAPlugin, self).__init__( conf, allow_bypass, service_name=service_name)
         url = self.settings.get('auth_url')
         auth_url_parts = urlparse.urlsplit( url)
@@ -170,6 +171,7 @@ class AAAPlugin(BaseAAAPlugin):
         self.host = auth_url_parts.netloc
         self.url = urlparse.urlunsplit(( '','',auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
         self._local = threading.local()
+        self.with_chrono = with_chrono
 
     @property
     def checker(self):
@@ -193,11 +195,12 @@ class AAAPlugin(BaseAAAPlugin):
             request = bottle.request
             if self.debug_check( request):
                 return callback(*args,**kwargs)
-            content = self.authorization_extract( request)
 
-            #self.logger.debug(msg)
-            self.host_check( content)
-            check = self.authserver_check( content)
+            if self.with_chrono:
+                check = self._checks_with_chrono(request)
+            else:
+                check = self._checks(request)
+
             path = bottle.request.path
             method = bottle.request.method
 
@@ -212,6 +215,19 @@ class AAAPlugin(BaseAAAPlugin):
             # actually run the callback
         return inner_aaa
 
+    def _checks_with_chrono(self, request):
+        with Chrono() as chrono:
+            r = self._checks(request)
+        bottle.response.headers['x-auth-time'] = chrono.total
+        return r
+
+    def _checks(self, request):
+        content = self.authorization_extract(request)
+
+        #self.logger.debug(msg)
+        self.host_check(content)
+        c= self.authserver_check(content)
+        return c
 
 class NoSecureAAAPlugin(AAAPlugin):
     def __init__(self, *args, **kw):
