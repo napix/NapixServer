@@ -134,9 +134,9 @@ The additional documentation on the parameters of the action can be set with :fu
 
     class HostManager(DictManager):
         #...
+        @action
         @parameter( 'port', description='The port to scan', example=22)
         @parameter( 'timeout', description='The time to wait in seconds', example=1 )
-        @action
         def scan( self, resource, port, timeout=1):
             #...
 
