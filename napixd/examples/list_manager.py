@@ -8,7 +8,7 @@ class HostFiles(ReadOnlyDictManager):
     """
     Host Files manager
     """
-    managed_class = [ 'HostManager' ]
+    managed_class = 'HostManager'
     resource_fields = {'file': {'example':'/etc/hosts','description':'Path of the hosts file'}}
     def load(self,parent):
         return { '1' : {'file':'/tmp/hosts1'},
@@ -19,18 +19,22 @@ class HostManager(DictManager):
     Hosts manager
     """
     resource_fields = {
-            'hostnames':{
-                'description':'List of hostname resolving to that IP',
-                'example':['localhost','localhost.localdomain'],
-                'type' : list,
-                },
-            'ip':{
-                'description':'IP of the host',
-                'example': u'127.0.0.1',
-                'type' : unicode,
-                'display_order' : 10,
-                }
-            }
+        'hostnames': {
+            'description': 'List of hostname resolving to that IP',
+            'example': ['localhost','localhost.localdomain'],
+            'type': list,
+        },
+        'line': {
+            'computed': True
+        },
+        'ip': {
+            'description': 'IP of the host',
+            'example': u'127.0.0.1',
+            'type': unicode,
+            'display_order': 10,
+            'editable': False,
+        }
+    }
     def list_resource_filter(self, filters):
         ips = filters.getall( 'ip')
         return set( self.resources.keys()).intersection(ips)
@@ -70,19 +74,24 @@ class HostManager(DictManager):
         """
         try:
             file_ = open(parent['file'],'r')
-            lines = [ line.replace('\t',' ').split(' ')
-                    for line in map(str.strip,file_.readlines())
+            lines = [ (lineno, line.replace('\t',' ').split(' '))
+                    for lineno, line in enumerate(map(str.strip,file_.readlines()))
                     if line and line[0] != '#' ]
         except IOError:
             lines = []
 
         hosts = {}
-        for line in lines:
+        for lineno, line in lines:
             ip = line[0]
             #remove empty strings
-            hostnames = filter(bool,line[1:])
+            hostnames = filter(bool, line[1:])
             if not ip in hosts:
-                hosts[ip] = {'hostnames':[],'ip':ip}
+                hosts[ip] = {
+                    'hostnames': [],
+                    'ip': ip,
+                    'line': []
+                }
+            hosts[ip]['line'].append(lineno + 1)
             hosts[ip]['hostnames'].extend(hostnames)
         return hosts
 
@@ -102,3 +111,4 @@ class HostManager(DictManager):
             file_.write('\t')
             file_.write(' '.join(resource['hostnames']))
             file_.write('\n')
+
