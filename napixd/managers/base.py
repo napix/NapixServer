@@ -317,6 +317,12 @@ class Manager(object):
             validate_resource_FIELDNAME does not actually exists.
             FIELDNAME have to be replaced by an actual field
             of :attr:`resource_fields`
+
+    .. attr:: auto_load
+
+        A class level boolean to tell if the class is used by the Napixd,
+        when the :class:`auto-loader<napixd.loader.AutoImporter>`
+        browse a module.
     """
 
     __metaclass__ = ManagerType
@@ -385,12 +391,6 @@ class Manager(object):
 
         By default, this methods return False for builtin managers
         or returns the value of :attr:`auto_load`
-
-        .. attr:: auto_load
-
-            A class level boolean to tell if the class is used by the Napixd,
-            when the :class:`auto-loader<napixd.loader.AutoImporter>`
-            browse a module.
         """
         return (not cls.__module__.startswith('napixd.managers') and
                 cls.auto_load)
