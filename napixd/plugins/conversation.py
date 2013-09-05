@@ -57,7 +57,7 @@ class ConversationPlugin(object):
             except bottle.HTTPResponse,e:
                 exception = e
 
-            headers = bottle.HeaderDict()
+            headers = bottle.HeaderDict(bottle.response.headers)
             content_type = ''
             if exception is not None:
                 result = exception.body
