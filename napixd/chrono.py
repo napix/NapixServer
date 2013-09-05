@@ -14,7 +14,7 @@ class Chrono(object):
             return '<Chrono unstarted>'
         elif self.end is None:
             return '<Chrono for {0:.2g}>'.format(time.time() - self.start)
-        return '<Chrono  {0:%.2g}>'.format(self.total)
+        return '<Chrono {0:.2g}>'.format(self.total)
 
     @property
     def total(self):
