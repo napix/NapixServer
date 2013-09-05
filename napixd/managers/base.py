@@ -321,6 +321,8 @@ class Manager(object):
 
     __metaclass__ = ManagerType
 
+    auto_load = True
+
     #list of the fields publicly available with their properties
     resource_fields = {}
     #Class or list of classes wrapping the children
@@ -380,8 +382,18 @@ class Manager(object):
         """
         Auto detection function.
         This function is called by napixd to check if the manager is needed
+
+        By default, this methods return False for builtin managers
+        or returns the value of :attr:`auto_load`
+
+        .. attr:: auto_load
+
+            A class level boolean to tell if the class is used by the Napixd,
+            when the :class:`auto-loader<napixd.loader.AutoImporter>`
+            browse a module.
         """
-        return not cls.__module__.startswith('napixd.managers')
+        return (not cls.__module__.startswith('napixd.managers') and
+                cls.auto_load)
 
     def serialize(self, value):
         return self.resource_fields.serialize(value)
