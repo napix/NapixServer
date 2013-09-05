@@ -5,21 +5,21 @@
     "loader" : {
         "autoreload" : true
     },
-    "#auth" : {
+    "auth" : {
       "#info" : "The authentication section.",
       "#auth_url" : "The authentication URL",
-      "auth_url" : "http://localhost:8003/auth/authorization/",
+      "auth_url" : "http://central.napix.enix.org:8003/auth/authorization/",
       "#service" : "The name of the service of this host.",
       "service" : "localhost:8002"
     },
-    "#notify" : {
+    "notify" : {
       "#info" : "The notify section",
       "#url" : "The URL of the notify server",
-      "url" : "http://central.napix.nx/directory/",
+      "url" : "http://central.napix.enix.org:8002/directory/",
       "credentials" : {
           "#info" : "The credential used by this server to send notifications",
-          "login" : "",
-          "key" : ""
+          "login" : "notification",
+          "key" : "notification"
       },
       "#delay" : "The interval at which this sever sends notifications",
       "delay" : 300
