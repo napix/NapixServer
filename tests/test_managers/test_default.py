@@ -38,6 +38,10 @@ class TestReadOnlyDict( _TestDM):
                 )
         self.spy_load.assert_called_once_with( self.parent)
 
+    def test_return_not_dict(self):
+        self.spy_load.return_value = None
+        self.assertRaises(ValueError, self.manager.list_resource)
+
     def test_get_resource_not_exists(self):
         self.assertRaises( NotFound, self.manager.get_resource, 'four')
 
@@ -85,7 +89,7 @@ class TestDictManager( _TestDM):
 
     def test_delete_resource(self):
         self.manager.delete_resource( 'one')
-        self.assertTrue( 'one' not in self.resources)
+        self.assertTrue('one' not in self.manager.resources)
 
     def test_modify_resource(self):
         self.manager.modify_resource( 'one', {

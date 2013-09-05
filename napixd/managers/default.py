@@ -18,7 +18,7 @@ import os
 from threading import Lock
 from time import time
 
-from napixd.exceptions import NotFound,Duplicate,ValidationError
+from napixd.exceptions import NotFound, Duplicate, ValidationError
 from napixd.managers import Manager
 
 class ReadOnlyDictManager(Manager):
@@ -63,9 +63,17 @@ class ReadOnlyDictManager(Manager):
         raise NotImplementedError, 'load'
 
     def _get_resources(self):
-        if not hasattr(self,'_resources'):
-            self._resources = self.load(self.parent)
+        if hasattr(self, '_resources'):
+            return self._resources
+
+        resources = self.load(self.parent)
+        try:
+            self._resources = dict(resources)
+        except TypeError:
+            raise ValueError('load did not return a dict, but {0}',
+                             type(resources).__name__)
         return self._resources
+
     def _set_resources(self,value):
         self._resources = value
     #resources are lazy loaded
