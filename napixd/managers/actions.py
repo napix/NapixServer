@@ -108,12 +108,13 @@ class ActionProperty(object):
             })
 
         for param, default in self.optional.items():
-            resource_fields.setdefault(param, {
-                'example': '',
-                'typing': 'dynamic',
-            }).update({
+            rf = resource_fields.setdefault(param, {})
+            rf.update({
+                'example': default,
                 'optional': True
             })
+            rf.setdefault('typing', 'dynamic' if default is None else 'static')
+
         self.resource_fields = ResourceFields(resource_fields)
 
     def __get__(self, instance, owner):
