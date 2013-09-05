@@ -41,4 +41,4 @@ class AttrResourceMixin(object):
     """
     def serialize( self, resource):
         return dict( (k, getattr(resource, k))
-            for k in self.__class__.resource_fields.keys() )
+            for k in self.__class__._resource_fields.keys() )

@@ -16,7 +16,7 @@ from napixd.managers.actions import action
 class TestManager(unittest.TestCase):
     def setUp( self):
         self.manager = Manager({})
-        self.resource_fields = mock.patch.object( self.manager, 'resource_fields', spec=ResourceFieldsDescriptor).start()
+        self.resource_fields = mock.patch.object( self.manager, '_resource_fields', spec=ResourceFieldsDescriptor).start()
 
     def test_validate_id(self):
         self.assertEqual( self.manager.validate_id('12'), '12')
@@ -102,7 +102,7 @@ class TestManagerType( unittest.TestCase):
             m = ManagerType( 'Manager', (Manager,), {
                     'resource_fields': rf
                     })
-        self.assertEqual( m.resource_fields, RF.return_value)
+        self.assertEqual( m._resource_fields, RF.return_value)
         RF.assert_called_once_with( rf)
 
     def test_inherit_actions(self):

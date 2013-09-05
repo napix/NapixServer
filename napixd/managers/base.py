@@ -46,7 +46,7 @@ class ManagerType(type):
             pass
         else:
             try:
-                attrs['resource_fields'] = ResourceFields(rf)
+                attrs['_resource_fields'] = ResourceFields(rf)
             except ImproperlyConfigured as e:
                 raise ImproperlyConfigured('In {0}, field {1}'.format(name, e))
 
@@ -396,10 +396,10 @@ class Manager(object):
                 cls.auto_load)
 
     def serialize(self, value):
-        return self.resource_fields.serialize(value)
+        return self._resource_fields.serialize(value)
 
     def unserialize(self, value):
-        return self.resource_fields.unserialize(value)
+        return self._resource_fields.unserialize(value)
 
     def validate_id(self, id_):
         """
@@ -451,7 +451,7 @@ class Manager(object):
 
     def validate(self, resource_dict, for_edit=False):
         # Create a new dict to populate with validated data
-        resource_dict = self.resource_fields.validate(resource_dict,
+        resource_dict = self._resource_fields.validate(resource_dict,
                                                       for_edit=for_edit)
         return self.validate_resource(resource_dict)
 

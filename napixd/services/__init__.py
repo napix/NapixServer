@@ -128,7 +128,7 @@ class BaseCollectionService(object):
             for action in self.collection.get_all_actions()
         ]
 
-        self.resource_fields = dict(self.collection.resource_fields)
+        self.resource_fields = dict(self.collection._resource_fields)
 
     def get_name(self):
         return '.'.join( s.url for s in self.services)
