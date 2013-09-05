@@ -11,29 +11,9 @@ import gevent.greenlet
 import gevent.wsgi
 import gevent.hub
 
+from napixd.chrono import Chrono
+
 logger = logging.getLogger( 'Napix.gevent')
-
-class Chrono(object):
-    def __init__(self):
-        self.start = None
-        self.end = None
-    def __repr__(self):
-        if self.start is None:
-            return '<Chrono unstarted>'
-        elif self.end is None:
-            return '<Chrono for %.2g>' % ( time.time() - self.start)
-        return '<Chrono  %.2g>' % ( self.total)
-
-    @property
-    def total(self):
-        return self.end - self.start
-
-    def __enter__(self):
-        self.start = time.time()
-        return self
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        self.end = time.time()
 
 
 class Greenlet(gevent.greenlet.Greenlet):

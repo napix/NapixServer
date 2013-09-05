@@ -9,25 +9,7 @@ except ImportError:
     gevent = None
 
 if gevent is not None:
-    from napixd.gevent_tools import Chrono, Greenlet, Tracer, AddGeventTimeHeader
-
-@unittest.skipIf( gevent is None, 'Gevent is required to test gevent_tools')
-class TestChrono(unittest.TestCase):
-    def test_chrono(self):
-        chrono = Chrono()
-        with chrono:
-            time.sleep(.1)
-        self.assertAlmostEquals( chrono.total, .1, places = 2)
-
-    def test_chrono_exception(self):
-        chrono = Chrono()
-        try:
-            with chrono:
-                time.sleep(.1)
-                raise Exception
-        except :
-            pass
-        self.assertAlmostEquals( chrono.total, .1, places = 2)
+    from napixd.gevent_tools import Greenlet, Tracer, AddGeventTimeHeader
 
 @unittest.skipIf( gevent is None, 'Gevent is required to test gevent_tools')
 class TestTimedGreenlet(unittest.TestCase):
