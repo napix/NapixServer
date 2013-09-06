@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import urllib
+import collections
 import bottle
 
 from napixd.http import Response
@@ -185,6 +186,8 @@ class ServiceCollectionRequest(ServiceRequest):
             url = self.make_url(result)
             return bottle.HTTPError(201, None, Location=url)
         elif self.method == 'GET' or self.method == 'filter':
+            if not isinstance(result, collections.Iterable):
+                raise ValueError('list_resource returned a non-iterable object')
             return map(self.make_url, result)
         else:
             return result
