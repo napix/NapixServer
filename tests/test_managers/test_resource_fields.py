@@ -80,12 +80,12 @@ class TestResourceFields( unittest.TestCase):
 class TestResourceFieldsDescriptor(unittest.TestCase):
     def setUp(self):
         self.managers = manager = mock.Mock( spec=Manager)
-        self.f1 = f1 = mock.Mock( spec=ResourceField, serialize=mock.Mock(), unserialize=mock.Mock())
+        self.f1 = f1 = mock.Mock( spec=ResourceField)
         f1.name = 'f1'
         f1.computed = False
         f1.type = int
 
-        self.f2 = f2 = mock.Mock( spec=ResourceField, serialize=mock.Mock(), unserialize=mock.Mock())
+        self.f2 = f2 = mock.Mock( spec=ResourceField)
         f2.name = 'f2'
         f2.computed = False
         f2.type = str
@@ -98,9 +98,8 @@ class TestResourceFieldsDescriptor(unittest.TestCase):
             'f3' : 'oh snap'
             })
         self.assertEqual( r, {
-            'f1': self.f1.serialize.return_value
+            'f1': 1
             })
-        self.f1.serialize.assert_called_once_with( 1)
 
     def test_unserialize(self):
         r = self.rfd.unserialize({
@@ -108,10 +107,8 @@ class TestResourceFieldsDescriptor(unittest.TestCase):
             'f3' : 'oh snap'
             })
         self.assertEqual( r, {
-            'f1': self.f1.unserialize.return_value
+            'f1': 1
             })
-        self.f1.unserialize.assert_called_once_with( 1)
-
 
     def test_validate(self):
         v = self.rfd.validate({

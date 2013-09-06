@@ -124,11 +124,9 @@ class ResourceFieldsDescriptor(collections.Sequence):
         dest = {}
         for k in self.values:
             try:
-                value = raw[k.name]
+                dest[k.name] = raw[k.name]
             except KeyError:
                 pass
-            else:
-                dest[k.name] = k.serialize(value)
         return dest
 
     def unserialize(self, raw):
@@ -138,11 +136,9 @@ class ResourceFieldsDescriptor(collections.Sequence):
         dest = {}
         for k in self:
             try:
-                value = raw[k.name]
+                dest[k.name]= raw[k.name]
             except KeyError:
                 pass
-            else:
-                dest[k.name] = k.unserialize(value)
         return dest
 
     def validate(self, input, for_edit=False):
@@ -182,8 +178,6 @@ class ResourceFieldsDescriptor(collections.Sequence):
 
             output[key] = resource_field.validate(self.manager, value)
         return output
-
-identity = lambda x: x
 
 
 class ResourceField(object):
@@ -245,14 +239,6 @@ class ResourceField(object):
         The type of the field.
 
         Defaults to ``type(example)``
-
-    .. attribute:: unserializer
-
-        The extractor from the serialized data.
-
-    .. attribute:: serialize
-
-        The serializer to the JSON representation.
 
     .. attribute:: choices
 
@@ -318,8 +304,6 @@ class ResourceField(object):
                 'computed': values.computed,
                 'default_on_null': values.default_on_null,
                 'typing': values.typing,
-                'unserializer': values.unserialize,
-                'serializer': values.serialize,
                 'validators': values.validators,
             }
             values.update(rf.extra)
@@ -337,8 +321,6 @@ class ResourceField(object):
             'computed': False,
             'default_on_null': False,
             'typing': 'static',
-            'unserializer': identity,
-            'serializer': identity,
             'validators': []
             }
         extra_keys = set(values).difference(meta)
@@ -405,9 +387,6 @@ class ResourceField(object):
         else:
             raise ImproperlyConfigured('Typing must be one of "static", "dynamic"')
 
-        self.unserialize = meta['unserializer']
-        self.serialize = meta['serializer']
-
         self.validators = list(meta['validators'])
 
         self.extra = dict((k, values[k]) for k in extra_keys)
@@ -454,20 +433,11 @@ class ResourceField(object):
                         if self.choices is not None else None),
             'validators': [validator.__doc__ for validator in self.validators]
             })
-        if self.unserialize in (str, basestring, unicode):
-            values['unserializer'] = 'string'
-        elif self.unserialize is not identity:
-            values['unserializer'] = self.unserialize.__name__
 
         if self.type in (str, basestring, unicode):
             values['type'] = 'string'
-        elif self.type is not identity:
+        else:
             values['type'] = self.type.__name__
-
-        if self.serialize in (str, basestring, unicode):
-            values['serializer'] = 'string'
-        elif self.serialize is not identity:
-            values['serializer'] = self.serialize.__name__
 
         return values
 
