@@ -96,6 +96,18 @@ class TestConversationWrap( unittest2.TestCase):
         self.assertEqual(resp.headers['Content-Type'], 'application/octet-stream')
         self.assertEqual(resp.body, self.success.return_value)
 
+    def test_conversation_headers(self):
+        def cb():
+            bottle.response.headers['x-value'] = 'pouet'
+            return [1, 2, 3]
+
+        self.success.side_effect = cb
+        resp = self.cb()
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.headers['x-value'], 'pouet')
+        self.assertEqual(resp.headers['Content-Type'], 'application/json')
+
     def test_conversation_object(self):
         self.success.return_value = { 'a': 'b' }
         resp = self.cb()
