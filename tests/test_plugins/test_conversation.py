@@ -62,60 +62,83 @@ class TestConversationWrap( unittest2.TestCase):
     def setUp(self):
         cp = ConversationPlugin()
         cp.unwrap = mock.Mock({ 'ab' : 12 })
+        self.success = mock.Mock(__name__='method')
         self.cb = cp.apply( self.success, mock.Mock())
 
-    def success(self, obj=None, exc=None):
-        if exc is not None:
-            raise exc
-        return obj
-
     def test_request_head_404(self):
+        self.success.side_effect = bottle.HTTPError(404, body='pouet' )
         with mock.patch('bottle.request', method='HEAD'):
-            resp = self.cb(bottle.HTTPError(404, body='pouet' ))
+            resp = self.cb()
+
         self.assertIsInstance(resp,  bottle.HTTPResponse)
         self.assertEqual( resp.status_code, 404)
         self.assertEqual( resp.headers['Content-Type'], '')
         self.assertEqual( resp.body, None)
 
     def test_request_head(self):
+        self.success.return_value = { 'a': 'b' }
         with mock.patch('bottle.request', method='HEAD'):
-            resp = self.cb({ 'a': 'b' })
+            resp = self.cb()
         self.assertIsInstance(resp,  bottle.HTTPResponse )
         self.assertEqual( resp.status_code, 200)
         self.assertEqual( resp.headers['Content-Type'], '')
         self.assertEqual( resp.body, None)
 
+    def test_conversation_generator(self):
+        def gen():
+            for x in xrange(3):
+                yield '{0}\n'.format(x)
+
+        self.success.return_value = gen()
+        resp = self.cb()
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.headers['Content-Type'], 'application/octet-stream')
+        self.assertEqual(resp.body, self.success.return_value)
+
     def test_conversation_object(self):
-        resp = self.cb({ 'a': 'b' })
+        self.success.return_value = { 'a': 'b' }
+        resp = self.cb()
+
         self.assertIsInstance(resp,  bottle.HTTPResponse )
         self.assertEqual( resp.status_code, 200)
         self.assertEqual( resp.headers['Content-Type'], 'application/json')
         self.assertDictEqual( json.loads( resp.body), { 'a': 'b'})
 
     def test_conversation_nothing(self):
+        self.success.return_value = None
         resp = self.cb()
+
         self.assertIsInstance(resp,  bottle.HTTPResponse )
         self.assertEqual( resp.status_code, 200)
         self.assertEqual( resp.body, None)
 
     def test_returned_exception(self):
-        resp = self.cb( bottle.HTTPResponse( 'I\'m a teapot', 418, x_excitant='theine'))
+        self.success.return_value = bottle.HTTPResponse(
+            'I\'m a teapot', 418, x_excitant='theine')
+        resp = self.cb()
+
         self.assertEqual( resp.status_code, 418)
         self.assertEqual( resp.body, 'I\'m a teapot')
         self.assertEqual( resp.headers['x-excitant'], 'theine')
         self.assertEqual( resp.headers['content-type'], 'text/plain')
 
     def test_exception(self):
-        resp = self.cb( None, bottle.HTTPResponse( 'I\'m a teapot', 418, x_excitant='theine'))
+        self.success.side_effect = bottle.HTTPResponse(
+            'I\'m a teapot', 418, x_excitant='theine')
+        resp = self.cb()
+
         self.assertEqual( resp.status_code, 418)
         self.assertEqual( resp.body, 'I\'m a teapot')
         self.assertEqual( resp.headers['x-excitant'], 'theine')
         self.assertEqual( resp.headers['content-type'], 'text/plain')
 
     def test_exception_custom_content_type(self):
-        resp = self.cb( None, bottle.HTTPResponse( 'I\'m a teapot',
-            content_type='application/caffe+sugar'))
-        self.assertEqual( resp.headers['content-type'], 'application/caffe+sugar')
+        self.success.side_effect = bottle.HTTPResponse(
+            'I\'m a teapot', content_type='application/caffe+sugar')
+        resp = self.cb()
+
+        self.assertEqual(resp.headers['content-type'], 'application/caffe+sugar')
 
 class TestHumanPlugin(unittest2.TestCase):
     def setUp(self):

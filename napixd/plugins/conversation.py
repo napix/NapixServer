@@ -4,6 +4,7 @@
 import logging
 import json
 import functools
+import collections
 from cStringIO import StringIO
 
 import bottle
@@ -74,6 +75,9 @@ class ConversationPlugin(object):
             if status != 200 and isinstance( result, basestring):
                 if not content_type :
                     content_type = 'text/plain'
+            elif isinstance(result, collections.Iterator):
+                if not content_type :
+                    content_type = 'application/octet-stream'
             elif result is not None:
                 content_type = 'application/json'
                 result = self.json_encode(result)
