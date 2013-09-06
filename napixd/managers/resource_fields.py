@@ -399,7 +399,7 @@ class ResourceField(object):
             if type(self.example) != self.type and not self.computed:
                 if self.type is unicode and isinstance(self.example, str):
                     self.example = unicode(self.example)
-                else:
+                elif not self.check_type(self.example):
                     raise ImproperlyConfigured(
                         'Example is not of type {0}'.format(self.type.__name__))
         else:
