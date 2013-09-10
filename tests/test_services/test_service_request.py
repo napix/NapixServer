@@ -3,7 +3,6 @@
 
 from __future__ import absolute_import
 
-import types
 import unittest2
 import mock
 import bottle
@@ -12,7 +11,7 @@ from tests.mock.managers import get_managers
 from napixd.managers.actions import action
 from napixd.exceptions import ValidationError, NotFound
 from napixd.conf import Conf
-from napixd.services import BaseCollectionService, FirstCollectionService
+from napixd.services.collectionservice import CollectionService, FirstCollectionService
 from napixd.services.servicerequest import ServiceActionRequest, ServiceResourceRequest, ServiceCollectionRequest
 
 class _Test( unittest2.TestCase):
@@ -29,7 +28,11 @@ class _Test( unittest2.TestCase):
         self.cs_conf = mock.Mock( spec=Conf, name='cs_conf')
 
         self.fcs = FirstCollectionService( self.Manager, self.fcs_conf, 'parent')
-        self.cs = BaseCollectionService( self.fcs, self.Managed, self.cs_conf, 'child')
+        self.cs = CollectionService(
+            self.fcs,
+            mock.Mock(manager_class=self.Managed),
+            self.cs_conf,
+            'child')
 
 class _TestSCR( _Test):
     def _make( self, method, **kw):
