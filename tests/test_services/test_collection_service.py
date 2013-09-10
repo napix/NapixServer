@@ -38,6 +38,7 @@ class TestCollectionServiceManaged(unittest2.TestCase):
         all, this = self.cs.get_managers([ 'p1' ])
         self.assertEqual( managed, this)
 
+        self.assertEqual(len(all), 1)
         manager_, id, resource = all[0]
         self.assertEqual( manager, manager_)
         manager.configure.assert_called_once_with( self.fcs_conf)

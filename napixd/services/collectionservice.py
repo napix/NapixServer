@@ -80,19 +80,7 @@ class BaseCollectionService(object):
         return self.url and self.url + '/' or ''
 
     def get_managers(self, path):
-        resource = {}
-        #self.services is one item shorter than path and that item is self
-        #Thus we search in the path for each of the ancestors of self
-        #but not for self.
-        managers_list = []
-        for id_, service in zip(path, self.services):
-            manager = service.generate_manager(resource)
-            id_ = manager.validate_id(id_)
-            resource = manager.get_resource(id_)
-            managers_list.append((manager, id_, resource))
-        #The manager for self is generated here.
-        manager = self.generate_manager(resource)
-        return managers_list, manager
+        raise NotImplementedError()
 
     def generate_manager(self, resource):
         """
@@ -224,9 +212,9 @@ class FirstCollectionService(BaseCollectionService):
             None, collection, config, namespace)
         self._cache = None
 
-    def generate_manager(self, resource):
+    def generate_manager(self):
         if self._cache is None or not self._cache.is_up_to_date():
-            self._cache = super(FirstCollectionService, self).generate_manager(resource)
+            self._cache = super(FirstCollectionService, self).generate_manager(None)
         return self._cache
 
     def setup_bottle(self, app):
@@ -234,6 +222,9 @@ class FirstCollectionService(BaseCollectionService):
         #even if it don't act like a resource
         app.route('/'+self.url, callback=self.noop)
         super(FirstCollectionService, self).setup_bottle(app)
+
+    def get_managers(self, path):
+        return [], self.generate_manager()
 
 
 class CollectionService(BaseCollectionService):
@@ -248,6 +239,18 @@ class CollectionService(BaseCollectionService):
         """
         resource = self.extractor(resource)
         return super(CollectionService, self).generate_manager(resource)
+
+    def get_managers(self, path):
+        managers_list, manager = self.previous_service.get_managers(path[:-1])
+
+        id_ = manager.validate_id(path[-1])
+        resource = manager.get_resource(id_)
+
+        managers_list.append((manager, id_, resource))
+
+        #The manager for self is generated here.
+        manager = self.generate_manager(resource)
+        return managers_list, manager
 
 
 class ActionService(object):
