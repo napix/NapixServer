@@ -41,7 +41,7 @@ class ManagerType(type):
     """
     def __new__(self, name, bases, attrs):
         try:
-            rf = attrs.pop('resource_fields')
+            rf = attrs['resource_fields']
         except KeyError:
             pass
         else:
@@ -381,7 +381,7 @@ class Manager(object):
         Computed by the `example` of each resource field in
         :attr:`Manager.resource_fields`
         """
-        return cls.resource_fields.get_example_resource()
+        return cls._resource_fields.get_example_resource()
 
     @classmethod
     def detect(cls):
