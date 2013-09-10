@@ -10,7 +10,7 @@ import logging
 import socket
 import urlparse
 
-from napixd.client import Client
+from napixd.client import Client, HTTPError
 from napixd.thread_manager import background
 from napixd.conf import Conf
 from napixd.guid import uid
@@ -60,17 +60,16 @@ class Notifier(object):
             self.send_notification()
 
     def send_first_notification(self):
-        resp = self.send_request(  'POST', self.post_url)
-        if resp and resp.status == 201:
+        try:
+            resp = self.send_request('POST', self.post_url)
+        except HTTPError, err:
+            logger.warning('Got %s', err)
+            return False
+
+        if resp.status == 201:
             self.put_url = resp.getheader('location')
-            logger.info( 'Now putting at %s', self.put_url)
+            logger.info('Now putting at %s', self.put_url)
             return True
-        elif resp is None:
-            return False
-        else:
-            logger.warning('Got %s %s response from notification url %s',
-                    resp.status, resp.reason, self.post_url)
-            return False
 
     def send_notification(self):
         logger.info( 'updating %s', self.put_url)
