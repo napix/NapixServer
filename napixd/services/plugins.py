@@ -4,6 +4,8 @@
 
 import functools
 import itertools
+import urllib
+
 
 class ArgumentsPlugin(object):
     """
@@ -21,6 +23,7 @@ class ArgumentsPlugin(object):
         @functools.wraps(callback)
         def inner_arguments(*args,**kw):
             path = self._get_path(args,kw)
+            path = map(urllib.unquote, path)
             return callback(path)
         return inner_arguments
 
