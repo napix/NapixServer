@@ -8,15 +8,17 @@ class URL(object):
     def __init__(self, segments=None):
         self.segments = segments or []
 
+    @classmethod
+    def _from(cls, orig, addition):
+        segments = list(orig.segments)
+        segments.append(addition)
+        return cls(segments)
+
     def add_segment(self, value):
-        segments = list(self.segments)
-        segments.append(value)
-        return URL(segments)
+        return self._from(self, value)
 
     def add_variable(self):
-        segments = list(self.segments)
-        segments.append(None)
-        return URL(segments)
+        return self._from(self, None)
 
     def __unicode__(self):
         if not self.segments:
@@ -40,3 +42,9 @@ class URL(object):
             else:
                 urls.append(segment)
         return u'/'.join(urls)
+
+    def with_slash(self):
+        return unicode(self) + u'/'
+
+    def __repr__(self):
+        return '<URL {0}>'.format(unicode(self))

@@ -32,3 +32,7 @@ class TestURL(unittest.TestCase):
     def test_reverse_empty(self):
         url = URL(['ab'])
         self.assertEqual(url.reverse([]), u'/ab')
+
+    def test_with_slash(self):
+        url = URL(['ab', None])
+        self.assertEqual(url.with_slash(), '/ab/:f0/')
