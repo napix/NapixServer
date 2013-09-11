@@ -122,17 +122,10 @@ class ServiceRequest(object):
         Create an url for the *list* **result**.
         The url follow the services prefix
         """
-        url = ['']
         path = list(self.path)
         path.append(result)
-        services = (s.url for s in self.service.services)
-        for id_ in path:
-            prefix = next(services, '')
-            if prefix:
-                url.append(prefix)
-            url.append(urllib.quote(str(id_), ''))
-        return '/'.join(url)
 
+        return self.service.resource_url.reverse(path)
 
 class ServiceCollectionRequest(ServiceRequest):
     """
