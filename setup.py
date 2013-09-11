@@ -18,7 +18,7 @@ setup(
         install_requires=[
             'bottle>=0.11',
             'permissions>=0.1',
-            'napix>0.2',
+            'napix>=0.2',
             ],
         include_package_data=True,
         scripts=[
