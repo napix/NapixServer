@@ -22,7 +22,7 @@ class BaseCollectionService(object):
     collection_request_class = ServiceCollectionRequest
     resource_request_class = ServiceResourceRequest
 
-    def __init__(self, collection, config, namespace, collection_url):
+    def __init__(self, collection, config, collection_url):
         """
         Serve the collection with the config given.
         collection is a subclass of Manager
@@ -33,7 +33,6 @@ class BaseCollectionService(object):
 
         self.direct_plug = self.collection.direct_plug()
         #url is added if append_url is True
-        self.url = namespace
 
         self.collection_url = collection_url
         self.resource_url = self.collection_url.add_variable()
@@ -189,8 +188,9 @@ class BaseCollectionService(object):
 class FirstCollectionService(BaseCollectionService):
     def __init__(self, collection, config, namespace):
         super(FirstCollectionService, self).__init__(
-            collection, config, namespace, URL([namespace]))
+            collection, config, URL([namespace]))
         self._cache = None
+        self.namespace = namespace
 
     def generate_manager(self):
         if self._cache is None or not self._cache.is_up_to_date():
@@ -207,7 +207,7 @@ class FirstCollectionService(BaseCollectionService):
         return [], self.generate_manager()
 
     def get_name(self):
-        return self.url
+        return self.namespace
 
 
 class CollectionService(BaseCollectionService):
@@ -218,13 +218,16 @@ class CollectionService(BaseCollectionService):
             collection_url = previous_service.resource_url
 
         super(CollectionService, self).__init__(
-            managed_class.manager_class, config, namespace, collection_url)
+            managed_class.manager_class, config, collection_url)
         self.extractor = managed_class.extractor
         self.previous_service = previous_service
+
+        self.namespace = '{0}.{1}'.format(
+            self.previous_service.get_name(), namespace)
         #collection and resource urls of this service
 
     def get_name(self):
-        return '{0}.{1}'.format(self.previous_service.get_name(), self.url)
+        return self.namespace
 
     def generate_manager(self, resource):
         """
