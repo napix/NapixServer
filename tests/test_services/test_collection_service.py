@@ -23,9 +23,6 @@ class TestCollectionServiceManaged(unittest2.TestCase):
         self.managed_class.extractor.side_effect = lambda x:x
         self.cs = CollectionService( self.fcs, self.managed_class, self.cs_conf, 'child')
 
-    def test_service_stack(self):
-        self.assertListEqual( self.cs.services, [ self.fcs, self.cs ])
-
     def test_managed_classes(self):
         managed_classes_url = self.fcs.as_managed_classes([ 'p1'])
         self.assertListEqual( managed_classes_url, [ '/parent/p1/my-middle-mock' ])

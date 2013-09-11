@@ -22,35 +22,20 @@ class BaseCollectionService(object):
     collection_request_class = ServiceCollectionRequest
     resource_request_class = ServiceResourceRequest
 
-    def __init__(self, previous_service, collection, config, namespace):
+    def __init__(self, collection, config, namespace, collection_url):
         """
-        Serve the collection given as a managed class of the previous_service,
-        with the config given.  collection is a subclass of Manager
-        previous_service is an instance of CollectionService
-        that serve the Manager class below.
-        previous_service is None when it's the base collection being served.
+        Serve the collection with the config given.
+        collection is a subclass of Manager
         config is the instance of Conf for this Service.
         """
-        self.previous_service = previous_service
         self.collection = collection
         self.config = config
-
-        #Recursive list of services.
-        self.services = list(self._services_stack())
-        self.services.reverse()
 
         self.direct_plug = self.collection.direct_plug()
         #url is added if append_url is True
         self.url = namespace
 
-        #collection and resource urls of this service
-        if not previous_service:
-            self.collection_url = URL([namespace])
-        elif namespace:
-            self.collection_url = self.previous_service.resource_url.add_segment(namespace)
-        else:
-            self.collection_url = self.previous_service.resource_url
-
+        self.collection_url = collection_url
         self.resource_url = self.collection_url.add_variable()
 
         self.all_actions = [
@@ -61,7 +46,7 @@ class BaseCollectionService(object):
         self.resource_fields = dict(self.collection._resource_fields)
 
     def get_name(self):
-        return '.'.join(s.url for s in self.services)
+        raise NotImplementedError()
 
     def get_prefix(self):
         """
@@ -89,16 +74,6 @@ class BaseCollectionService(object):
         manager = self.collection(resource)
         manager.configure(self.config)
         return manager
-
-    def _services_stack(self):
-        """
-        return the list of services before this one
-        """
-        serv = self
-        yield serv
-        while serv.previous_service:
-            yield serv.previous_service
-            serv = serv.previous_service
 
     def setup_bottle(self, app):
         """
@@ -214,7 +189,7 @@ class BaseCollectionService(object):
 class FirstCollectionService(BaseCollectionService):
     def __init__(self, collection, config, namespace):
         super(FirstCollectionService, self).__init__(
-            None, collection, config, namespace)
+            collection, config, namespace, URL([namespace]))
         self._cache = None
 
     def generate_manager(self):
@@ -225,18 +200,31 @@ class FirstCollectionService(BaseCollectionService):
     def setup_bottle(self, app):
         # Nasty hack so /manager return a 200 response
         #even if it don't act like a resource
-        app.route('/'+self.url, callback=self.noop)
+        app.route(unicode(self.collection_url), callback=self.noop)
         super(FirstCollectionService, self).setup_bottle(app)
 
     def get_managers(self, path):
         return [], self.generate_manager()
 
+    def get_name(self):
+        return self.url
+
 
 class CollectionService(BaseCollectionService):
     def __init__(self, previous_service, managed_class, config, namespace):
+        if namespace:
+            collection_url = previous_service.resource_url.add_segment(namespace)
+        else:
+            collection_url = previous_service.resource_url
+
         super(CollectionService, self).__init__(
-            previous_service, managed_class.manager_class, config, namespace)
+            managed_class.manager_class, config, namespace, collection_url)
         self.extractor = managed_class.extractor
+        self.previous_service = previous_service
+        #collection and resource urls of this service
+
+    def get_name(self):
+        return '{0}.{1}'.format(self.previous_service.get_name(), self.url)
 
     def generate_manager(self, resource):
         """
