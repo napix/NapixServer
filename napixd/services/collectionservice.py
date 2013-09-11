@@ -14,13 +14,9 @@ from napixd.services.servicerequest import (
 
 
 class BaseCollectionService(object):
-
     """
     Abstract class used by FirstCollectionService and CollectionService
     """
-
-    collection_request_class = ServiceCollectionRequest
-    resource_request_class = ServiceResourceRequest
 
     def __init__(self, collection, config, collection_url):
         """
@@ -43,28 +39,6 @@ class BaseCollectionService(object):
         ]
 
         self.resource_fields = dict(self.collection._resource_fields)
-
-    def get_name(self):
-        raise NotImplementedError()
-
-    def get_prefix(self):
-        """
-        Get the prefix of this service
-        if append_url was True, this service hasn't a prefix
-        else, it's the url from the configuration
-        ex:
-        >>>cs = CollectionService(ps,ManagerClass,conf,namespace)
-        >>>cs.get_prefix()
-            'managerclass/'
-
-        >>>cs = CollectionService(ps,ManagerClass,conf,namespace)
-        >>>cs.get_prefix()
-            ''
-        """
-        return self.url and self.url + '/' or ''
-
-    def get_managers(self, path):
-        raise NotImplementedError()
 
     def generate_manager(self, resource):
         """
@@ -183,6 +157,12 @@ class BaseCollectionService(object):
 
     def noop(self, **kw):
         return None
+
+    def get_name(self):
+        raise NotImplementedError()
+
+    def get_managers(self, path):
+        raise NotImplementedError()
 
 
 class FirstCollectionService(BaseCollectionService):

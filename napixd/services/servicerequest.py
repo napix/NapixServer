@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import urllib
 import collections
 import bottle
 
@@ -88,7 +87,7 @@ class ServiceRequest(object):
             m.end_request(bottle.request)
 
     def serialize(self, result):
-        return result
+        raise NotImplementedError()
 
     def handle(self):
         """
@@ -126,6 +125,7 @@ class ServiceRequest(object):
         path.append(result)
 
         return self.service.resource_url.reverse(path)
+
 
 class ServiceCollectionRequest(ServiceRequest):
     """
