@@ -3,6 +3,7 @@
 
 import sys
 
+from napixd.services.urls import URL
 from napixd.services.plugins import ArgumentsPlugin
 from napixd.services.servicerequest import (
     ServiceCollectionRequest,
@@ -42,16 +43,15 @@ class BaseCollectionService(object):
         #url is added if append_url is True
         self.url = namespace
 
-        base_url = '/'
-        last = len(self.services) - 1
-        #build the prefix url with the list of previous services
-        for i, service in enumerate(self.services):
-            base_url += service.get_prefix()
-            if i != last:
-                base_url += ':f{0}/'.format(i)
         #collection and resource urls of this service
-        self.collection_url = base_url
-        self.resource_url = base_url + ':f%i' % last
+        if not previous_service:
+            self.collection_url = URL([namespace])
+        elif namespace:
+            self.collection_url = self.previous_service.resource_url.add_segment(namespace)
+        else:
+            self.collection_url = self.previous_service.resource_url
+
+        self.resource_url = self.collection_url.add_variable()
 
         self.all_actions = [
             ActionService(self, action)
@@ -123,43 +123,48 @@ class BaseCollectionService(object):
             documentation of the action
         """
         arguments_plugin = ArgumentsPlugin()
-        app.route(self.collection_url+'_napix_resource_fields',
-                  callback=self.as_resource_fields,
-                  method='GET',
-                  apply=arguments_plugin)
-        app.route(self.collection_url+'_napix_help',
-                  callback=self.as_help,
-                  method='GET',
-                  apply=arguments_plugin)
+        app.route(
+            unicode(self.collection_url.add_segment('_napix_resource_fields')),
+            callback=self.as_resource_fields,
+            method='GET',
+            apply=arguments_plugin)
+        app.route(
+            unicode(self.collection_url.add_segment('_napix_help')),
+            callback=self.as_help,
+            method='GET',
+            apply=arguments_plugin)
         if hasattr(self.collection, 'create_resource'):
-            app.route(self.collection_url+'_napix_new',
-                      callback=self.as_example_resource,
-                      method='GET',
-                      apply=arguments_plugin)
+            app.route(
+                unicode(self.collection_url.add_segment('_napix_new')),
+                callback=self.as_example_resource,
+                method='GET',
+                apply=arguments_plugin)
         if self.all_actions:
-            app.route(self.resource_url+'/_napix_all_actions',
-                      callback=self.as_list_actions,
-                      method='GET',
-                      apply=arguments_plugin)
+            app.route(
+                unicode(self.resource_url.add_segment('_napix_all_actions')),
+                callback=self.as_list_actions,
+                method='GET',
+                apply=arguments_plugin)
         for action in self.all_actions:
             action.setup_bottle(app)
 
-        app.route(self.collection_url,
+        app.route(self.collection_url.with_slash(),
                   callback=self.as_collection,
                   method='ANY',
                   apply=arguments_plugin)
-        app.route(self.resource_url,
+        app.route(unicode(self.resource_url),
                   callback=self.as_resource,
                   method='ANY',
                   apply=arguments_plugin)
 
         if self.direct_plug is False:
-            app.route(self.resource_url+'/',
+            app.route(self.resource_url.with_slash(),
                       callback=self.as_managed_classes,
                       apply=arguments_plugin)
             for managed_class in self.collection.get_managed_classes():
-                app.route(self.resource_url + '/' + managed_class.get_name(),
-                          callback=self.noop)
+                app.route(
+                    unicode(self.resource_url.add_segment(managed_class.get_name())),
+                    callback=self.noop)
 
     def as_resource(self, path):
         return ServiceResourceRequest(path, self).handle()
@@ -256,23 +261,25 @@ class CollectionService(BaseCollectionService):
 class ActionService(object):
     def __init__(self, collection_service, action_name):
         self.service = collection_service
-        base_url = collection_service.resource_url
         self.name = action_name
         self.action = getattr(collection_service.collection, action_name)
         self.doc = (self.action.__doc__ or '').strip()
-        self.url = '{0}/_napix_action/{1}'.format(base_url, self.name)
+        self.url = collection_service.resource_url.add_segment(
+            '_napix_action').add_segment(self.name)
         self.resource_fields = dict(self.action.resource_fields)
 
     def setup_bottle(self, app):
         arguments_plugin = ArgumentsPlugin()
-        app.route(self.url + '/_napix_help',
-                  method='GET',
-                  callback=self.as_help,
-                  apply=arguments_plugin)
-        app.route(self.url,
-                  method='POST',
-                  callback=self.as_action,
-                  apply=arguments_plugin)
+        app.route(
+            unicode(self.url.add_segment('_napix_help')),
+            method='GET',
+            callback=self.as_help,
+            apply=arguments_plugin)
+        app.route(
+            unicode(self.url),
+            method='POST',
+            callback=self.as_action,
+            apply=arguments_plugin)
 
     def get_managers(self, path):
         return self.service.get_managers(path)
