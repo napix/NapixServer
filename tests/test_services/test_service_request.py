@@ -11,8 +11,8 @@ from tests.mock.managers import get_managers
 from napixd.managers.actions import action
 from napixd.exceptions import ValidationError, NotFound
 from napixd.conf import Conf
-from napixd.services.collectionservice import CollectionService, FirstCollectionService
-from napixd.services.servicerequest import ServiceActionRequest, ServiceResourceRequest, ServiceCollectionRequest
+from napixd.services.collection_services import CollectionService, FirstCollectionService
+from napixd.services.service_requests import ServiceActionRequest, ServiceResourceRequest, ServiceCollectionRequest
 
 class _Test( unittest2.TestCase):
     def _make( self, method, **kw ):

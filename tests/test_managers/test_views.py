@@ -8,8 +8,8 @@ import bottle
 
 from napixd.conf import Conf
 from napixd.http import Response
-from napixd.services import FirstCollectionService
-from napixd.services.servicerequest import ServiceResourceRequest
+from napixd.services.collection_services import FirstCollectionService
+from napixd.services.service_requests import ServiceResourceRequest
 from napixd.managers.base import ManagerType, Manager
 from napixd.managers.views import view, content_type
 

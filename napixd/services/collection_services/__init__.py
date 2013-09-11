@@ -5,7 +5,7 @@ import sys
 
 from napixd.services.urls import URL
 from napixd.services.plugins import ArgumentsPlugin
-from napixd.services.servicerequest import (
+from napixd.services.service_requests import (
     ServiceCollectionRequest,
     ServiceManagedClassesRequest,
     ServiceResourceRequest,

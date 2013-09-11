@@ -8,7 +8,7 @@ import unittest2
 
 from tests.mock.managers import Manager, Managed, Manager_direct
 from napixd.services import Service
-from napixd.services.collectionservice import BaseCollectionService
+from napixd.services.collection_services import BaseCollectionService
 from napixd.conf import Conf
 from napixd.managers import ManagedClass
 
