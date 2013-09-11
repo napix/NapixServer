@@ -33,14 +33,19 @@ class URL(object):
                 urls.append(segment)
         return u'/'.join(urls)
 
+    def _quote(self, value):
+        return urllib.quote(unicode(value), '')
+
     def reverse(self, ids):
         urls = ['']
         ids = iter(ids)
         for segment in self.segments:
             if segment is None:
-                urls.append(urllib.quote(unicode(next(ids)), ''))
+                urls.append(self._quote(next(ids)))
             else:
                 urls.append(segment)
+        for id in ids:
+            urls.append(self._quote(id))
         return u'/'.join(urls)
 
     def with_slash(self):

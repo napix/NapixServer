@@ -29,6 +29,10 @@ class TestURL(unittest.TestCase):
         url = URL(['ab', None, 'cd', None])
         self.assertEqual(url.reverse(['a/b', 'cd']), u'/ab/a%2Fb/cd/cd')
 
+    def test_reverse_additional(self):
+        url = URL(['ab', None, 'cd', None])
+        self.assertEqual(url.reverse(['a/b', 'cd', 'ef']), u'/ab/a%2Fb/cd/cd/ef')
+
     def test_reverse_empty(self):
         url = URL(['ab'])
         self.assertEqual(url.reverse([]), u'/ab')
