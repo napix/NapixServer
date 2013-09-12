@@ -218,6 +218,16 @@ class TestServiceActionRequest( _Test):
         self.manager.get_resource.assert_called_once_with( 'p1')
         self.managed.get_resource.assert_called_once_with( 'c2' )
 
+    def test_404(self):
+        self.managed.get_resource.side_effect = NotFound()
+
+        @self._action
+        def callback(self, r):
+            self.fail()
+
+        with self.assertRaises(bottle.HTTPError) as resp:
+            self.sar.handle()
+        self.assertEqual( resp.exception.status_code, 404)
 
     def test_post_args(self):
         self.request.data = { 'a' : 2 }

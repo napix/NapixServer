@@ -261,7 +261,9 @@ class ServiceResourceRequest(ServiceRequest):
         manager = super(ServiceResourceRequest, self).get_manager()
         #verifie l'identifiant de la resource aussi
         resource_id = manager.validate_id(resource_id)
-        self.resource = Wrapper(manager, resource_id)
+        resource = manager.get_resource(resource_id)
+
+        self.resource = Wrapper(manager, resource_id, resource)
         return manager
 
     def check_datas(self):
