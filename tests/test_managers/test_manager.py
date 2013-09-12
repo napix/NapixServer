@@ -30,7 +30,7 @@ class TestManager(unittest.TestCase):
         with mock.patch.object( self.manager, 'validate_resource') as vr:
             r = self.manager.validate(v1)
 
-        self.resource_fields.validate.assert_called_once_with(v1, for_edit=False)
+        self.resource_fields.validate.assert_called_once_with(v1, None)
         vr.assert_called_once_with( self.resource_fields.validate.return_value)
         self.assertEqual( r, vr.return_value)
 

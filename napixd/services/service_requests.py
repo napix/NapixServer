@@ -36,7 +36,7 @@ class ServiceRequest(object):
                 available_methods.append(meth)
         return available_methods
 
-    def check_datas(self, for_edit=False):
+    def check_datas(self):
         """
         Filter and check the collection fields.
 
@@ -164,7 +164,7 @@ class ServiceCollectionRequest(ServiceRequest):
             return super(ServiceCollectionRequest, self).check_datas()
 
         data = self.manager.unserialize(bottle.request.data)
-        return self.manager.validate(data, for_edit=False)
+        return self.manager.validate(data)
 
     def call(self):
         if self.method == 'POST':
@@ -273,7 +273,7 @@ class ServiceResourceRequest(ServiceRequest):
             return super(ServiceResourceRequest, self).check_datas()
 
         data = self.manager.unserialize(bottle.request.data)
-        return self.manager.validate(data, for_edit=True)
+        return self.manager.validate(data, original=self.resource.resource)
 
 
 class ServiceActionRequest(ServiceResourceRequest):

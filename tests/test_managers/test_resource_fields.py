@@ -123,12 +123,17 @@ class TestResourceFieldsDescriptor(unittest.TestCase):
     def test_validate_non_editable(self):
         self.f1.editable = True
         self.f2.editable = False
+
+        original = {
+            'f2': 'original_f2'
+        }
         v = self.rfd.validate({
             'f1' : 1,
             'f2' : 'oh snap'
-            }, for_edit=True)
+            }, original)
         self.assertEqual( v, {
             'f1' : self.f1.validate.return_value,
+            'f2': 'original_f2',
             })
 
     def test_validate_remove_computed(self):

@@ -18,6 +18,7 @@ from napixd.exceptions import ValidationError, ImproperlyConfigured
 from napixd.managers.managed_classes import ManagedClass
 from napixd.managers.resource_fields import ResourceFields
 from napixd.managers.actions import ActionProperty
+from napixd.managers.changeset import ChangeSet
 
 
 class ManagerType(type):
@@ -450,10 +451,11 @@ class Manager(object):
         """
         return resource_dict
 
-    def validate(self, resource_dict, for_edit=False):
+    def validate(self, resource_dict, original=None):
         # Create a new dict to populate with validated data
-        resource_dict = self._resource_fields.validate(resource_dict,
-                                                      for_edit=for_edit)
+        resource_dict = self._resource_fields.validate(resource_dict, original)
+        if original is not None:
+            resource_dict = ChangeSet(self.serialize(original), resource_dict)
         return self.validate_resource(resource_dict)
 
     def is_up_to_date(self):

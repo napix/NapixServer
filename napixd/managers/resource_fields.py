@@ -141,16 +141,16 @@ class ResourceFieldsDescriptor(collections.Sequence):
                 pass
         return dest
 
-    def validate(self, input, for_edit=False):
+    def validate(self, input, original=None):
         """
         Validate the **input**.
-        If **for_edit** is set to True, the *input* is validated
-        as the modification of an existing resource.
+        *original* is the actual value.
 
         Field are ignored and remove from *input* if
 
         * The property :attr:`ResourceField.computed` is set.
-        * The property :attr:`ResourceField.editable` is not set and **for_edit** is True.
+        * The property :attr:`ResourceField.editable` is not set
+        and **original** is not None.
 
         A :exc:`napixd.exceptions.ValidationError` is raised when
 
@@ -158,11 +158,14 @@ class ResourceFieldsDescriptor(collections.Sequence):
         * A field does not satisfies :meth:`ResourceField.validate`.
 
         """
+        for_edit = original is not None
         output = {}
         for resource_field in self:
             key = resource_field.name
             if (resource_field.computed or
                     for_edit and not resource_field.editable):
+                if for_edit:
+                    output[key] = original.get(key)
                 continue
             elif key not in input:
                 if resource_field.default_on_null:

@@ -109,7 +109,7 @@ class TestCollectionServiceRequestOther( _TestSCR):
             })
         resp = self.scr.handle()
         self.managed.unserialize.assert_called_once_with({ 'lol': 1, 'blabla' :True })
-        self.managed.validate.assert_called_once_with(self.managed.unserialize.return_value, for_edit=False)
+        self.managed.validate.assert_called_once_with(self.managed.unserialize.return_value)
         self.managed.create_resource.assert_called_once_with(
                 self.managed.validate.return_value)
         self.assertEqual( resp.status_code, 201)
@@ -175,7 +175,9 @@ class TestServiceResourceRequestOther( _TestSRR):
         self.managed.validate_id.side_effect = lambda y:y
         self.srr.handle()
         self.managed.unserialize.assert_called_once_with({ 'lol': 1, 'blabla' : 'ab' })
-        self.managed.validate.assert_called_once_with(self.managed.unserialize.return_value, for_edit=True)
+        self.managed.validate.assert_called_once_with(
+            self.managed.unserialize.return_value,
+            original=self.managed.get_resource.return_value)
         self.managed.modify_resource.assert_called_once_with(
             Wrapper(self.managed, 'c2'), self.managed.validate.return_value)
 
