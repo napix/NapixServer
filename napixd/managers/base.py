@@ -278,7 +278,7 @@ class Manager(object):
 
         >>>class SectionManager(Manager):
         >>>     def list_resource(self):
-        >>>         return self.parent['parser'].get_sections()
+        >>>         return self.context.resource['parser'].get_sections()
         >>>class File(Manager):
         >>>     managed_class = SectionManager
         >>>     fields = { 'path':'{} }
@@ -291,7 +291,7 @@ class Manager(object):
 
         GET /file/file1/
         [ "section1" , "section2"]
-        #Parser was passed to list_resource through parent
+        #Parser was passed to list_resource through context
 
     .. attribute:: resource_fields
 
@@ -302,9 +302,10 @@ class Manager(object):
         The keys are the name of the fields and the values are dicts that are
         transformed to :class:`napixd.managers.resource_fields.ResourceField`
 
-    .. attribute:: parent
+    .. attribute:: context
 
         The resource that spawned this manager.
+        It is an instance of :class:`napixd.services.wrapper.Wrapper`.
 
         `None` for the root managers.
 
@@ -345,9 +346,9 @@ class Manager(object):
             name = name[:-len('manager')]
         return name
 
-    def __init__(self, parent):
+    def __init__(self, wrapper):
         """
-        intialize the Manager with the parent resource creating it
+        intialize the Manager with the wrapped resource *wrapper* creating it
 
         example
         >>>class FirstManager(Manager):
@@ -361,7 +362,7 @@ class Manager(object):
         >>> SecondManager(FirstManager.get_resource('second')).list_resource()
 
         """
-        self.parent = parent
+        self.context = wrapper
 
     def get_formatter(self, format_):
         #return the method instance of the formatter
@@ -462,7 +463,7 @@ class Manager(object):
         """
         return False
 
-    def end_managed_request(self, request, resource_id, resource):
+    def end_managed_request(self, request, resource):
         """
         Place holder method which is called
         after a http request
@@ -470,7 +471,7 @@ class Manager(object):
         """
         pass
 
-    def start_managed_request(self, request, resource_id, resource):
+    def start_managed_request(self, request, resource):
         """
         Place holder method which is called
         before a http request
@@ -508,7 +509,7 @@ class ManagerInterface(object):
     The manager MUST NOT define a method with a raise NotImplementedError
     to mean that the method is not supported.
     """
-    def delete_resource(self, resource_id):
+    def delete_resource(self, resource):
         """
         Delete a managed ressource.
 
@@ -550,7 +551,7 @@ class ManagerInterface(object):
         """
         raise NotImplementedError
 
-    def modify_resource(self, resource_id, resource_dict):
+    def modify_resource(self, resource, changes):
         """
         Modify the ressource designed by resource_id by updating it
         with resource_dict defined values.

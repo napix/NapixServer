@@ -7,6 +7,7 @@ import bottle
 from napixd.http import Response
 from napixd.exceptions import NotFound, ValidationError, Duplicate
 from napixd.services.methods import Implementation
+from napixd.services.wrapper import Wrapper
 
 
 class ServiceRequest(object):
@@ -42,10 +43,7 @@ class ServiceRequest(object):
         Remove any field that is not in the collection's field
         Call the validator of the collection
         """
-        if self.method not in ('POST', 'PUT'):
-            return {}
-        data = self.manager.unserialize(bottle.request.data)
-        return self.manager.validate(data, for_edit=for_edit)
+        return {}
 
     def get_manager(self):
         """
@@ -75,16 +73,16 @@ class ServiceRequest(object):
         raise NotImplementedError
 
     def start_request(self):
-        for m, i, r in self.all_managers:
-            m.start_request(bottle.request)
-            m.start_managed_request(bottle.request, i, r)
+        for manager, wrapper in self.all_managers:
+            manager.start_request(bottle.request)
+            manager.start_managed_request(bottle.request, wrapper)
         self.manager.start_request(bottle.request)
 
     def end_request(self):
         self.manager.end_request(bottle.request)
-        for m, i, r in reversed(self.all_managers):
-            m.end_managed_request(bottle.request, i, r)
-            m.end_request(bottle.request)
+        for manager, wrapper in reversed(self.all_managers):
+            manager.end_managed_request(bottle.request, wrapper)
+            manager.end_request(bottle.request)
 
     def serialize(self, result):
         raise NotImplementedError()
@@ -162,7 +160,11 @@ class ServiceCollectionRequest(ServiceRequest):
         return super(ServiceCollectionRequest, self).get_callback()
 
     def check_datas(self):
-        return super(ServiceCollectionRequest, self).check_datas(for_edit=False)
+        if self.method != 'POST':
+            return super(ServiceCollectionRequest, self).check_datas()
+
+        data = self.manager.unserialize(bottle.request.data)
+        return self.manager.validate(data, for_edit=False)
 
     def call(self):
         if self.method == 'POST':
@@ -214,7 +216,7 @@ class ServiceResourceRequest(ServiceRequest):
         if self.method == 'HEAD':
             return None
         if self.method == 'PUT':
-            if result is not None and result != self.resource_id:
+            if result is not None and result != self.resource.id:
                 new_url = self.make_url(result)
                 return bottle.HTTPError(205, None, Location=new_url)
             return bottle.HTTPError(204)
@@ -235,7 +237,7 @@ class ServiceResourceRequest(ServiceRequest):
             return bottle.HTTPError(406, message)
 
         response = Response()
-        result = formatter(self.resource_id, result, response)
+        result = formatter(self.resource, response)
         if result is None or result is response:
             return response
         else:
@@ -247,20 +249,27 @@ class ServiceResourceRequest(ServiceRequest):
 
     def call(self):
         if self.method == 'PUT':
-            return self.callback(self.resource_id, self.data)
+            return self.callback(self.resource, self.data)
+        elif self.method == 'GET':
+            return self.resource.resource
         else:
-            return self.callback(self.resource_id)
+            return self.callback(self.resource)
 
     def get_manager(self):
         #get the last path token because we may not just want to GET the resource
         resource_id = self.path.pop()
         manager = super(ServiceResourceRequest, self).get_manager()
         #verifie l'identifiant de la resource aussi
-        self.resource_id = manager.validate_id(resource_id)
+        resource_id = manager.validate_id(resource_id)
+        self.resource = Wrapper(manager, resource_id)
         return manager
 
     def check_datas(self):
-        return super(ServiceResourceRequest, self).check_datas(for_edit=True)
+        if self.method != 'PUT':
+            return super(ServiceResourceRequest, self).check_datas()
+
+        data = self.manager.unserialize(bottle.request.data)
+        return self.manager.validate(data, for_edit=True)
 
 
 class ServiceActionRequest(ServiceResourceRequest):
@@ -272,14 +281,13 @@ class ServiceActionRequest(ServiceResourceRequest):
         self.action_name = action_name
         super(ServiceActionRequest, self).__init__(path, service)
 
-    def get_callback(self):
-        self.resource = self.manager.get_resource(self.resource_id)
-        return getattr(self.manager, self.action_name)
-
     def check_datas(self):
         callback = getattr(self.manager, self.action_name)
         data = callback.resource_fields.validate(bottle.request.data)
         return data
+
+    def get_callback(self):
+        return getattr(self.manager, self.action_name)
 
     def call(self):
         return self.callback(self.resource, **self.data)

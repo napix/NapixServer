@@ -136,7 +136,7 @@ class ResourceFieldsDescriptor(collections.Sequence):
         dest = {}
         for k in self:
             try:
-                dest[k.name]= raw[k.name]
+                dest[k.name] = raw[k.name]
             except KeyError:
                 pass
         return dest

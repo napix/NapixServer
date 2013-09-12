@@ -4,6 +4,7 @@
 import sys
 
 from napixd.services.urls import URL
+from napixd.services.wrapper import Wrapper
 from napixd.services.plugins import ArgumentsPlugin
 from napixd.services.service_requests import (
     ServiceCollectionRequest,
@@ -221,11 +222,12 @@ class CollectionService(BaseCollectionService):
 
         id_ = manager.validate_id(path[-1])
         resource = manager.get_resource(id_)
+        wrapped = Wrapper(manager, id_, resource)
 
-        managers_list.append((manager, id_, resource))
+        managers_list.append((manager, wrapped))
 
         #The manager for self is generated here.
-        manager = self.generate_manager(resource)
+        manager = self.generate_manager(wrapped)
         return managers_list, manager
 
 

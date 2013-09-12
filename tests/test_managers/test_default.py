@@ -103,12 +103,12 @@ class TestDictManager( _TestDM):
             })
 
 class MyFileManager( FileManager):
-    def get_filename(self, parent):
-        return parent.fname
+    def get_filename(self, context):
+        return context.fname
     def write(self, fp, resources):
-        self.parent.write( fp, resources)
+        self.context.write( fp, resources)
     def parse( self, fp):
-        self.parent.parse( fp)
+        self.context.parse( fp)
         return { 'a': 1}
 
 class TestFileManager( unittest2.TestCase):

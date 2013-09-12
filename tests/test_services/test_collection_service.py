@@ -36,13 +36,13 @@ class TestCollectionServiceManaged(unittest2.TestCase):
         self.assertEqual( managed, this)
 
         self.assertEqual(len(all), 1)
-        manager_, id, resource = all[0]
+        manager_, wrapped = all[0]
         self.assertEqual( manager, manager_)
         manager.configure.assert_called_once_with( self.fcs_conf)
         manager.validate_id.assert_called_once_with( 'p1')
-        self.assertEqual( id, manager.validate_id())
-        manager.get_resource.assert_called_once_with( id)
-        self.assertEqual( resource, manager.get_resource())
+        self.assertEqual(wrapped.id, manager.validate_id())
+        manager.get_resource.assert_called_once_with(wrapped.id)
+        self.assertEqual(wrapped.resource, manager.get_resource())
 
 
     def test_generate_manager(self):

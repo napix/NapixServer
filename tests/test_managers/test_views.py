@@ -16,7 +16,7 @@ from napixd.managers.views import view, content_type
 class _TestDecorators( unittest2.TestCase):
     def setUp(self):
         @view('text')
-        def as_text( self, id, resource, response):
+        def as_text( self, resource, response):
             response.write('oh snap')
         self.fn = as_text
 
@@ -27,7 +27,7 @@ class TestDecorators( _TestDecorators):
     def test_content_type(self):
         as_text = content_type( 'application/pip+pampoum')(self.fn)
         resp = mock.Mock()
-        as_text( None, None, None, resp)
+        as_text( None, None, resp)
         resp.set_header.assert_called_once_with( 'Content-Type', 'application/pip+pampoum')
 
 class _TestManagerView(_TestDecorators):
@@ -35,7 +35,7 @@ class _TestManagerView(_TestDecorators):
         super( _TestManagerView, self).setUp()
 
         @view('object')
-        def as_object( self, id, resource, response):
+        def as_object( self, resource, response):
             response.set_header('x-my-header', 'oh-snap')
             return { 'a' : 1 }
         self.as_object = as_object

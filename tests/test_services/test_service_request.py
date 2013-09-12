@@ -13,6 +13,7 @@ from napixd.exceptions import ValidationError, NotFound
 from napixd.conf import Conf
 from napixd.services.collection_services import CollectionService, FirstCollectionService
 from napixd.services.service_requests import ServiceActionRequest, ServiceResourceRequest, ServiceCollectionRequest
+from napixd.services.wrapper import Wrapper
 
 class _Test( unittest2.TestCase):
     def _make( self, method, **kw ):
@@ -169,7 +170,8 @@ class TestServiceResourceRequestOther( _TestSRR):
         self.srr.handle()
         self.managed.unserialize.assert_called_once_with({ 'lol': 1, 'blabla' : 'ab' })
         self.managed.validate.assert_called_once_with(self.managed.unserialize.return_value, for_edit=True)
-        self.managed.modify_resource.assert_called_once_with( 'c2', self.managed.validate.return_value)
+        self.managed.modify_resource.assert_called_once_with(
+            Wrapper(self.managed, 'c2'), self.managed.validate.return_value)
 
     def test_method_put_same_id(self):
         self._make('PUT', data = { 'lol' : 1, 'blabla': 'ab' })
@@ -208,7 +210,7 @@ class TestServiceActionRequest( _Test):
         self.request.data = {}
         @self._action
         def callback(self, r):
-            self.assertEqual( r, self.managed.get_resource.return_value)
+            self.assertEqual( r.resource, self.managed.get_resource.return_value)
             return 1
 
         resp = self.sar.handle()
@@ -221,7 +223,7 @@ class TestServiceActionRequest( _Test):
         self.request.data = { 'a' : 2 }
         @self._action
         def callback(self, r, a):
-            self.assertEqual( r, self.managed.get_resource.return_value)
+            self.assertEqual( r.resource, self.managed.get_resource.return_value)
             return a
 
         resp = self.sar.handle()
