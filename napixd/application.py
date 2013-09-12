@@ -10,6 +10,7 @@ logger = logging.getLogger('Napix.application')
 
 
 class NapixdBottle(bottle.Bottle):
+
     """
     Napix bottle application.
     This bottle contains the automatic detection of services.
@@ -39,7 +40,7 @@ class NapixdBottle(bottle.Bottle):
         for mi in managers:
             service = Service(mi.manager, mi.alias, mi.config)
             logger.debug('Creating service %s', service.url)
-            #add new routes
+            # add new routes
             service.setup_bottle(self)
             self.root_urls.add(service.url)
 
@@ -47,7 +48,7 @@ class NapixdBottle(bottle.Bottle):
         load = self.loader.load()
         logger.info('Reloading')
 
-        #remove old routes
+        # remove old routes
         if logger.isEnabledFor(logging.DEBUG) and load.old_managers:
             logger.debug('Old services: %s',
                          ', '.join(map(unicode, load.old_managers)))
@@ -63,7 +64,7 @@ class NapixdBottle(bottle.Bottle):
                          u', '.join(map(unicode, load.new_managers)))
         self.make_services(load.new_managers)
 
-        #reset the router
+        # reset the router
         self.router = bottle.Router()
         for route in self.routes:
             self.router.add(route.rule, route.method, route, name=route.name)
@@ -71,7 +72,7 @@ class NapixdBottle(bottle.Bottle):
         if logger.isEnabledFor(logging.DEBUG) and load.error_managers:
             logger.debug('Error services: %s',
                          u', '.join(map(unicode, load.error_managers)))
-        #add errord routes
+        # add errord routes
         for me in load.error_managers:
             self.register_error(me)
 
@@ -99,7 +100,7 @@ class NapixdBottle(bottle.Bottle):
         #/ route, give the services
         self.route('/', callback=self.slash)
 
-        #Error handling for not found and invalid
+        # Error handling for not found and invalid
         self.error(404)(self._error_handler_factory(404))
         self.error(405)(self._error_handler_factory(405))
         self.error(400)(self._error_handler_factory(400))
@@ -109,7 +110,7 @@ class NapixdBottle(bottle.Bottle):
         """
         /  view; return the list of the first level services of the app.
         """
-        return ['/'+x for x in self.root_urls]
+        return ['/' + x for x in self.root_urls]
 
     def _error_handler_factory(self, code):
         """ 404 view """

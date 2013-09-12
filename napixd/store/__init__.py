@@ -9,14 +9,16 @@ Persistent objects
 Napix provides a facility to make simple persistent objects.
 
 In this module, lie the objects used by the end users.
-See more details on the implementation strategies in :mod:`napixd.store.backends`.
+See more details on the implementation strategies in
+:mod:`napixd.store.backends`.
 
 Store
 =====
 
 .. data:: DEFAULT_STORE
 
-    The default Store class. This parameter is overriden by the configuration value :ref:`Napix.storage.store<conf.napix.storage>`.
+    The default Store class. This parameter is overriden by the configuration
+    value :ref:`Napix.storage.store<conf.napix.storage>`.
 
     The default is :class:`napixd.store.backends.file.FileBackend`.
 
@@ -26,15 +28,19 @@ Store
 
     ``collection`` is the name of the object to store or retrieve.
 
-    They support, getting, setting, deleting keys, :meth:`keys`, :meth:`values`, etc.
+    They support, getting, setting, deleting keys,
+    :meth:`keys`, :meth:`values`, etc.
 
-    They also have a :meth:`drop` method that remove the persisted collection from the storage.
+    They also have a :meth:`drop` method that remove the persisted collection
+    from the storage.
 
-    Stored objets can be either synchronous or asynchrounous, meaning that an operation is
-    directly done to the storage or have to wait a :meth:`save`
+    Stored objets can be either synchronous or asynchrounous,
+    meaning that an operation is directly done to the storage
+    or have to wait a :meth:`save`
 
     Each StoreBackend implementation may choose its own optional arguments.
-    For example, a Store based on the filesystem may choose to get a base directory as an option.
+    For example, a Store based on the filesystem may choose
+    to get a base directory as an option.
 
     .. method:: save
 
@@ -44,14 +50,16 @@ Store
 
     .. method:: drop
 
-        Cleans the content of the stored object and removes the collection from the storage.
+        Cleans the content of the stored object and
+        removes the collection from the storage.
 
 Counters
 ========
 
 .. data:: DEFAULT_COUNTER
 
-    The default Counter class. This parameter is overriden by the configuration value :ref:`Napix.storage.counter<conf.napix.storage>`.
+    The default Counter class. This parameter is overriden by the configuration
+    value :ref:`Napix.storage.counter<conf.napix.storage>`.
 
     The default is :class:`napixd.store.backends.local.LocalCounterBackend`.
 
@@ -71,8 +79,8 @@ Counters
 
     .. method:: increment( by = 1) -> int
 
-        Atomically augment the value by the ``by`` parameter, and returns its value.
-
+        Atomically augment the value by the ``by`` parameter,
+        and returns its value.
 
     .. method:: reset( to = 0) -> int
 
@@ -84,14 +92,17 @@ import sys
 from napixd.conf import Conf
 from napixd.store.backends import BaseBackend
 
-__all__ = ( 'NoSuchStoreBackend', 'Store', 'Counter')
+__all__ = ('NoSuchStoreBackend', 'Store', 'Counter')
 
 DEFAULT_STORE = 'napixd.store.backends.file.FileBackend'
 DEFAULT_COUNTER = 'napixd.store.backends.local.LocalCounter'
 
+
 class NoSuchStoreBackend(Exception):
+
     """Exception raised when a backend can not be imported."""
     pass
+
 
 def Store(collection, backend='default', **opts):
     """
@@ -100,7 +111,8 @@ def Store(collection, backend='default', **opts):
     The keyword arguments ``options`` depends on the backend.
 
     The backend is a string coding the dotted python path to a backend class or
-    only the class name if the backend is one of standard backends in :mod:`napixd.store.backends`.
+    only the class name if the backend is one of standard backends
+    in :mod:`napixd.store.backends`.
 
     It raises a :exc:`NoSuchStoreBackend` if the string does not resolve to a class.
 
@@ -109,8 +121,10 @@ def Store(collection, backend='default', **opts):
         from napixd.store import Store
 
         default_store = Store('collection_name')
-        this_store = Store('collection_name', backend='RedisHashKey', host='redis.example.com')
-        that_store = Store('collection_name', backend='company.dbframework.NapixStoreBackend')
+        this_store = Store('collection_name',
+                            backend='RedisHashKey', host='redis.example.com')
+        that_store = Store('collection_name',
+                            backend='company.dbframework.NapixStoreBackend')
 
         default_store.keys()
         [ 'value', 'value1', 'value2' ]
@@ -123,20 +137,24 @@ def Store(collection, backend='default', **opts):
 
     """
     backend = loader.get_store_backend(backend, opts)
-    return backend( collection)
+    return backend(collection)
 
-def Counter( name, backend='default', **opts):
+
+def Counter(name, backend='default', **opts):
     """
     Returns a counter with the specified ``backend`` and the given ``name``.
     See :func:`Store` for more details.
     """
     backend = loader.get_counter_backend(backend, opts)
-    return backend( name)
+    return backend(name)
+
 
 class Loader(object):
+
     """
     Loader for the store and counter backends
     """
+
     def __init__(self):
         self.conf = Conf.get_default('Napix.storage')
         self._class_cache = {}
@@ -146,23 +164,26 @@ class Loader(object):
         if not fqdn in self._class_cache:
             module, dot, classname = fqdn.rpartition('.')
             if not module:
-                raise NoSuchStoreBackend('Cannot import %s, Only full dotted names can be used'%fqdn)
+                raise NoSuchStoreBackend(
+                    'Cannot import {0}, Only full dotted names can be used'.format(fqdn))
             try:
                 __import__(module)
-                self._class_cache[fqdn] = getattr( sys.modules[module], classname)
+                self._class_cache[fqdn] = getattr(
+                    sys.modules[module], classname)
             except (ImportError, AttributeError):
-                raise NoSuchStoreBackend, fqdn
+                raise NoSuchStoreBackend(fqdn)
         return self._class_cache[fqdn]
 
     def _get_backend(self, backend, opts):
-        cls = self._get_class( backend)
-        if not issubclass( cls, BaseBackend):
-            raise ValueError( '%s is not a BaseBackend subclass' % backend )
-        return cls( opts)
+        cls = self._get_class(backend)
+        if not issubclass(cls, BaseBackend):
+            raise ValueError('%s is not a BaseBackend subclass' % backend)
+        return cls(opts)
 
     def _get_backend_conf(self, backend):
         if backend not in self._backend_cache:
-            self._backend_cache[backend] = self._get_backend( backend, dict( self.conf.get( backend)))
+            self._backend_cache[backend] = self._get_backend(
+                backend, dict(self.conf.get(backend)))
         return self._backend_cache[backend]
 
     def get_backend(self, backend, opts, default):
@@ -175,13 +196,14 @@ class Loader(object):
             backend = default
 
         if opts:
-            return self._get_backend( backend, opts)
+            return self._get_backend(backend, opts)
         else:
-            return self._get_backend_conf( backend)
+            return self._get_backend_conf(backend)
 
     def get_store_backend(self, backend, options=None):
-        return self.get_backend( backend, options, DEFAULT_STORE)
+        return self.get_backend(backend, options, DEFAULT_STORE)
+
     def get_counter_backend(self, backend, options=None):
-        return self.get_backend( backend, options, DEFAULT_COUNTER)
+        return self.get_backend(backend, options, DEFAULT_COUNTER)
 
 loader = Loader()

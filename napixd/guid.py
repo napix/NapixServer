@@ -8,7 +8,8 @@ NapixID is stored in :file:`HOME/napixd_id`.
 
 .. data:: uid
 
-    An instance of :class:`NapixID` wich contains the identifier for the running Napix instance.
+    An instance of :class:`NapixID` wich contains the identifier
+    for the running Napix instance.
     The ID will stay the same between two runs of this instance.
 
     The ID will change on the same server if used with another **HOME**.
@@ -16,7 +17,7 @@ NapixID is stored in :file:`HOME/napixd_id`.
 """
 
 
-__all__ = ( 'NapixID', 'uid')
+__all__ = ('NapixID', 'uid')
 
 import uuid
 import logging
@@ -27,19 +28,23 @@ logger = logging.getLogger('Napix.GUID')
 
 open = open
 
+
 class NapixID(object):
+
     """
     The loader of uniquer identifier.
 
     The uniquer identifier is an instance of :class:`uuid.UUID` accessible
-    with the property :attr:`uuid` or in a string form by calling :class:`str` on this object.
+    with the property :attr:`uuid` or in a string form by calling :class:`str`
+    on this object.
 
     The Unique identifier is lazily loaded by the first access to :attr:`uuid`.
-    It may raise a :exc:`ValueError` if the :file:`napixd_id` file exists but does not contains
-    a valid :class:`~uuid.UUID`.
+    It may raise a :exc:`ValueError` if the :file:`napixd_id` file exists but
+    does not contains a valid :class:`~uuid.UUID`.
     """
+
     def __init__(self):
-        self.id_file = get_file( 'napixd_id')
+        self.id_file = get_file('napixd_id')
         self._napix_id = None
 
     def __str__(self):
@@ -70,23 +75,23 @@ class NapixID(object):
     def save(self):
         logger.info('Saving UUID in %s', self.id_file)
         try:
-            handle = open( self.id_file, 'wb')
+            handle = open(self.id_file, 'wb')
             with handle:
-                handle.write( str(self._napix_id))
+                handle.write(str(self._napix_id))
         except IOError, e:
             logger.exception(e)
 
     def load(self):
         logger.debug('Loading UUID from %s', self.id_file)
         try:
-            handle = open( self.id_file, 'rb')
+            handle = open(self.id_file, 'rb')
         except IOError, e:
             return None
 
         try:
-            return uuid.UUID( handle.read().strip())
-        except ( IOError, ValueError) as e:
-            logger.exception( e)
+            return uuid.UUID(handle.read().strip())
+        except (IOError, ValueError) as e:
+            logger.exception(e)
             raise ValueError('Cannot read the ID')
         finally:
             handle.close()

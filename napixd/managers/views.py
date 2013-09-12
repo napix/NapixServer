@@ -122,7 +122,8 @@ The depreciation warning header will be sent to the client, even if the response
 
 import functools
 
-__all__ = ( 'view', 'content_type')
+__all__ = ('view', 'content_type')
+
 
 def view(format):
     """
@@ -146,6 +147,7 @@ def view(format):
         fn._napix_view = format
         return fn
     return inner
+
 
 def content_type(content_type):
     """

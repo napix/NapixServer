@@ -5,9 +5,11 @@ import bottle
 
 from napixd.plugins import ConversationPlugin
 
-class WebClient( bottle.Bottle):
+
+class WebClient(bottle.Bottle):
+
     def __init__(self, root, launcher):
-        super( WebClient, self).__init__(autojson=False)
+        super(WebClient, self).__init__(autojson=False)
         self.root = root
         self.service_name = launcher.service_name
 
@@ -22,16 +24,15 @@ class WebClient( bottle.Bottle):
             ConversationPlugin()
         ])
 
-
     def setup_bottle(self, app):
-        app.mount( '/_napix_js', self)
+        app.mount('/_napix_js', self)
 
     def index(self):
-        return bottle.static_file( 'index.html', root=self.root,
-                mimetype = 'text/html; charset=UTF-8')
+        return bottle.static_file('index.html', root=self.root,
+                                  mimetype='text/html; charset=UTF-8')
 
     def static(self, filename):
-        return bottle.static_file( filename, root=self.root )
+        return bottle.static_file(filename, root=self.root)
 
     def infos(self):
         return {

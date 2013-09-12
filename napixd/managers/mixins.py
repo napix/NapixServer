@@ -10,7 +10,9 @@ Managers Mixins
 This modules defines Mixin classes for frequent scenarios.
 """
 
+
 class AttrResourceMixin(object):
+
     """
     This mixin overrides the serialize method to returns a new dict
     of the declared fields and the corresponding attributes of the resource.
@@ -39,6 +41,7 @@ class AttrResourceMixin(object):
 
 
     """
-    def serialize( self, resource):
-        return dict( (k, getattr(resource, k))
-            for k in self.__class__._resource_fields.keys() )
+
+    def serialize(self, resource):
+        return dict((k, getattr(resource, k))
+                    for k in self.__class__._resource_fields.keys())

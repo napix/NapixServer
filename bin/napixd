@@ -10,14 +10,13 @@ import os
 try:
     import napixd
 except ImportError:
-    path = os.path.realpath( os.path.join( os.path.dirname(__file__), '..' ))
+    path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
     sys.path.append(path)
 
 
 import napixd.launcher
 
 if __name__ == '__main__':
-    rc = napixd.launcher.launch( sys.argv[1:] )
+    rc = napixd.launcher.launch(sys.argv[1:])
     if rc is not None:
-        sys.exit( rc)
-
+        sys.exit(rc)

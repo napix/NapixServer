@@ -6,6 +6,7 @@ from napix.authenticators import LoginAuthentifier, AnonAuthentifier
 
 
 class Client(object):
+
     def __init__(self, host, credentials=None, noauth=False):
         if noauth:
             authenticator = AnonAuthentifier()

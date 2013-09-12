@@ -15,6 +15,7 @@ from napixd.services.service_requests import (
 
 
 class BaseCollectionService(object):
+
     """
     Abstract class used by FirstCollectionService and CollectionService
     """
@@ -29,7 +30,7 @@ class BaseCollectionService(object):
         self.config = config
 
         self.direct_plug = self.collection.direct_plug()
-        #url is added if append_url is True
+        # url is added if append_url is True
 
         self.collection_url = collection_url
         self.resource_url = self.collection_url.add_variable()
@@ -112,7 +113,9 @@ class BaseCollectionService(object):
                       apply=arguments_plugin)
             for managed_class in self.collection.get_managed_classes():
                 app.route(
-                    unicode(self.resource_url.add_segment(managed_class.get_name())),
+                    unicode(
+                        self.resource_url.add_segment(
+                            managed_class.get_name())),
                     callback=self.noop)
 
     def as_resource(self, path):
@@ -167,6 +170,7 @@ class BaseCollectionService(object):
 
 
 class FirstCollectionService(BaseCollectionService):
+
     def __init__(self, collection, config, namespace):
         super(FirstCollectionService, self).__init__(
             collection, config, URL([namespace]))
@@ -175,12 +179,13 @@ class FirstCollectionService(BaseCollectionService):
 
     def generate_manager(self):
         if self._cache is None or not self._cache.is_up_to_date():
-            self._cache = super(FirstCollectionService, self).generate_manager(None)
+            self._cache = super(
+                FirstCollectionService, self).generate_manager(None)
         return self._cache
 
     def setup_bottle(self, app):
         # Nasty hack so /manager return a 200 response
-        #even if it don't act like a resource
+        # even if it don't act like a resource
         app.route(unicode(self.collection_url), callback=self.noop)
         super(FirstCollectionService, self).setup_bottle(app)
 
@@ -192,9 +197,11 @@ class FirstCollectionService(BaseCollectionService):
 
 
 class CollectionService(BaseCollectionService):
+
     def __init__(self, previous_service, managed_class, config, namespace):
         if namespace:
-            collection_url = previous_service.resource_url.add_segment(namespace)
+            collection_url = previous_service.resource_url.add_segment(
+                namespace)
         else:
             collection_url = previous_service.resource_url
 
@@ -205,7 +212,7 @@ class CollectionService(BaseCollectionService):
 
         self.namespace = '{0}.{1}'.format(
             self.previous_service.get_name(), namespace)
-        #collection and resource urls of this service
+        # collection and resource urls of this service
 
     def get_name(self):
         return self.namespace
@@ -226,12 +233,13 @@ class CollectionService(BaseCollectionService):
 
         managers_list.append((manager, wrapped))
 
-        #The manager for self is generated here.
+        # The manager for self is generated here.
         manager = self.generate_manager(wrapped)
         return managers_list, manager
 
 
 class ActionService(object):
+
     def __init__(self, collection_service, action_name):
         self.service = collection_service
         self.name = action_name

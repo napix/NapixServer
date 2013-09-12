@@ -22,6 +22,7 @@ from napixd.managers.changeset import ChangeSet
 
 
 class ManagerType(type):
+
     """
     Metaclass to create manager classes.
 
@@ -40,6 +41,7 @@ class ManagerType(type):
     are forwarded in the newly created class.
 
     """
+
     def __new__(self, name, bases, attrs):
         try:
             rf = attrs['resource_fields']
@@ -155,6 +157,7 @@ class ManagerType(type):
 
 
 class Manager(object):
+
     """
     Base class of the managers
 
@@ -331,9 +334,9 @@ class Manager(object):
 
     auto_load = True
 
-    #list of the fields publicly available with their properties
+    # list of the fields publicly available with their properties
     resource_fields = {}
-    #Class or list of classes wrapping the children
+    # Class or list of classes wrapping the children
     managed_class = None
 
     name = None
@@ -366,7 +369,7 @@ class Manager(object):
         self.context = wrapper
 
     def get_formatter(self, format_):
-        #return the method instance of the formatter
+        # return the method instance of the formatter
         return types.MethodType(self.__class__.get_all_formats()[format_],
                                 self, self.__class__)
 
@@ -495,6 +498,7 @@ class Manager(object):
 
 
 class ManagerInterface(object):
+
     """
     HTTP calls map
 
@@ -511,6 +515,7 @@ class ManagerInterface(object):
     The manager MUST NOT define a method with a raise NotImplementedError
     to mean that the method is not supported.
     """
+
     def delete_resource(self, resource):
         """
         Delete a managed ressource.

@@ -5,6 +5,7 @@ import collections
 
 
 class ChangeSet(collections.Mapping):
+
     def __init__(self, orig, patches):
         self.orig = orig
         self.patches = patches

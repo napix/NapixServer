@@ -3,6 +3,7 @@
 
 
 class cached_property(object):
+
     def __init__(self, fn):
         self.fn = fn
 
@@ -14,6 +15,7 @@ class cached_property(object):
 
 
 class Wrapper(object):
+
     def __init__(self, manager, id, resource=None):
         self.manager = manager
         self.id = id

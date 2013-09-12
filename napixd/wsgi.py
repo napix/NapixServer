@@ -6,5 +6,5 @@ import napixd
 
 from napixd.launcher import Setup
 
-options = set( sys.argv)
+options = set(sys.argv)
 application = Setup(options).get_application()

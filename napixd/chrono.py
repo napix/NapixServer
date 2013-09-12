@@ -5,6 +5,7 @@ import time
 
 
 class Chrono(object):
+
     def __init__(self):
         self.start = None
         self.end = None

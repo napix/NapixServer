@@ -8,7 +8,8 @@ The Napix Configuration is a :class:`collections.MutableMapping`.
 Keys are accessible by their name, or their path.
 Their path are composed of each descendant joined by a ``.``.
 
-The defautl configuration is loaded from a JSON file :path:`NAPIXHOME/conf/settings.json`
+The defautl configuration is loaded from a JSON file
+:path:`NAPIXHOME/conf/settings.json`
 
 """
 
@@ -22,13 +23,15 @@ from contextlib import contextmanager
 
 logger = logging.getLogger('Napix.conf')
 
-#So that it's overridable in the tests
+# So that it's overridable in the tests
 open = open
-DEFAULT_CONF = os.path.join( os.path.dirname(__file__), 'settings.json' )
+DEFAULT_CONF = os.path.join(os.path.dirname(__file__), 'settings.json')
 
 _sentinel = object()
 
+
 class Conf(collections.MutableMapping):
+
     """
     Configuration Object
 
@@ -42,6 +45,7 @@ class Conf(collections.MutableMapping):
         c.get('a.b) == 1
     """
     _default = None
+
     def __init__(self, data=None):
         self.data = dict(data) if data else {}
 
@@ -49,19 +53,23 @@ class Conf(collections.MutableMapping):
         return repr(self.data)
 
     def __iter__(self):
-        return ( key for key in self.data if not key.startswith('#') )
+        return (key for key in self.data if not key.startswith('#'))
+
     def iteritems(self):
-        return ( (key,value) for key,value in self.data.items() if not key.startswith('#') )
+        return ((key, value)
+                for key, value in self.data.items()
+                if not key.startswith('#'))
+
     def __len__(self):
         return len(self.data)
 
     paths = [
-            napixd.get_file( 'conf/settings.json'),
-            '/etc/napixd/settings.json',
-            ]
+        napixd.get_file('conf/settings.json'),
+        '/etc/napixd/settings.json',
+    ]
 
     @classmethod
-    def get_default(cls, value = None):
+    def get_default(cls, value=None):
         """
         Get a value on the default conf instance.
         """
@@ -77,33 +85,36 @@ class Conf(collections.MutableMapping):
         """
         Load the configuration from the default file.
 
-        If the configuration file does not exists, a new configuration file is created.
+        If the configuration file does not exists,
+        a new configuration file is created.
         """
         conf = None
-        paths = iter( cls.paths)
+        paths = iter(cls.paths)
         for path in paths:
             try:
-                handle = open( path, 'r' )
-                logger.info( 'Using %s configuration file', path)
+                handle = open(path, 'r')
+                logger.info('Using %s configuration file', path)
             except IOError:
                 pass
             else:
                 try:
-                    conf = json.load( handle )
+                    conf = json.load(handle)
                     break
                 except ValueError, e:
-                    raise ValueError('Configuration file %s contains a bad JSON object (%s)'%( path, e))
+                    raise ValueError(
+                        'Configuration file {0} contains a bad JSON object ({0})'.format(path, e))
                 finally:
                     handle.close()
         else:
             try:
-                logger.warning( 'Did not find any configuration, trying default conf from %s', DEFAULT_CONF)
-                with open( DEFAULT_CONF, 'r') as handle:
+                logger.warning('Did not find any configuration, trying default conf from %s',
+                               DEFAULT_CONF)
+                with open(DEFAULT_CONF, 'r') as handle:
                     conf = json.load(handle)
-                for path in cls.paths :
+                for path in cls.paths:
                     try:
                         logger.info('Try to write default conf to %s', path)
-                        with open( path, 'w') as destination:
+                        with open(path, 'w') as destination:
                             with open(DEFAULT_CONF, 'r') as source:
                                 destination.write(source.read())
                     except IOError:
@@ -114,27 +125,27 @@ class Conf(collections.MutableMapping):
                 else:
                     logger.error('Cannot write defaulf conf')
             except IOError:
-                logger.error( 'Did not find any configuration at all')
+                logger.error('Did not find any configuration at all')
                 conf = {}
 
-        cls._default = cls( conf )
+        cls._default = cls(conf)
         return cls._default
 
-    def __getitem__( self, item):
+    def __getitem__(self, item):
         if item in self.data:
             return self.data[item]
-        if '.' in item :
+        if '.' in item:
             prefix, x, suffix = item.partition('.')
             base = self[prefix]
-            if isinstance( base, dict):
+            if isinstance(base, dict):
                 return Conf(base)[suffix]
-        raise KeyError, item
+        raise KeyError(item)
 
     def __setitem__(self, key, value):
         self.data[key] = value
 
     def __delitem__(self, item):
-        if '.' in item :
+        if '.' in item:
             prefix, x, suffix = item.rpartition('.')
             cont = self[prefix]
             del cont[suffix]
@@ -148,7 +159,7 @@ class Conf(collections.MutableMapping):
             return False
         if item in self.data:
             return True
-        if '.' in item :
+        if '.' in item:
             prefix, x, suffix = item.partition('.')
             return suffix in self.get(prefix)
         return False
@@ -157,56 +168,60 @@ class Conf(collections.MutableMapping):
         return bool(self.data)
 
     def __eq__(self, other):
-        return  isinstance( other, collections.Mapping) and other.keys() == self.keys() and other.values() == self.values()
+        return (isinstance(other, collections.Mapping) and
+                other.keys() == self.keys() and
+                other.values() == self.values())
 
-    def get( self, section_id, default_value=_sentinel):
+    def get(self, section_id, default_value=_sentinel):
         """
         Return the value pointed at **section_id**.
 
         If the key does not exist, **default_value** is returned.
-        If default_value is left by default, an empty :class:`Conf` instance is returned.
+        If *default_value* is left by default, an empty :class:`Conf`
+        instance is returned.
         """
         try:
             value = self[section_id]
-        except (KeyError,ValueError):
+        except (KeyError, ValueError):
             if default_value is not _sentinel:
                 return default_value
             return Conf()
-        if isinstance( value, dict):
+        if isinstance(value, dict):
             return Conf(value)
         return value
 
     def _set(self, item, value):
-        self._do_set( self.data, item, value)
+        self._do_set(self.data, item, value)
 
     def _do_set(self, dataset, item, value):
-        if '.' in item :
+        if '.' in item:
             prefix, x, suffix = item.partition('.')
-            self._do_set( dataset.setdefault( prefix, {}), suffix, value )
+            self._do_set(dataset.setdefault(prefix, {}), suffix, value)
         else:
             dataset[item] = value
 
     @contextmanager
     def force(self, param, value):
         """
-        Forces the param to be set to value for the duration of the context manager.
+        Forces the param to be set to value for
+        the duration of the context manager.
 
         .. warning::
 
-            This method is meant to be used in testing/debug and not in production
+            This method is meant to be used in testing/debug
+            and not in production
 
-        >>> c = Conf({ 'a' : 1 })
-        >>> with c.force( 'a', 2):
-        >>>     c.get('a')
+        >>>c = Conf({ 'a' : 1 })
+        >>>with c.force( 'a', 2):
+        >>>   c.get('a')
         2
         >>> c.get('a')
         1
         """
-        old_value = self.get( param)
-        self._set( param, value)
+        old_value = self.get(param)
+        self._set(param, value)
         yield
         if old_value:
-            self._set( param, old_value)
+            self._set(param, old_value)
         else:
             del self[param]
-

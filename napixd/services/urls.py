@@ -5,6 +5,7 @@ import urllib
 
 
 class URL(object):
+
     def __init__(self, segments=None):
         self.segments = segments or []
 

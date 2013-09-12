@@ -12,6 +12,7 @@ from napixd.exceptions import ValidationError
 
 
 class MatchRegexp(object):
+
     """
     Checks that the input matches the *source* regexp
 
@@ -24,6 +25,7 @@ class MatchRegexp(object):
     The *docstring* parameter defines the help of the validator,
     it is used for introspection.
     """
+
     def __init__(self, source, default=None, error=None, docstring=None):
         if not docstring:
             docstring = 'Field have to match regex {0}'.format(source)

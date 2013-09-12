@@ -17,10 +17,11 @@ from napixd import get_file, get_path
 
 from napixd.conf import Conf
 
-__all__ = [ 'launch', 'Setup' ]
+__all__ = ['launch', 'Setup']
 
 logger = logging.getLogger('Napix.Server')
 console = logging.getLogger('Napix.console')
+
 
 def launch(options, setup_class=None):
     """
@@ -38,49 +39,52 @@ def launch(options, setup_class=None):
     try:
         setup = setup_class(options)
     except CannotLaunch as e:
-        logger.critical( e)
+        logger.critical(e)
         return
     except Exception as e:
-        logger.exception( e)
-        logger.critical( e)
+        logger.exception(e)
+        logger.critical(e)
         return
 
     try:
         setup.run()
     except Exception, e:
         if 'print_exc' in setup.options:
-            logger.exception( e)
-        logger.critical( e)
+            logger.exception(e)
+        logger.critical(e)
+
 
 class CannotLaunch(Exception):
     pass
 
+
 class Setup(object):
+
     """
     The class that prepares and run a Napix server instance.
 
     It takes its **options** as argument.
     It is an iterable of strings.
     """
-    DEFAULT_HOST='0.0.0.0'
-    DEFAULT_PORT=8002
+    DEFAULT_HOST = '0.0.0.0'
+    DEFAULT_PORT = 8002
     DEFAULT_OPTIONS = set([
-        'app', #Launch the application
-        #'notify', # the thread of periodic notifications
-        #'doc', # the autodocumentation generation
-        'useragent', # the html page shown when a browser access directly
-        'auth', # the auth interface
-        'reload', #the reloader on signal page and automatic
-        'webclient', # the web client,
-        #'executor', #The executor
-        'gevent', #Use gevent
-        'cors', #Set CORS headers
+        'app',  # Launch the application
+        # 'notify', # the thread of periodic notifications
+        # 'doc', # the autodocumentation generation
+        'useragent',  # the html page shown when a browser access directly
+        'auth',  # the auth interface
+        'reload',  # the reloader on signal page and automatic
+        'webclient',  # the web client,
+        # 'executor', #The executor
+        'gevent',  # Use gevent
+        'cors',  # Set CORS headers
         'auto',
         'conf',
-        'time', #Show duration
+        'time',  # Show duration
     ])
 
-    LOG_FILE = get_file( 'log/napix.log')
+    LOG_FILE = get_file('log/napix.log')
     HELP_TEXT = '''
 napixd daemon runner.
 usage: napixd [(no)option] ...
@@ -127,38 +131,40 @@ Meta-options:
     help:       Show this message and quit
     options:    Show the enabled options and quit
         '''
+
     def __init__(self, options):
-        nooptions = [ opt[2:] for opt in options if opt.startswith('no') ]
+        nooptions = [opt[2:] for opt in options if opt.startswith('no')]
 
         options = set(options)
         if 'only' not in options:
-            options = options.union( self.DEFAULT_OPTIONS )
-        self.options = options = options.difference( nooptions)
+            options = options.union(self.DEFAULT_OPTIONS)
+        self.options = options = options.difference(nooptions)
 
         self.set_loggers()
         self.service_name = self.get_service_name()
 
-        console.info( 'Napixd Home is %s', get_path() )
-        console.info( 'Options are %s', ','.join(self.options))
-        console.info( 'Starting process %s', os.getpid())
-        console.info( 'Logging activity in %s', self.LOG_FILE )
-        console.info( 'Service Name is %s', self.service_name)
+        console.info('Napixd Home is %s', get_path())
+        console.info('Options are %s', ','.join(self.options))
+        console.info('Starting process %s', os.getpid())
+        console.info('Logging activity in %s', self.LOG_FILE)
+        console.info('Service Name is %s', self.service_name)
 
     def _patch_gevent(self):
         if 'gevent' in self.options:
             try:
                 import gevent
             except ImportError:
-                raise CannotLaunch(u'Cannot import gevent lib. Try to install it, or run napix with *nogevent* option')
+                raise CannotLaunch(
+                    u'Cannot import gevent lib. Try to install it, or run napix with *nogevent* option')
 
-            if gevent.version_info < ( 1, 0):
-                raise CannotLaunch(u'Napix require gevent >= 1.0, Try to install it, or run napix with *nogevent* option')
+            if gevent.version_info < (1, 0):
+                raise CannotLaunch(
+                    u'Napix require gevent >= 1.0, Try to install it, or run napix with *nogevent* option')
 
             from gevent.monkey import patch_all
             patch_all()
 
-
-    def run( self):
+    def run(self):
         """
         Run the Napix Server
         """
@@ -176,12 +182,12 @@ Meta-options:
 
         logger.info('Starting')
         try:
-            if 'app' in self.options :
+            if 'app' in self.options:
                 server_options = self.get_server_options()
-                application = self.apply_middleware( app)
+                application = self.apply_middleware(app)
 
                 import bottle
-                bottle.run( application, **server_options)
+                bottle.run(application, **server_options)
         finally:
             console.info('Stopping')
 
@@ -189,12 +195,13 @@ Meta-options:
 
     def set_debug(self):
         import bottle
-        bottle.debug( 'debug' in self.options )
+        bottle.debug('debug' in self.options)
 
     def get_service_name(self):
         service = Conf.get_default('Napix.auth.service')
         if not service:
-            logger.info('No setting Napix.auth.service, guessing from /etc/hostnams')
+            logger.info(
+                'No setting Napix.auth.service, guessing from /etc/hostnams')
             try:
                 with open('/etc/hostname', 'r') as handle:
                     return handle.read().strip()
@@ -209,7 +216,8 @@ Meta-options:
         """
         conf = Conf.get_default('Napix.auth')
         if not conf:
-            raise CannotLaunch('*auth* option is set and no configuration has been found (see Napix.auth key).')
+            raise CannotLaunch(
+                '*auth* option is set and no configuration has been found (see Napix.auth key).')
 
         if 'secure' in self.options:
             from napixd.plugins import AAAPlugin
@@ -231,9 +239,9 @@ Meta-options:
         """
         from napixd.application import NapixdBottle
         from napixd.loader import Loader
-        loader = Loader( self.get_loaders())
-        napixd = NapixdBottle( loader=loader)
-        self.install_plugins( napixd)
+        loader = Loader(self.get_loaders())
+        napixd = NapixdBottle(loader=loader)
+        self.install_plugins(napixd)
 
         return napixd
 
@@ -244,23 +252,23 @@ Meta-options:
         """
         if 'test' in self.options:
             from napixd.loader import FixedImporter
-            return [ FixedImporter({
-                'root' : 'napixd.examples.k132.Root',
-                'host' : (
+            return [FixedImporter({
+                'root': 'napixd.examples.k132.Root',
+                'host': (
                     'napixd.examples.hosts.HostManager', {
-                        'file' : '/tmp/h1'
-                        })
-                }) ]
+                        'file': '/tmp/h1'
+                    })
+            })]
 
         from napixd.loader import AutoImporter, ConfImporter
-        loaders = [ ]
+        loaders = []
 
         if 'conf' in self.options:
-            loaders.append( ConfImporter( Conf.get_default() ))
+            loaders.append(ConfImporter(Conf.get_default()))
         if 'auto' in self.options:
-            auto_path = get_path( 'auto')
+            auto_path = get_path('auto')
             logger.info('Using %s as auto directory', auto_path)
-            loaders.append(AutoImporter( auto_path ) )
+            loaders.append(AutoImporter(auto_path))
         return loaders
 
     def install_plugins(self, app):
@@ -276,16 +284,17 @@ Meta-options:
 
         if 'times' in self.options:
             if not 'gevent' in self.options:
-                raise CannotLaunch( '`times` option requires `gevent`')
+                raise CannotLaunch('`times` option requires `gevent`')
             from napixd.gevent_tools import AddGeventTimeHeader
-            app.install( AddGeventTimeHeader())
+            app.install(AddGeventTimeHeader())
 
-        app.install(ExceptionsCatcher( show_errors=( 'print_exc' in self.options), pprint=pprint))
-        app.install(ConversationPlugin( pprint=pprint))
+        app.install(
+            ExceptionsCatcher(show_errors=('print_exc' in self.options), pprint=pprint))
+        app.install(ConversationPlugin(pprint=pprint))
 
         if 'useragent' in self.options:
             from napixd.plugins import UserAgentDetector
-            app.install( UserAgentDetector() )
+            app.install(UserAgentDetector())
 
         return app
 
@@ -301,10 +310,10 @@ Meta-options:
         else:
             self.auth_handler = None
 
-        #attach autoreloaders
+        # attach autoreloaders
         if 'reload' in self.options:
             from napixd.reload import Reloader
-            Reloader( napixd).start()
+            Reloader(napixd).start()
 
         if 'webclient' in self.options:
             self.web_client = self.get_webclient()
@@ -333,9 +342,9 @@ Meta-options:
         """
         from napixd.plugins import PathInfoMiddleware, CORSMiddleware
         if 'uwsgi' in self.options:
-            application = PathInfoMiddleware( application)
+            application = PathInfoMiddleware(application)
         if 'cors' in self.options:
-            application =  CORSMiddleware( application)
+            application = CORSMiddleware(application)
         return application
 
     def get_application(self):
@@ -344,7 +353,7 @@ Meta-options:
         """
         self._patch_gevent()
         application = self.get_app()
-        return self.apply_middleware( application)
+        return self.apply_middleware(application)
 
     def get_server(self):
         """
@@ -365,10 +374,10 @@ Meta-options:
         Returns a dict of the options of :func:`bottle.run`
         """
         return {
-                'host': self.DEFAULT_HOST,
-                'port': self.DEFAULT_PORT,
-                'server' : self.get_server(),
-                }
+            'host': self.DEFAULT_HOST,
+            'port': self.DEFAULT_PORT,
+            'server': self.get_server(),
+        }
 
     def get_webclient(self):
         webclient_path = self.get_webclient_path()
@@ -384,63 +393,62 @@ Meta-options:
         Retrieve the web client interface statics path.
         """
         module_file = sys.modules[self.__class__.__module__].__file__
-        module_path = os.path.join( os.path.dirname( module_file), 'web')
-        napix_default = os.path.join( os.path.dirname( __file__ ), 'web')
+        module_path = os.path.join(os.path.dirname(module_file), 'web')
+        napix_default = os.path.join(os.path.dirname(__file__), 'web')
         for directory in [
                 Conf.get_default('Napix.webclient.path'),
-                get_path( 'web', create=False),
+                get_path('web', create=False),
                 module_path,
                 napix_default,
-                ]:
-            logger.debug( 'Try WebClient in directory %s', directory)
-            if directory and os.path.isdir( directory):
+        ]:
+            logger.debug('Try WebClient in directory %s', directory)
+            if directory and os.path.isdir(directory):
                 return directory
 
     def set_loggers(self):
         """
         Defines the loggers
         """
-        formatter = logging.Formatter( '%(levelname)s:%(name)s:%(message)s')
+        formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
 
         self.log_file = file_handler = logging.handlers.RotatingFileHandler(
-                self.LOG_FILE,
-                maxBytes=5 * 10**6,
-                backupCount=10,
-                )
+            self.LOG_FILE,
+            maxBytes=5 * 10 ** 6,
+            backupCount=10,
+        )
         file_handler.setLevel(
-                logging.DEBUG
-                if 'verbose' in self.options else
-                logging.WARNING
-                if 'silent' in self.options else
-                logging.INFO)
-        file_handler.setFormatter( formatter)
+            logging.DEBUG
+            if 'verbose' in self.options else
+            logging.WARNING
+            if 'silent' in self.options else
+            logging.INFO)
+        file_handler.setFormatter(formatter)
 
-        self.console = console_handler = logging.StreamHandler( )
+        self.console = console_handler = logging.StreamHandler()
         console_handler.setLevel(
-                logging.DEBUG
-                if 'verbose' in self.options else
-                logging.WARNING
-                if 'silent' in self.options else
-                logging.INFO)
+            logging.DEBUG
+            if 'verbose' in self.options else
+            logging.WARNING
+            if 'silent' in self.options else
+            logging.INFO)
 
-        console_handler.setFormatter( formatter)
+        console_handler.setFormatter(formatter)
 
         if 'rocket' in self.options:
-            logging.getLogger('Rocket').addHandler( file_handler)
-            logging.getLogger('Rocket').setLevel( logging.DEBUG )
+            logging.getLogger('Rocket').addHandler(file_handler)
+            logging.getLogger('Rocket').setLevel(logging.DEBUG)
             logging.getLogger('Rocket.Errors').setLevel(logging.DEBUG)
-            logging.getLogger('Rocket.Errors.ThreadPool').setLevel(logging.INFO)
+            logging.getLogger(
+                'Rocket.Errors.ThreadPool').setLevel(logging.INFO)
 
-        logging.getLogger('Napix').setLevel( logging.DEBUG )
-        logging.getLogger('Napix').addHandler( console_handler )
-        logging.getLogger('Napix').addHandler( file_handler )
+        logging.getLogger('Napix').setLevel(logging.DEBUG)
+        logging.getLogger('Napix').addHandler(console_handler)
+        logging.getLogger('Napix').addHandler(file_handler)
 
         if 'silent' not in self.options:
             if 'verbose' in self.options:
-                logging.getLogger('Napix.console').setLevel( logging.DEBUG)
+                logging.getLogger('Napix.console').setLevel(logging.DEBUG)
             else:
-                logging.getLogger('Napix.console').setLevel( logging.INFO)
-            logging.getLogger('Napix.console').addHandler( logging.StreamHandler() )
-
-
-
+                logging.getLogger('Napix.console').setLevel(logging.INFO)
+            logging.getLogger('Napix.console').addHandler(
+                logging.StreamHandler())

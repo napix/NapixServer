@@ -19,6 +19,7 @@ __all__ = [
 
 
 class ResourceFields(object):
+
     """
     The property object.
 
@@ -28,6 +29,7 @@ class ResourceFields(object):
     When it is accessed through a manager instance,
     it returns a :class:`ResourceFieldsDescriptor`.
     """
+
     def __init__(self, resource_fields, *overrides):
         self.values = []
         for rf in resource_fields:
@@ -48,6 +50,7 @@ class ResourceFields(object):
 
 
 class ResourceFieldsDict(collections.Mapping):
+
     """
     The class view of the resource_fields
 
@@ -59,6 +62,7 @@ class ResourceFieldsDict(collections.Mapping):
     :meth:`~napixd.managers.base.Manager.validate_resource_FIELDNAME`
     if it exists.
     """
+
     def __init__(self, manager_class, values):
         self.resource_fields = values
         self.values = {}
@@ -101,12 +105,14 @@ class ResourceFieldsDict(collections.Mapping):
 
 
 class ResourceFieldsDescriptor(collections.Sequence):
+
     """
     The instance view of resource_fields
 
     This object manages the relations between a manager and its
     resource_fields.
     """
+
     def __init__(self, manager, values):
         self.manager = manager
         self.values = list(values)
@@ -175,7 +181,7 @@ class ResourceFieldsDescriptor(collections.Sequence):
                 else:
                     raise ValidationError({
                         key: u'Required'
-                        })
+                    })
             else:
                 value = input[key]
 
@@ -184,6 +190,7 @@ class ResourceFieldsDescriptor(collections.Sequence):
 
 
 class ResourceField(object):
+
     """
     The object for each resource_fields member.
 
@@ -298,6 +305,7 @@ class ResourceField(object):
             The fields with a lower *display_order* are shown first.
 
     """
+
     def __init__(self, name, values, **overrides):
         if isinstance(values, ResourceField):
             rf = values
@@ -325,7 +333,7 @@ class ResourceField(object):
             'default_on_null': False,
             'typing': 'static',
             'validators': []
-            }
+        }
         extra_keys = set(values).difference(meta)
         meta.update(values)
 
@@ -345,13 +353,15 @@ class ResourceField(object):
             choices = None
         else:
             if not callable(choices) and not hasattr(choices, '__iter__'):
-                raise ImproperlyConfigured('choices must be a callable or an iterable')
+                raise ImproperlyConfigured(
+                    'choices must be a callable or an iterable')
         self.choices = choices
 
         if choices and not explicit_type:
             types = set(type(choice) for choice in self.get_choices())
             if len(types) != 1:
-                raise ImproperlyConfigured('The choices should all have the same type')
+                raise ImproperlyConfigured(
+                    'The choices should all have the same type')
             explicit_type = types.pop()
 
         try:
@@ -364,7 +374,8 @@ class ResourceField(object):
                 try:
                     self.example = choices_list[0]
                 except IndexError:
-                    raise ImproperlyConfigured('There should be at least one choice')
+                    raise ImproperlyConfigured(
+                        'There should be at least one choice')
             else:
                 raise ImproperlyConfigured('Missing example')
 
@@ -377,7 +388,8 @@ class ResourceField(object):
 
         if self.typing == 'dynamic':
             if self.choices is not None:
-                raise ImproperlyConfigured('Choices are not usable with dynamic typing')
+                raise ImproperlyConfigured(
+                    'Choices are not usable with dynamic typing')
             self._dynamic_typing = True
         elif self.typing == 'static':
             self._dynamic_typing = False
@@ -388,7 +400,8 @@ class ResourceField(object):
                     raise ImproperlyConfigured(
                         'Example is not of type {0}'.format(self.type.__name__))
         else:
-            raise ImproperlyConfigured('Typing must be one of "static", "dynamic"')
+            raise ImproperlyConfigured(
+                'Typing must be one of "static", "dynamic"')
 
         self.validators = list(meta['validators'])
 
@@ -435,7 +448,7 @@ class ResourceField(object):
             'choices': (list(self.get_choices())
                         if self.choices is not None else None),
             'validators': [validator.__doc__ for validator in self.validators]
-            })
+        })
 
         if self.type in (str, basestring, unicode):
             values['type'] = 'string'
@@ -498,4 +511,4 @@ class ResourceField(object):
             if not v in choices:
                 raise ValidationError({
                     self.name: u'{0} is not one of the available choices'.format(v)
-                    })
+                })

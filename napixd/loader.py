@@ -31,11 +31,13 @@ logger = logging.getLogger('Napix.loader')
 
 
 class ManagerImport(object):
+
     """
     A manager import.
 
     It defines a *manager class* under a *name* with a *config*.
     """
+
     def __init__(self, manager, alias, config):
         self.manager = manager
         self.alias = alias
@@ -67,6 +69,7 @@ open = open
 
 
 class NapixImportError(Exception):
+
     """
     Base Exception of loading errors.
     """
@@ -74,10 +77,12 @@ class NapixImportError(Exception):
 
 
 class ModuleImportError(NapixImportError):
+
     """
     An error when importing a module.
     All manager inside this module are unavailable.
     """
+
     def __init__(self, module, cause):
         super(ModuleImportError, self).__init__(module, cause)
         self.module = module
@@ -88,11 +93,13 @@ class ModuleImportError(NapixImportError):
 
 
 class ManagerImportError(NapixImportError):
+
     """
     An error when importing a manager.
 
     This manager is the only one impacted.
     """
+
     def __init__(self, module, manager, cause):
         super(ManagerImportError, self).__init__(module, manager, cause)
         self.module = module
@@ -105,12 +112,14 @@ class ManagerImportError(NapixImportError):
 
 
 class Importer(object):
+
     """
     The base class of the manager importers.
 
     Subclasse must define a :meth:`load` method that will use
     :meth:`import_manager` and :meth:`import_module` to find on its location.
     """
+
     def __init__(self, raise_on_first_import=True):
         self.timestamp = 0
         self.errors = []
@@ -140,7 +149,7 @@ class Importer(object):
         """
         Import the module for the first time.
         """
-        #first module import
+        # first module import
         logger.debug('import %s', module_path)
         try:
             import_fn(module_path)
@@ -177,7 +186,7 @@ class Importer(object):
             module_file = module.__file__
 
         if self.has_been_modified(module_file, module_path):
-            #modified since last access
+            # modified since last access
             logger.debug('Reloading module %s', module_path)
             try:
                 reload(module)
@@ -229,6 +238,7 @@ class Importer(object):
 
 
 class FixedImporter(Importer):
+
     """
     Imports a list of managers.
 
@@ -241,6 +251,7 @@ class FixedImporter(Importer):
         'that' : ThatManager
         })
     """
+
     def __init__(self, managers):
         super(FixedImporter, self).__init__()
         self.managers = managers
@@ -267,6 +278,7 @@ class FixedImporter(Importer):
 
 
 class ConfImporter(Importer):
+
     """
     Imports the manager as specified in the config file.:
 
@@ -275,6 +287,7 @@ class ConfImporter(Importer):
     The config of each manager is found in the
     :mod:`default configuration<napixd.conf>` of Napix.
     """
+
     def __init__(self, conf):
         super(ConfImporter, self).__init__()
         self.conf = conf
@@ -299,12 +312,14 @@ class ConfImporter(Importer):
 
 
 class AutoImporter(Importer):
+
     """
     Imports all the modules in a directory
 
     It scans the directory for ``.py`` files,
     imports them and find all the Manager subclasses.
     """
+
     def __init__(self, path):
         super(AutoImporter, self).__init__(False)
         self.path = path
@@ -320,7 +335,7 @@ class AutoImporter(Importer):
 
         Any file with a ``.py`` extension is loaded.
         """
-        #Placeholder module for all the auto imported modules
+        # Placeholder module for all the auto imported modules
         import napixd.auto
         logger.debug('inspecting %s', self.path)
         managers, errors = [], []
@@ -412,13 +427,15 @@ class AutoImporter(Importer):
             if doc_string:
                 return Conf(json.loads(doc_string))
         except (ValueError, AttributeError) as e:
-            logger.debug('Auto configuration of %s from docstring failed because %s',
-                         manager, e)
+            logger.debug(
+                'Auto configuration of %s from docstring failed because %s',
+                manager, e)
 
         return Conf({})
 
 
 class RelatedImporter(Importer):
+
     """
     Imports the managed classes.
 
@@ -426,6 +443,7 @@ class RelatedImporter(Importer):
     The submanager classes are searched in the same module than the *reference*
     class if the path does not contains ``.``
     """
+
     def __init__(self, reference):
         super(RelatedImporter, self).__init__()
         self.reference = reference
@@ -446,6 +464,7 @@ class RelatedImporter(Importer):
 
 
 class Loader(object):
+
     """
     Finds and keeps track of the managers.
 
@@ -457,6 +476,7 @@ class Loader(object):
     The managers set is compared to the previous and a :class:`Load`
     object is created with the new and the olds managers
     """
+
     def __init__(self, importers):
         self.importers = importers
         self.managers = set()
@@ -536,9 +556,11 @@ class Loader(object):
 
         if manager.direct_plug() is not None:
             importer = RelatedImporter(manager)
-            managed_classes, errors = importer.load(manager.get_managed_classes())
+            managed_classes, errors = importer.load(
+                manager.get_managed_classes())
             if errors:
-                raise ManagerImportError(manager.__module__, manager, errors[0])
+                raise ManagerImportError(
+                    manager.__module__, manager, errors[0])
             for managed_class in managed_classes:
                 self._setup(managed_class, _already_loaded)
 

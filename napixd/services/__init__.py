@@ -21,10 +21,12 @@ MAX_LEVEL = 5
 
 
 class Service(object):
+
     """
     The service objects make the interface between
     the end user's HTTP calls and the active modules.
     """
+
     def __init__(self, collection, namespace, configuration):
         """
         Create a base service for the given collection (a Manager object) and
@@ -39,7 +41,8 @@ class Service(object):
         self.collection_services = []
         self.url = namespace
 
-        service = FirstCollectionService(collection, self.configuration, self.url)
+        service = FirstCollectionService(
+            collection, self.configuration, self.url)
         self._append_service(service)
         self.create_collection_service(collection, service, 0)
 
@@ -59,8 +62,9 @@ class Service(object):
             self.configuration.get(config_key),
             namespace)
         self._append_service(service)
-        #level to avoid max recursion.
-        self.create_collection_service(managed_class.manager_class, service, level+1)
+        # level to avoid max recursion.
+        self.create_collection_service(
+            managed_class.manager_class, service, level + 1)
 
     def create_collection_service(self, collection, previous_service, level):
         # test if direct_plug is defined (to either True or False)
@@ -70,7 +74,8 @@ class Service(object):
                 self.make_collection_service(
                     previous_service,
                     managed_class,
-                    managed_class.get_name() if not collection.direct_plug() else '',
+                    managed_class.get_name(
+                    ) if not collection.direct_plug() else '',
                     level)
 
     def setup_bottle(self, app):

@@ -91,6 +91,7 @@ def cut_text(self, resource, length):
 
 
 class ActionProperty(object):
+
     def __init__(self, fn):
         self.function = fn
         self.__name__ = fn.__name__
@@ -124,12 +125,12 @@ class ActionProperty(object):
 
     def _extract(self, fn):
         param = inspect.getargspec(fn)
-        #ignore first two parameters: self and resource
+        # ignore first two parameters: self and resource
         args = param.args[2:]
-        #default values
+        # default values
         opt = param.defaults or []
 
-        #mandatory params = param list - param that have default values
+        # mandatory params = param list - param that have default values
         len_mand = len(args) - len(opt)
         mandatory = args[:len_mand]
         optional = dict(zip(args[len_mand:], opt))
@@ -142,13 +143,15 @@ class ActionProperty(object):
 
 
 class UnboundAction(object):
+
     def __init__(self, function, manager_class, prop):
         self.function = function
         self.__name__ = prop.__name__
         self.__doc__ = prop.__doc__
 
         self.manager_class = manager_class
-        self.resource_fields = ResourceFieldsDict(function, prop.resource_fields)
+        self.resource_fields = ResourceFieldsDict(
+            function, prop.resource_fields)
         self.mandatory = prop.mandatory
         self.optional = prop.optional
 
@@ -159,6 +162,7 @@ class UnboundAction(object):
 
 
 class BoundAction(object):
+
     def __init__(self, function, manager, resource_fields):
         self.function = function
         self.manager = manager

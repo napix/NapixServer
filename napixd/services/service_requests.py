@@ -11,9 +11,11 @@ from napixd.services.wrapper import Wrapper
 
 
 class ServiceRequest(object):
+
     """
     ServiceRequest is an abstract class created to serve a single request.
     """
+
     def __init__(self, path, service):
         """
         Create the object that will handle the request for the path given
@@ -21,7 +23,7 @@ class ServiceRequest(object):
         """
         self.method = bottle.request.method
         self.service = service
-        #Parse the url components
+        # Parse the url components
         self.path = path
 
     @classmethod
@@ -93,15 +95,15 @@ class ServiceRequest(object):
         Call a set of methods that may be overrident by subclasses
         """
         try:
-            #obtient l'object designé
+            # obtient l'object designé
             self.manager = self.get_manager()
             self.start_request()
 
-            #recupère la vue qui va effectuer la requete
+            # recupère la vue qui va effectuer la requete
             self.callback = self.get_callback()
-            #recupère les données valides pour cet objet
+            # recupère les données valides pour cet objet
             self.data = self.check_datas()
-            #recupere les arguments a passer a cette vue
+            # recupere les arguments a passer a cette vue
             result = self.call()
 
             self.end_request()
@@ -126,11 +128,12 @@ class ServiceRequest(object):
 
 
 class ServiceCollectionRequest(ServiceRequest):
+
     """
     ServiceCollectionRequest is an implementation of ServiceRequest specified
     for Collection requests (urls ending with /)
     """
-    #association de verbes HTTP aux methodes python
+    # association de verbes HTTP aux methodes python
     METHOD_MAP = {
         'filter': 'list_resource_filter',
         'getall': 'get_all_resources',
@@ -138,7 +141,7 @@ class ServiceCollectionRequest(ServiceRequest):
         'POST': 'create_resource',
         'GET': 'list_resource',
         'HEAD': 'list_resource'
-        }
+    }
 
     def get_manager(self):
         manager = super(ServiceCollectionRequest, self).get_manager()
@@ -147,7 +150,7 @@ class ServiceCollectionRequest(ServiceRequest):
     def get_callback(self):
         if (self.method == 'GET' and bottle.request.GET):
             getall = 'getall' in bottle.request.GET
-            #remove ?getall= from GET examine other parameters
+            # remove ?getall= from GET examine other parameters
             filter = (len(bottle.request.GET) - int(getall) and
                       hasattr(self.manager, self.METHOD_MAP['filter']))
 
@@ -182,7 +185,8 @@ class ServiceCollectionRequest(ServiceRequest):
             return bottle.HTTPError(201, None, Location=url)
         elif self.method == 'GET' or self.method == 'filter':
             if not isinstance(result, collections.Iterable):
-                raise ValueError('list_resource returned a non-iterable object')
+                raise ValueError(
+                    'list_resource returned a non-iterable object')
             return map(self.make_url, result)
         else:
             return result
@@ -201,6 +205,7 @@ class ServiceManagedClassesRequest(ServiceRequest):
 
 
 class ServiceResourceRequest(ServiceRequest):
+
     """
     ServiceResourceRequest is an implementation of ServiceRequest specified for
     Ressource requests (urls not ending with /)
@@ -258,10 +263,11 @@ class ServiceResourceRequest(ServiceRequest):
             return self.callback(self.resource)
 
     def get_manager(self):
-        #get the last path token because we may not just want to GET the resource
+        # get the last path token because we may not just want to GET the
+        # resource
         resource_id = self.path.pop()
         manager = super(ServiceResourceRequest, self).get_manager()
-        #verifie l'identifiant de la resource aussi
+        # verifie l'identifiant de la resource aussi
         resource_id = manager.validate_id(resource_id)
         resource = manager.get_resource(resource_id)
 
@@ -279,7 +285,7 @@ class ServiceResourceRequest(ServiceRequest):
 class ServiceActionRequest(ServiceResourceRequest):
     METHOD_MAP = {
         'POST': 'get_resource',
-        }
+    }
 
     def __init__(self, path, service, action_name):
         self.action_name = action_name

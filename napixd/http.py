@@ -5,7 +5,9 @@
 import os
 from cStringIO import StringIO
 
-class Response( object ):
+
+class Response(object):
+
     """
     HTTP response object used for custom HTTP responses.
 
@@ -13,14 +15,16 @@ class Response( object ):
     and has :meth:`set_header` for the HTTP headers.
 
     It is meant to be used with :mod:`napixd.manager.views` and
-    be given to methods like :meth:`json.dump`, :meth:`PIL.Image.save` or :class:`reportlab.platypus.SimpleDocTemplate`.
+    be given to methods like :meth:`json.dump`, :meth:`PIL.Image.save` or
+    :class:`reportlab.platypus.SimpleDocTemplate`.
 
     .. attribute:: headers
 
         A dict of the HTTP headers set.
 
     """
-    def __init__( self, headers=None, body=None):
+
+    def __init__(self, headers=None, body=None):
         self.headers = headers or {}
         self._body = StringIO()
 
@@ -43,7 +47,7 @@ class Response( object ):
         return self._body.read(size)
 
     def seek(self, offset, whence=0):
-        return self._body.seek( offset, whence)
+        return self._body.seek(offset, whence)
 
     def is_empty(self):
         """
