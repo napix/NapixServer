@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+
 import unittest
 import time
+import mock
 
 from napixd.chrono import Chrono
 
@@ -23,3 +26,11 @@ class TestChrono(unittest.TestCase):
         except:
             pass
         self.assertAlmostEquals(chrono.total, .1, places=2)
+
+    def test_repr(self):
+        chrono = Chrono()
+        self.assertEqual(repr(chrono), '<Chrono unstarted>')
+        with mock.patch('time.time', side_effect=[100, 110, 120]):
+            with chrono:
+                self.assertEqual(repr(chrono), '<Chrono for 10>')
+        self.assertEqual(repr(chrono), '<Chrono 20>')
