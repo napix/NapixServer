@@ -7,6 +7,7 @@ from napixd.services.urls import URL
 
 
 class TestURL(unittest.TestCase):
+
     def test_url_noargs(self):
         url = URL()
         self.assertEqual(unicode(url), u'/')
@@ -31,7 +32,8 @@ class TestURL(unittest.TestCase):
 
     def test_reverse_additional(self):
         url = URL(['ab', None, 'cd', None])
-        self.assertEqual(url.reverse(['a/b', 'cd', 'ef']), u'/ab/a%2Fb/cd/cd/ef')
+        self.assertEqual(
+            url.reverse(['a/b', 'cd', 'ef']), u'/ab/a%2Fb/cd/cd/ef')
 
     def test_reverse_empty(self):
         url = URL(['ab'])

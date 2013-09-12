@@ -515,7 +515,7 @@ class Loader(object):
             for error in import_errors:
                 if error.contains(old.manager):
                     errors.add(ManagerError(
-                        old.manager, old.alias,  error.cause))
+                        old.manager, old.alias, error.cause))
                     break
 
         for previous_error in self.errors:

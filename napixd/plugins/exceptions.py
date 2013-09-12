@@ -50,7 +50,7 @@ class ExceptionsCatcher(object):
                 extern_tb = [x for x in all_tb
                              if not x['filename'].startswith(self.napix_path)]
                 self.logger.error(
-                    '%s on %s failed with %s (%s)',  method, path,
+                    '%s on %s failed with %s (%s)', method, path,
                     e.__class__.__name__, str(e))
                 res = {
                     'request': {

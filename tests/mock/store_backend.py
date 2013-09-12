@@ -5,6 +5,7 @@ import mock
 
 from napixd.store.backends import BaseBackend
 
+
 class MockBackend(BaseBackend):
     return_value = mock.Mock()
 

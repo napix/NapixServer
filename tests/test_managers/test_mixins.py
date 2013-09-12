@@ -9,9 +9,11 @@ import mock
 from napixd.managers.base import ManagerType, Manager
 from napixd.managers.mixins import AttrResourceMixin
 
+
 class TestMixinSerialize(unittest.TestCase):
+
     def setUp(self):
-        self.Manager = ManagerType('Serializable', ( AttrResourceMixin, Manager), {
+        self.Manager = ManagerType('Serializable', (AttrResourceMixin, Manager), {
             'resource_fields': {
                 'a': {
                     'example': 1

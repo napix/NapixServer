@@ -7,7 +7,9 @@ import mock
 from napixd.exceptions import ValidationError
 from napixd.managers.validators import MatchRegexp
 
+
 class TestMatchRegexp(unittest.TestCase):
+
     def setUp(self):
         with mock.patch('re.compile') as Regexp:
             self.match_re = MatchRegexp('/^a[123]$/',
@@ -25,4 +27,3 @@ class TestMatchRegexp(unittest.TestCase):
     def test_re_fail(self):
         self.re.match.return_value = None
         self.assertRaises(ValidationError, self.match_re, 'a2')
-

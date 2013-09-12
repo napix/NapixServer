@@ -10,10 +10,11 @@ except ImportError:
     django = None
 
 
-@unittest2.skipIf( django is None, 'Missing django dependency')
-class TestDjangoImport( unittest2.TestCase ):
+@unittest2.skipIf(django is None, 'Missing django dependency')
+class TestDjangoImport(unittest2.TestCase):
+
     @classmethod
-    def setUpClass( self):
+    def setUpClass(self):
         if django is None:
             return
         conf_ = reload(django.conf)
@@ -29,28 +30,28 @@ class TestDjangoImport( unittest2.TestCase ):
         with DjangoImport('tests.mock.django_settings'):
             from django.conf import settings
 
-        self.assertEqual( settings.MY_SETTING, 1)
+        self.assertEqual(settings.MY_SETTING, 1)
 
-    def test_import_dict( self):
-        with DjangoImport({ 'MY_SETTING' : 2 }):
+    def test_import_dict(self):
+        with DjangoImport({'MY_SETTING': 2}):
             from django.conf import settings
 
-        self.assertEqual( settings.MY_SETTING, 2)
+        self.assertEqual(settings.MY_SETTING, 2)
 
     def test_reimport_same_dict(self):
-        with DjangoImport({ 'MY_SETTING' : 3 }):
+        with DjangoImport({'MY_SETTING': 3}):
             from django.conf import settings
-        with DjangoImport({ 'MY_SETTING' : 3 }):
+        with DjangoImport({'MY_SETTING': 3}):
             from django.conf import settings as re_settings
 
-        self.assertEqual( settings.MY_SETTING, 3)
-        self.assertEqual( re_settings.MY_SETTING, 3)
+        self.assertEqual(settings.MY_SETTING, 3)
+        self.assertEqual(re_settings.MY_SETTING, 3)
 
     def test_reimport_not_same_dict(self):
-        with DjangoImport({ 'MY_SETTING' : 4 }):
+        with DjangoImport({'MY_SETTING': 4}):
             from django.conf import settings
-        def try_import():
-            with DjangoImport({ 'MY_SETTING' : 5 }):
-                from django.conf import settings as re_settings
-        self.assertRaises( RuntimeError, try_import)
 
+        def try_import():
+            with DjangoImport({'MY_SETTING': 5}):
+                from django.conf import settings as re_settings
+        self.assertRaises(RuntimeError, try_import)

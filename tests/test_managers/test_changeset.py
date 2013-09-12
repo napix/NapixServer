@@ -7,6 +7,7 @@ from napixd.managers.changeset import ChangeSet
 
 
 class TestChangeSet(unittest.TestCase):
+
     def setUp(self):
         self.cs = ChangeSet({
             'changed': 1,

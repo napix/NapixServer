@@ -23,7 +23,7 @@ class CORSMiddleware(object):
     def __call__(self, environ, start_response):
         if environ['REQUEST_METHOD'] == 'OPTIONS':
             start_response('200 OK', [
-                ('Access-Control-Allow-Origin',  '*'),
+                ('Access-Control-Allow-Origin', '*'),
                 ('Access-Control-Allow-Methods',
                  'GET, POST, PUT, CREATE, DELETE, OPTIONS'),
                 ('Access-Control-Allow-Headers',

@@ -27,7 +27,7 @@ class NapixDirectoryManager(Manager):
         'last_seen': {
             'description': 'The last time it was seen',
             'computed': True,
-            'type':  int,
+            'type': int,
         },
         'status': {
             'description': 'OK if this server has notified recently, '

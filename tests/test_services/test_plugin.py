@@ -8,18 +8,20 @@ import mock
 
 from napixd.services.plugins import ArgumentsPlugin
 
+
 class TestPlugin(unittest.TestCase):
+
     def setUp(self):
         self.arguments = ArgumentsPlugin()
+
         def fn(args):
             self.args = args
-        self.cb = self.arguments.apply( fn, mock.Mock())
+        self.cb = self.arguments.apply(fn, mock.Mock())
 
     def test_call_kw(self):
-        self.cb(f0 = 'a', f1='b', f2='c')
-        self.assertEqual( tuple(self.args), ( 'a', 'b', 'c'))
+        self.cb(f0='a', f1='b', f2='c')
+        self.assertEqual(tuple(self.args), ('a', 'b', 'c'))
 
     def test_call_kw_gap(self):
-        self.cb(f0 = 'a', f1='b', f3='c')
-        self.assertEqual( tuple(self.args), ( 'a', 'b'))
-
+        self.cb(f0='a', f1='b', f3='c')
+        self.assertEqual(tuple(self.args), ('a', 'b'))

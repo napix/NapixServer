@@ -13,6 +13,7 @@ from napixd.loader import Loader, Load
 
 
 class TestNapixBottleBuilder(unittest.TestCase):
+
     def test_napix_bottle(self):
         loader = mock.Mock(spec=Loader)
         load = loader.load.return_value = mock.Mock(spec=Load)
@@ -53,20 +54,22 @@ class TestNapixBottleBuilder(unittest.TestCase):
 
 
 class MyService(object):
+
     def __init__(self, mgr, alias, conf):
         self.alias = alias
         self.url = self.alias
 
     def setup_bottle(self, app):
-        app.route( '/' + self.url, callback=self.keep)
-        app.route( '/' + self.url + '/', callback=self.keep)
-        app.route( '/' + self.url + '/:f1', callback=self.keep)
+        app.route('/' + self.url, callback=self.keep)
+        app.route('/' + self.url + '/', callback=self.keep)
+        app.route('/' + self.url + '/:f1', callback=self.keep)
 
     def keep(self):
         pass
 
 
 class TestReload(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         cls.patch_service = mock.patch('napixd.application.Service', MyService)

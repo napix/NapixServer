@@ -14,6 +14,7 @@ from napixd.managers import ManagedClass
 
 
 class TestServiceEmpty(unittest2.TestCase):
+
     def setUp(self):
         self.service = Service(Managed, 'my-mock', Conf())
 
@@ -38,6 +39,7 @@ class TestServiceEmpty(unittest2.TestCase):
 
 
 class TestServiceWithManaged(unittest2.TestCase):
+
     def setUp(self):
         self.service = Service(Manager, 'this-mock', Conf())
 
@@ -69,6 +71,7 @@ class TestServiceWithManaged(unittest2.TestCase):
 
 
 class TestServiceWithManagedDirect(unittest2.TestCase):
+
     def setUp(self):
         self.service = Service(Manager_direct, 'this-mock', Conf())
 
@@ -105,16 +108,18 @@ def FakeCS(*args):
         ps = None
         mc, cf, ns = args
     name = '{0}.{1}'.format(ps.get_name(), ns) if ps else ns
-    mk = mock.Mock(spec=BaseCollectionService, name='Service:'+name)
+    mk = mock.Mock(spec=BaseCollectionService, name='Service:' + name)
     mk.get_name.return_value = name
     return mk
 
 
 class TestServiceServiceCollection(unittest2.TestCase):
+
     def setUp(self):
         self.config = mock.Mock(spec=Conf)
         self.config.get.side_effect = lambda x: x
-        self.CS = CS = mock.Mock(spec=BaseCollectionService, side_effect=FakeCS)
+        self.CS = CS = mock.Mock(
+            spec=BaseCollectionService, side_effect=FakeCS)
 
         self.manager = mock.Mock(name='root')
         self.patch_cs = mock.patch.multiple(
@@ -122,13 +127,15 @@ class TestServiceServiceCollection(unittest2.TestCase):
 
         self.m1 = mock.Mock(name='m1')
         self.m1.direct_plug.return_value = None
-        self.mc1 = mock.Mock(spec=ManagedClass, manager_class=self.m1, name='mc1')
+        self.mc1 = mock.Mock(
+            spec=ManagedClass, manager_class=self.m1, name='mc1')
         self.mc1.get_name.return_value = 'mc1'
 
         self.m2 = mock.Mock(name='m2')
         self.m2.direct_plug.return_value = True
         self.m2.get_managed_classes.return_value = [self.mc1]
-        self.mc2 = mock.Mock(spec=ManagedClass, manager_class=self.m2, name='mc2')
+        self.mc2 = mock.Mock(
+            spec=ManagedClass, manager_class=self.m2, name='mc2')
         self.mc2.get_name.return_value = 'mc2'
 
     def test_config_managed_class(self):

@@ -11,6 +11,7 @@ from napixd.chrono import Chrono
 
 
 class TestChrono(unittest.TestCase):
+
     def test_chrono(self):
         chrono = Chrono()
         with chrono:

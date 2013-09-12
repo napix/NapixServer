@@ -11,7 +11,9 @@ from napixd.managers.base import ManagerType, Manager
 from napixd.managers.actions import action, parameter
 from napixd.services.collection_services import FirstCollectionService
 
-class _TestDecorator( unittest2.TestCase):
+
+class _TestDecorator(unittest2.TestCase):
+
     def setUp(self):
         @action
         def send_mail(self, resource, dest, subject='export'):
@@ -21,26 +23,30 @@ class _TestDecorator( unittest2.TestCase):
 
 
 class _TestManagerAction(_TestDecorator):
+
     def setUp(self):
         super(_TestManagerAction, self).setUp()
         self.Manager = ManagerType('NewManager', (Manager, ), {
             'send_mail': self.fn,
             'get_resource': mock.Mock(spec=True, return_value={'mpm': 'prefork'}),
-            })
+        })
 
 
 class TestManagerAction(_TestManagerAction):
+
     def test_class_with_actions(self):
         self.assertEqual(self.Manager.get_all_actions(), ['send_mail'])
 
 
 class _TestServiceAction(_TestManagerAction):
+
     def setUp(self):
         super(_TestServiceAction, self).setUp()
         self.cs = FirstCollectionService(self.Manager, Conf(), 'my-mock')
 
 
 class TestServiceAction(_TestServiceAction):
+
     def test_set_bottle(self):
         bottle = mock.Mock()
         self.cs.setup_bottle(bottle)
@@ -55,7 +61,7 @@ class TestServiceAction(_TestServiceAction):
                 '/my-mock/:f0/_napix_all_actions',
                 '/my-mock/:f0/_napix_action/send_mail',
                 '/my-mock/:f0/_napix_action/send_mail/_napix_help',
-            ]))
+                ]))
 
     def test_all_action(self):
         all_actions = self.cs.as_list_actions('id')
