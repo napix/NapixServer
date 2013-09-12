@@ -39,8 +39,12 @@ logger = logging.getLogger('Napix.reload')
 
 
 class Poll(object):
+    """
+    Le poll du pauvre (poor man's Poll)
 
-    """Le poll du pauvre"""
+    Transforms some usage of :class:`select.Poll`
+    to :func:`select.select` calls.
+    """
 
     def __init__(self):
         self.fd = -1
@@ -64,16 +68,20 @@ def patch_select():
 
 
 class Reloader(object):
-
     """
-    An object that checks for signals: SIGHUP, file changes through :mod:`pyinotify`
-    or manual calls to :meth:`reload` and triggers a reloadin gof the application.
+    An object that checks for signals: SIGHUP,
+    file changes through :mod:`pyinotify`
+    or manual calls to :meth:`reload` and triggers
+    a reloading of the application.
     """
 
     def __init__(self, app):
         self.app = app
 
     def start(self):
+        """
+        Start the daemon
+        """
         signal.signal(signal.SIGHUP, self.on_sighup)
         self.app.route('/_napix_reload', callback=self.reload)
 

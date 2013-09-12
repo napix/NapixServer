@@ -36,6 +36,18 @@ class ManagerImport(object):
     A manager import.
 
     It defines a *manager class* under a *name* with a *config*.
+
+    .. attribute:: manager
+
+        A :class:`napixd.manager.Manager` subclass.
+
+    .. attribute:: alias
+
+        The name under wich this manager is loaded.
+
+    .. attribute:: config
+
+        The :class:`napixd.conf.Conf` used to configure this service.
     """
 
     def __init__(self, manager, alias, config):
@@ -59,25 +71,62 @@ class ManagerImport(object):
     def __ne__(self, other):
         return not self == other
 
-ManagerError = collections.namedtuple(
-    'ManagerError', ('manager', 'alias', 'cause'))
-Load = collections.namedtuple(
-    'Load', ['old_managers', 'managers', 'new_managers', 'error_managers'])
+
+class ManagerError(object):
+    """
+    An object representing the exception *cause*
+    interfering with the loading of *manager* with *alias*
+
+    .. attribute:: cause
+
+        The exception wich caused this error
+
+    .. attribute:: alias
+
+        The alias of the manager loaded.
+
+    .. attribute:: manager
+
+        The manager class being loaded
+    """
+    __slots__ = ('manager', 'alias', 'cause')
+
+    def __init__(self, manager, alias, cause):
+        self.manager = manager
+        self.alias = alias
+        self.cause = cause
+
+
+class Load(object):
+    """
+    An object representing a collections of :class:`ManagerImport`
+    """
+    __slots__ = ('old_managers', 'managers', 'new_managers', 'error_managers')
+
+    def __init__(self, old_managers, managers, new_managers, error_managers):
+        self.old_managers = old_managers
+        self.managers = managers
+        self.new_managers = new_managers
+        self.error_managers = error_managers
 
 import_fn = __import__
 open = open
 
 
 class NapixImportError(Exception):
-
     """
     Base Exception of loading errors.
     """
     pass
 
+    def contains(self, manager):
+        """
+        Return if the *manager* is impacted by this error.
+        """
+        raise NotImplementedError()
+
 
 class ModuleImportError(NapixImportError):
-
     """
     An error when importing a module.
     All manager inside this module are unavailable.
@@ -93,7 +142,6 @@ class ModuleImportError(NapixImportError):
 
 
 class ManagerImportError(NapixImportError):
-
     """
     An error when importing a manager.
 
@@ -112,12 +160,23 @@ class ManagerImportError(NapixImportError):
 
 
 class Importer(object):
-
     """
     The base class of the manager importers.
 
     Subclasse must define a :meth:`load` method that will use
     :meth:`import_manager` and :meth:`import_module` to find on its location.
+
+    .. attribute:: timestamp
+
+        The last check for this object
+
+    .. attribute:: raise_on_first_import
+
+        Set to :data:`True` if the fails on the first import
+        should raise errors.
+        Else the errors are silently ignored.
+
+        Errors thrown will prevent the napixd server from starting.
     """
 
     def __init__(self, raise_on_first_import=True):
@@ -132,6 +191,9 @@ class Importer(object):
         return []
 
     def set_timestamp(self, timestamp):
+        """
+        Set :attr:`timestamp` to now.
+        """
         self.timestamp = timestamp
 
     def load(self):
@@ -161,6 +223,10 @@ class Importer(object):
         return sys.modules[module_path]
 
     def has_been_modified(self, module_file, module_name):
+        """
+        Returns `True` if the *module_file* has been modified
+        since the last check.
+        """
         try:
             last_modif = os.stat(module_file).st_mtime
             if logger.isEnabledFor(logging.DEBUG):
@@ -246,10 +312,8 @@ class FixedImporter(Importer):
     (:class:`Manager subclass<napixd.managers.base.Manager>`, config)
     or just the Manager subclass.
 
-    >>>FixedImporter({
-        'this' : (ThisManager, { 'a' : 1 }),
-        'that' : ThatManager
-        })
+    >>> FixedImporter({'this': ('ThisManager', { 'a' : 1 })})
+    >>> FixedImporter({'that': 'ThatManager'})
     """
 
     def __init__(self, managers):
@@ -312,7 +376,6 @@ class ConfImporter(Importer):
 
 
 class AutoImporter(Importer):
-
     """
     Imports all the modules in a directory
 
@@ -422,6 +485,12 @@ class AutoImporter(Importer):
         return managers, errors
 
     def get_config_from(self, manager):
+        """
+        Tries to find the configuration for this manager.
+
+        It parses the JSON inside the docstring of the method
+        :meth:`~napixd.managers.base.Manager.configure`
+        """
         try:
             doc_string = manager.configure.__doc__
             if doc_string:
@@ -435,7 +504,6 @@ class AutoImporter(Importer):
 
 
 class RelatedImporter(Importer):
-
     """
     Imports the managed classes.
 
@@ -449,6 +517,9 @@ class RelatedImporter(Importer):
         self.reference = reference
 
     def load(self, classes):
+        """
+        Loads the the managed *classes* of :attr:`reference`
+        """
         logger.debug('loading related classes')
         managed_classes = []
         for cls in classes:
@@ -464,7 +535,6 @@ class RelatedImporter(Importer):
 
 
 class Loader(object):
-
     """
     Finds and keeps track of the managers.
 
@@ -494,7 +564,10 @@ class Loader(object):
 
     def load(self):
         """
-        Run a loading cycle
+        Runs a loading cycle
+
+        Returns a :class:`Load` instance with the variation
+        that have happened since the last :meth:`load` call.
         """
         logger.info('Run a load at %s', self.timestamp)
         managers = set()
@@ -542,13 +615,12 @@ class Loader(object):
         return Load(old_managers, managers, new_managers, errors)
 
     def setup(self, manager):
-        return self._setup(manager, set())
-
-    def _setup(self, manager, _already_loaded):
         """
         Loads the managed classes of a manager
         """
+        return self._setup(manager, set())
 
+    def _setup(self, manager, _already_loaded):
         if manager in _already_loaded:
             logger.info('Circular manager detected: %s', manager.get_name())
             return manager

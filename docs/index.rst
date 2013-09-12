@@ -23,7 +23,7 @@ Contents:
     extensions
     using-django
     thread_manager
-    module
+    reference/modules
 
 
 Indices and tables

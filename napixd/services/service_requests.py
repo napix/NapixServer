@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+The services instanciate a instance of a :class:`ServiceRequest` sub-class
+to handle the specific work of a request.
+"""
+
 import collections
 import bottle
 
@@ -10,17 +15,25 @@ from napixd.services.methods import Implementation
 from napixd.services.wrapper import Wrapper
 
 
-class ServiceRequest(object):
+__all__ = (
+    'ServiceRequest',
+    'ServiceResourceRequest',
+    'ServiceCollectionRequest',
+    'ServiceManagedClassesRequest',
+    'ServiceActionRequest',
+)
 
+
+class ServiceRequest(object):
     """
-    ServiceRequest is an abstract class created to serve a single request.
+    This class is an abstract class created to serve a single request.
+
+    The object handles the request for the *path* given on the *service*.
+    *service* is an instance of
+    :class:`napixd.services.collection_services.CollectionService`.
     """
 
     def __init__(self, path, service):
-        """
-        Create the object that will handle the request for the path given
-        on the collection
-        """
         self.method = bottle.request.method
         self.service = service
         # Parse the url components
@@ -87,12 +100,17 @@ class ServiceRequest(object):
             manager.end_request(bottle.request)
 
     def serialize(self, result):
+        """
+        Serialize the *result* into something meaningful.
+
+        This has to be implemented by the subclasses.
+        """
         raise NotImplementedError()
 
     def handle(self):
         """
         Actually handle the request.
-        Call a set of methods that may be overrident by subclasses
+        Call a set of methods that may be overrident by subclasses.
         """
         try:
             # obtient l'object designé
@@ -118,8 +136,7 @@ class ServiceRequest(object):
 
     def make_url(self, result):
         """
-        Create an url for the *list* **result**.
-        The url follow the services prefix
+        Creates an url for the *list* **result**.
         """
         path = list(self.path)
         path.append(result)
@@ -128,7 +145,6 @@ class ServiceRequest(object):
 
 
 class ServiceCollectionRequest(ServiceRequest):
-
     """
     ServiceCollectionRequest is an implementation of ServiceRequest specified
     for Collection requests (urls ending with /)
@@ -144,6 +160,10 @@ class ServiceCollectionRequest(ServiceRequest):
     }
 
     def get_manager(self):
+        """
+        Returns an :class:`napixd.services.methods.Implementation`
+        of the manager.
+        """
         manager = super(ServiceCollectionRequest, self).get_manager()
         return Implementation(manager)
 
@@ -193,6 +213,11 @@ class ServiceCollectionRequest(ServiceRequest):
 
 
 class ServiceManagedClassesRequest(ServiceRequest):
+    """
+    The ServiceRequest class for the listing of the managed classes
+    of a manager, when :class:`napixd.managers.base.Manager.direct_plug`
+    is :obj:`False`.
+    """
 
     def get_callback(self):
         return self.service.collection.get_managed_classes

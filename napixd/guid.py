@@ -70,9 +70,15 @@ class NapixID(object):
         return self._napix_id
 
     def gen(self):
+        """
+        Returns a new UUID
+        """
         return uuid.uuid4()
 
     def save(self):
+        """
+        Save the UUID in the :file:`HOME/napixd_id`
+        """
         logger.info('Saving UUID in %s', self.id_file)
         try:
             handle = open(self.id_file, 'wb')
@@ -82,6 +88,9 @@ class NapixID(object):
             logger.exception(e)
 
     def load(self):
+        """
+        Tries to retrieve the UUID from the :file:`HOME/napixd_id`
+        """
         logger.debug('Loading UUID from %s', self.id_file)
         try:
             handle = open(self.id_file, 'rb')

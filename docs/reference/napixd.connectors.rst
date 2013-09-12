@@ -1,6 +1,14 @@
 connectors Package
 ==================
 
+:mod:`connectors` Package
+-------------------------
+
+.. automodule:: napixd.connectors
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`django` Module
 --------------------
 

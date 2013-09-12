@@ -1,6 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Tools used with :mod:`gevent`.
+
+A feature implemented by :class:`Tracer` allows to keep track
+of the time spent executing Python in an observed greenlet,
+excluding the IO and the other greenlet`s
+
+The other feature is :class:`GeventServer` witch acts as a WSGI server
+and overrides the value of the environ key PATH_INFO to undo all unescaping.
+"""
+
 import functools
 import time
 import logging
@@ -17,30 +28,51 @@ logger = logging.getLogger('Napix.gevent')
 
 
 class Greenlet(gevent.greenlet.Greenlet):
-
+    """
+    A greenlet subclass that tracks the time it is running
+    """
     def __init__(self, *args, **kw):
         super(Greenlet, self).__init__(*args, **kw)
         self._times = []
 
     def add_time(self):
+        """
+        Add a timestamp.
+        """
         self._times.append(time.time())
 
     def get_running_intervals(self):
+        """
+        Return the pair (begin, end) of the times
+        this instance has been running.
+        """
         i = iter(self._times)
         now = time.time()
         for t in i:
             yield t, next(i, now)
 
     def get_running_time(self):
+        """
+        Return the time in seconds during witch this greenlet has been running.
+        """
         return sum(end - start for start, end in self.get_running_intervals())
 
 
 class Tracer(object):
+    """
+    A object tracing the activity of greenlets.
 
+    .. attribute:: last
+
+        The last :class:`Greenlet` witch have been running
+    """
     def __init__(self):
         self.last = None
 
     def trace(self, what, who):
+        """
+        Callback executed for every switch of greenlet
+        """
         if what != 'switch':
             return
         from_, to = who
@@ -53,18 +85,29 @@ class Tracer(object):
             self.last = to
 
     def set_trace(self):
+        """
+        Plug the tracer into gevent.
+        """
         logger.info('Set trace')
         hub = gevent.hub.get_hub()
         self.old_trace = hub.gettrace()
         gevent.hub.get_hub().settrace(self.trace)
 
     def unset_trace(self):
+        """
+        Unplug the tracer
+        """
         logger.info('Unset trace')
         hub = gevent.hub.get_hub()
         hub.settrace(self.old_trace)
 
 
 class AddGeventTimeHeader(object):
+    """
+    A bottle plugin used to transfert the results
+    of the time spent by the greenlet to the users
+    by the HTTP headers.
+    """
     name = 'gevent_time_header'
     api = 2
 
@@ -92,7 +135,11 @@ class AddGeventTimeHeader(object):
 
 
 class WSGIHandler(gevent.pywsgi.WSGIHandler):
+    """
+    A WSGI handler used by :class:`GeventServer`
 
+    It overrides the value of PATH_INFO to avoid unescaping.
+    """
     def get_environ(self):
         env = super(WSGIHandler, self).get_environ()
         path, x, query = self.path.partition('?')
@@ -101,7 +148,9 @@ class WSGIHandler(gevent.pywsgi.WSGIHandler):
 
 
 class GeventServer(bottle.ServerAdapter):
-
+    """
+    This object installs the :class:`WSGIHandler` as its handler.
+    """
     def run(self, handler):
         log = None if self.quiet else 'default'
         gevent.pywsgi.WSGIServer(

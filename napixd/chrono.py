@@ -5,7 +5,15 @@ import time
 
 
 class Chrono(object):
+    """
+    A class used as a context manager to get the timing of a code section.
 
+    >>> with Chrono() as chrono:
+    ...     time.sleep(1)
+    ... 
+    >>> print(chrono)
+    <Chrono 1>
+    """
     def __init__(self):
         self.start = None
         self.end = None
@@ -19,6 +27,9 @@ class Chrono(object):
 
     @property
     def total(self):
+        """
+        The total time spend inside the code section in seconds.
+        """
         return self.end - self.start
 
     def __enter__(self):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
 import logging
 import bottle
 
@@ -10,19 +11,16 @@ logger = logging.getLogger('Napix.application')
 
 
 class NapixdBottle(bottle.Bottle):
-
     """
-    Napix bottle application.
-    This bottle contains the automatic detection of services.
+    The Bottle Application class.
+    This object is used to connect the :class:`napixd.services.Service`
+    to the Bottle framework.
+
+    *loader* is a :class:`napixd.loader.Loader` instance
+    used to find :class:`napixd.manager.base.Manager` classes.
     """
 
     def __init__(self, loader):
-        """
-        Create a new bottle app.
-
-        *loader* is a :class:`napixd.loader.Loader` instance
-        used to find :class:`napxid.manager.Manager` classes.
-        """
         super(NapixdBottle, self).__init__(autojson=False)
         self.root_urls = set()
         self.loader = loader
@@ -34,8 +32,8 @@ class NapixdBottle(bottle.Bottle):
 
     def make_services(self, managers):
         """
-        Load the services with the managers found
-        return a list of Services instances
+        Make :class:`napixd.services.Service` instance from
+        the :class:`napixd.loader.ManagerImport` given by the loader.
         """
         for mi in managers:
             service = Service(mi.manager, mi.alias, mi.config)
@@ -45,6 +43,12 @@ class NapixdBottle(bottle.Bottle):
             self.root_urls.add(service.url)
 
     def reload(self):
+        """
+        Launch a reloading sequence.
+
+        It calls :meth:`napixd.loader.Loading.load` and
+        manages the new and old managers and errors.
+        """
         load = self.loader.load()
         logger.info('Reloading')
 

@@ -9,7 +9,7 @@ Keys are accessible by their name, or their path.
 Their path are composed of each descendant joined by a ``.``.
 
 The defautl configuration is loaded from a JSON file
-:path:`NAPIXHOME/conf/settings.json`
+:file:`HOME/conf/settings.json`
 
 """
 
@@ -211,9 +211,9 @@ class Conf(collections.MutableMapping):
             This method is meant to be used in testing/debug
             and not in production
 
-        >>>c = Conf({ 'a' : 1 })
-        >>>with c.force( 'a', 2):
-        >>>   c.get('a')
+        >>> c = Conf({'a': 1})
+        >>> with c.force('a', 2):
+        ...     c.get('a')
         2
         >>> c.get('a')
         1

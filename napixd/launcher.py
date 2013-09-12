@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-The launcher define the infrastructure to prepare and run the Napix Server.
+The launcher defines the infrastructure to prepare and run the Napix Server.
 
 :class:`Setup` is intended to be overidden to customize running
 as an integrated component or in a specialized server.
@@ -55,16 +55,37 @@ def launch(options, setup_class=None):
 
 
 class CannotLaunch(Exception):
+    """
+    Exception raised when the server encounters a fatal error
+    preventing it from running.
+    """
     pass
 
 
 class Setup(object):
-
     """
     The class that prepares and run a Napix server instance.
 
     It takes its **options** as argument.
     It is an iterable of strings.
+
+    .. attribute:: DEFAULT_OPTIONS
+
+        A set of options to use by default.
+
+    .. attribute:: LOG_FILE
+
+        A path to a log file.
+
+    .. attribute:: HELP_TEXT
+
+        The help provided to the user if the option help is used.
+
+    .. attribute:: service_name
+
+        The name of this daemon.
+        It is used (amongst others) by the auth plugin
+        for the requests to the central.
     """
     DEFAULT_HOST = '0.0.0.0'
     DEFAULT_PORT = 8002
@@ -75,7 +96,6 @@ class Setup(object):
         'auth',  # the auth interface
         'reload',  # the reloader on signal page and automatic
         'webclient',  # the web client,
-        # 'executor', #The executor
         'gevent',  # Use gevent
         'cors',  # Set CORS headers
         'auto',
@@ -196,10 +216,18 @@ Meta-options:
         bottle.debug('debug' in self.options)
 
     def get_service_name(self):
+        """
+        Returns the name of the service.
+
+        This name is cache in :attr:`service_name`
+
+        The configuration option ``Napix.auth.service`` is used.
+        If it does not exists, the name is fetched from :file:`/etc/hostname`
+        """
         service = Conf.get_default('Napix.auth.service')
         if not service:
             logger.info(
-                'No setting Napix.auth.service, guessing from /etc/hostnams')
+                'No setting Napix.auth.service, guessing from /etc/hostname')
             try:
                 with open('/etc/hostname', 'r') as handle:
                     return handle.read().strip()

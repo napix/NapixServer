@@ -25,6 +25,14 @@ managers Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`changeset` Module
+-----------------------
+
+.. automodule:: napixd.managers.changeset
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`default` Module
 ---------------------
 
@@ -33,26 +41,18 @@ managers Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`mixins` Module
---------------------
-
-.. automodule:: napixd.managers.mixins
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`views` Module
--------------------
-
-.. automodule:: napixd.managers.views
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`managed_classes` Module
 -----------------------------
 
 .. automodule:: napixd.managers.managed_classes
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`mixins` Module
+--------------------
+
+.. automodule:: napixd.managers.mixins
     :members:
     :undoc-members:
     :show-inheritance:
@@ -69,6 +69,14 @@ managers Package
 ------------------------
 
 .. automodule:: napixd.managers.validators
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`views` Module
+-------------------
+
+.. automodule:: napixd.managers.views
     :members:
     :undoc-members:
     :show-inheritance:

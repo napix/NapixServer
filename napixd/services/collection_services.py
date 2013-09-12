@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+The Collections services handle the request on a specific manager.
+"""
+
 import sys
 
 from napixd.services.urls import URL
@@ -13,19 +17,37 @@ from napixd.services.service_requests import (
     ServiceActionRequest
 )
 
+__all__ = (
+    'BaseCollectionService',
+    'FirstCollectionService',
+    'CollectionService',
+    'ActionService'
+)
+
 
 class BaseCollectionService(object):
-
     """
-    Abstract class used by FirstCollectionService and CollectionService
+    Abstract class used by :class:`FirstCollectionService` and
+    :class:`CollectionService`
+
+    Serve the *collection* with the given *config*.
+    *collection* is a subclass of :class:`~napixd.managers.base.Manager`
+    *config* is the instance of :class:`napixd.conf.Conf`.
+    *collection_url* is an :class:`napixd.services.urls.URL` where the service
+    is listening.
+
+    .. attribute:: collection_url
+
+        The :class:`~napixd.services.urls.URL` where the
+        requests on the collection are served
+
+    .. attribute:: resource_url
+
+        The :class:`~napixd.services.urls.URL` where the
+        requests on the resource are served
     """
 
     def __init__(self, collection, config, collection_url):
-        """
-        Serve the collection with the config given.
-        collection is a subclass of Manager
-        config is the instance of Conf for this Service.
-        """
         self.collection = collection
         self.config = config
 
@@ -53,6 +75,7 @@ class BaseCollectionService(object):
     def setup_bottle(self, app):
         """
         Register the routes of this collection inside the app
+
         collection/
             list the collection
         collection/_napix_new
@@ -119,18 +142,35 @@ class BaseCollectionService(object):
                     callback=self.noop)
 
     def as_resource(self, path):
+        """
+        Launches a request on a resource of this manager
+        """
         return ServiceResourceRequest(path, self).handle()
 
     def as_collection(self, path):
+        """
+        Launches a request on this manager as a collection
+        """
         return ServiceCollectionRequest(path, self).handle()
 
     def as_list_actions(self, path):
+        """
+        Lists the :meth:`napixd.managers.actions.action`
+        available on this manager.
+        """
         return [x.name for x in self.all_actions]
 
     def as_managed_classes(self, path):
+        """
+        Lists the :attr:`managed classes<napixd.managers.base.Manager.managed_class>`
+        of this manager.
+        """
         return ServiceManagedClassesRequest(path, self).handle()
 
     def as_help(self, path):
+        """
+        The view server at **_napix_help**
+        """
         manager = self.collection
         return {
             'doc': (manager.__doc__ or '').strip(),
@@ -153,13 +193,22 @@ class BaseCollectionService(object):
         }
 
     def as_resource_fields(self, path):
+        """
+        The view server at **_napix_resource_fields**
+        """
         return self.resource_fields
 
     def as_example_resource(self, path):
+        """
+        The view server at **_napix_help**
+        """
         manager = self.collection
         return manager.get_example_resource()
 
     def noop(self, **kw):
+        """
+        A catch-all method that does nothing but return a 200
+        """
         return None
 
     def get_name(self):
@@ -170,6 +219,13 @@ class BaseCollectionService(object):
 
 
 class FirstCollectionService(BaseCollectionService):
+    """
+    A specialisation of :class:`BaseCollectionService` used
+    for the first level of managers.
+
+    *namespace* is the :attr:`~napixd.loader.ManagerImport.alias`
+    of the this manager.
+    """
 
     def __init__(self, collection, config, namespace):
         super(FirstCollectionService, self).__init__(
@@ -178,6 +234,13 @@ class FirstCollectionService(BaseCollectionService):
         self.namespace = namespace
 
     def generate_manager(self):
+        """
+        Generates a manager.
+
+        Keeps a cached version of the manager for a later use.
+        The manager is reused if :meth:`napixd.managers.base.Manager.is_up_to_date`
+        returns :obj:`True`
+        """
         if self._cache is None or not self._cache.is_up_to_date():
             self._cache = super(
                 FirstCollectionService, self).generate_manager(None)
