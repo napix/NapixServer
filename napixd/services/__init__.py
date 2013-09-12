@@ -25,7 +25,7 @@ class Service(object):
     The service objects make the interface between
     the end user's HTTP calls and the active modules.
     """
-    def __init__(self, collection, namespace=None, configuration=None):
+    def __init__(self, collection, namespace, configuration):
         """
         Create a base service for the given collection (a Manager object) and
         its submanager.
@@ -35,9 +35,9 @@ class Service(object):
         collection MUST be a Manager subclass and
         configuration an instance of Conf for this collection
         """
-        self.configuration = configuration or Conf()
+        self.configuration = configuration
         self.collection_services = []
-        self.url = namespace or collection.get_name()
+        self.url = namespace
 
         service = FirstCollectionService(collection, self.configuration, self.url)
         self._append_service(service)
