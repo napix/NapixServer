@@ -8,6 +8,7 @@ from napixd.services import Service
 
 logger = logging.getLogger('Napix.application')
 
+
 class NapixdBottle(bottle.Bottle):
     """
     Napix bottle application.
@@ -17,33 +18,30 @@ class NapixdBottle(bottle.Bottle):
     def __init__(self, loader):
         """
         Create a new bottle app.
-        The services served by this bottle are either given in the services parameter or guessed
-        with the config of the application
 
-        The service parameter is a list of Service instances that will be served by this app.
-        When the paramater is not given or is None, the list is generated with the default conf.
-
+        *loader* is a :class:`napixd.loader.Loader` instance
+        used to find :class:`napxid.manager.Manager` classes.
         """
-        super(NapixdBottle,self).__init__(autojson=False)
+        super(NapixdBottle, self).__init__(autojson=False)
         self.root_urls = set()
         self.loader = loader
 
-        load =  self.loader.load()
-        self.make_services( load.managers )
+        load = self.loader.load()
+        self.make_services(load.managers)
 
         self.setup_bottle()
 
-    def make_services( self, managers):
+    def make_services(self, managers):
         """
         Load the services with the managers found
         return a list of Services instances
         """
         for mi in managers:
-            service = Service( mi.manager, mi.alias, mi.config )
+            service = Service(mi.manager, mi.alias, mi.config)
             logger.debug('Creating service %s', service.url)
             #add new routes
-            service.setup_bottle( self)
-            self.root_urls.add( service.url )
+            service.setup_bottle(self)
+            self.root_urls.add(service.url)
 
     def reload(self):
         load = self.loader.load()
@@ -56,15 +54,14 @@ class NapixdBottle(bottle.Bottle):
         for mi in load.old_managers:
             rule = '/' + mi.alias
             prefix = rule + '/'
-            self.routes = [ r
-                    for r in self.routes
-                    if not r.rule.startswith(prefix) and r.rule != rule ]
-            self.root_urls.discard( mi.alias )
+            self.routes = [r for r in self.routes
+                           if not r.rule.startswith(prefix) and r.rule != rule]
+            self.root_urls.discard(mi.alias)
 
         if logger.isEnabledFor(logging.DEBUG) and load.new_managers:
             logger.debug('New services: %s',
                          u', '.join(map(unicode, load.new_managers)))
-        self.make_services( load.new_managers )
+        self.make_services(load.new_managers)
 
         #reset the router
         self.router = bottle.Router()
@@ -76,22 +73,31 @@ class NapixdBottle(bottle.Bottle):
                          u', '.join(map(unicode, load.error_managers)))
         #add errord routes
         for me in load.error_managers:
-            self.register_error( me)
+            self.register_error(me)
 
     def register_error(self, me):
-        logger.debug('Setup routes for error, %s', me.alias)
-        self.route( '/%s'%me.alias, callback=self._error_service_factory( me.cause ))
-        self.route( '/%s/'%me.alias, callback=self._error_service_factory( me.cause ))
-        self.route( '/%s/<catch_all:path>'%me.alias, callback=self._error_service_factory( me.cause ))
+        """
+        Set up the routes for a :class:`napixd.loader.ManagerError`.
 
-        self.root_urls.add( me.alias )
+        The routes will respond to any query by raising the
+        :attr:`napixd.loader.ManagerError.cause` of the errors.
+        """
+        logger.debug('Setup routes for error, %s', me.alias)
+        self.route('/{0}'.format(me.alias),
+                   callback=self._error_service_factory(me.cause))
+        self.route('/{0}/'.format(me.alias),
+                   callback=self._error_service_factory(me.cause))
+        self.route('/{0}/<catch_all:path>'.format(me.alias),
+                   callback=self._error_service_factory(me.cause))
+
+        self.root_urls.add(me.alias)
 
     def setup_bottle(self):
         """
         Register the services into the app
         """
         #/ route, give the services
-        self.route('/',callback=self.slash)
+        self.route('/', callback=self.slash)
 
         #Error handling for not found and invalid
         self.error(404)(self._error_handler_factory(404))
@@ -99,14 +105,13 @@ class NapixdBottle(bottle.Bottle):
         self.error(400)(self._error_handler_factory(400))
         self.error(500)(self._error_handler_factory(500))
 
-
     def slash(self):
         """
         /  view; return the list of the first level services of the app.
         """
-        return ['/'+x for x in self.root_urls ]
+        return ['/'+x for x in self.root_urls]
 
-    def _error_handler_factory(self,code):
+    def _error_handler_factory(self, code):
         """ 404 view """
         def inner_error_handler(exception):
             bottle.response.status = code
@@ -118,4 +123,3 @@ class NapixdBottle(bottle.Bottle):
         def inner_error_service_factory(*catch_all, **more_catch_all):
             raise cause
         return inner_error_service_factory
-
