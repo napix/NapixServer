@@ -156,6 +156,12 @@ class TestServiceResourceRequest( _TestSRR):
             'lol' : 1, 'blabla' : 'ping'
             })
 
+    def test_serialize_bad_vale(self):
+        self.managed.serialize.side_effect = None
+        self.managed.serialize.return_value = mock.Mock()
+        with self.assertRaises(ValueError):
+            self.srr.handle()
+
 
 class TestServiceResourceRequestOther( _TestSRR):
     def test_method_head(self):

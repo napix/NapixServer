@@ -245,6 +245,8 @@ class ServiceResourceRequest(ServiceRequest):
 
     def default_formatter(self, value):
         resp = self.manager.serialize(value)
+        if not isinstance(resp, collections.Mapping):
+            raise ValueError('Serialized value is not an dict')
         return resp
 
     def call(self):
