@@ -71,7 +71,6 @@ class Setup(object):
     DEFAULT_OPTIONS = set([
         'app',  # Launch the application
         # 'notify', # the thread of periodic notifications
-        # 'doc', # the autodocumentation generation
         'useragent',  # the html page shown when a browser access directly
         'auth',  # the auth interface
         'reload',  # the reloader on signal page and automatic
@@ -102,7 +101,6 @@ napixd options ... will show the options enabled in this configuration.
 options are:
 Default options:
     app:        Launch the application
-    doc:        Run the automatic documentation generation
     useragent:  The html page shown when a browser access directly
     auth:       The authentication component
     reload:     The reloader events attachement on signal, page and inotify
