@@ -7,7 +7,6 @@ services Package
 .. automodule:: napixd.services
     :members:
     :undoc-members:
-    :show-inheritance:
 
 :mod:`collection_services` Module
 ---------------------------------
@@ -16,6 +15,20 @@ services Package
     :members:
     :undoc-members:
     :show-inheritance:
+
+:mod:`service_requests` Module
+------------------------------
+
+.. automodule:: napixd.services.service_requests
+    :members:
+    :show-inheritance:
+
+:mod:`wrapper` Module
+---------------------
+
+.. automodule:: napixd.services.wrapper
+    :members:
+    :undoc-members:
 
 :mod:`methods` Module
 ---------------------
@@ -31,24 +44,10 @@ services Package
 .. automodule:: napixd.services.plugins
     :members:
 
-:mod:`service_requests` Module
-------------------------------
-
-.. automodule:: napixd.services.service_requests
-    :members:
-    :show-inheritance:
-
 :mod:`urls` Module
 ------------------
 
 .. automodule:: napixd.services.urls
-    :members:
-    :undoc-members:
-
-:mod:`wrapper` Module
----------------------
-
-.. automodule:: napixd.services.wrapper
     :members:
     :undoc-members:
 

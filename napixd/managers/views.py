@@ -21,25 +21,22 @@ Callback
 
 The signature of the decorated view is::
 
-    formatter( self, resource_id, resource, response)
+    formatter( self, resource, response)
 
 self
     is the instance of the manager.
-resource_id
-    The resource id of the requested resource.
-    This id has been validated by :meth:`~napixd.managers.base.Manager.validate_id`
-    if it has been implemented.
 resource
-    the resource asked to be formatted.
+    The :class:`napixd.services.wrapper.Wrapper` of the requested resource.
     This resource is not filtered and additional fields not declared in
-    :data:`~managers.Manager.resource_fields` are included.
+    :data:`~napixd.managers.Manager.resource_fields` are included.
 response
     an empty :class:`napixd.http.Response` object.
-    This object permits to set headers with :meth:`~napixd.http.Response.set_header`
-    and fill the body of the response with :meth:`~napixd.http.Response.write`.
+    This object permits to set headers with
+    :meth:`~napixd.http.Response.set_header` and fill the body of the response
+    with :meth:`~napixd.http.Response.write`.
 
 
-If the value returned by the callback is **response** or ``None``,
+If the value returned by the callback is *response* or ``None``,
 the response object is returned.
 Else the returned value is JSON-encoded as-is and transmitted to the client.
 

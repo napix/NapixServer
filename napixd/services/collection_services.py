@@ -260,6 +260,17 @@ class FirstCollectionService(BaseCollectionService):
 
 
 class CollectionService(BaseCollectionService):
+    """
+    The subclass of :class:`BaseCollectionService` used
+    for all the :class:`napixd.managers.base.Manager` classes
+    after the first one.
+
+    *previous_service* is the :class:`CollectionService` or the
+    :class:`FirstCollectionService` of the parent manager.
+
+    *namespace* is '' if the parent manager has direct_plug is :obj:`True`
+    or the name of the current manager if direct_plug is `False`
+    """
 
     def __init__(self, previous_service, managed_class, config, namespace):
         if namespace:
@@ -302,6 +313,13 @@ class CollectionService(BaseCollectionService):
 
 
 class ActionService(object):
+    """
+    The Service class for :func:`napixd.managers.actions.action`
+
+    *collection_service* is the :class:`BaseCollectionService`
+    of the manager owning the action.
+    *action_name* is the name of the action.
+    """
 
     def __init__(self, collection_service, action_name):
         self.service = collection_service
@@ -332,6 +350,9 @@ class ActionService(object):
         return ServiceActionRequest(path, self, self.name).handle()
 
     def as_help(self, path):
+        """
+        View for _napix_help
+        """
         action = self.action
         return {
             'resource_fields': self.resource_fields,

@@ -2,10 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Actions
-=======
-
-Action are arbitrary python function that can be called on a resource of a collection.
+Action are arbitrary python function that can be called
+on a resource of a collection.
 """
 
 import inspect
@@ -25,10 +23,11 @@ def action(fn):
     """
     Decorates a python function that will be an action
 
-    The action takes the resource as its first argument.
+    The action takes the :class:`resource<napixd.services.wrapper.Wrapper>`
+    as its first argument.
 
-    The decorator automatically discovers the mandatory and optional arguments of the function
-    and use them for documentation and template request generation.
+    The decorator automatically discovers the mandatory and optional arguments
+    of the function and use them for documentation and template request generation.
 
     .. code-block:: python
 
@@ -41,8 +40,8 @@ def action(fn):
             ...
             @action
             def ping(self, router, tries=3):
-                for x in tries:
-                    if ping( router['ip']):
+                for x in xrange(tries):
+                    if ping(router.resource['ip']):
                         return 'Router responds'
                 return 'Router Unreachable'
     """
@@ -55,8 +54,8 @@ def parameter(name, **kw):
 
     .. code-block:: python
 
-        @parameter( 'tries',  description = 'Number of times we try to ping' )
         @action
+        @parameter('tries', description='Number of times we try to ping')
         def ping(self, router, tries=3):
             for x in tries:
                 if ping( router['ip']):

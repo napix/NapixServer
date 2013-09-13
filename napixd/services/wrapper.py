@@ -21,7 +21,7 @@ class Wrapper(object):
     This class encapsulate a *manager* and an *id*.
 
     The :attr:`resource` is the result of the call to
-    :meth:`~napixd.managers.base.Manager.get_resource` with this *id*.
+    :meth:`~napixd.managers.base.ManagerInterface.get_resource` with this *id*.
 
     .. attribute:: manager
 

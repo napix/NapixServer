@@ -12,7 +12,6 @@ from napixd.exceptions import ValidationError
 
 
 class MatchRegexp(object):
-
     """
     Checks that the input matches the *source* regexp
 

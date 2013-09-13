@@ -20,24 +20,24 @@ from napixd.managers.resource_fields import ResourceFields
 from napixd.managers.actions import ActionProperty
 from napixd.managers.changeset import ChangeSet
 
+__all__ = ('ManagerType', 'Manager', 'ManagerInterface')
+
 
 class ManagerType(type):
-
     """
     Metaclass to create manager classes.
 
     It does 2 things:
 
-    resource_fields transformation
-    ------------------------------
+    * resource_fields transformation
 
     It instanciates a :class:`resource_fields.ResourceFields`
     property for the `Manager.resource_fields` attribute.
 
-    Forwarding of :mod:`actions` and :mod`views`
-    --------------------------------------------
+    * Forwarding of :mod:`~napixd.managers.actions` and :mod`~napixd.managers.views`
 
-    The :func:`actions.action` and :func:`views.view` of the base classes
+    The :func:`~napixd.managers.actions.action` and
+    :func:`napixd.managers.views.view` of the base classes
     are forwarded in the newly created class.
 
     """
@@ -175,16 +175,17 @@ class Manager(object):
     that MAY be executed simultaneously.
 
     The cycle of life is :
-    -Class creation
-    -Insertion into the application inside the root manager
-    or through a parent manager
-    -Manager.configure is called with the settings of this class
-    -\ An instance is generated for a resource
-      | / start_request is called
-      | | the appropriate method to respond to the request is called (get_resource, create_resource, etc)
-      | \ end_request is called
 
-    Subclasses MAY set a managed_class class attribute.
+    - Class creation
+    - Insertion into the application inside the root manager or through a parent manager
+    - Manager.configure is called with the settings of this class
+    - An instance is generated for a resource
+
+    * start_request is called
+    * the appropriate method to respond to the request is called (get_resource, create_resource, etc)
+    * end_request is called
+
+    Subclasses MAY set a :attr:`managed_class` class attribute.
     If set, it must be either a class inheriting from this same base class
     (or implementing its interface) or a iterable of thoses classes.
 
@@ -193,45 +194,45 @@ class Manager(object):
 
     example::
 
-        >>>class FirstManager(Manager):
+        >>> class FirstManager(Manager):
         >>>     managed_class = SecondManager
 
-        >>>class SecondManager(Manager):
+        >>> class SecondManager(Manager):
         >>>     def list_resource(self):
         >>>         return {}
 
         GET /first/second/third
-        >>>second_resource = FirstManager().get_resource('second') #/first
-        >>>second_manager = SecondManager(second_resource)  # [..]/second
-        >>>return second_manager.get_resource('third')  # [..]/third
+        >>> second_resource = FirstManager().get_resource('second') #/first
+        >>> second_manager = SecondManager(second_resource)  # [..]/second
+        >>> return second_manager.get_resource('third')  # [..]/third
 
     If it's a tuple or a list of classes,
     the children have multiple subressource managers attached.
     The class in wich the children is wrapped depends on the url path
     example::
 
-        >>>class Main(Manager):
+        >>> class Main(Manager):
         >>>     managed_class = [ManagerA,ManagerB]
         >>>
-        >>>class ManagerA(Manager):
+        >>> class ManagerA(Manager):
         >>>     pass
-        >>>class ManagerB(Manager):
+        >>> class ManagerB(Manager):
         >>>     pass
 
         GET /main/1
-        >>>Main().get_resource(1)
+        >>> Main().get_resource(1)
 
         GET /main/1/
         [ 'A', 'B' ]
 
         GET /main/1/A/
-        >>>ManagerA(Main().get_resource(1)).list_resource()
+        >>> ManagerA(Main().get_resource(1)).list_resource()
 
         GET /main/1/B/
-        >>>ManagerB(Main().get_resource(1)).list_resource()
+        >>> ManagerB(Main().get_resource(1)).list_resource()
 
         GET /main/1/B/3
-        >>>ManagerB(Main().get_resource(1)).get_resource(3)
+        >>> ManagerB(Main().get_resource(1)).get_resource(3)
 
     If it's not set, the manager does not have sub resources::
 
@@ -247,11 +248,14 @@ class Manager(object):
     are the descriptions of those fields
 
     properties includes:
-        -optional : if the value is optional
-        -example : used for documentation and the example resource
-        -description : describe the use of the resource
-        -computed : This field is computed by the service and the user
-        CAN NOT force it
+
+        - optional: if the value is optional
+        - example: used for documentation and the example resource
+        - description: describe the use of the resource
+        - computed: This field is computed by the service and the user CAN NOT force it
+
+        The resource fields options are described in detail in
+        :class:`resource_fields.ResourceFields`
 
     .. code-block:: python
 
@@ -264,11 +268,11 @@ class Manager(object):
                 'uid':{
                     'description': '''Unique identifier,
                     will be generated if not given''',
-                    'optional':True
+                    'optional': True
                 },
                 'gecos':{
-                    'description':'Comment on the user name',
-                    example:'Dennis M. Ritchie'
+                    'description': 'Comment on the user name',
+                    'example': 'Dennis M. Ritchie'
                 }
             }
 
@@ -280,14 +284,14 @@ class Manager(object):
     This behavior may be usefull to pass privates values to the next managers.
     exemple::
 
-        >>>class SectionManager(Manager):
-        >>>     def list_resource(self):
-        >>>         return self.context.resource['parser'].get_sections()
-        >>>class File(Manager):
-        >>>     managed_class = SectionManager
-        >>>     fields = { 'path':'{} }
-        >>>     def get_resource(self,id):
-        >>>         return {'parser':Parser('/etc/'+id),'path':'/etc'+id}
+        >>> class SectionManager(Manager):
+        ...     def list_resource(self):
+        ...         return self.context.resource['parser'].get_sections()
+        >>> class File(Manager):
+        ...     managed_class = SectionManager
+        ...     fields = { 'path': {} }
+        ...     def get_resource(self, id):
+        ...         return { 'parser': Parser('/etc/'+id), 'path': '/etc'+id }
 
         GET /file/file1
         { "path" : "/etc/file1" }
@@ -323,7 +327,7 @@ class Manager(object):
             FIELDNAME have to be replaced by an actual field
             of :attr:`resource_fields`
 
-    .. attr:: auto_load
+    .. attribute:: auto_load
 
         A class level boolean to tell if the class is used by the Napixd,
         when the :class:`auto-loader<napixd.loader.AutoImporter>`
@@ -354,13 +358,14 @@ class Manager(object):
         """
         intialize the Manager with the wrapped resource *wrapper* creating it
 
-        example
-        >>>class FirstManager(Manager):
-        >>>     managed_class = SecondManager
+        example::
 
-        >>>class SecondManager(Manager):
-        >>>     def list_resource(self):
-        >>>         return {}
+        >>> class FirstManager(Manager):
+        ...     managed_class = 'SecondManager'
+
+        >>> class SecondManager(Manager):
+        ...     def list_resource(self):
+        ...         return {}
 
         GET /first/second/
         >>> SecondManager(FirstManager.get_resource('second')).list_resource()

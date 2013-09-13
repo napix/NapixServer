@@ -206,7 +206,7 @@ class ResourceField(object):
         **Mandatory** unless :attr:`computed` or :attr:`choices` are used.
 
         If :attr:`type` is not defined, it is guessed from the example.
-        If :attr:`type` is defined, :type:`example` must be an instance of it.
+        If :attr:`type` is defined, :attr:`example` must be an instance of it.
 
     .. attribute:: editable
 
