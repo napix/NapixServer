@@ -8,6 +8,7 @@ import mock
 
 from napixd.managers.default import ReadOnlyDictManager, DictManager, FileManager
 from napixd.exceptions import NotFound, Duplicate
+from napixd.services.wrapper import Wrapper
 
 
 class _TestDM(unittest2.TestCase):
@@ -89,22 +90,25 @@ class TestDictManager(_TestDM):
         self.assertRaises(Duplicate, self.manager.create_resource, rd)
 
     def test_delete_resource_not_found(self):
-        self.assertRaises(NotFound, self.manager.delete_resource, 'apple')
+        self.assertRaises(NotFound, self.manager.delete_resource,
+                          Wrapper(self.manager, 'apple'))
 
     def test_delete_resource(self):
-        self.manager.delete_resource('one')
+        self.manager.delete_resource(Wrapper(self.manager, 'one'))
         self.assertTrue('one' not in self.manager.resources)
 
     def test_modify_resource(self):
-        self.manager.modify_resource('one', {
-            'german': 'Kartofel'
-        })
+        self.manager.modify_resource(
+            Wrapper(self.manager, 'one', self.resources['one']), {
+                'german': 'Kartofel'
+            })
         self.assertEqual(self.resources['one']['german'], 'Kartofel')
 
     def test_modify_not_exists(self):
-        self.assertRaises(NotFound, self.manager.modify_resource, 'potato', {
-            'german': 'Kartofel'
-        })
+        self.assertRaises(NotFound, self.manager.modify_resource,
+                          Wrapper(self.manager, 'potato'), {
+                              'german': 'Kartofel'
+                          })
 
 
 class MyFileManager(FileManager):

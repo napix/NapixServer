@@ -150,11 +150,10 @@ class DictManager(ReadOnlyDictManager):
         """
         self.resources[resource_id] = resource_dict
 
-    def modify_resource(self, resource_id, resource_dict):
+    def modify_resource(self, resource, resource_dict):
         with self.resource_lock:
-            resource = self.get_resource(resource_id)
-            resource.update(resource_dict)
-            self._set_resource(resource_id, resource)
+            resource.resource.update(resource_dict)
+            self._set_resource(resource.id, resource)
 
     def create_resource(self, resource_dict):
         with self.resource_lock:
@@ -164,12 +163,12 @@ class DictManager(ReadOnlyDictManager):
             self._set_resource(resource_id, resource_dict)
             return resource_id
 
-    def delete_resource(self, resource_id):
+    def delete_resource(self, resource):
         with self.resource_lock:
             try:
-                del self.resources[resource_id]
+                del self.resources[resource.id]
             except KeyError:
-                raise NotFound(resource_id)
+                raise NotFound(resource.id)
 
 
 class ListManager(DictManager):
