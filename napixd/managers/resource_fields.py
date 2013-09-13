@@ -304,6 +304,9 @@ class ResourceField(object):
             The priority of the field.
             The fields with a lower *display_order* are shown first.
 
+        :label:
+            The label to display with this field.
+
     """
 
     def __init__(self, name, values, **overrides):
