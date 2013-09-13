@@ -6,7 +6,7 @@ Install and deploy Napix
 Installation
 ============
 
-The Napix daemon is hosted in a Mercurial repo at ssh://hg@the-book.enix.org/NapixServer.
+The Napix daemon is hosted in a Git repo at git@gitlab.enix.org:napix/napixserver.git
 Builds are also available on http://builds.enix.org/napix/.
 If you intend to work on napixd, clone the repo.
 Else use the built version.
@@ -14,8 +14,8 @@ Either way, you should use a virtual env
 
 From the repo::
 
-    hg clone ssh://hg@the-book.enix.org/NapixServer
-    cd NapixServer
+    git clone git@gitlab.enix.org:napix/napixserver.git
+    cd napixserver
     virtualenv venv
     source venv/bin/activate
     pip install requirements.txt
