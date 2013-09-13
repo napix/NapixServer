@@ -96,6 +96,16 @@ class ManagerError(object):
         self.alias = alias
         self.cause = cause
 
+    def __hash__(self):
+        return hash((self.manager, self.alias, self.cause))
+
+    def __eq__(self, other):
+        return (isinstance(other, ManagerError) and
+                self.alias == other.alias and
+                self.manager == other.manager and
+                self.cause == other.cause)
+
+
 
 class Load(object):
     """
