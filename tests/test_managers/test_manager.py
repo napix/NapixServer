@@ -33,7 +33,8 @@ class TestManager(unittest.TestCase):
             r = self.manager.validate(v1)
 
         self.resource_fields.validate.assert_called_once_with(v1, None)
-        vr.assert_called_once_with(self.resource_fields.validate.return_value)
+        vr.assert_called_once_with(
+            self.resource_fields.validate.return_value, None)
         self.assertEqual(r, vr.return_value)
 
     def test_detect(self):

@@ -444,9 +444,9 @@ class Manager(object):
             raise ValidationError
         return id_
 
-    def validate_resource(self, resource_dict):
+    def validate_resource(self, resource_dict, origin=None):
         """
-        Validate a resource_dict (which can be directly a dict or an object
+        Validates a resource_dict (which can be directly a dict or an object
         emulating a dict) by checking that every mandatory field specified
         in self.resource_fields is defined.
 
@@ -464,7 +464,7 @@ class Manager(object):
         resource_dict = self._resource_fields.validate(resource_dict, original)
         if original is not None:
             resource_dict = ChangeSet(self.serialize(original), resource_dict)
-        return self.validate_resource(resource_dict)
+        return self.validate_resource(resource_dict, original)
 
     def is_up_to_date(self):
         """
