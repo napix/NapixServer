@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
+import collections
+
 __all__ = ('ResourceWrapper', )
 
 
@@ -16,7 +19,7 @@ class cached_property(object):
         return v
 
 
-class ResourceWrapper(object):
+class ResourceWrapper(collections.Mapping):
     """
     This class encapsulate a *manager* and an *id*.
 
@@ -37,6 +40,15 @@ class ResourceWrapper(object):
         self.id = id
         if resource:
             self.resource = resource
+
+    def __len__(self):
+        return len(self.resource)
+
+    def __iter__(self):
+        return iter(self.resource)
+
+    def __getitem__(self, item):
+        return self.resource[item]
 
     @cached_property
     def resource(self):
