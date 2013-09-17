@@ -60,11 +60,12 @@ class ServiceRequest(object):
         """
         return {}
 
-    def get_manager(self):
+    def get_manager(self, path=None):
         """
         Retreive the manager associated with the current request
         """
-        self.all_managers, manager = self.service.get_managers(self.path)
+        self.all_managers, manager = self.service.get_managers(
+            self.path if path is None else path)
         return manager
 
     def get_callback(self):
@@ -220,10 +221,9 @@ class ServiceManagedClassesRequest(ServiceRequest):
     """
 
     def get_manager(self):
-        # get the last path token because we may not just want to GET the
-        # resource
-        resource_id = self.path.pop()
-        manager = super(ServiceManagedClassesRequest, self).get_manager()
+        resource_id = self.path[-1]
+        manager = super(ServiceManagedClassesRequest, self).get_manager(
+            path=self.path[:-1])
         # verifie l'identifiant de la resource aussi
         self.resource_id = manager.validate_id(resource_id)
         return manager

@@ -8,11 +8,20 @@ import mock
 import bottle
 from tests.mock.managers import get_managers
 
+from napixd.managers import Manager
 from napixd.managers.actions import action
 from napixd.exceptions import ValidationError, NotFound
 from napixd.conf import Conf
-from napixd.services.collection_services import CollectionService, FirstCollectionService
-from napixd.services.service_requests import ServiceActionRequest, ServiceResourceRequest, ServiceCollectionRequest
+from napixd.services.collection_services import (
+    CollectionService,
+    FirstCollectionService,
+)
+from napixd.services.service_requests import (
+    ServiceActionRequest,
+    ServiceResourceRequest,
+    ServiceCollectionRequest,
+    ServiceManagedClassesRequest,
+)
 from napixd.services.wrapper import Wrapper
 
 
@@ -297,3 +306,16 @@ class TestServiceActionRequest(_Test):
 
         resp = self.sar.handle()
         self.assertEqual(resp, 234)
+
+
+class TestServiceManagedClassesRequest(unittest2.TestCase):
+    def setUp(self):
+        self.cs = mock.Mock(spec=CollectionService)
+        self.smcr = ServiceManagedClassesRequest(
+            ['p1', 'c2', 'gc3'], self.cs)
+
+    def test_get_manager(self):
+        GC = mock.Mock(spec=Manager)
+        self.cs.get_managers.return_value = ([], GC)
+        self.smcr.get_manager()
+        self.cs.get_managers.assert_called_once_with(['p1', 'c2'])
