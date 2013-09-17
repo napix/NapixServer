@@ -219,7 +219,17 @@ class ServiceManagedClassesRequest(ServiceRequest):
     is :obj:`False`.
     """
 
+    def get_manager(self):
+        # get the last path token because we may not just want to GET the
+        # resource
+        resource_id = self.path.pop()
+        manager = super(ServiceManagedClassesRequest, self).get_manager()
+        # verifie l'identifiant de la resource aussi
+        self.resource_id = manager.validate_id(resource_id)
+        return manager
+
     def get_callback(self):
+        self.manager.get_resource(self.resource_id)
         return self.service.collection.get_managed_classes
 
     def call(self):
