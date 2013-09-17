@@ -476,9 +476,13 @@ class Manager(object):
 
     def validate(self, resource_dict, original=None):
         # Create a new dict to populate with validated data
-        resource_dict = self._resource_fields.validate(resource_dict, original)
         if original is not None:
-            resource_dict = ChangeSet(self.serialize(original), resource_dict)
+            serialized = self.serialize(original)
+            resource_dict = self._resource_fields.validate(
+                resource_dict, serialized)
+            resource_dict = ChangeSet(serialized, resource_dict)
+        else:
+            resource_dict = self._resource_fields.validate(resource_dict, None)
         return self.validate_resource(resource_dict, original)
 
     def is_up_to_date(self):
