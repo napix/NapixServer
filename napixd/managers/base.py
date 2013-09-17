@@ -320,7 +320,7 @@ class Manager(object):
     .. attribute:: context
 
         The resource that spawned this manager.
-        It is an instance of :class:`napixd.services.wrapper.Wrapper`.
+        It is an instance of :class:`napixd.services.wrapper.ResourceWrapper`.
 
         `None` for the root managers.
 

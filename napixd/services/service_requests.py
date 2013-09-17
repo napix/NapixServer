@@ -12,7 +12,7 @@ import bottle
 from napixd.http import Response
 from napixd.exceptions import NotFound, ValidationError, Duplicate
 from napixd.services.methods import Implementation
-from napixd.services.wrapper import Wrapper
+from napixd.services.wrapper import ResourceWrapper
 
 
 __all__ = (
@@ -306,7 +306,7 @@ class ServiceResourceRequest(ServiceRequest):
         resource_id = manager.validate_id(resource_id)
         resource = manager.get_resource(resource_id)
 
-        self.resource = Wrapper(manager, resource_id, resource)
+        self.resource = ResourceWrapper(manager, resource_id, resource)
         return manager
 
     def check_datas(self):

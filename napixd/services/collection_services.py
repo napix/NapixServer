@@ -8,7 +8,7 @@ The Collections services handle the request on a specific manager.
 import sys
 
 from napixd.services.urls import URL
-from napixd.services.wrapper import Wrapper
+from napixd.services.wrapper import ResourceWrapper
 from napixd.services.plugins import ArgumentsPlugin
 from napixd.services.service_requests import (
     ServiceCollectionRequest,
@@ -303,7 +303,7 @@ class CollectionService(BaseCollectionService):
 
         id_ = manager.validate_id(path[-1])
         resource = manager.get_resource(id_)
-        wrapped = Wrapper(manager, id_, resource)
+        wrapped = ResourceWrapper(manager, id_, resource)
 
         managers_list.append((manager, wrapped))
 

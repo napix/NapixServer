@@ -22,7 +22,7 @@ from napixd.services.service_requests import (
     ServiceCollectionRequest,
     ServiceManagedClassesRequest,
 )
-from napixd.services.wrapper import Wrapper
+from napixd.services.wrapper import ResourceWrapper
 
 
 class _Test(unittest2.TestCase):
@@ -206,7 +206,7 @@ class TestServiceResourceRequestOther(_TestSRR):
             self.managed.unserialize.return_value,
             original=self.managed.get_resource.return_value)
         self.managed.modify_resource.assert_called_once_with(
-            Wrapper(self.managed, 'c2'), self.managed.validate.return_value)
+            ResourceWrapper(self.managed, 'c2'), self.managed.validate.return_value)
 
     def test_method_put_same_id(self):
         self._make('PUT', data={'lol': 1, 'blabla': 'ab'})

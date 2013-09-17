@@ -26,7 +26,7 @@ The signature of the decorated view is::
 self
     is the instance of the manager.
 resource
-    The :class:`napixd.services.wrapper.Wrapper` of the requested resource.
+    The :class:`napixd.services.wrapper.ResourceWrapper` of the requested resource.
     This resource is not filtered and additional fields not declared in
     :data:`~napixd.managers.Manager.resource_fields` are included.
 response

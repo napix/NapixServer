@@ -23,7 +23,7 @@ def action(fn):
     """
     Decorates a python function that will be an action
 
-    The action takes the :class:`resource<napixd.services.wrapper.Wrapper>`
+    The action takes the :class:`resource<napixd.services.wrapper.ResourceWrapper>`
     as its first argument.
 
     The decorator automatically discovers the mandatory and optional arguments

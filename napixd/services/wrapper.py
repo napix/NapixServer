@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__all__ = ('Wrapper', )
+__all__ = ('ResourceWrapper', )
 
 
 class cached_property(object):
@@ -16,7 +16,7 @@ class cached_property(object):
         return v
 
 
-class Wrapper(object):
+class ResourceWrapper(object):
     """
     This class encapsulate a *manager* and an *id*.
 
@@ -55,7 +55,7 @@ class Wrapper(object):
 
     def __eq__(self, other):
         return (
-            isinstance(other, Wrapper) and
+            isinstance(other, ResourceWrapper) and
             self.manager == other.manager and
             self.id == other.id
         )
