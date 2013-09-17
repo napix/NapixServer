@@ -155,6 +155,13 @@ class ManagerType(type):
         """
         return self._all_formats
 
+    def __repr__(self):
+        return 'Manager class {module}:{cls} `{name}`'.format(
+            module=self.__module__,
+            cls=self.__name__,
+            name=self.get_name(),
+        )
+
 
 class Manager(object):
 
@@ -372,6 +379,14 @@ class Manager(object):
 
         """
         self.context = wrapper
+
+    def __repr__(self):
+        return '<Manager {module}:{cls} `{name}` of "{context}">'.format(
+            module=self.__class__.__module__,
+            cls=self.__class__.__name__,
+            name=self.get_name(),
+            context=self.context
+        )
 
     def get_formatter(self, format_):
         # return the method instance of the formatter

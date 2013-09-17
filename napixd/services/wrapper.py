@@ -49,7 +49,7 @@ class Wrapper(object):
         return self.manager.get_resource(self.id)
 
     def __repr__(self):
-        return 'Resource {0} of {1} {2}'.format(
+        return 'Resource {0} of `{1}` {2}'.format(
             self.id, self.manager.get_name(),
             'loaded' if 'resource' in self.__dict__ else 'not loaded')
 
