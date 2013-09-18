@@ -101,6 +101,7 @@ class Setup(object):
         'auto',
         'conf',
         'time',  # Show duration
+        'logger',  # Ouput of the logs in the console is consistent
     ])
 
     LOG_FILE = get_file('log/napix.log')
@@ -131,6 +132,7 @@ Default options:
     auto:       Load from HOME/auto/ directory
     conf:       Load from the Napix.managers section of the config
     time:       Add custom header to show the duration of the request
+    logger:     Standardize the ouptut on the console accross servers
 
 Non-default:
     notify:     Enable the notification thread
@@ -366,11 +368,15 @@ Meta-options:
 
         Return the decorated application
         """
-        from napixd.plugins import PathInfoMiddleware, CORSMiddleware
+        from napixd.plugins import (PathInfoMiddleware,
+                                    CORSMiddleware,
+                                    LoggerMiddleware)
         if 'uwsgi' in self.options:
             application = PathInfoMiddleware(application)
         if 'cors' in self.options:
             application = CORSMiddleware(application)
+        if 'logger' in self.options:
+            application = LoggerMiddleware(application)
         return application
 
     def get_application(self):
@@ -404,6 +410,7 @@ Meta-options:
             'host': self.DEFAULT_HOST,
             'port': self.DEFAULT_PORT,
             'server': server,
+            'quiet': 'logger' in self.options,
         }
         if server == 'wsgiref':
             from napixd.wsgiref import WSGIRequestHandler
