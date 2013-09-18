@@ -132,7 +132,7 @@ class ServiceRequest(object):
         except NotFound, e:
             raise bottle.HTTPError(404, '`{0}` not found'.format(unicode(e)))
         except Duplicate, e:
-            raise bottle.HTTPError(409, '`{1}` already exists'.format(
+            raise bottle.HTTPError(409, '`{0}` already exists'.format(
                 unicode(e) or 'object'))
 
     def make_url(self, result):
