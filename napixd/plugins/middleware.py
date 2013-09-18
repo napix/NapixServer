@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Various WSGI compatible middlewares.
+"""
+
 import urlparse
 import urllib
 
 
 class PathInfoMiddleware(object):
+    """
+    Use the `REQUEST_URI` to generate `PATH_INFO` to avoid problems with
+    URL encoding.
+    """
 
     def __init__(self, application):
         self.application = application
@@ -16,6 +24,10 @@ class PathInfoMiddleware(object):
 
 
 class CORSMiddleware(object):
+    """
+    Reply to OPTIONS requests emitted by browsers
+    to check for Cross Origin Requests
+    """
 
     def __init__(self, application):
         self.application = application
