@@ -399,11 +399,16 @@ Meta-options:
         """
         Returns a dict of the options of :func:`bottle.run`
         """
-        return {
+        self.server = server = self.get_server()
+        server_options = {
             'host': self.DEFAULT_HOST,
             'port': self.DEFAULT_PORT,
-            'server': self.get_server(),
+            'server': server,
         }
+        if server == 'wsgiref':
+            from napixd.wsgiref import WSGIRequestHandler
+            server_options['handler_class'] = WSGIRequestHandler
+        return server_options
 
     def get_webclient(self):
         webclient_path = self.get_webclient_path()
