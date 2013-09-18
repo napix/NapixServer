@@ -18,7 +18,7 @@ from napixd.exceptions import ValidationError, ImproperlyConfigured
 from napixd.managers.managed_classes import ManagedClass
 from napixd.managers.resource_fields import ResourceFields
 from napixd.managers.actions import ActionProperty
-from napixd.managers.changeset import ChangeSet
+from napixd.managers.changeset import DiffDict
 
 __all__ = ('ManagerType', 'Manager', 'ManagerInterface')
 
@@ -480,7 +480,7 @@ class Manager(object):
             serialized = self.serialize(original)
             resource_dict = self._resource_fields.validate(
                 resource_dict, serialized)
-            resource_dict = ChangeSet(serialized, resource_dict)
+            resource_dict = DiffDict(serialized, resource_dict)
         else:
             resource_dict = self._resource_fields.validate(resource_dict, None)
         return self.validate_resource(resource_dict, original)

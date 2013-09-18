@@ -4,7 +4,7 @@
 import collections
 
 
-class ChangeSet(collections.Mapping):
+class DiffDict(collections.Mapping):
     """
     A mapping that keeps tracks of the changes between a source
     and a patch.
@@ -12,7 +12,7 @@ class ChangeSet(collections.Mapping):
     *orig* is a mapping that is used a source and *patches* is a mapping
     used as a destination.
 
-    >>> c = ChangeSet({'a': 1, 'c': 3}, {'a': 2, 'b': 2})
+    >>> c = DiffDict({'a': 1, 'c': 3}, {'a': 2, 'b': 2})
     >>> c['a'], c['b'], c.get('c')
     (2, 2, None)
     """
@@ -22,7 +22,7 @@ class ChangeSet(collections.Mapping):
         self.patches = patches
         self.merge = dict(orig)
         self.merge.update(patches)
-        for key in self.deleted_fields:
+        for key in self.deleted:
             del self.merge[key]
 
     def __iter__(self):
@@ -35,37 +35,37 @@ class ChangeSet(collections.Mapping):
         return len(self.merge)
 
     @property
-    def new_fields(self):
+    def added(self):
         """
         The :class:`set` of fields that are in *patches*
         and are not in *orig*.
 
-        >>> c = ChangeSet({'a': 1}, {'b': 2})
-        >>> c.new_fields
+        >>> c = DiffDict({'a': 1}, {'b': 2})
+        >>> c.added
         set(['b'])
         """
         return set(self.patches).difference(self.orig)
 
     @property
-    def deleted_fields(self):
+    def deleted(self):
         """
         The :class:`set` of fields that are no more in *patches*
         and are in *orig*.
 
-        >>> c = ChangeSet({'a': 1}, {'b': 2})
-        >>> c.deleted_fields
+        >>> c = DiffDict({'a': 1}, {'b': 2})
+        >>> c.deleted
         set(['a'])
         """
         return set(self.orig).difference(self.patches)
 
     @property
-    def changes(self):
+    def changed(self):
         """
         The :class:`set` of fields where the value was both in *orig* and
         *patches* and changed.
 
-        >>> c = ChangeSet({'a': 1, 'b': 2}, {'a': 2, 'b': 2})
-        >>> c.changes
+        >>> c = DiffDict({'a': 1, 'b': 2}, {'a': 2, 'b': 2})
+        >>> c.changed
         set(['a'])
         """
         keys = set(self.orig).intersection(self.merge)

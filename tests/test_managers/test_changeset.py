@@ -3,13 +3,13 @@
 
 import unittest
 
-from napixd.managers.changeset import ChangeSet
+from napixd.managers.changeset import DiffDict
 
 
-class TestChangeSet(unittest.TestCase):
+class TestDiffDict(unittest.TestCase):
 
     def setUp(self):
-        self.cs = ChangeSet({
+        self.cs = DiffDict({
             'changed': 1,
             'deleted': 2,
             'untouched': 3,
@@ -31,10 +31,10 @@ class TestChangeSet(unittest.TestCase):
         })
 
     def test_new_fields(self):
-        self.assertEqual(self.cs.new_fields, set(['new']))
+        self.assertEqual(self.cs.added, set(['new']))
 
     def test_deleted_fields(self):
-        self.assertEqual(self.cs.deleted_fields, set(['deleted']))
+        self.assertEqual(self.cs.deleted, set(['deleted']))
 
     def test_changed_fields(self):
-        self.assertEqual(self.cs.changes, set(['changed']))
+        self.assertEqual(self.cs.changed, set(['changed']))
