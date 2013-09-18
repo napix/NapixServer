@@ -12,6 +12,13 @@ from napixd.chrono import Chrono
 
 class TestChrono(unittest.TestCase):
 
+    def test_chrono_running(self):
+        chrono = Chrono()
+        with chrono:
+            self.assertAlmostEquals(chrono.total, .0, places=2)
+            time.sleep(.1)
+            self.assertAlmostEquals(chrono.total, .1, places=2)
+
     def test_chrono(self):
         chrono = Chrono()
         with chrono:

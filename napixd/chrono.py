@@ -10,7 +10,6 @@ class Chrono(object):
 
     >>> with Chrono() as chrono:
     ...     time.sleep(1)
-    ... 
     >>> print(chrono)
     <Chrono 1>
     """
@@ -30,6 +29,8 @@ class Chrono(object):
         """
         The total time spend inside the code section in seconds.
         """
+        if self.end is None:
+            return time.time() - self.start
         return self.end - self.start
 
     def __enter__(self):
