@@ -45,25 +45,6 @@ class ReadOnlyDictManager(Manager):
         """
         Load: Return the list of the resources managed by this manager
         take the context that created this manager instance as argument
-
-        example:
-
-        >>> class CountryManager(ReadOnlyDictManager):
-        ...     def load(self, context):
-        ...         f=open('/'+context['galaxy']+'/'+parent['planet'],'r')
-        ...         countries = []
-        ...         for x in f.readline():
-        ...             countries.append(x)
-        ...         return x
-
-        GET /worlds/earth/france
-        >>> context = WorldManager().get_resource('earth')
-        >>> context
-        World { 'name':'planet', 'galaxy': 'Milky Way'}
-        >>> earth_countries = CountryManager(context)
-        >>> earth_countries.get_resource('france')
-        >>> earth_countries.load({'name':'earth','galaxy':'Milky Way'})
-
         """
         raise NotImplementedError('load')
 
@@ -111,19 +92,10 @@ class DictManager(ReadOnlyDictManager):
         # lock to avoid race conditions
         self.resource_lock = Lock()
 
-    def save(self, context, content):
+    def save(self, context, resources):
         """
-        Save the ressources after they have been altered by the user's request.
-        Idempotent methods (GET,HEAD) don't trigger the save
-
-        >>> class CountryManager(ListManager):
-        >>>     def save(self, context, ressources):
-        >>>         f=open('/'+context['galaxy']+'/'+parent['planet'],'w')
-        >>>         countries = []
-        >>>         for x in resources:
-        >>>             countries.write(x)
-        >>>             countries.write('\n')
-
+        Save the resources after they have been altered by the user's request.
+        Idempotent methods (GET, HEAD) don't trigger :meth:`save`
         """
         raise NotImplementedError('save')
 
@@ -138,7 +110,7 @@ class DictManager(ReadOnlyDictManager):
 
     def end_request(self, request):
         """
-        overrides the context's method to save the ressources after every request
+        overrides the context's method to save the resources after every request
         that may have altered the datas
         """
         if request.method not in ('GET', 'HEAD'):
