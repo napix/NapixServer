@@ -9,6 +9,7 @@ import json
 import logging
 
 import bottle
+from napix.exceptions import HTTPError
 
 import napixd
 
@@ -22,6 +23,50 @@ class ExceptionsCatcher(object):
         self.show_errors = show_errors
         self.napix_path = os.path.dirname(napixd.__file__)
         self.pprint = 4 if pprint else None
+
+    def extract_error(self, error):
+        a, b, last_traceback = sys.exc_info()
+        method = bottle.request.method
+        path = bottle.request.path
+        self.logger.error('%s on %s failed with %s (%s)',
+                          method, path, error.__class__.__name__, str(error))
+        res = {
+            'request': {
+                'method': method,
+                'path': path,
+                'query': dict(bottle.request.GET),
+            }
+        }
+        res.update(self.traceback_info(last_traceback))
+        if isinstance(error, HTTPError):
+            res.update(self.remote_exception(error))
+        res.update(self.exception_details(error))
+        return res
+
+    def remote_exception(self, error):
+        return {
+            'remote_call': unicode(error.request),
+            'remote_error': error.remote_error or str(error)
+        }
+
+    def traceback_info(self, last_traceback):
+        all_tb = [dict(zip(('filename', 'line', 'in', 'call'), x))
+                  for x in traceback.extract_tb(last_traceback)]
+        extern_tb = [x for x in all_tb
+                     if not x['filename'].startswith(self.napix_path)]
+        filename, lineno, function_name, text = traceback.extract_tb(
+            last_traceback)[-1]
+        return {
+            'traceback': extern_tb or all_tb,
+            'filename': filename,
+            'line': lineno,
+        }
+
+    def exception_details(self, error):
+        return {
+            'error_text': str(error),
+            'error_class': error.__class__.__name__,
+        }
 
     def apply(self, callback, route):
         """
@@ -38,31 +83,9 @@ class ExceptionsCatcher(object):
             except bottle.HTTPResponse, e:
                 return e
             except Exception, e:
-                method = bottle.request.method
-                path = bottle.request.path
-                a, b, last_traceback = sys.exc_info()
-                filename, lineno, function_name, text = traceback.extract_tb(
-                    last_traceback)[-1]
+                res = self.extract_error(e)
                 if self.show_errors:
                     traceback.print_exc()
-                all_tb = [dict(zip(('filename', 'line', 'in', 'call'), x))
-                          for x in traceback.extract_tb(last_traceback)]
-                extern_tb = [x for x in all_tb
-                             if not x['filename'].startswith(self.napix_path)]
-                self.logger.error(
-                    '%s on %s failed with %s (%s)', method, path,
-                    e.__class__.__name__, str(e))
-                res = {
-                    'request': {
-                        'method': method,
-                        'path': path
-                    },
-                    'error_text': str(e),
-                    'error_class': e.__class__.__name__,
-                    'filename': filename,
-                    'line': lineno,
-                    'traceback': extern_tb or all_tb,
-                }
                 return bottle.HTTPResponse(
                     json.dumps(res, indent=self.pprint),
                     status=500,

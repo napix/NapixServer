@@ -18,7 +18,7 @@ setup(
     install_requires=[
         'bottle>=0.11',
         'permissions>=0.1',
-        'napix>=0.2',
+        'napix>=0.4',
     ],
     include_package_data=True,
     scripts=[
@@ -26,6 +26,6 @@ setup(
     ],
     dependency_links=[
         'http://builds.enix.org/napix/permissions-latest.tar.gz#egg=permissions-0.1',
-        'http://builds.enix.org/napix/napix-latest.tar.gz#egg=napix-0.2',
+        'http://builds.enix.org/napix/napix-latest.tar.gz#egg=napix-0.4',
     ],
 )
