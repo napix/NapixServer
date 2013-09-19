@@ -26,7 +26,7 @@ class _TestDM(unittest2.TestCase):
         }
         if attrs:
             values.update(attrs)
-        Manager = type(kls)('RODM', (kls, ), values)
+        Manager = type(kls)(kls.__name__, (kls, ), values)
         self.manager = Manager(self.parent)
 
 
@@ -76,6 +76,8 @@ class TestDictManager(_TestDM):
             'save': spy_save,
             'generate_new_id': spy_gen
         })
+        self.manager.generate_id = mock.Mock(
+            side_effect=self.manager.generate_id)
 
     def test_create_resource(self):
         rd = mock.Mock()
@@ -83,6 +85,18 @@ class TestDictManager(_TestDM):
         self.spy_gen.assert_called_once_with(rd)
 
         self.assertEqual(new_id, self.spy_gen.return_value)
+        self.manager.generate_id.assert_called_once_with(rd, None)
+
+    def test_generate_id_new(self):
+        rd = mock.Mock()
+        r = self.manager.generate_id(rd, None)
+        self.assertEqual(r, self.spy_gen.return_value)
+
+    def test_generate_id(self):
+        rd = mock.Mock()
+        orig = mock.Mock()
+        r = self.manager.generate_id(rd, orig)
+        self.assertEqual(r, orig.id)
 
     def test_create_duplicate(self):
         rd = mock.Mock()
@@ -98,11 +112,26 @@ class TestDictManager(_TestDM):
         self.assertTrue('one' not in self.manager.resources)
 
     def test_modify_resource(self):
-        self.manager.modify_resource(
+        rw = ResourceWrapper(self.manager, 'one', self.resources['one'])
+        rd = {
+            'german': 'Kartofel'
+        }
+        r = self.manager.modify_resource(rw, rd)
+        self.assertEqual(self.resources['one']['german'], 'Kartofel')
+        self.manager.generate_id.assert_called_once_with(rd, rw)
+        self.assertEqual(r, 'one')
+
+    def test_modify_resource_change_id(self):
+        self.manager.generate_id.side_effect = None
+        self.manager.generate_id.return_value = 'seven'
+        r = self.manager.modify_resource(
             ResourceWrapper(self.manager, 'one', self.resources['one']), {
                 'german': 'Kartofel'
             })
-        self.assertEqual(self.resources['one']['german'], 'Kartofel')
+
+        self.assertFalse('one' in self.manager.resources)
+        self.assertEqual(self.manager.resources['seven']['german'], 'Kartofel')
+        self.assertEqual(r, 'seven')
 
     def test_modify_not_exists(self):
         self.assertRaises(NotFound, self.manager.modify_resource,

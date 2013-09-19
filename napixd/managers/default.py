@@ -94,14 +94,31 @@ class DictManager(ReadOnlyDictManager):
 
     def save(self, context, resources):
         """
-        Save the resources after they have been altered by the user's request.
+        Saves the resources after they have been altered by the user's request.
         Idempotent methods (GET, HEAD) don't trigger :meth:`save`
         """
         raise NotImplementedError('save')
 
+    def generate_id(self, resource_dict, original):
+        """
+        Computes the id of a resource.
+
+        *resource_dict* is the resource as returned by :meth:`validate`.
+        *original* is either `None` if the resource is created or a
+        :class:`~napixd.service.wrapper.ResourceWrapper`
+        with the resource being updated.
+
+        By default, this method calls :meth:`generate_new_id` on creation requests,
+        and returns :class:`~napixd.service.wrapper.ResourceWrapper.id`
+        on update requests.
+        """
+        if original is None:
+            return self.generate_new_id(resource_dict)
+        return original.id
+
     def generate_new_id(self, resource_dict):
         """
-        Generate a new identifier for the resource dict given
+        Generates a new identifier for the resource dict given
         It must be overriden by the sub classes
         """
         raise NotImplementedError('generate_new_id')
@@ -123,13 +140,17 @@ class DictManager(ReadOnlyDictManager):
         self.resources[resource_id] = resource_dict
 
     def modify_resource(self, resource, resource_dict):
+        new_id = self.generate_id(resource_dict, resource)
         with self.resource_lock:
             resource.resource.update(resource_dict)
-            self._set_resource(resource.id, resource.resource)
+            if new_id != resource.id:
+                del self.resources[resource.id]
+            self._set_resource(new_id, resource.resource)
+        return new_id
 
     def create_resource(self, resource_dict):
         with self.resource_lock:
-            resource_id = self.generate_new_id(resource_dict)
+            resource_id = self.generate_id(resource_dict, None)
             if resource_id in self.resources:
                 raise Duplicate(resource_id)
             self._set_resource(resource_id, resource_dict)
