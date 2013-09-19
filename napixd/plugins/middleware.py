@@ -47,31 +47,54 @@ class CORSMiddleware(object):
         return self.application(environ, start_response)
 
 
-class LoggerMiddleware(object):
-    def __init__(self, application):
+class LoggedRequest(object):
+    """
+    Objects returned by :class:`LoggerMiddleware`.
+
+    Keeps the info to log.
+    """
+    logger = logging.getLogger('Napix.requests')
+
+    def __init__(self, start_response, application, environ):
+        self._start_response = start_response
         self.application = application
-        self.logger = logging.getLogger('Napix.requests')
+        self.environ = environ
 
-    def __call__(self, environ, orig_start_response):
+    def start_response(self, status, headers):
+        self.status = status
+        self._start_response(status, headers)
+        del self._start_response
+
+    @property
+    def request_line(self):
+        request_line = self.environ['PATH_INFO']
+        if self.environ.get('QUERY_STRING'):
+            request_line += '?' + self.environ['QUERY_STRING']
+        return request_line
+
+    def __iter__(self):
         size = 0
-        status = ''
-
-        def start_response(orig_status, headers):
-            global status
-            status = orig_status
-            orig_start_response(status, headers)
-
         with Chrono() as chrono:
-            for x in self.application(environ, start_response):
+            for x in self.application(self.environ, self.start_response):
                 size += len(x)
                 yield x
 
         self.logger.info('%s - - [%s] "%s %s" %s %s %s',
-                         environ.get('REMOTE_ADDR', '-'),
+                         self.environ.get('REMOTE_ADDR', '-'),
                          datetime.datetime.now().replace(microsecond=0),
-                         environ['REQUEST_METHOD'],
-                         environ['PATH_INFO'],
-                         status.split(' ')[0],
+                         self.environ['REQUEST_METHOD'],
+                         self.request_line,
+                         self.status.split(' ')[0],
                          size,
                          chrono.total
                          )
+
+
+def LoggerMiddleware(application):
+    """
+    Middleware that logs requests, in the combined log format
+    with the body's size and the time.
+    """
+    def inner_logger(environ, start_response):
+        return LoggedRequest(start_response, application, environ)
+    return inner_logger
