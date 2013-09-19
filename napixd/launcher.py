@@ -126,7 +126,6 @@ Default options:
     auth:       The authentication component
     reload:     The reloader events attachement on signal, page and inotify
     webclient:  The web interface accessible on /_napix_js/
-    executor:   Launch the executor controler
     gevent:     Use gevent as the wsgi interface
     uwsgi:      Use with uwsgi
     auto:       Load from HOME/auto/ directory
