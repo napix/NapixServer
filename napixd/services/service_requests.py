@@ -292,7 +292,7 @@ class ServiceResourceRequest(ServiceRequest):
     def call(self):
         if self.method == 'PUT':
             return self.callback(self.resource, self.data)
-        elif self.method == 'GET':
+        elif self.method in ('GET', 'HEAD'):
             return self.resource.resource
         else:
             return self.callback(self.resource)

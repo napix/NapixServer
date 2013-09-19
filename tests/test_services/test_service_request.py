@@ -159,6 +159,14 @@ class TestServiceResourceRequest(_TestSRR):
         self.Managed.return_value.get_resource.return_value = {
             'lol': 1, 'blabla': 'ping'}
 
+    def test_head(self):
+        self.manager.validate_id.side_effect = lambda y: y
+        self.managed.validate_id.side_effect = lambda y: y
+        s = self.srr.handle()
+        self.assertEqual(s, None)
+        self.manager.get_resource.assert_called_once_with('p1')
+        self.managed.get_resource.assert_called_once_with('c2')
+
     def test_get(self):
         self.manager.validate_id.side_effect = lambda y: y
         self.managed.validate_id.side_effect = lambda y: y
