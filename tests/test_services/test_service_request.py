@@ -117,8 +117,30 @@ class TestCollectionServiceRequestOther(_TestSCR):
         self._make('GET', GET={
             'getall': ''
         })
+        self.managed.get_all_resources.return_value = []
         self.scr.handle()
         self.managed.get_all_resources.assert_called_once_with()
+
+    def test_serialize(self):
+        self._make('GET', GET={
+            'getall': ''
+        })
+        self.managed.get_all_resources.return_value = [
+            (1, {'lol': 1, 'blabla': 'ping'}),
+            (2, {'lol': 2, 'blabla': 'pong'}),
+        ]
+        resp = self.scr.handle()
+        self.assertEqual(resp, {
+            '/parent/p1/child/1': {
+                'lol': 1,
+                'blabla': 'ping'
+            },
+            '/parent/p1/child/2': {
+                'lol': 2,
+                'blabla': 'pong'
+            },
+        })
+
 
     def test_method_create(self):
         self._make('POST', data={

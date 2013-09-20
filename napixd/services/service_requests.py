@@ -204,6 +204,13 @@ class ServiceCollectionRequest(ServiceRequest):
         elif self.method == 'POST':
             url = self.make_url(result)
             return bottle.HTTPError(201, None, Location=url)
+        elif self.method.startswith('getall'):
+            if not isinstance(result, collections.Iterable):
+                raise ValueError(
+                    'get_all_resources returned a non-iterable object')
+            return dict(
+                (self.make_url(id), resource)
+                for id, resource in result)
         elif self.method == 'GET' or self.method == 'filter':
             if not isinstance(result, collections.Iterable):
                 raise ValueError(
