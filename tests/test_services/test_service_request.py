@@ -160,6 +160,7 @@ class TestServiceResourceRequest(_TestSRR):
             'lol': 1, 'blabla': 'ping'}
 
     def test_head(self):
+        self._make('HEAD')
         self.manager.validate_id.side_effect = lambda y: y
         self.managed.validate_id.side_effect = lambda y: y
         s = self.srr.handle()
