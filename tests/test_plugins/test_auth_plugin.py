@@ -195,10 +195,9 @@ class TestAAAPluginDenied(AAAPluginBase):
         self.assertEqual(response.body, 'Access Denied')
 
     def test_deny_commont_root(self):
-        self.AAAchecker.return_value.authserver_check.return_value = Fail(
-            ['/a/', '/b/'])
+        self.AAAchecker.return_value.authserver_check.return_value = Fail(['/a/', '/b/'])
         response = self._do_request(
-            'GET', '/test', auth='method=GET&path=/test&host=napix.test:sign')
+            'GET', '/', auth='method=GET&path=/&host=napix.test:sign')
         self.assertEqual(response.status_code, 203)
         self.assertEqual(response.body, ['/a/', '/b/'])
 
@@ -246,7 +245,7 @@ class TestAAACheckerSuccess(_TestAAAChecker):
         self.assertEqual(check.content, None)
 
     def test_generate_permset(self):
-        self.response.read.return_value = '[ { "host": "*", "methods" : [ "GET"], "path" : "/a/b" } ]'
+        self.response.read.return_value = '[{"host":"*","methods":["GET"],"path":"/a/b"}]'
         self.response.getheader.return_value = 'application/json'
         check = self.checker.authserver_check({'path': '/test'})
 

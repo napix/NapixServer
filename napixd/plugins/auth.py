@@ -6,7 +6,6 @@ import httplib
 import json
 import socket
 import urlparse
-import urllib
 import functools
 import threading
 
@@ -14,28 +13,17 @@ from napixd.conf import Conf
 from napixd.chrono import Chrono
 import bottle
 
-try:
-    from permissions.models import Perm
-    from permissions.managers import PermSet
-except ImportError:
-    class Perm(object):
-
-        def __init__(self, host, methods, path):
-            pass
-
-    class PermSet(object):
-
-        def __init__(self, perms):
-            logging.warning('permissions is not installed')
-
-        def filter_paths(self, service, paths):
-            return paths
+from permissions.models import Perm
+from permissions.managers import PermSet
 
 
 class Check(object):
 
     def __init__(self, content):
         self.content = content
+
+    def __repr__(self):
+        return '<{0} {1}>'.format(self.__class__.__name__, self.content)
 
 
 class Success(Check):
@@ -55,8 +43,11 @@ class Success(Check):
 class Fail(Check):
 
     def __init__(self, content):
+        self.raw = content
         if not content or not isinstance(content, list):
             content = None
+        else:
+            content = PermSet(Perm('*', '*', p) for p in content)
         super(Fail, self).__init__(content)
 
     def __nonzero__(self):
@@ -200,13 +191,7 @@ class AAAPlugin(BaseAAAPlugin):
 
     def authserver_check(self, content):
         content['host'] = self.service
-        check = self.checker.authserver_check(content)
-        if not check:
-            if check.content is None:
-                raise self.reject('Access Denied')
-            else:
-                raise bottle.HTTPError(203, check.content)
-        return check
+        return self.checker.authserver_check(content)
 
     def apply(self, callback, route):
         @functools.wraps(callback)
@@ -222,9 +207,20 @@ class AAAPlugin(BaseAAAPlugin):
 
             path = bottle.request.path
             method = bottle.request.method
+            is_collection_request = path.endswith('/')
+
+            if not check:
+                if (check.content and is_collection_request and
+                        method in ('GET', 'HEAD')):
+                    if not any('*' in path for path in check.raw):
+                        return bottle.HTTPError(203, check.raw)
+                    # The request is a collection and the central
+                    # returned a list of authorized paths.
+                else:
+                    raise self.reject('Access Denied')
 
             resp = callback(*args, **kwargs)
-            if method == 'GET' and path.endswith('/') and check.content:
+            if method == 'GET' and is_collection_request and check.content:
                 permissions = check.content
                 allowed_paths = permissions.filter_paths(self.service, resp)
                 self.logger.debug('Filtered %s/%s urls',
@@ -232,9 +228,7 @@ class AAAPlugin(BaseAAAPlugin):
                 if isinstance(resp, list):
                     return list(allowed_paths)
                 elif isinstance(resp, dict):
-                    return dict((k, resp[k])
-                                for k in resp
-                                if k in allowed_paths)
+                    return dict((k, resp[k]) for k in resp if k in allowed_paths)
             return resp
 
             # actually run the callback
