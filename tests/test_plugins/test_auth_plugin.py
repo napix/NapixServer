@@ -96,19 +96,39 @@ class TestAAAPluginSuccess(AAAPluginBase):
         self.success.assert_called_once_with()
         self.assertEqual(resp, self.success.return_value)
 
+    def test_success_filter_get_all(self):
+        pset = mock.Mock(spec=PermSet)
+        pset.filter_paths.return_value = ['/a/d']
+        self.AAAchecker.return_value.authserver_check.return_value = mock.Mock(
+            spec=Success, content=pset)
+        self.success.return_value = {
+            '/a/b': {'a': 1},
+            '/a/d': {'a': 2},
+        }
+        resp = self._do_request(
+            'GET', '/', auth='method=GET&path=/&host=napix.test:sign')
+
+        self.success.assert_called_once_with()
+        self.assertEqual(resp, {'/a/d': {'a': 2}})
+        pset.filter_paths.assert_called_once_with(
+            'org.napix.test', {
+                '/a/b': {'a': 1},
+                '/a/d': {'a': 2},
+            })
+
     def test_success_filter(self):
         pset = mock.Mock(spec=PermSet)
         pset.filter_paths.return_value = ['/a/d']
         self.AAAchecker.return_value.authserver_check.return_value = mock.Mock(
             spec=Success, content=pset)
-        self.success.return_value = ['/a/b', '/a/c']
+        self.success.return_value = ['/a/b', '/a/d']
         resp = self._do_request(
             'GET', '/', auth='method=GET&path=/&host=napix.test:sign')
 
         self.success.assert_called_once_with()
         self.assertEqual(resp, ['/a/d'])
         pset.filter_paths.assert_called_once_with(
-            'org.napix.test', ['/a/b', '/a/c'])
+            'org.napix.test', ['/a/b', '/a/d'])
 
     def testBadHost(self):
         response = self._do_request(

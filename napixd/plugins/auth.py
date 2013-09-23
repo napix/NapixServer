@@ -226,9 +226,15 @@ class AAAPlugin(BaseAAAPlugin):
             resp = callback(*args, **kwargs)
             if method == 'GET' and path.endswith('/') and check.content:
                 permissions = check.content
-                self.logger.debug('Filtering %s urls', len(resp))
-                resp = list(permissions.filter_paths(self.service, resp))
-                self.logger.debug('Filtered %s urls', len(resp))
+                allowed_paths = permissions.filter_paths(self.service, resp)
+                self.logger.debug('Filtered %s/%s urls',
+                                  len(allowed_paths), len(resp))
+                if isinstance(resp, list):
+                    return list(allowed_paths)
+                elif isinstance(resp, dict):
+                    return dict((k, resp[k])
+                                for k in resp
+                                if k in allowed_paths)
             return resp
 
             # actually run the callback
