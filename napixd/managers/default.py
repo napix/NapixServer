@@ -247,3 +247,72 @@ class FileManager(DictManager):
         Write the content to the file stream given
         """
         raise NotImplementedError('write')
+
+
+class ReadOnlyUniqueManager(Manager):
+    """
+    Manager for an unique resource.
+
+    For example ``/my/self`` in the auth server.
+    The manager contains only one resource named ``self``.
+    Any other request raises a :exc:`napixd.exceptions.NotFound`
+
+    The object is not updatable, deletable.
+    The manager does not support creation.
+    """
+
+    @property
+    def NAME(self):
+        """
+        The expected `id`.
+
+        By default it is computed from
+        :meth:`napixd.managers.base.Manager.get_name`.
+        """
+        return self.__class__.get_name()
+
+    def list_resource(self):
+        """
+        Returns a list containing only :attr:`NAME` as its the only valid id.
+        """
+        return [self.NAME]
+
+    def load(self, context):
+        """
+        Loads the resource from the `context`.
+
+        It musts return the only resource as a dict.
+        The context is the :attr:`napixd.managers.base.Manager.context`
+        """
+        raise NotImplementedError('load')
+
+    def get_resource(self, id):
+        """
+        Get the resource from :meth:`load`
+        """
+        if not id == self.NAME:
+            raise NotFound('There is only one resource `{0}`'.format(self.name))
+        return self.load(self.context)
+
+
+class UniqueManager(ReadOnlyUniqueManager):
+    """
+    Like the :class:`ReadOnlyUniqueManager` but also implements
+    the modifications methods.
+    """
+    def save(self, context, resource):
+        """
+        Save the modified resource.
+
+        The *context* is the same :attr:`napixd.managers.base.Manager.context`
+        passed to :meth:`ReadOnlyUniqueManager.load`.
+        """
+        raise NotImplementedError('save')
+
+    def modify_resource(self, wrapper, resource_dict):
+        """
+        Modify the loaded resource.
+        """
+        resource = wrapper.resource
+        resource.update(resource_dict)
+        self.save(self.context, resource)
