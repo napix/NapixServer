@@ -420,6 +420,7 @@ Meta-options:
         webclient_path = self.get_webclient_path()
         if not webclient_path:
             logger.warning('No webclient path found')
+            return
 
         from napixd.webclient import WebClient
         logger.info('Using %s as webclient', webclient_path)
