@@ -10,6 +10,7 @@ The root of the napix project.
 """
 
 import os
+import sys
 
 HOME = ''
 
@@ -30,13 +31,17 @@ def find_home(name, file):
         return HOME
 
     package_dir = os.path.dirname(file)
-    site_package = os.path.realpath(os.path.join(os.path.dirname(file), '..'))
+    site_package = os.path.realpath(os.path.join(package_dir, '..'))
+    installed_in_a_venv = 'site-packages' in package_dir
+    running_in_venv = hasattr(sys, 'real_prefix')
+    # sys has a real_prefix attribute if there is no virtualenv
 
-    if 'site-packages' in package_dir:
-        # installed in a VENV
-        HOME = os.path.join(os.path.expanduser('~'), '.' + name)
-    else:
+    if running_in_venv and not installed_in_a_venv:
         HOME = site_package
+    elif running_in_venv:
+        HOME = sys.prefix
+    else:
+        HOME = os.path.join(os.path.expanduser('~'), '.' + name)
     return HOME
 
 find_home('napixd', __file__)
