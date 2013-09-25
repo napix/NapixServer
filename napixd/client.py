@@ -10,7 +10,7 @@ It uses the :mod:`napix` to do requests.
 import logging
 
 from napix.connection import Connection, HTTPError
-from napix.authenticators import LoginAuthentifier, AnonAuthentifier
+from napix.authenticators import LoginAuthenticator, AnonAuthenticator
 
 
 logger = logging.getLogger('Napix.Client')
@@ -19,23 +19,17 @@ logger = logging.getLogger('Napix.Client')
 class Client(object):
     """
     Helper class for :class:`napix.connection.Connection` and
-    :class:`napix.authenticators.AnonAuthentifier` and
-    :class:`napix.authenticators.LoginAuthentifier`.
+    :class:`napix.authenticators.AnonAuthenticator` and
+    :class:`napix.authenticators.LoginAuthenticator`.
 
     *host* is the destination host and *credentials* a dict containing
     ``login`` and ``key``.
-
-    If *noauth* is true, a :class:`napix.authenticators.AnonAuthentifier`
-    is used.
     """
 
-    def __init__(self, host, credentials=None, noauth=False):
+    def __init__(self, host, credentials=None, authentifier=None):
         self.host = host
-        if noauth:
-            authenticator = AnonAuthentifier()
-        else:
-            authenticator = LoginAuthentifier(
-                credentials['login'], credentials['key'])
+        authenticator = LoginAuthenticator(
+            credentials['login'], credentials['key'])
 
         self.conn = Connection(host, authenticator, follow=False)
 
