@@ -122,6 +122,7 @@ class BaseDjangoModelManager(Manager):
     __metaclass__ = DjangoModelManagerMeta
 
     queryset = None
+    model = None
 
     def get_queryset(self):
         return self.queryset.all()
@@ -131,7 +132,8 @@ class BaseDjangoModelManager(Manager):
         """
         Returns the lower case model name.
         """
-        return cls.name or cls.model._meta.name.lower()
+        return (cls.name or cls.model and cls.model._meta.name.lower() or
+                super(BaseDjangoModelManager, cls).get_name())
 
 
 class DjangoReadOperations(AttrResourceMixin, object):
