@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys
+import os
+
+try:
+    import napixd
+except ImportError:
+    path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+    sys.path.append(path)
+
+
+from napixd.templates import run
+
+if __name__ == '__main__':
+    run()

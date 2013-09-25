@@ -1,2 +1,3 @@
 include napixd/conf/settings.json
+recursive-include napixd/templates *.tmpl
 recursive-include napixd/web *

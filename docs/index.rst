@@ -23,6 +23,7 @@ Contents:
     extensions
     using-django
     thread_manager
+    templates
     reference/modules
 
 

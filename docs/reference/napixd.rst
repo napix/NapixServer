@@ -89,6 +89,13 @@ Daemon
 Utils
 =====
 
+:mod:`napixd.templates`
+-----------------------
+
+.. automodule:: napixd.templates
+   :members:
+
+
 :mod:`napixd` Package
 ---------------------
 
