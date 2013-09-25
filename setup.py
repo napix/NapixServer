@@ -26,6 +26,6 @@ setup(
     ],
     dependency_links=[
         'http://builds.enix.org/napix/permissions-latest.tar.gz#egg=permissions-1.4',
-        'http://builds.enix.org/napix/napix-latest.tar.gz#egg=napix-0.4',
+        'http://builds.enix.org/napix/napix-latest.tar.gz#egg=napix-0.5',
     ],
 )
