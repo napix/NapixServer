@@ -10,7 +10,7 @@ It uses the :mod:`napix` to do requests.
 import logging
 
 from napix.connection import Connection, HTTPError
-from napix.authenticators import LoginAuthenticator, AnonAuthenticator
+from napix.authenticators import LoginAuthenticator
 
 
 logger = logging.getLogger('Napix.Client')
@@ -19,7 +19,6 @@ logger = logging.getLogger('Napix.Client')
 class Client(object):
     """
     Helper class for :class:`napix.connection.Connection` and
-    :class:`napix.authenticators.AnonAuthenticator` and
     :class:`napix.authenticators.LoginAuthenticator`.
 
     *host* is the destination host and *credentials* a dict containing
