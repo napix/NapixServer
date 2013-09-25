@@ -85,7 +85,7 @@ def run():
         sys.stdout.write('\n')
         return 0
 
-    if len(args) != 1:
+    if len(args) == 1:
         template, = args
     else:
         template = 'default'
