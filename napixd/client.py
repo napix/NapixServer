@@ -13,7 +13,17 @@ from napix.connection import Connection, HTTPError
 from napix.authenticators import LoginAuthenticator
 
 
+__all__ = ('Client', )
+
 logger = logging.getLogger('Napix.Client')
+
+
+def coerce_authenticator(authenticator):
+    if isinstance(authenticator, dict):
+        authenticator = LoginAuthenticator(
+            authenticator['login'],
+            authenticator['key'])
+    return authenticator
 
 
 class Client(object):
@@ -25,11 +35,9 @@ class Client(object):
     ``login`` and ``key``.
     """
 
-    def __init__(self, host, credentials=None, authentifier=None):
+    def __init__(self, host, authenticator):
         self.host = host
-        authenticator = LoginAuthenticator(
-            credentials['login'], credentials['key'])
-
+        authenticator = coerce_authenticator(authenticator)
         self.conn = Connection(host, authenticator, follow=False)
 
     def request(self, method, url, body='', headers=None):

@@ -11,25 +11,24 @@ The :mod:`client` proposes facilities to run requests on other Napix servers.
 The request requires a :class:`napix.connection.Connection` to an host and
 an :mod:`authentication provider<napix.authenticators>`.
 
-The :class:`helper class Client<client.Client>` provides a constructor
-for common scenarios with the classic authentication method by *login* and *key*.
+The helper class :class:`client.Client` is provided to manages this connection.
+The class takes a destination host and an authenticator.
+Its method :meth:`client.Client.request` send requests to the destination.
+
+>>> from napixd.client import Client
+>>> from napix.authenticators import TokenIdentifier
+>>> c = Client('server.napix.nx',
+...         authenticator=TokenIdentifier('de72457df438272d8d05a0823289084811813c07'))
+>>> resp = c.request('GET', '/')
+>>> resp.body
+['/abc', '/captain']
+
+Common scenarios with the classic authentication method by *login* and *key*,
+are handled directly.
 
 >>> from napixd.client import Client
 >>> c = Client('server.napix.nx', {'login': 'root', 'key': 'toor'})
 >>> c.request('GET', '/')
-
-Using the client
-================
-
-The raw client :class:`napix.connection.Connection` may be used directly.
-The exception mechanism will still work.
-
->>> from napix.connection import Connection
->>> from napix.authenticators import TokenIdentifier
->>> c = Client('server.napix.nx', TokenIdentifier('de72457df438272d8d05a0823289084811813c07'))
->>> resp = c.request('GET', '/')
->>> resp.body
-['/abc', '/captain']
 
 Errors
 ======
