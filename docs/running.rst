@@ -1,3 +1,5 @@
+.. _options:
+
 ======================================
 Launching and running the Napix Server
 ======================================
@@ -89,7 +91,8 @@ Default options
     Use with uwsgi
 
 :auto:
-    Automatically detect and :class:`loads<napixd.loader.AutoImporter>` from :file:`HOME/auto/` directory
+    Automatically detect and :class:`loads<napixd.loader.AutoImporter>` from :file:`HOME/auto/` directory.
+    See :ref:`auto-loading`
 
 :conf:
     :class:`Load<napixd.loader.ConfImporter>` from the :ref:`conf.napix.managers` section of the config

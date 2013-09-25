@@ -13,6 +13,7 @@ Contents:
 
     quickstart
     deployment
+    auto-loading
     running
     resources
     first_step
