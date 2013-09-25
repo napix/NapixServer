@@ -147,8 +147,8 @@ class ServiceRequest(object):
 
 class ServiceCollectionRequest(ServiceRequest):
     """
-    ServiceCollectionRequest is an implementation of ServiceRequest specified
-    for Collection requests (urls ending with /)
+    ServiceCollectionRequest is an implementation of :class:`ServiceRequest`
+    specialized for Collection requests (urls ending with /)
     """
     # association de verbes HTTP aux methodes python
     METHOD_MAP = {

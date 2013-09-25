@@ -275,7 +275,7 @@ Meta-options:
     def get_loaders(self):
         """
         Returns an array of :class:`napixd.loader.Importer`
-        used to find the the managers.
+        used to find the managers.
         """
         if 'test' in self.options:
             from napixd.loader import FixedImporter

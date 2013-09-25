@@ -4,8 +4,8 @@
 """
 Manager :
     - manages a set of resources
-    - does it by defining create/delete/modify methods
-    that act on those resourcess
+    - does it by defining create/delete/modify methods that act on those resourcess
+
 Ressource :
     - MUST be a dict (or an emulation thereof) that hold a set of properties
     - They MAY have actions
@@ -123,11 +123,9 @@ class ManagerType(type):
         Direct plug describe how the sub-managers are linked from this one.
 
         It can one of
-            * ``None`` when there is no sub-manager,
-            * ``True`` when there is only one sub-manager and
-            its name is not inserted bewteen eg (``/mgr1/<id1>/<id2>`` )
-            * ``False`` when the name of the manager
-            is bewteen the ids eg (``/mgr1/<id1>/sub/<id2>`` )
+        * ``None`` when there is no sub-manager,
+        * ``True`` when there is only one sub-manager and its name is not inserted bewteen eg (``/mgr1/<id1>/<id2>`` )
+        * ``False`` when the name of the manager is bewteen the ids eg (``/mgr1/<id1>/sub/<id2>`` )
 
         """
         return self._direct_plug
@@ -432,28 +430,29 @@ class Manager(object):
 
         The id is always a string extracted from the url.
 
-        if the id is not valid, raises a ValidationError
-        if necessary, modify the id
+        If the id is not valid, raises a :exc:`napixd.exceptions.ValidationError`.
+        If necessary, modify the id and return it.
         this method MUST return the ID even if it wasn't modified.
 
-        example:
-        if the id must be an int
+        Example:
+
         >>> class IntID(Manager):
-        >>>     def validate_id(self,id_):
-        >>>         try:
-        >>>             return int(id_)
-        >>>         except ValueError:
-        >>>             raise ValidationError
+        ...     def validate_id(self, id_):
+        ...         "The id must be an int"
+        ...         try:
+        ...             return int(id_)
+        ...         except ValueError:
+        ...             raise ValidationError
 
-        if the id must be a string containing at least 3 charcters
-        >>>class MinLength(Manager):
-        >>>     def validate_id(self,id_):
-        >>>         if len(id_) < 3:
-        >>>             raise ValidationError
-        >>>         #always return the id
-        >>>         return id_
+        >>> class MinLength(Manager):
+        ...     def validate_id(self,id_):
+        ...         "The id must be a string containing at least 3 characters"
+        ...         if len(id_) < 3:
+        ...             raise ValidationError
+        ...         #always return the id
+        ...         return id_
 
-        By default, this method checks if the id is not an empty string
+        By default, this method checks if the id is not an empty string.
         """
         if id_ == '':
             raise ValidationError
@@ -465,10 +464,11 @@ class Manager(object):
         emulating a dict) by checking that every mandatory field specified
         in self.resource_fields is defined.
 
-        If the current object implement self.validate_resource_<key> method,
-        it'll be called with the value of resource_dict[<key>] as parameters.
-        It shoud raise a ValidationError if the data isn't valid,
-        else it must return a valid value
+        If the current object implement :meth:`validate_resource_FIELDNAME`
+        method, it'll be called with the value of resource_dict[FIELDNAME]
+        as parameters.
+        It shoud raise a :exc:`napixd.exceptions.ValidationError`
+        if the data isn't valid, else it must return a valid value
 
         Return a resource_dict.
         """

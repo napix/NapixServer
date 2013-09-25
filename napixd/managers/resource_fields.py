@@ -155,8 +155,7 @@ class ResourceFieldsDescriptor(collections.Sequence):
         Field are ignored and remove from *input* if
 
         * The property :attr:`ResourceField.computed` is set.
-        * The property :attr:`ResourceField.editable` is not set
-        and **original** is not None.
+        * The property :attr:`ResourceField.editable` is not set and **original** is not None.
 
         A :exc:`napixd.exceptions.ValidationError` is raised when
 
