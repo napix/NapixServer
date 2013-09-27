@@ -8,6 +8,7 @@ It uses the :mod:`napix` to do requests.
 """
 
 import logging
+import collections
 
 from napix.connection import Connection, HTTPError
 from napix.authenticators import LoginAuthenticator
@@ -19,10 +20,16 @@ logger = logging.getLogger('Napix.Client')
 
 
 def coerce_authenticator(authenticator):
-    if isinstance(authenticator, dict):
-        authenticator = LoginAuthenticator(
-            authenticator['login'],
-            authenticator['key'])
+    if isinstance(authenticator, collections.Mapping):
+        try:
+            authenticator = LoginAuthenticator(
+                authenticator['login'],
+                authenticator['key'])
+        except KeyError:
+            pass
+
+    if not callable(authenticator):
+        raise ValueError('Authenticator must be a dict {login, key} or a callable')
     return authenticator
 
 
