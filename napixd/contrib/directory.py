@@ -50,15 +50,15 @@ class NapixDirectoryManager(Manager):
     name = 'directory'
     TICK = 300
 
-    def __init__(self, parent):
-        super(NapixDirectoryManager, self).__init__(parent)
+    def __init__(self, context):
+        super(NapixDirectoryManager, self).__init__(context)
         self.store = Store(
             'directory', backend='napixd.store.backends.file.FileBackend')
 
     def validate_resource_managers(self, managers):
         if (not isinstance(managers, list) or
                 not all(isinstance(x, basestring) for x in managers)):
-            raise ValidationError(' managers should be a list of strings')
+            raise ValidationError('managers should be a list of strings')
         return managers
 
     def validate_resource_uid(self, uid):
@@ -99,9 +99,10 @@ class NapixDirectoryManager(Manager):
             self.store.save()
         return self.store.keys()
 
-    def modify_resource(self, id_, resource_dict):
+    def modify_resource(self, resource, diffdict):
+        resource_dict = dict(diffdict)
         resource_dict['last_seen'] = time.time()
-        self.store[id_] = resource_dict
+        self.store[resource.id] = resource_dict
         self.store.save()
 
     def generate_new_id(self, resource_dict):
