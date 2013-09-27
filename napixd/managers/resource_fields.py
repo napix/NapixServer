@@ -165,6 +165,7 @@ class ResourceFieldsDescriptor(collections.Sequence):
         """
         for_edit = original is not None
         output = {}
+        errors = []
         for resource_field in self:
             key = resource_field.name
             if (resource_field.computed or
@@ -184,7 +185,12 @@ class ResourceFieldsDescriptor(collections.Sequence):
             else:
                 value = input[key]
 
-            output[key] = resource_field.validate(self.manager, value)
+            try:
+                output[key] = resource_field.validate(self.manager, value)
+            except ValidationError as ve:
+                errors.append(ve)
+        if errors:
+            raise ValidationError(errors)
         return output
 
 

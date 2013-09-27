@@ -125,6 +125,22 @@ class TestResourceFieldsDescriptor(unittest.TestCase):
             'f2': self.f2.validate.return_value,
         })
 
+    def test_validate_continue(self):
+        self.f1.validate.side_effect = ValidationError({'f1': 'E1'})
+        self.f2.validate.side_effect = ValidationError({'f2': 'E2'})
+
+        try:
+            self.rfd.validate({
+                'f1': 1,
+                'f2': 'oh snap'
+            })
+        except ValidationError as ve:
+            self.assertEqual(ve, ValidationError({
+                'f1': 'E1',
+                'f2': 'E2',
+            }))
+
+
     def test_validate_non_editable(self):
         self.f1.editable = True
         self.f2.editable = False
@@ -264,7 +280,7 @@ class TestResourceField(unittest.TestCase):
             ]
         })
         vrf = mock.Mock()
-        r = rf.validate(mock.Mock(spec=object, validate_resource_f=vrf), 132)
+        rf.validate(mock.Mock(spec=object, validate_resource_f=vrf), 132)
 
         vrf.assert_called_once_with(validator1.return_value)
 

@@ -4,6 +4,8 @@
 __all__ = ['PermissionDenied', 'ValidationError',
            'NotFound', 'Duplicate', 'ImproperlyConfigured']
 
+import collections
+
 
 class PermissionDenied(Exception):
 
@@ -13,15 +15,18 @@ class PermissionDenied(Exception):
     pass
 
 
-class ValidationError(Exception):
+class ValidationError(collections.Mapping, Exception):
 
     """
     Thrown when a validation fails on a element submitted by the user
     """
 
     def __init__(self, error=''):
-        if isinstance(error, ValidationError):
-            error = dict(error)
+        if isinstance(error, list):
+            errors = error
+            error = {}
+            for validation_error in errors:
+                error.update(validation_error)
         elif isinstance(error, Exception):
             error = unicode(error)
 
@@ -33,8 +38,21 @@ class ValidationError(Exception):
 
         super(ValidationError, self).__init__(error)
 
+    def __eq__(self, other):
+        return (isinstance(other, ValidationError) and
+                self.errors == other.errors)
+
+    def __repr__(self):
+        return 'ValidationError({0})'.format(self.errors)
+
     def __iter__(self):
-        return iter(self.errors.items())
+        return iter(self.errors)
+
+    def __getitem__(self, item):
+        return self.errors[item]
+
+    def __len__(self):
+        return len(self.errors)
 
 
 class NotFound(Exception):
