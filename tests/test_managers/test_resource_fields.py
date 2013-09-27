@@ -254,6 +254,20 @@ class TestResourceField(unittest.TestCase):
         r = rf.validate(mock.Mock(spec=object), 132)
         self.assertEqual(r, 132)
 
+    def test_validate_validator_validators(self):
+        validator1 = mock.Mock()
+        rf = ResourceField('f', {
+            'example': 123,
+            'type': int,
+            'validators': [
+                validator1,
+            ]
+        })
+        vrf = mock.Mock()
+        r = rf.validate(mock.Mock(spec=object, validate_resource_f=vrf), 132)
+
+        vrf.assert_called_once_with(validator1.return_value)
+
     def test_validate_validator(self):
         rf = ResourceField('f', {
             'example': 123,

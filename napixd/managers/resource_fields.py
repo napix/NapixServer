@@ -471,10 +471,11 @@ class ResourceField(object):
         if self.choices is not None:
             self.check_choice(value)
 
+        for validator in self.validators:
+            value = self._run_callback(validator, value)
+
         validator = getattr(manager, 'validate_resource_%s' % self.name, None)
         if validator:
-            value = self._run_callback(validator, value)
-        for validator in self.validators:
             value = self._run_callback(validator, value)
 
         return value
