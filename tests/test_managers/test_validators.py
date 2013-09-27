@@ -5,7 +5,15 @@ import unittest
 import mock
 
 from napixd.exceptions import ValidationError
-from napixd.managers.validators import MatchRegexp
+from napixd.managers.validators import MatchRegexp, not_empty
+
+
+class TestValidator(unittest.TestCase):
+    def test_not_empty_empty(self):
+        self.assertRaises(ValidationError, not_empty, '')
+
+    def test_not_empty(self):
+        self.assertEqual(not_empty('value'), 'value')
 
 
 class TestMatchRegexp(unittest.TestCase):

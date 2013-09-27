@@ -11,6 +11,15 @@ import re
 from napixd.exceptions import ValidationError
 
 
+def not_empty(value):
+    """
+    Checks that the *value* is not an empty string.
+    """
+    if value == '':
+        raise ValidationError('This should not be empty')
+    return value
+
+
 class MatchRegexp(object):
     """
     Checks that the input matches the *source* regexp
