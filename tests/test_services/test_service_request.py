@@ -130,6 +130,16 @@ class TestCollectionServiceRequestOther(_TestSCR):
             (2, {'lol': 2, 'blabla': 'pong'}),
         ]
         resp = self.scr.handle()
+        self.managed.serialize.assert_has_calls([
+            mock.call({
+                'lol': 1,
+                'blabla': 'ping'
+            }),
+            mock.call({
+                'lol': 2,
+                'blabla': 'pong'
+            })
+        ])
         self.assertEqual(resp, {
             '/parent/p1/child/1': {
                 'lol': 1,
@@ -140,7 +150,6 @@ class TestCollectionServiceRequestOther(_TestSCR):
                 'blabla': 'pong'
             },
         })
-
 
     def test_method_create(self):
         self._make('POST', data={
@@ -237,7 +246,8 @@ class TestServiceResourceRequestOther(_TestSRR):
             self.managed.unserialize.return_value,
             original=self.managed.get_resource.return_value)
         self.managed.modify_resource.assert_called_once_with(
-            ResourceWrapper(self.managed, 'c2'), self.managed.validate.return_value)
+            ResourceWrapper(self.managed, 'c2'),
+            self.managed.validate.return_value)
 
     def test_method_put_same_id(self):
         self._make('PUT', data={'lol': 1, 'blabla': 'ab'})

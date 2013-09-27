@@ -209,7 +209,7 @@ class ServiceCollectionRequest(ServiceRequest):
                 raise ValueError(
                     'get_all_resources returned a non-iterable object')
             return dict(
-                (self.make_url(id), resource)
+                (self.make_url(id), self.manager.serialize(resource))
                 for id, resource in result)
         elif self.method == 'GET' or self.method == 'filter':
             if not isinstance(result, collections.Iterable):
