@@ -115,14 +115,6 @@ Utils
 Napix Infrastructure
 ====================
 
-:mod:`client` Module
---------------------
-
-.. automodule:: napixd.client
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`guid` Module
 ------------------
 
@@ -160,6 +152,7 @@ Subpackages
 
 .. toctree::
 
+    napixd.client
     napixd.connectors
     napixd.managers
     napixd.plugins

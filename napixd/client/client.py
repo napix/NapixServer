@@ -1,25 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-Client lib of napix.
-
-It uses the :mod:`napix` to do requests.
-"""
-
 import logging
 import collections
 
 from napix.connection import Connection, HTTPError
 from napix.authenticators import LoginAuthenticator
 
-
-__all__ = ('Client', )
-
 logger = logging.getLogger('Napix.Client')
 
 
 def coerce_authenticator(authenticator):
+    """
+    Ensure that the authenticator is a suitable object.
+    """
     if isinstance(authenticator, collections.Mapping):
         try:
             authenticator = LoginAuthenticator(
@@ -35,11 +29,15 @@ def coerce_authenticator(authenticator):
 
 class Client(object):
     """
-    Helper class for :class:`napix.connection.Connection` and
-    :class:`napix.authenticators.LoginAuthenticator`.
+    Standart Client.
 
-    *host* is the destination host and *credentials* a dict containing
-    ``login`` and ``key``.
+    *host* is the destination server name
+
+    *authenticator* is either a :class:`dict`
+    (or a :class:`~napixd.conf.Conf` instance)
+    with keys *login* and *key* used with a
+    :class:`napix.authenticators.LoginAuthenticator`,
+    or a callable, such as a :mod:`built-in authenticator<napixd.authenticators>`.
     """
 
     def __init__(self, host, authenticator):
