@@ -218,4 +218,4 @@ class RedisCounter(BaseCounter):
         return self.redis.incr(self.name, by)
 
     def reset(self, to=0):
-        return int(self.redis.getset(self.name, 0))
+        return int(self.redis.getset(self.name, 0) or 0)
