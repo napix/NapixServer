@@ -158,4 +158,5 @@ Subpackages
     napixd.plugins
     napixd.services
     napixd.store
+    napixd.utils
 
