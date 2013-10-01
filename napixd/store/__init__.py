@@ -177,7 +177,7 @@ class Loader(object):
     def _get_backend(self, backend, opts):
         cls = self._get_class(backend)
         if not issubclass(cls, BaseBackend):
-            raise ValueError('%s is not a BaseBackend subclass' % backend)
+            raise ValueError('{0} is not a BaseBackend subclass'.format(backend))
         return cls(opts)
 
     def _get_backend_conf(self, backend):
@@ -189,7 +189,7 @@ class Loader(object):
     def get_backend(self, backend, opts, default):
         """
         Get the backend name ``backend``.
-        If opts are specified, the backend is instanciated with those options.
+        If opts are specified, the backend is instantiated with those options.
         Else the backend is created and cached with the options from the config.
         """
         if backend == 'default' or backend is None:
