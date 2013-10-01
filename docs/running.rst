@@ -131,5 +131,7 @@ Non-default
 :secure:
     Use only signed authentication and not deny requests signed by a GET token
 
+:ratelimit:
+    Enable the rate-limiting plugin.
 
 

@@ -41,6 +41,15 @@ plugins Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`ratelimit` Module
+-----------------------
+
+.. automodule:: napixd.plugins.ratelimit
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 :mod:`times` Module
 -------------------
 

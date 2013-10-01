@@ -131,6 +131,15 @@ counter
     The default backend for counters
 
 
+.. _conf.napix.rate_limit:
+
+Napix.rate_limit
+................
+
+The rate-limit configuration.
+
+
+
 Configuration of the managers
 =============================
 

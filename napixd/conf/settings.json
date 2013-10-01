@@ -5,6 +5,15 @@
     "loader" : {
         "autoreload" : true
     },
+    "rate_limit": {
+        "#info": "The rate-limit section",
+        "#excludes": "The list of ips exempted from rate limiting",
+        "excludes": [
+            "127.0.0.1"
+        ],
+        "#concurrent": "The number of concurrent requests",
+        "concurrent": 2
+    },
     "auth" : {
       "#info" : "The authentication section.",
       "#auth_url" : "The authentication URL",

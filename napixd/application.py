@@ -109,6 +109,7 @@ class NapixdBottle(bottle.Bottle):
         self.error(405)(self._error_handler_factory(405))
         self.error(400)(self._error_handler_factory(400))
         self.error(500)(self._error_handler_factory(500))
+        self.error(429)(self._error_handler_factory(429))
 
     def slash(self):
         """

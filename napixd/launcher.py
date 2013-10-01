@@ -144,6 +144,7 @@ Non-default:
     pprint:     Enable pretty printing of output
     cors:       Add Cross-Site Request Service headers
     secure:     Disable the request tokeb signing
+    ratelimit:  Enable the rate-limiting  plugin
 
 Meta-options:
     only:       Disable default options
@@ -317,6 +318,11 @@ Meta-options:
         from napixd.plugins.exceptions import ExceptionsCatcher
         app.install(ExceptionsCatcher(
             show_errors=('print_exc' in self.options), pprint=pprint))
+
+        if 'ratelimit' in self.options:
+            from napixd.plugins.ratelimit import RateLimitingPlugin
+            conf = Conf.get_default('Napix.rate_limit')
+            app.install(RateLimitingPlugin(conf))
 
         from napixd.plugins.conversation import ConversationPlugin
         app.install(ConversationPlugin(pprint=pprint))
