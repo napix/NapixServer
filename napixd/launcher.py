@@ -247,7 +247,7 @@ Meta-options:
                 '*auth* option is set and no configuration has been found (see Napix.auth key).')
 
         if 'secure' in self.options:
-            from napixd.plugins import AAAPlugin
+            from napixd.plugins.auth import AAAPlugin
             aaa_class = AAAPlugin
         else:
             logger.info('Installing not Secure auth plugin')
@@ -303,10 +303,9 @@ Meta-options:
         Install the plugins in the bottle application.
         """
         if 'time' in self.options:
-            from napixd.plugins import TimePlugin
+            from napixd.plugins.times import TimePlugin
             app.install(TimePlugin('x-total-time'))
 
-        from napixd.plugins import ExceptionsCatcher, ConversationPlugin
         pprint = 'pprint' in self.options
 
         if 'times' in self.options:
@@ -315,12 +314,15 @@ Meta-options:
             from napixd.gevent_tools import AddGeventTimeHeader
             app.install(AddGeventTimeHeader())
 
-        app.install(
-            ExceptionsCatcher(show_errors=('print_exc' in self.options), pprint=pprint))
+        from napixd.plugins.exceptions import ExceptionsCatcher
+        app.install(ExceptionsCatcher(
+            show_errors=('print_exc' in self.options), pprint=pprint))
+
+        from napixd.plugins.conversation import ConversationPlugin
         app.install(ConversationPlugin(pprint=pprint))
 
         if 'useragent' in self.options:
-            from napixd.plugins import UserAgentDetector
+            from napixd.plugins.conversation import UserAgentDetector
             app.install(UserAgentDetector())
 
         return app
@@ -367,9 +369,9 @@ Meta-options:
 
         Return the decorated application
         """
-        from napixd.plugins import (PathInfoMiddleware,
-                                    CORSMiddleware,
-                                    LoggerMiddleware)
+        from napixd.plugins.middleware import (PathInfoMiddleware,
+                                               CORSMiddleware,
+                                               LoggerMiddleware)
         if 'uwsgi' in self.options:
             application = PathInfoMiddleware(application)
         if 'cors' in self.options:

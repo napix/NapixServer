@@ -10,7 +10,7 @@ Napixd propose a generic web client usable with  every server.
 
 import bottle
 
-from napixd.plugins import ConversationPlugin
+from napixd.plugins.conversation import ConversationPlugin
 
 
 class WebClient(bottle.Bottle):
