@@ -3,7 +3,7 @@
 
 from __future__ import absolute_import
 
-import unittest
+import unittest2 as unittest
 import mock
 
 try:
