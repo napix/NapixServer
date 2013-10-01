@@ -23,7 +23,7 @@ The backend
 The backend is an object that prepares the Stores.
 The backend is called with the collection and returns a Store instance.
 
-Its initilized with the parameters either
+Its initialized with the parameters either
 from the configuration or from the user.
 A Backend is reusable and may generate multiple Stores.
 
@@ -45,7 +45,7 @@ Asynchronous implementations
 ----------------------------
 
 Asynchronous implementations requires the user to call
-:meth:`.save<BaseStore.save>` on the store after a modification has been made.
+:meth:`~BaseStore.save` on the store after a modification has been made.
 
 :class:`Store` is the base class of asynchronous implementations and require
 to override the ``save`` method.
@@ -177,3 +177,45 @@ class Store(BaseStore):
 
     def save(self):
         raise NotImplementedError
+
+
+class BaseCounter(object):
+    """
+    Base class for counters.
+
+    Counters implement the context manager protocol.
+    Entering the context, increase :attr:`value` by one and
+    returns the new value.
+    Exiting with or without exception decreases by one.
+
+    >>> c = Counter('name')
+    >>> c.increment()
+    >>> print c.value
+    1
+    >>> with c as v:
+    ...     print v
+    2
+    >>> print c.value
+    1
+
+    .. attribute:: value
+
+        The current value of the counter
+    """
+    def __enter__(self):
+        return self.increment(1)
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.decrement(1)
+
+    def decrement(self, by=1):
+        return self.increment(-by)
+
+    def increment(self, by=1):
+        raise NotImplementedError()
+
+    def reset(self, to=0):
+        raise NotImplementedError()
+
+    def __repr__(self):
+        return '{0} ={1}'.format(self.__class__.__name__, self.value)

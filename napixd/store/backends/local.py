@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from threading import Lock
-from napixd.store.backends import BaseBackend
+from napixd.store.backends import BaseBackend, BaseCounter
 
 
 class LocalBackend(BaseBackend):
-
+    """
+    Returns :class:`LocalCounter` instances.
+    """
     def dump(self):
         return {}
 
@@ -20,7 +22,10 @@ class LocalBackend(BaseBackend):
         return LocalCounter
 
 
-class LocalCounter(object):
+class LocalCounter(BaseCounter):
+    """
+    An in-memory counter.
+    """
 
     def __init__(self, name):
         self.name = name

@@ -11,7 +11,7 @@ try:
 except ImportError:
     raise NotImplementedError('store.redis needs redis library')
 
-from napixd.store.backends import BaseBackend, BaseStore, Store
+from napixd.store.backends import BaseBackend, BaseStore, Store, BaseCounter
 
 
 class RedisBackend(BaseBackend):
@@ -44,6 +44,8 @@ class RedisStore(Store):
 
     """
     Store based on a key in a Redis server.
+
+    This store takes 1 key.
     """
 
     def __init__(self, collection, redis):
@@ -76,6 +78,8 @@ class RedisHashStore(BaseStore):
     Store based on Redis Hashes.
     Every value of the store is a value of a Redis hash.
     The values are strings
+
+    This store takes 1 key.
     """
 
     def __init__(self, collection, redis):
@@ -137,6 +141,8 @@ class RedisKeyStore(BaseStore):
     Store based on Redis keys
     Every value of the store is a value of a Redis key.
     The values are strings.
+
+    This store takes as many keys as values in the store.
     """
 
     def __init__(self, collection, redis):
@@ -193,7 +199,12 @@ class RedisCounterBackend(RedisBackend):
         return RedisCounter
 
 
-class RedisCounter(object):
+class RedisCounter(BaseCounter):
+    """
+    A :class:`napixd.store.Counter` on a Redis server.
+
+    This counter takes as many key as there is counters.
+    """
 
     def __init__(self, name, redis):
         self.redis = redis
