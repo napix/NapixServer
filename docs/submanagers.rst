@@ -25,15 +25,15 @@ The user can also set the logins and the passwords in another file in :file:`/va
 The :file:`/var/http/` looks like::
 
     /var/http/
-    ├── virtualhosts/
-    │   ├── client1/
-    │   │   ├── file
-    │   │   └── .htaccess
-    │   └── client2/
-    │       └── .htaccess
-    └── passwords/
-        ├── client1
-        └── client2
+    |-- virtualhosts/
+    |   +-- client1/
+    |   |   |-- file
+    |   |   +-- .htaccess
+    |   +-- client2/
+    |       +-- .htaccess
+    +-- passwords/
+        |-- client1
+        +-- client2
 
 Both managers are in :download:`/samples/protecteddir.py`.
 
