@@ -8,11 +8,12 @@ import mock
 
 from napixd.managers import Manager
 from napixd.managers.managed_classes import ManagedClass
-from napixd.loader import (Loader,
-                           Importer, FixedImporter, ConfImporter, AutoImporter, RelatedImporter,
-                           ModuleImportError, ManagerImportError,
-                           ManagerImport, ManagerError)
 from napixd.conf import Conf
+
+from napixd.loader.importers import (Importer, FixedImporter, ConfImporter,
+                                     AutoImporter, RelatedImporter)
+from napixd.loader.imports import ManagerImport
+from napixd.loader.errors import ModuleImportError, ManagerImportError
 
 
 class TestImporter(unittest.TestCase):
@@ -20,8 +21,8 @@ class TestImporter(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.package = mock.MagicMock(__file__='package.py')
-        cls.patch_sys_modules = mock.patch.dict(
-            'napixd.loader.sys.modules', package=cls.package)
+        cls.patch_sys_modules = mock.patch.dict('sys.modules',
+                                                package=cls.package)
 
     def setUp(self):
         self.importer = Importer()
@@ -31,18 +32,18 @@ class TestImporter(unittest.TestCase):
         self.patch_sys_modules.stop()
 
     def test_first_import_error(self):
-        with mock.patch('napixd.loader.import_fn', side_effect=ImportError()):
+        with mock.patch('napixd.loader.importers.import_fn', side_effect=ImportError()):
             self.assertRaises(
                 ImportError, self.importer.first_import, 'package')
 
     def test_first_import_error_ignore(self):
         importer = Importer(False)
-        with mock.patch('napixd.loader.import_fn', side_effect=ImportError()):
+        with mock.patch('napixd.loader.importers.import_fn', side_effect=ImportError()):
             self.assertRaises(
                 ModuleImportError, importer.first_import, 'package')
 
     def test_first_import(self):
-        with mock.patch('napixd.loader.import_fn') as import_fn:
+        with mock.patch('napixd.loader.importers.import_fn') as import_fn:
             mod = self.importer.first_import('package')
 
         import_fn.assert_called_once_with('package')
@@ -217,18 +218,18 @@ class TestAutoImporter(unittest.TestCase):
         self.assertEqual(self.ai.get_paths(), ['/a/b'])
 
     def test_import_module_error(self):
-        with mock.patch('napixd.loader.imp') as pimp:
+        with mock.patch('napixd.loader.importers.imp') as pimp:
             pimp.load_module.side_effect = SyntaxError()
 
-            with mock.patch('napixd.loader.open') as Open:
+            with mock.patch('__builtin__.open') as Open:
                 open = Open.return_value
                 open.__enter__.return_value = open
                 self.assertRaises(
                     ModuleImportError, self.ai.import_module, 'b.py')
 
     def test_import_module(self):
-        with mock.patch('napixd.loader.imp') as pimp:
-            with mock.patch('napixd.loader.open') as Open:
+        with mock.patch('napixd.loader.importers.imp') as pimp:
+            with mock.patch('__builtin__.open') as Open:
                 with mock.patch.object(self.ai, 'has_been_modified', return_value=True):
                     open = Open.return_value
                     open.__enter__.return_value = open
@@ -346,135 +347,3 @@ class TestRelatedImporter(unittest.TestCase):
             managers, errors = self.ri.load([ManagedClass('a.b.C')])
         self.assertEqual(managers, [])
         self.assertEqual(errors, [error])
-
-
-class TestLoader(unittest.TestCase):
-
-    def setUp(self):
-        self.importer = mock.Mock(name='Importer', spec=Importer)
-        self.loader = Loader([self.importer])
-
-        self.manager = mock.MagicMock(
-            __module__='a.b',
-            __name__='Manager',
-            **{
-                'direct_plug.return_value': None
-            })
-
-    def test_load(self):
-        m = ManagerImport(self.manager, 'alias', {})
-        self.importer.load.return_value = ([m], [])
-        load = self.loader.load()
-        self.assertEqual(load.managers, set([m]))
-        self.assertEqual(load.old_managers, set())
-        self.assertEqual(load.new_managers, set([m]))
-        self.assertEqual(load.error_managers, set())
-
-    def test_load_module_error(self):
-        m = ManagerImport(self.manager, 'alias', {})
-        self.importer.load.return_value = ([m], [])
-        self.loader.load()
-
-        error = ImportError()
-        self.importer.load.return_value = (
-            [], [ModuleImportError('a.b', error)])
-        load = self.loader.load()
-
-        me = ManagerError(m.manager, 'alias', error)
-
-        self.assertEqual(load.managers, set())
-        self.assertEqual(load.old_managers, set([m]))
-        self.assertEqual(load.new_managers, set())
-        self.assertEqual(load.error_managers, set([me]))
-
-    def test_load_module_error_fixed(self):
-        m = ManagerImport(self.manager, 'alias', {})
-        error = ImportError()
-        me = ManagerError(m.manager, 'alias', error)
-
-        self.importer.load.return_value = ([m], [])
-        self.loader.load()
-
-        self.importer.load.return_value = (
-            [], [ModuleImportError('a.b', error)])
-        self.loader.load()
-
-        self.importer.load.return_value = ([m], [])
-        load = self.loader.load()
-
-        self.assertEqual(load.managers, set([m]))
-        self.assertEqual(load.old_managers, set([me]))
-        self.assertEqual(load.new_managers, set([m]))
-        self.assertEqual(load.error_managers, set([]))
-
-    def test_load_module_error_new_error(self):
-        m = ManagerImport(self.manager, 'alias', {})
-        self.importer.load.return_value = ([m], [])
-        self.loader.load()
-
-        error = ImportError('First Error')
-        self.importer.load.return_value = (
-            [], [ModuleImportError('a.b', error)])
-        load = self.loader.load()
-
-        new_error = ImportError('New Error')
-        self.importer.load.return_value = (
-            [], [ModuleImportError('a.b', new_error)])
-        load = self.loader.load()
-
-        me = ManagerError(m.manager, 'alias', new_error)
-
-        self.assertEqual(load.managers, set())
-        self.assertEqual(load.old_managers, set())
-        self.assertEqual(load.new_managers, set())
-        self.assertEqual(load.error_managers, set([me]))
-
-    def test_setup(self):
-        self.manager.direct_plug.return_value = True
-        self.manager.get_managed_classes.return_value = ['a.b.C']
-
-        manager_class = mock.Mock(name='managed')
-        related_manager = mock.Mock(
-            name='related',
-            spec=ManagedClass,
-            manager_class=manager_class
-        )
-        manager_class.direct_plug.return_value = None
-        related_manager.is_resolved.return_value = False
-        with mock.patch('napixd.loader.RelatedImporter') as Importer:
-            importer = Importer.return_value
-            importer.load.return_value = ([manager_class], [])
-            self.loader.setup(self.manager)
-
-        Importer.assert_called_once_with(self.manager)
-        importer.load.assert_called_once_with(['a.b.C'])
-
-    def test_setup_error(self):
-        m = ManagerImport(self.manager, 'alias', {})
-        self.importer.load.return_value = ([m], [])
-        self.manager.direct_plug.return_value = True
-        self.manager.get_managed_classes.return_value = ['a.b.C']
-
-        error = ModuleImportError('a.b', ImportError())
-        with mock.patch('napixd.loader.RelatedImporter') as Importer:
-            importer = Importer.return_value
-            importer.load.side_effect = error
-            load = self.loader.load()
-
-        Importer.assert_called_once_with(self.manager)
-        importer.load.assert_called_once_with(['a.b.C'])
-
-        me = ManagerError(m.manager, 'alias', error)
-        self.assertEqual(load.error_managers, set([me]))
-
-    def test_setup_circular(self):
-        self.manager.direct_plug.return_value = True
-        self.manager.get_managed_classes.return_value = [self.manager]
-
-        with mock.patch('napixd.loader.RelatedImporter') as Importer:
-            importer = Importer.return_value
-            importer.load.return_value = ([self.manager], [])
-            #self.assertRaises( ManagerImportError, self.loader.setup, self.manager)
-            self.loader.setup(self.manager)
-
-        Importer.assert_called_once_with(self.manager)

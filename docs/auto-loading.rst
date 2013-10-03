@@ -9,7 +9,7 @@ A directory in the :file:`HOME` directory.
 
 This feature is enabled by default by the **auto** :ref:`option<options>`.
 
-At the start of the napixd server, a :class:`napixd.loader.AutoImporter`
+At the start of the napixd server, a :class:`napixd.loader.importers.AutoImporter`
 is added to the :meth:`loaders<napixd.launcher.Setup.get_loaders>`.
 
 This loader will detect all python source files (ending by *.py*),

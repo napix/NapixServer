@@ -21,15 +21,6 @@ Loading
     :undoc-members:
     :show-inheritance:
 
-:mod:`loader` Module
---------------------
-
-.. automodule:: napixd.loader
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
 :mod:`conf` Package
 -------------------
 
@@ -89,7 +80,7 @@ Daemon
 Utils
 =====
 
-:mod:`napixd.templates`
+:mod:`templates` Module
 -----------------------
 
 .. automodule:: napixd.templates
@@ -154,6 +145,7 @@ Subpackages
 
     napixd.client
     napixd.connectors
+    napixd.loader
     napixd.managers
     napixd.plugins
     napixd.services

@@ -178,9 +178,9 @@ PasswordManagers is configured with **min_pass_size** = 5.
 Source of the configuration
 ---------------------------
 
-The configuration source of a manager depends on its :class:`loader<napixd.loader.Importer>`.
+The configuration source of a manager depends on its :class:`loader<napixd.loader.importers.Importer>`.
 
-The :class:`auto-loader<napixd.loader.AutoImporter>` which is used with the files found in the `auto` folder,
+The :class:`auto-loader<napixd.loader.importers.AutoImporter>` which is used with the files found in the `auto` folder,
 tries to parse JSON from the docstring of the configure method **of the root manager**.
 
 .. code-block:: python
@@ -203,7 +203,7 @@ tries to parse JSON from the docstring of the configure method **of the root man
         def configure( self, conf):
             self.min_pass_size = conf.get('min_pass_size', 8)
 
-The load from the :class:`configuration<napixd.loader.ConfImporter>` used with :ref:`conf.napix.managers`
+The load from the :class:`configuration<napixd.loader.importers.ConfImporter>` used with :ref:`conf.napix.managers`
 get the configuration from the same configuration file.
 The key is the same as the alias of the managers in the ``Napix.managers`` map.
 

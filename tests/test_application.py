@@ -9,7 +9,7 @@ import mock
 
 from napixd.application import NapixdBottle
 from napixd.services import Service
-from napixd.loader import Loader, Load
+from napixd.loader.loader import Loader, Load
 
 
 class TestNapixBottleBuilder(unittest.TestCase):
