@@ -14,6 +14,14 @@ class TestUndoManager(unittest.TestCase):
         self.um = UndoManager()
         self.undo_cb = mock.Mock()
 
+    def test_as_decorator(self):
+        @self.um.register
+        def rollback():
+            self.undo_cb.m1()
+
+        self.um.undo()
+        self.undo_cb.m1.assert_called_once_with()
+
     def test_undo(self):
         self.undo_cb.m2.side_effect = ValueError
         orig = Exception()

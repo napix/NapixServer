@@ -36,6 +36,7 @@ class UndoManager(object):
         Registers a *callback*
         """
         self._stack.append(callback)
+        return callback
 
     def __enter__(self):
         return self

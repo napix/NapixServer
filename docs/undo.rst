@@ -15,42 +15,51 @@ Here is an example of an "efficent use" of :class:`UndoManager`.
 
 .. code-block:: python
 
-   from napixd.utils.undo import UndoManager
+    from napixd.utils.undo import UndoManager
 
-   def create_resource(self, userdict):
-      """ Process to ressouce creation """
-      def create_tmpfile(undo):
-         """ Create a tmpfile. Don't use it for real. """
-         filename = "/tmp/%s"%random.random()
-         handle = open(filename) 
-	 def cancel():
-            handle.close()
-            os.unlink(filename)
-         undo.register(cancel)
-         return handle
-     
-      def use_tmpfile(undo, handle):
-         """ Make use of our temporary file """
-         write_or_whatever(handle)
-         handle.close()
+    def create_resource(self, userdict):
+        """ Process to resource creation """
+        def create_tmpfile(undo, id):
+            """ Create a tmpfile. Don't use it for real. """
+            filename = "/var/lib/my_thing/{0}".format(id)
+            handle = open(filename, 'w')
 
-      with UndoManager() as undo:
-         handle = create_tmpfile(undo)
-         use_tmpfile(handle)
+            @undo.register
+            def cancel():
+                os.unlink(filename)
+
+            return handle
+
+        def use_tmpfile(undo, handle, userdict):
+            """ Make use of our temporary file """
+            with handle:
+                write_or_whatever(handle, userdict)
+
+            def cancel():
+                unwrite_or_whatever(handle, userdict)
+
+            undo.register(cancel)
+
+       with UndoManager() as undo:
+           id = self.generate_new_id()
+           handle = create_tmpfile(undo, id)
+           use_tmpfile(undo, handle, userdict)
+
+        return id
 
 Let's see what we've done here :
  - First, we've defined some kind of step for our process, and wrote
    code for it.
- - Then for each step, if there is a point, we defined a cancel
-   function and registered it to our UndoManager. Note how we define
-   this function : inside our step, at the end of it. By doing so, we
-   get access to the current namespace, which is full of useful
-   variables (handle and namespace here). Then we can use those 
+ - Then for each step, if there is a point, we defined a :meth:`cancel`
+   function and :meth:`~UndoManager.register` it to our :class:`UndoManager`.
+   Note how we define this function: inside our step, at the end of it.
+   By doing so, we get access to the current namespace, which is full of useful
+   variables (handle and namespace here). Then we can use those
    variables without having to carry them in argument.
- - Finally, we use our UndoManager as a context manager via the `with`
-   statement. When used like this, UndoManager will execute in a
+ - Finally, we use our :class:`UndoManager` as a context manager via the ``with``
+   statement. When used like this, :class:`UndoManager` will execute in a
    reversed order every functions that where registered if an exception
-   is raised. 
+   is raised.
 
 
 
@@ -58,7 +67,7 @@ Callbacks
 =========
 The callbacks are added by the method :meth:`~UndoManager.register`
 They do not take any argument. We recommend you to define your undo
-method on-the-fly like seens in the previous topic. 
+method by closure as seen in the previous topic.
 
 .. code-block:: python
 
