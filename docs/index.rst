@@ -26,6 +26,10 @@ Contents:
     thread_manager
     templates
     undo
+    tests
+    validation
+    storage
+    client
     reference/modules
 
 

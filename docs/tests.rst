@@ -15,7 +15,7 @@ The dependencies are defined in the :file:`test/requirements.txt`::
 
 The tests use :program:`nosetests` of the module :mod:`nose` to run::
 
-    (venv)$ pip install -r nose
+    (venv)$ pip install nose
     (venv)$ nosetests
 
 
