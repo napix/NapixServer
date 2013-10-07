@@ -144,6 +144,7 @@ Non-default:
     pprint:     Enable pretty printing of output
     cors:       Add Cross-Site Request Service headers
     secure:     Disable the request tokeb signing
+    localhost:  Listen on the loopback interface only
 
 Meta-options:
     only:       Disable default options
@@ -402,14 +403,22 @@ Meta-options:
             from napixd.gevent_tools import GeventServer
             return GeventServer
 
+    def get_host(self):
+        if 'localhost' in self.options:
+            return '127.0.0.1'
+        return self.DEFAULT_HOST
+
+    def get_port(self):
+        return self.DEFAULT_PORT
+
     def get_server_options(self):
         """
         Returns a dict of the options of :func:`bottle.run`
         """
         self.server = server = self.get_server()
         server_options = {
-            'host': self.DEFAULT_HOST,
-            'port': self.DEFAULT_PORT,
+            'host': self.get_host(),
+            'port': self.get_port(),
             'server': server,
             'quiet': 'logger' in self.options,
         }
