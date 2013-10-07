@@ -12,6 +12,7 @@ import logging
 import logging.handlers
 import os
 import sys
+import optparse
 
 from napixd import get_file, get_path
 
@@ -107,12 +108,11 @@ class Setup(object):
     LOG_FILE = get_file('log/napix.log')
     HELP_TEXT = '''
 napixd daemon runner.
-usage: napixd [(no)option] ...
+usage: napixd [--port PORT] [only] [(no)option ...]
        napixd help: show this message
-       napixd [only] [(no)option] ... options: show enabled options
 
 option to enable the option.
-nooptions to disable the option
+nooption to disable the option
 
 napixd help will show this message
 napixd only ... will run only the given options and not enable the defaults options
@@ -142,7 +142,7 @@ Non-default:
     rocket:     Use Rocket as the server
     times:      Add custom header to show the running time and the total time (requires gevent)
     pprint:     Enable pretty printing of output
-    cors:       Add Cross-Site Request Service headers
+    cors:       Add Cross-Origin Request Service headers
     secure:     Disable the request tokeb signing
     localhost:  Listen on the loopback interface only
 
@@ -150,9 +150,16 @@ Meta-options:
     only:       Disable default options
     help:       Show this message and quit
     options:    Show the enabled options and quit
-        '''
+'''
 
     def __init__(self, options):
+        parser = optparse.OptionParser(usage=self.HELP_TEXT)
+        parser.add_option('-p', '--port',
+                          help='The TCP port to listen to',
+                          type='int',
+                          default=self.DEFAULT_PORT)
+        self.keys, options = parser.parse_args()
+
         nooptions = [opt[2:] for opt in options if opt.startswith('no')]
 
         options = set(options)
@@ -207,6 +214,8 @@ Meta-options:
                 application = self.apply_middleware(app)
 
                 import bottle
+                logger.info('Listening on %s:%s',
+                            server_options['host'], server_options['port'])
                 bottle.run(application, **server_options)
         finally:
             console.info('Stopping')
@@ -409,7 +418,7 @@ Meta-options:
         return self.DEFAULT_HOST
 
     def get_port(self):
-        return self.DEFAULT_PORT
+        return self.keys.port
 
     def get_server_options(self):
         """
