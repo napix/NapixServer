@@ -17,8 +17,8 @@ and try to import them.
 Once imported, the loader will browse the module to find
 :class:`napixd.managers.base.Manager` subclasses.
 
-The loader calls the method :meth:`napixd.managers.base.Manager.detect`
-and if it returns `True`, the manager class is added to the services of the server.
+The loader check the presence of the `auto_load` attribute on each manager. If true, the manager
+class is added to the root services of the server.
 
 Auto-reloading
 ==============
