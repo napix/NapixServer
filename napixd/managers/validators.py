@@ -15,7 +15,7 @@ def not_empty(value, strip=True):
     """
     Checks that the *value* is not an empty string.
     """
-    if strip = True:
+    if strip:
         value = value.strip()
     if value == '':
         raise ValidationError('This should not be empty')
