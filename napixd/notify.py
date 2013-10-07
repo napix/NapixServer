@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Notify the Napix Directory
+--------------------------
+
+This module implements the notify protocol between a Napix Server
+and a directory.
+"""
+
 try:
     from gevent import sleep
 except ImportError:
@@ -19,6 +27,14 @@ logger = logging.getLogger('Napix.notifications')
 
 
 class Notifier(object):
+    """
+    The object handling the notification process.
+
+    It notifies at regular intervals a server.
+    The delay and the target server are defined in *conf*
+
+    The *app* is the source of the **applications** sent to the directory.
+    """
 
     def __init__(self, app, conf, delay=None):
         self.app = app
@@ -63,6 +79,12 @@ class Notifier(object):
             self.send_notification()
 
     def send_first_notification(self):
+        """
+        Sends the first notification, a POST request.
+
+        The POST request retrieves the url at which the values
+        are PUT by :meth:`send_notification` afterwards.
+        """
         try:
             resp = self.send_request('POST', self.post_url)
         except HTTPError, err:
@@ -75,6 +97,9 @@ class Notifier(object):
             return True
 
     def send_notification(self):
+        """
+        Sends the next notifications through PUT requests
+        """
         logger.info('updating %s', self.put_url)
         self.send_request('PUT', self.put_url)
 
