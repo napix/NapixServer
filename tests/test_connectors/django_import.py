@@ -3,14 +3,12 @@
 
 import unittest2
 import napixd
-try:
-    import django
-    from napixd.connectors.django import DjangoImport
-except ImportError:
-    django = None
+
+import django
+
+from napixd.connectors.django import DjangoImport
 
 
-@unittest2.skipIf(django is None, 'Missing django dependency')
 class TestDjangoImport(unittest2.TestCase):
 
     @classmethod

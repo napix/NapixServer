@@ -5,24 +5,20 @@ import unittest2
 import os
 import shutil
 
+import django
 from napixd.exceptions import NotFound
 
-try:
-    import django
-    from napixd.connectors.django import DjangoImport, DjangoModelManager
-    with DjangoImport('tests.mock.django_settings'):
-        from django.conf import settings
-        from tests.mock.django_managers import models, ROManager, WManager, CM, PM
-except ImportError:
-    django = None
+from napixd.connectors.django import DjangoImport, DjangoModelManager
+
+with DjangoImport('tests.mock.django_settings'):
+    from django.conf import settings
+    from tests.mock.django_managers import models, ROManager, WManager, CM, PM
 
 
 def tearDownModule():
-    if django is not None:
-        os.unlink(settings.DATABASES['default']['NAME'])
+    os.unlink(settings.DATABASES['default']['NAME'])
 
 
-@unittest2.skipIf(django is None, 'Missing django dependency')
 class TestReadOperation(unittest2.TestCase):
 
     @classmethod
@@ -45,7 +41,6 @@ class TestReadOperation(unittest2.TestCase):
         self.assertEqual(sorted(rom.list_resource()), [1, 2, 3])
 
 
-@unittest2.skipIf(django is None, 'Missing django dependency')
 class TestWriteOperation(unittest2.TestCase):
 
     def setUp(cls):
@@ -81,7 +76,6 @@ class TestWriteOperation(unittest2.TestCase):
         self.assertEqual(jag.max_speed, 20)
 
 
-@unittest2.skipIf(django is None, 'Missing django dependency')
 class TestResourceFieldGeneration(unittest2.TestCase):
 
     def _make_class(self, **attrs):
@@ -136,7 +130,6 @@ class TestResourceFieldGeneration(unittest2.TestCase):
         self.assertEqual(cls.resource_fields['color']['example'], 'yellow')
 
 
-@unittest2.skipIf(django is None, 'Missing django dependency')
 class TestRelatedManager(unittest2.TestCase):
 
     def setUp(self):
