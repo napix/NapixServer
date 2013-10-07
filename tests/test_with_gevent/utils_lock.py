@@ -22,9 +22,6 @@ def tearDownModule():
     redis.connection.socket = old_socket
 
 
-hub = gevent.get_hub()
-
-
 class TestLock(unittest.TestCase):
     def setUp(self):
         self.lock1 = Lock('l1')

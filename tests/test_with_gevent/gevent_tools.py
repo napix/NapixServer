@@ -3,16 +3,12 @@
 
 import time
 import unittest2 as unittest
-try:
-    import gevent
-except ImportError:
-    gevent = None
 
-if gevent is not None:
-    from napixd.gevent_tools import Greenlet, Tracer, AddGeventTimeHeader
+import gevent
+
+from napixd.gevent_tools import Greenlet, Tracer, AddGeventTimeHeader
 
 
-@unittest.skipIf(gevent is None, 'Gevent is required to test gevent_tools')
 class TestTimedGreenlet(unittest.TestCase):
 
     def setUp(self):
@@ -38,7 +34,6 @@ class TestTimedGreenlet(unittest.TestCase):
         self.assertAlmostEquals(self.greenlet.get_running_time(), .2, places=2)
 
 
-@unittest.skipIf(gevent is None, 'Gevent is required to test gevent_tools')
 class TestTracer(unittest.TestCase):
 
     def setUp(self):
@@ -76,7 +71,6 @@ class Resp(object):
         self.headers = {}
 
 
-@unittest.skipIf(gevent is None, 'Gevent is required to test gevent_tools')
 class TestGeventHeaders(unittest.TestCase):
 
     def _do_something(self):
