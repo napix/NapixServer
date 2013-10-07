@@ -368,8 +368,10 @@ Meta-options:
                 raise CannotLaunch('Notifier has no configuration options')
 
             logger.info('Set up notifier')
-            notifier = Notifier(napixd, conf)
+            self.notifier = notifier = Notifier(napixd, conf, self.service_name)
             notifier.start()
+        else:
+            self.notifier = None
 
         return napixd
 

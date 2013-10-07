@@ -36,8 +36,9 @@ class Notifier(object):
     The *app* is the source of the **applications** sent to the directory.
     """
 
-    def __init__(self, app, conf, delay=None):
+    def __init__(self, app, conf, service_name):
         self.app = app
+        self.service_name = service_name
 
         post_url = conf.get('url')
         post_url_bits = urlparse.urlsplit(post_url)
@@ -47,7 +48,7 @@ class Notifier(object):
         self.client = Client(post_url_bits.netloc, credentials)
         self.put_url = None
 
-        self.delay = delay or conf.get('delay') or 300
+        self.delay = conf.get('delay') or 300
         logger.info('Notify on %s%s as %s every %ss', post_url_bits.netloc,
                     self.post_url, credentials.get('login', '<anon>'), self.delay)
         if self.delay < 1:
@@ -104,10 +105,10 @@ class Notifier(object):
         self.send_request('PUT', self.put_url)
 
     def send_request(self, method, url):
-        return self.client.request(method, url,
-                                   body={
-                                       'uid': str(uid),
-                                       'host': Conf.get_default('Napix.auth.service') or socket.gethostname(),
-                                       'description': Conf.get_default('Napix.description') or '',
-                                       'managers': list(self.app.root_urls),
-                                   })
+        return self.client.request(method, url, body={
+            'uid': str(uid),
+            'host': Conf.get_default('Napix.auth.service') or socket.gethostname(),
+            'service': self.service_name,
+            'description': Conf.get_default('Napix.description') or '',
+            'managers': list(self.app.root_urls),
+        })

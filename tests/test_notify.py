@@ -49,11 +49,12 @@ class TestNotifier(unittest2.TestCase):
             self.notifier = Notifier(self.app, {
                 'url': 'http://auth.server.nx/notify/',
                 'credentials': self.credentials
-            }, 100)
+            }, 'server.napix.io')
 
     notify_create = mock.call('POST', '/notify/', body={
         'uid': '2550ba7b-aec4-4a67-8047-2ce1ec8ca8ae',
         'host': 'server.napix.nx:8002',
+        'service': 'server.napix.io',
         'managers': ['base'],
         'description': u'The base Napix server'
     })
@@ -61,6 +62,7 @@ class TestNotifier(unittest2.TestCase):
         'uid': '2550ba7b-aec4-4a67-8047-2ce1ec8ca8ae',
         'host': 'server.napix.nx:8002',
         'managers': ['base'],
+        'service': 'server.napix.io',
         'description': u'The base Napix server'
     })
 
@@ -75,13 +77,20 @@ class TestNotifier(unittest2.TestCase):
                 self.force_conf,
                 mock.patch('napixd.notify.sleep', side_effect=[None, RunStop()])):
             self.notifier.run()
+
         self.assertEqual(self.client.request.call_args_list, [
-                         self.notify_create, self.notify_update])
+            self.notify_create,
+            self.notify_update
+        ])
 
     def test_run_fail(self):
         self.client.request.return_value.status = 403
         with mock.patch('napixd.notify.sleep', side_effect=[None, None, None]):
             with self.force_conf:
                 self.notifier.run()
+
         self.assertEqual(self.client.request.call_args_list, [
-                         self.notify_create, self.notify_create, self.notify_create])
+            self.notify_create,
+            self.notify_create,
+            self.notify_create
+        ])
