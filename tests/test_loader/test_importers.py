@@ -100,8 +100,15 @@ class TestImporter(unittest.TestCase):
 
     def test_import_manager_not_there(self):
         with mock.patch.object(self.importer, 'import_module', return_value=mock.Mock(spec=object())):
-            self.assertRaises(
-                ManagerImportError, self.importer.import_manager, 'package.Manager')
+            self.assertRaises(ImportError, self.importer.import_manager,
+                              'package.Manager')
+
+    def test_import_manager_not_there_reload(self):
+        self.importer.set_timestamp(1000)
+        with mock.patch.object(self.importer, 'import_module', return_value=mock.Mock(spec=object())):
+            self.assertRaises(ManagerImportError, self.importer.import_manager,
+                              'package.Manager')
+
 
     def test_import_manager_class(self):
         manager = type('MyManager', (Manager,), {

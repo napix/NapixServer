@@ -160,6 +160,10 @@ class Importer(object):
         except AttributeError as e:
             logger.error('Module %s does not contain %s',
                          module_path, manager_name)
+            if self.raise_on_first_import and self.timestamp == 0:
+                raise ImportError('Module {0} has no {1}'.format(
+                    module_path, manager_name))
+
             raise ManagerImportError(module_path, manager_name, e)
 
 
