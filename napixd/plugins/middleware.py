@@ -34,9 +34,9 @@ class CORSMiddleware(object):
     def __init__(self, application):
         self.application = application
 
-    def __call__(self, environ, start_response):
+    def __call__(self, environ, orig_start_response):
         if environ['REQUEST_METHOD'] == 'OPTIONS':
-            start_response('200 OK', [
+            orig_start_response('200 OK', [
                 ('Access-Control-Allow-Origin', '*'),
                 ('Access-Control-Allow-Methods',
                  'GET, POST, PUT, CREATE, DELETE, OPTIONS'),
@@ -44,6 +44,12 @@ class CORSMiddleware(object):
                  'Authorization, Content-Type'),
             ])
             return []
+
+        def start_response(status, headers):
+            headers = list(headers)
+            headers.append(('Access-Control-Allow-Origin', '*'))
+            orig_start_response(status, headers)
+
         return self.application(environ, start_response)
 
 
