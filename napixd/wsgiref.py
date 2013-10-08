@@ -15,3 +15,8 @@ class WSGIRequestHandler(wsgiref.simple_server.WSGIRequestHandler, object):
             path = self.path
         environ['PATH_INFO'] = path
         return environ
+
+
+class QuietWSGIRequestHandler(WSGIRequestHandler):
+    def log_request(self, *args, **kw):
+        pass

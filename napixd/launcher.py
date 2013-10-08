@@ -434,8 +434,14 @@ Meta-options:
             'quiet': 'logger' in self.options,
         }
         if server == 'wsgiref':
-            from napixd.wsgiref import WSGIRequestHandler
-            server_options['handler_class'] = WSGIRequestHandler
+            if server_options['quiet']:
+                from napixd.wsgiref import QuietWSGIRequestHandler
+                server_options['handler_class'] = QuietWSGIRequestHandler
+                server_options['quiet'] = False
+            else:
+                from napixd.wsgiref import WSGIRequestHandler
+                server_options['handler_class'] = WSGIRequestHandler
+
         return server_options
 
     def get_webclient(self):
