@@ -354,13 +354,6 @@ Meta-options:
             from napixd.reload import Reloader
             Reloader(napixd).start()
 
-        if 'webclient' in self.options:
-            self.web_client = self.get_webclient()
-            if self.web_client:
-                self.web_client.setup_bottle(napixd)
-        else:
-            self.web_client = None
-
         if 'notify' in self.options:
             from napixd.notify import Notifier
             conf = Conf.get_default('Napix.notify')
@@ -372,6 +365,13 @@ Meta-options:
             notifier.start()
         else:
             self.notifier = None
+
+        if 'webclient' in self.options:
+            self.web_client = self.get_webclient()
+            if self.web_client:
+                self.web_client.setup_bottle(napixd)
+        else:
+            self.web_client = None
 
         return napixd
 

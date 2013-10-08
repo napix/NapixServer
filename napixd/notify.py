@@ -40,7 +40,7 @@ class Notifier(object):
         self.app = app
         self.service_name = service_name
 
-        post_url = conf.get('url')
+        self.directory = post_url = conf.get('url')
         post_url_bits = urlparse.urlsplit(post_url)
         self.post_url = post_url_bits.path
 

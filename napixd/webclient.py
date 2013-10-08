@@ -31,6 +31,11 @@ class WebClient(bottle.Bottle):
         else:
             self.auth_server = ''
 
+        if launcher.notifier:
+            self.directory_server = launcher.notifier.directory
+        else:
+            self.directory_server = None
+
         self.get('/', callback=self.index)
         self.get('/<filename:path>', callback=self.static)
         self.get('/infos.json', callback=self.infos, apply=[
@@ -62,4 +67,5 @@ class WebClient(bottle.Bottle):
         return {
             'name': self.service_name,
             'auth_server': self.auth_server,
+            'directory_server': self.directory_server,
         }
