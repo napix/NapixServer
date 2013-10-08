@@ -3,7 +3,6 @@
 
 import logging
 
-from napixd.conf import Conf
 from napixd.services.collection_services import (
     FirstCollectionService,
     CollectionService
