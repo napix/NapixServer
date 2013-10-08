@@ -65,7 +65,8 @@ class ResourceFieldsDict(collections.Mapping):
 
     def __init__(self, manager_class, values):
         self.resource_fields = values
-        self.values = {}
+        self._values = {}
+
         for resource_field in values:
             field = resource_field.name
             field_meta = resource_field.resource_field()
@@ -78,16 +79,16 @@ class ResourceFieldsDict(collections.Mapping):
             else:
                 field_meta['validation'] = ''
 
-            self.values[field] = field_meta
+            self._values[field] = field_meta
 
     def __getitem__(self, item):
-        return self.values[item]
+        return self._values[item]
 
     def __len__(self):
-        return len(self.values)
+        return len(self._values)
 
     def __iter__(self):
-        return iter(self.values)
+        return iter(self._values)
 
     def get_example_resource(self):
         """
