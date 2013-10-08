@@ -100,7 +100,10 @@ Best way to understand how Napix works is to get your hands dirty, so we'll see 
         >>> import os
 
 
-The auto-loader directory is the auto folder inside the ``HOME`` directory, by default in ``~/.napixd/auto``.
+The auto-loader directory is the auto folder which can be :
+
+- inside the ``HOME`` directory, by default in ``~/.napixd/auto``.
+- If a virtualenv is set, it'll look in ``$VIRTUALENVROOT/auto``.
 
 Launch your favorite editor with and open a file in the auto-load directory ``~/.napixd/auto/password.py``.
 Write the headers and save.

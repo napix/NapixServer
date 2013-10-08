@@ -11,14 +11,25 @@ import re
 from napixd.exceptions import ValidationError
 
 
-def not_empty(value):
+def not_empty(value, strip=True):
     """
     Checks that the *value* is not an empty string.
     """
+    if strip:
+        value = value.strip()
     if value == '':
         raise ValidationError('This should not be empty')
     return value
 
+def single_lined(value, strip=True):
+    """
+    Value have to be singlelined.
+    """
+    if strip:
+        value = value.strip()
+    if "\n" in value or "\r" in value:
+        raise ValidationError("string have to be a single line")
+    return value
 
 class MatchRegexp(object):
     """
