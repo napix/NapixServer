@@ -40,6 +40,10 @@ class Loader(object):
 
     The managers set is compared to the previous and a :class:`Load`
     object is created with the new and the olds managers
+
+    .. attribute:: managers
+
+        The set of :class:`imports.ManagerImport` loaded.
     """
 
     def __init__(self, importers):

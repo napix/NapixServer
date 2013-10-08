@@ -136,8 +136,7 @@ def view(format):
         as it is **not** guessed, neither from the format parameter,
         nor from the content of the response.
 
-        The :func:`content_type` helper is available to set it simply
-
+        The :func:`content_type` helper is available to set it easily
     """
 
     def inner(fn):
