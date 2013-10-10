@@ -132,6 +132,7 @@ Default options:
     conf:       Load from the Napix.managers section of the config
     time:       Add custom header to show the duration of the request
     logger:     Standardize the ouptut on the console accross servers
+    docs:       Generate automated documentation
 
 Non-default:
     notify:     Enable the notification thread
@@ -276,7 +277,7 @@ Meta-options:
         """
         from napixd.application import NapixdBottle
         from napixd.loader import Loader
-        loader = Loader(self.get_loaders())
+        self.loader = loader = Loader(self.get_loaders())
         napixd = NapixdBottle(loader=loader)
         self.install_plugins(napixd)
 
@@ -366,6 +367,12 @@ Meta-options:
         else:
             self.notifier = None
 
+        if 'docs' in self.options:
+            from napixd.docs import DocGenerator
+            self.doc = DocGenerator(self.loader)
+        else:
+            self.doc = None
+
         if 'webclient' in self.options:
             self.web_client = self.get_webclient()
             if self.web_client:
@@ -452,7 +459,8 @@ Meta-options:
 
         from napixd.webclient import WebClient
         logger.info('Using %s as webclient', webclient_path)
-        return WebClient(webclient_path, self)
+        return WebClient(webclient_path, self,
+                         generate_docs='docs' in self.options)
 
     def get_webclient_path(self):
         """

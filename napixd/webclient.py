@@ -21,10 +21,11 @@ class WebClient(bottle.Bottle):
     *launcher* is the :class:`napixd.launcher.Setup` class.
     """
 
-    def __init__(self, root, launcher):
+    def __init__(self, root, launcher, generate_docs=True):
         super(WebClient, self).__init__(autojson=False)
         self.root = root
         self.service_name = launcher.service_name
+        self.doc = launcher.doc
 
         if launcher.auth_handler:
             self.auth_server = getattr(launcher.auth_handler, 'host', '')
@@ -41,6 +42,14 @@ class WebClient(bottle.Bottle):
         self.get('/infos.json', callback=self.infos, apply=[
             ConversationPlugin()
         ])
+
+        if generate_docs:
+            self.get('/docs.json', callback=self.generate_docs, apply=[
+                ConversationPlugin()
+            ])
+
+    def generate_docs(self):
+        return self.doc.generate()
 
     def setup_bottle(self, app):
         app.mount('/_napix_js', self)
