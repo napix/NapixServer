@@ -121,8 +121,10 @@ class ResourceFieldDict(collections.Mapping):
         if validation_method:
             self.validators.append(validation_method)
 
-        values['validators'] = [(validator.__doc__ or '')
-                                for validator in self.validators]
+        validators_docs = values['validators'] = []
+        for validator in self.validators:
+            if validator.__doc__ is not None:
+                validators_docs.append(validator.__doc__)
 
     def __getitem__(self, item):
         return self._values[item]
