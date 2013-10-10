@@ -62,11 +62,12 @@ class BaseCollectionService(object):
             for action in self.collection.get_all_actions()
         ]
 
-        self.resource_fields = dict(self.collection._resource_fields)
+        rf = self.collection._resource_fields
+        self.resource_fields = dict(zip(rf, map(dict, rf.values())))
 
     def generate_manager(self, resource):
         """
-        instanciate a manager for the given resource
+        instantiate a manager for the given resource
         """
         manager = self.collection(resource)
         manager.configure(self.config)

@@ -69,17 +69,9 @@ class ResourceFieldsDict(collections.Mapping):
 
         for resource_field in values:
             field = resource_field.name
-            field_meta = resource_field.resource_field()
             validation_method = getattr(manager_class,
                                         'validate_resource_' + field, None)
-
-            if (hasattr(validation_method, '__doc__') and
-                    validation_method.__doc__ is not None):
-                field_meta['validation'] = validation_method.__doc__.strip()
-            else:
-                field_meta['validation'] = ''
-
-            self._values[field] = field_meta
+            self._values[field] = ResourceFieldDict(resource_field, validation_method)
 
     def __getitem__(self, item):
         return self._values[item]
@@ -103,6 +95,43 @@ class ResourceFieldsDict(collections.Mapping):
                 continue
             example[field.name] = field.example
         return example
+
+
+class ResourceFieldDict(collections.Mapping):
+    def __init__(self, resource_field, validation_method):
+        self._values = values = dict(resource_field.extra)
+        values.update({
+            'editable': resource_field.editable,
+            'optional': resource_field.optional,
+            'computed': resource_field.computed,
+            'default_on_null': resource_field.default_on_null,
+            'example': resource_field.example,
+            'typing': 'dynamic' if resource_field._dynamic_typing else 'static',
+            'choices': (list(resource_field.get_choices())
+                        if resource_field.choices is not None else None),
+            'validation': validation_method and validation_method.__doc__ or '',
+        })
+
+        if resource_field.type in (str, basestring, unicode):
+            values['type'] = 'string'
+        else:
+            values['type'] = resource_field.type.__name__
+
+        self.validators = list(resource_field.validators)
+        if validation_method:
+            self.validators.append(validation_method)
+
+        values['validators'] = [(validator.__doc__ or '')
+                                for validator in self.validators]
+
+    def __getitem__(self, item):
+        return self._values[item]
+
+    def __len__(self):
+        return len(self._values)
+
+    def __iter__(self):
+        return iter(self._values)
 
 
 class ResourceFieldsDescriptor(collections.Sequence):
@@ -444,27 +473,6 @@ class ResourceField(object):
         The field is :attr:`optional` or :attr:`computed`
         """
         return not (self.optional or self.computed)
-
-    def resource_field(self):
-        values = dict(self.extra)
-        values.update({
-            'editable': self.editable,
-            'optional': self.optional,
-            'computed': self.computed,
-            'default_on_null': self.default_on_null,
-            'example': self.example,
-            'typing': 'dynamic' if self._dynamic_typing else 'static',
-            'choices': (list(self.get_choices())
-                        if self.choices is not None else None),
-            'validators': [validator.__doc__ for validator in self.validators]
-        })
-
-        if self.type in (str, basestring, unicode):
-            values['type'] = 'string'
-        else:
-            values['type'] = self.type.__name__
-
-        return values
 
     def validate(self, manager, value):
         """

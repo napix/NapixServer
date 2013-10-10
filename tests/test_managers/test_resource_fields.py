@@ -7,7 +7,11 @@ import unittest
 import mock
 
 from napixd.managers.base import Manager
-from napixd.managers.resource_fields import ResourceFields, ResourceField, ResourceFieldsDescriptor
+from napixd.managers.resource_fields import (
+    ResourceFields,
+    ResourceField,
+    ResourceFieldsDescriptor,
+)
 from napixd.exceptions import ValidationError, ImproperlyConfigured
 
 
@@ -65,7 +69,9 @@ class TestResourceFields(unittest.TestCase):
                 'type': 'int',
                 'example': 123,
                 'computed': False,
-                'validators': []
+                'validators': [
+                    'A b should be a B or a b'
+                ]
             }
         }
         )
