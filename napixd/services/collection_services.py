@@ -329,7 +329,7 @@ class ActionService(object):
         self.doc = (self.action.__doc__ or '').strip()
         self.url = collection_service.resource_url.add_segment(
             '_napix_action').add_segment(self.name)
-        self.resource_fields = dict(self.action.resource_fields)
+        self.resource_fields = dict(zip(rf, map(dict, rf.values())))
 
     def setup_bottle(self, app):
         arguments_plugin = ArgumentsPlugin()
