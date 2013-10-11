@@ -109,7 +109,7 @@ class ResourceFieldDict(collections.Mapping):
             'typing': 'dynamic' if resource_field._dynamic_typing else 'static',
             'choices': (list(resource_field.get_choices())
                         if resource_field.choices is not None else None),
-            'validation': validation_method and validation_method.__doc__ or '',
+            'validation': (validation_method and validation_method.__doc__ or '').strip(),
         })
 
         if resource_field.type in (str, basestring, unicode):
@@ -117,14 +117,14 @@ class ResourceFieldDict(collections.Mapping):
         else:
             values['type'] = resource_field.type.__name__
 
-        self.validators = list(resource_field.validators)
+        validators = list(resource_field.validators)
         if validation_method:
-            self.validators.append(validation_method)
+            validators.append(validation_method)
 
         validators_docs = values['validators'] = []
-        for validator in self.validators:
+        for validator in validators:
             if validator.__doc__ is not None:
-                validators_docs.append(validator.__doc__)
+                validators_docs.append(validator.__doc__.strip())
 
     def __getitem__(self, item):
         return self._values[item]
