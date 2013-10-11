@@ -225,7 +225,7 @@ class TestAAACheckerSuccess(_TestAAAChecker):
 
     def testSuccess(self):
         self.assertTrue(self.checker.authserver_check({'path': '/test'}))
-        self.Connection.assert_called_once_with('auth.napix.local')
+        self.Connection.assert_called_once_with('auth.napix.local', timeout=5)
         self.connection.request.assert_called_once_with(
             'POST', '/auth/authorization/',
             body='''{"path": "/test"}''', headers={
