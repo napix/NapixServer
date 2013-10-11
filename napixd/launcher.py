@@ -103,6 +103,7 @@ class Setup(object):
         'conf',
         'time',  # Show duration
         'logger',  # Ouput of the logs in the console is consistent
+        'docs',
     ])
 
     LOG_FILE = get_file('log/napix.log')
