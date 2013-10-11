@@ -16,6 +16,8 @@ import bottle
 from permissions.models import Perm
 from permissions.managers import PermSet
 
+TIMEOUT = 5
+
 
 class Check(object):
 
@@ -60,7 +62,7 @@ class AAAChecker(object):
     def __init__(self, host, url):
         self.logger.debug('Creating a new checker')
         self.host = host
-        self.http_client = httplib.HTTPConnection(host)
+        self.http_client = httplib.HTTPConnection(host, timeout=TIMEOUT)
         self.url = url
 
     def authserver_check(self, content):
@@ -76,7 +78,10 @@ class AAAChecker(object):
         except socket.gaierror, e:
             self.logger.error('Auth server %s not found %s', self.host, e)
             raise bottle.HTTPError(500, 'Auth server did not respond')
-        except socket.error, e:
+        except socket.timeout as e:
+            self.logger.error('Auth server timed out, %r', e)
+            raise bottle.HTTPError(504, 'Auth server timeout')
+        except socket.error as e:
             self.logger.error('Auth server did not respond, %r', e)
             raise bottle.HTTPError(500, 'Auth server did not respond')
         finally:
