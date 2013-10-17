@@ -85,14 +85,14 @@ class LoggedRequest(object):
                 size += len(x)
                 yield x
 
-        self.logger.info('%s - - [%s] "%s %s" %s %s %s',
+        self.logger.info('%s - - [%s] "%s %s" %s %s %.2fms',
                          self.environ.get('REMOTE_ADDR', '-'),
                          datetime.datetime.now().replace(microsecond=0),
                          self.environ['REQUEST_METHOD'],
                          self.request_line,
                          self.status.split(' ')[0],
                          size,
-                         chrono.total
+                         chrono.total * 1e3
                          )
 
 
