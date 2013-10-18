@@ -8,18 +8,18 @@ services Package
     :members:
     :undoc-members:
 
-:mod:`collection_services` Module
+:mod:`collection` Module
 ---------------------------------
 
-.. automodule:: napixd.services.collection_services
+.. automodule:: napixd.services.collection
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`service_requests` Module
+:mod:`requests` Module
 ------------------------------
 
-.. automodule:: napixd.services.service_requests
+.. automodule:: napixd.services.requests
     :members:
     :show-inheritance:
 

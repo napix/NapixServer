@@ -10,7 +10,7 @@ import sys
 from napixd.services.urls import URL
 from napixd.services.wrapper import ResourceWrapper
 from napixd.services.plugins import ArgumentsPlugin
-from napixd.services.service_requests import (
+from napixd.services.requests import (
     ServiceCollectionRequest,
     ServiceManagedClassesRequest,
     ServiceResourceRequest,

@@ -12,11 +12,11 @@ from napixd.managers import Manager
 from napixd.managers.actions import action
 from napixd.exceptions import ValidationError, NotFound
 from napixd.conf import Conf
-from napixd.services.collection_services import (
+from napixd.services.collection import (
     CollectionService,
     FirstCollectionService,
 )
-from napixd.services.service_requests import (
+from napixd.services.requests import (
     ServiceActionRequest,
     ServiceResourceRequest,
     ServiceCollectionRequest,

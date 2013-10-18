@@ -30,7 +30,7 @@ class ServiceRequest(object):
 
     The object handles the request for the *path* given on the *service*.
     *service* is an instance of
-    :class:`napixd.services.collection_services.CollectionService`.
+    :class:`napixd.services.collection.CollectionService`.
     """
 
     def __init__(self, path, service):

@@ -9,7 +9,7 @@ import mock
 from napixd.conf import Conf
 from napixd.managers.base import ManagerType, Manager
 from napixd.managers.actions import action, parameter
-from napixd.services.collection_services import FirstCollectionService
+from napixd.services.collection import FirstCollectionService
 
 
 class _TestDecorator(unittest2.TestCase):
