@@ -11,9 +11,9 @@ docs/_build
 
 venv
 venv-*
-venv-docs/
-venv-nogevent
-venv-oldgevent/
+
+.agignore
+.coverage
 
 /napixd_id
 /auto
