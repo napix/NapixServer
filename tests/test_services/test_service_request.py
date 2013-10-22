@@ -175,6 +175,14 @@ class TestCollectionServiceRequestOther(_TestSCR):
         self.assertEqual(
             resp.headers['Location'], '/parent/p1/child/lol%20%2F%20mpm')
 
+    def test_method_create_return_none(self):
+        self._make('POST', data={
+            'lol': 1,
+            'blabla': True
+        })
+        self.managed.create_resource.return_value = None
+        self.assertRaises(ValueError, self.scr.handle)
+
 
 class _TestSRR(_Test):
 

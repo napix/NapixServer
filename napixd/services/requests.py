@@ -202,6 +202,8 @@ class ServiceCollectionRequest(ServiceRequest):
         if self.method == 'HEAD':
             return None
         elif self.method == 'POST':
+            if result is None:
+                raise ValueError('create_resource method must return the id.')
             url = self.make_url(result)
             return bottle.HTTPError(201, None, Location=url)
         elif self.method.startswith('getall'):
