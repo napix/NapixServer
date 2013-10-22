@@ -456,9 +456,7 @@ class ResourceField(object):
 
         It is always returns True if :attr:`typing` is **dynamic**.
         """
-        if value is None and self.default_on_null:
-            return True
-        elif self._dynamic_typing:
+        if self._dynamic_typing:
             return True
         elif self.type == int and isinstance(value, long):
             return True
@@ -480,6 +478,14 @@ class ResourceField(object):
         """
         Validate the input **value**.
         """
+        manager_validator = getattr(manager, 'validate_resource_%s' % self.name, None)
+
+        if value is None and self.default_on_null:
+            if not callable(manager_validator):
+                raise ImproperlyConfigured(
+                    'manager must implement a `validate_resource_{0}` to validate default_no_null'.format(self.name))
+            return manager_validator(None)
+
         if not self.check_type(value):
             raise ValidationError({
                 self.name: u'Bad type: {0} has type {2} but should be {1}'.format(
@@ -491,9 +497,8 @@ class ResourceField(object):
         for validator in self.validators:
             value = self._run_callback(validator, value)
 
-        validator = getattr(manager, 'validate_resource_%s' % self.name, None)
-        if validator:
-            value = self._run_callback(validator, value)
+        if manager_validator:
+            value = self._run_callback(manager_validator, value)
 
         return value
 

@@ -322,6 +322,19 @@ class TestResourceField(unittest.TestCase):
             'choices': 123
         })
 
+    def test_choice_default_on_null(self):
+        rf = ResourceField('f', {
+            'example': 'mpm',
+            'default_on_null': True,
+            'choices': [
+                'prefork',
+                'worker'
+            ]
+        })
+        manager = mock.Mock()
+        self.assertEqual(rf.validate(manager, None),
+                         manager.validate_resource_f.return_value)
+
     def test_choice(self):
         rf = ResourceField('f', {
             'example': 'mpm',
