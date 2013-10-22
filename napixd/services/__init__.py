@@ -66,15 +66,12 @@ class Service(object):
             managed_class.manager_class, service, level + 1)
 
     def create_collection_service(self, collection, previous_service, level):
-        # test if direct_plug is defined (to either True or False)
-        # if it's not then we don't have any managed class
-        if collection.direct_plug() is not None and level < MAX_LEVEL:
+        if level < MAX_LEVEL:
             for managed_class in collection.get_managed_classes():
                 self.make_collection_service(
                     previous_service,
                     managed_class,
-                    managed_class.get_name(
-                    ) if not collection.direct_plug() else '',
+                    managed_class.get_name(),
                     level)
 
     def setup_bottle(self, app):

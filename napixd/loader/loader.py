@@ -125,10 +125,10 @@ class Loader(object):
             return manager
         _already_loaded.add(manager)
 
-        if manager.direct_plug() is not None:
+        managed_classes = manager.get_managed_classes()
+        if managed_classes:
             importer = RelatedImporter(manager)
-            managed_classes, errors = importer.load(
-                manager.get_managed_classes())
+            managed_classes, errors = importer.load(managed_classes)
             if errors:
                 raise ManagerImportError(
                     manager.__module__, manager, errors[0])

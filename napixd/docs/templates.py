@@ -59,8 +59,7 @@ class ManagedClassDocTemplate(DocTemplate):
     def render(self, context):
         context = Context(context)
         context['anchor'] += '/' + self.alias
-        if context['manager'].direct_plug() is False:
-            context['url'].append(self.alias)
+        context['url'].append(self.alias)
         return super(ManagedClassDocTemplate, self).render(context)
 
 

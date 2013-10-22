@@ -12,12 +12,14 @@ def get_managers():
     resource_fields.__iter__.return_value = ['f1', 'f2']
 
     Managed = mock.Mock(
+        __name__='Managed',
         name='managed',
         **{
             '_resource_fields': resource_fields,
             'get_name.return_value': 'my-mock',
             'get_all_actions.return_value': [],
-            'direct_plug.return_value': None,
+            'get_all_formats.return_value': {},
+            'get_managed_classes.return_value': [],
         }
     )
     Managed.return_value.__class__ = Managed
@@ -33,24 +35,16 @@ def get_managers():
 
     Manager = mock.Mock(
         name='manager',
+        __name__='Manager',
         **{
             '_resource_fields': resource_fields,
             'get_managed_classes.return_value': managed_classes,
-            'direct_plug.return_value': False,
             'get_name.return_value': 'this-mock',
             'get_all_actions.return_value': [],
+            'get_all_formats.return_value': {},
             'return_value.create_resource.return_value': 'blue',
             'return_value.serialize.side_effect': lambda x: x,
         }
     )
-    Manager_direct = mock.Mock(
-        name='manager_direct',
-        **{
-            '_resource_fields': resource_fields,
-            'get_managed_classes.return_value': managed_classes,
-            'direct_plug.return_value': True,
-            'get_name.return_value': 'this-mock',
-            'get_all_actions.return_value': [],
-        })
-    return Managed, Manager, Manager_direct
-Managed, Manager, Manager_direct = get_managers()
+    return Managed, Manager
+Managed, Manager = get_managers()

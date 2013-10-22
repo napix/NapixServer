@@ -23,9 +23,7 @@ class TestLoader(unittest.TestCase):
         self.manager = mock.MagicMock(
             __module__='a.b',
             __name__='Manager',
-            **{
-                'direct_plug.return_value': None
-            })
+        )
 
     def test_load(self):
         m = ManagerImport(self.manager, 'alias', {})
@@ -96,7 +94,6 @@ class TestLoader(unittest.TestCase):
         self.assertEqual(load.error_managers, set([me]))
 
     def test_setup(self):
-        self.manager.direct_plug.return_value = True
         self.manager.get_managed_classes.return_value = ['a.b.C']
 
         manager_class = mock.Mock(name='managed')
@@ -105,7 +102,7 @@ class TestLoader(unittest.TestCase):
             spec=ManagedClass,
             manager_class=manager_class
         )
-        manager_class.direct_plug.return_value = None
+        manager_class.get_managed_classes.return_value = []
         related_manager.is_resolved.return_value = False
         with mock.patch('napixd.loader.loader.RelatedImporter') as Importer:
             importer = Importer.return_value
@@ -118,7 +115,6 @@ class TestLoader(unittest.TestCase):
     def test_setup_error(self):
         m = ManagerImport(self.manager, 'alias', {})
         self.importer.load.return_value = ([m], [])
-        self.manager.direct_plug.return_value = True
         self.manager.get_managed_classes.return_value = ['a.b.C']
 
         error = ModuleImportError('a.b', ImportError())
@@ -134,7 +130,6 @@ class TestLoader(unittest.TestCase):
         self.assertEqual(load.error_managers, set([me]))
 
     def test_setup_circular(self):
-        self.manager.direct_plug.return_value = True
         self.manager.get_managed_classes.return_value = [self.manager]
 
         with mock.patch('napixd.loader.loader.RelatedImporter') as Importer:

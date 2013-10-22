@@ -225,8 +225,7 @@ class ServiceCollectionRequest(ServiceRequest):
 class ServiceManagedClassesRequest(ServiceRequest):
     """
     The ServiceRequest class for the listing of the managed classes
-    of a manager, when :class:`napixd.managers.base.Manager.direct_plug`
-    is :obj:`False`.
+    of a manager.
     """
 
     def get_manager(self):

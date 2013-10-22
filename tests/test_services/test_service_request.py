@@ -28,7 +28,7 @@ from napixd.services.wrapper import ResourceWrapper
 class _Test(unittest2.TestCase):
 
     def _make(self, method, **kw):
-        self.Manager, self.Managed, x = get_managers()
+        self.Manager, self.Managed = get_managers()
         self.managed = self.Managed.return_value
         self.manager = self.Manager.return_value
 

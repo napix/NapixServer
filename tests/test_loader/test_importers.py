@@ -338,7 +338,7 @@ class TestRelatedImporter(unittest.TestCase):
         mc1.is_resolved.return_value = False
 
         m1 = mock.Mock()
-        m1.direct_plug.return_value = None
+        m1.get_managed_classes.return_value = []
 
         with mock.patch.object(self.ri, 'import_manager') as meth_import:
             meth_import.side_effect = [m1]

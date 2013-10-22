@@ -51,9 +51,6 @@ class BaseCollectionService(object):
         self.collection = collection
         self.config = config
 
-        self.direct_plug = self.collection.direct_plug()
-        # url is added if append_url is True
-
         self.collection_url = collection_url
         self.resource_url = self.collection_url.add_variable()
 
@@ -64,6 +61,25 @@ class BaseCollectionService(object):
 
         rf = self.collection._resource_fields
         self.resource_fields = dict(zip(rf, map(dict, rf.values())))
+        self.meta_data = {
+            'doc': (collection.__doc__ or '').strip(),
+            'direct_plug': False if collection.get_managed_classes() else None,
+            'views': dict((format_, (cb.__doc__ or '').strip())
+                          for (format_, cb)
+                          in self.collection.get_all_formats().items()),
+            'managed_class': [mc.get_name()
+                              for mc in self.collection.get_managed_classes()],
+            'actions': dict((action.name, action.doc)
+                            for action in self.all_actions),
+            'collection_methods': ServiceCollectionRequest.available_methods(collection),
+            'resource_methods': ServiceResourceRequest.available_methods(collection),
+            'resource_fields': self.resource_fields,
+            'source': {
+                'class': self.collection.__name__,
+                'module': self.collection.__module__,
+                'file': sys.modules[self.collection.__module__].__file__,
+            },
+        }
 
     def generate_manager(self, resource):
         """
@@ -131,7 +147,7 @@ class BaseCollectionService(object):
                   method='ANY',
                   apply=arguments_plugin)
 
-        if self.direct_plug is False:
+        if self.collection.get_managed_classes():
             app.route(self.resource_url.with_slash(),
                       callback=self.as_managed_classes,
                       apply=arguments_plugin)
@@ -172,26 +188,7 @@ class BaseCollectionService(object):
         """
         The view server at **_napix_help**
         """
-        manager = self.collection
-        return {
-            'doc': (manager.__doc__ or '').strip(),
-            'direct_plug': self.direct_plug,
-            'views': dict((format_, (cb.__doc__ or '').strip())
-                          for (format_, cb)
-                          in self.collection.get_all_formats().items()),
-            'managed_class': [mc.get_name()
-                              for mc in self.collection.get_managed_classes()],
-            'actions': dict((action.name, action.doc)
-                            for action in self.all_actions),
-            'collection_methods': ServiceCollectionRequest.available_methods(manager),
-            'resource_methods': ServiceResourceRequest.available_methods(manager),
-            'resource_fields': self.resource_fields,
-            'source': {
-                'class': self.collection.__name__,
-                'module': self.collection.__module__,
-                'file': sys.modules[self.collection.__module__].__file__,
-            },
-        }
+        return self.meta_data
 
     def as_resource_fields(self, path):
         """
@@ -268,9 +265,6 @@ class CollectionService(BaseCollectionService):
 
     *previous_service* is the :class:`CollectionService` or the
     :class:`FirstCollectionService` of the parent manager.
-
-    *namespace* is '' if the parent manager has direct_plug is :obj:`True`
-    or the name of the current manager if direct_plug is `False`
     """
 
     def __init__(self, previous_service, managed_class, config, namespace):
