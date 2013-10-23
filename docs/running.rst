@@ -109,9 +109,6 @@ Non-default
 :verbose:
     Augment the ouptut of the loggers
 
-:debug:
-    Run the DEBUG mode
-
 :print_exc:
     Show the exceptions in the console output
 
@@ -129,7 +126,10 @@ Non-default
     Add Cross-Site Request Service headers
 
 :secure:
-    Use only signed authentication and not deny requests signed by a GET token
+    Use only signed authentication and not deny requests signed by a GET token.
+    See :ref:`non-secure-auth`.
 
+:autonomous-auth:
+    Use :ref:`autonomous-auth` in the authentication process.
 
 

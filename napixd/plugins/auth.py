@@ -8,6 +8,8 @@ import socket
 import urlparse
 import functools
 import threading
+import hmac
+import hashlib
 
 from napixd.conf import Conf
 from napixd.chrono import Chrono
@@ -30,7 +32,7 @@ class Check(object):
 
 class Success(Check):
 
-    def __init__(self, content):
+    def __init__(self, content=None):
         if content and isinstance(content, list):
             content = PermSet(Perm(p['host'], p['methods'], p['path'])
                               for p in content)
@@ -44,7 +46,7 @@ class Success(Check):
 
 class Fail(Check):
 
-    def __init__(self, content):
+    def __init__(self, content=None):
         self.raw = content
         if not content or not isinstance(content, list):
             content = None
@@ -112,7 +114,8 @@ class BaseAAAPlugin(object):
 
         hosts = self.settings.get('hosts')
         if hosts:
-            if isinstance(hosts, list):
+            if (isinstance(hosts, list) and
+                    all(isinstance(h, basestring) for h in hosts)):
                 self.hosts = set(hosts)
             elif isinstance(hosts, basestring):
                 self.hosts = set([hosts])
@@ -262,6 +265,7 @@ class NoSecureMixin(object):
                 'path': request.path,
                 'login': login,
                 'signature': signature,
+                'msg': login,
                 'is_secure': False
             }
 
@@ -275,11 +279,38 @@ class NoSecureMixin(object):
         return super(NoSecureMixin, self).host_check(content)
 
 
-def get_auth_plugin(secure=False, time=False):
+class AutonomousMixin(object):
+    def __init__(self, *args, **kw):
+        super(AutonomousMixin, self).__init__(*args, **kw)
+        self.login = self.settings.get('login', 'local_master')
+        password = self.settings.get('password', None)
+        if not password:
+            raise ValueError('password cannot be empty. Set Napix.auth.password')
+
+        self.password = password.encode('utf-8')
+
+    def authserver_check(self, content):
+        if content['login'] == self.login:
+            if content['signature'] == self.sign(content['msg']):
+                self.logger.info('Authorize local request')
+                return Success()
+
+            return Fail()
+
+        return super(AutonomousMixin, self).authserver_check(content)
+
+    def sign(self, msg):
+        return hmac.new(self.password, msg, hashlib.sha256).hexdigest()
+
+
+def get_auth_plugin(secure=False, time=False, autonomous=False):
     bases = []
     if not secure:
         bases.append(NoSecureMixin)
     if time:
         bases.append(TimeMixin)
+    if autonomous:
+        bases.append(AutonomousMixin)
+
     bases.append(AAAPlugin)
     return type(AAAPlugin)('AAAPlugin', tuple(bases), {})

@@ -16,7 +16,7 @@ from permissions.managers import PermSet
 from napixd.plugins.auth import (
     AAAPlugin, AAAChecker,
     Success, Fail,
-    TimeMixin, NoSecureMixin,
+    TimeMixin, NoSecureMixin, AutonomousMixin,
     get_auth_plugin
 )
 
@@ -279,6 +279,9 @@ class _MockAAAPlugin(object):
             'signature': 'sign'
         }
 
+    def authserver_check(self, content):
+        return self.witness.authserver_check(content)
+
     def authorization_extract(self, request):
         return self.witness.authorization_extract(request)
 
@@ -311,7 +314,7 @@ class TestNoSecurePugin(unittest2.TestCase):
 
     def test_authorisation_extract_misformated(self):
         self.GET['token'] = 'master,sign'
-        self.assertRaises(Exception, self.nsp.authorization_extract,self.request)
+        self.assertRaises(Exception, self.nsp.authorization_extract, self.request)
 
     def test_authorisation_extract(self):
         self.GET['token'] = 'master:sign'
@@ -321,6 +324,7 @@ class TestNoSecurePugin(unittest2.TestCase):
             'login': 'master',
             'signature': 'sign',
             'is_secure': False,
+            'msg': 'master',
         })
 
     def test_host_check_not_secure(self):
@@ -329,6 +333,36 @@ class TestNoSecurePugin(unittest2.TestCase):
     def test_host_check_secure(self):
         self.assertTrue(self.nsp.host_check({'is_secure': True}),
                         self.nsp.witness.host_check.return_value)
+
+
+class MockAutonomousPlugin(AutonomousMixin, _MockAAAPlugin):
+    pass
+
+
+class TestAutonmousMixin(unittest2.TestCase):
+    def setUp(self):
+        self.nsp = MockAutonomousPlugin({
+            'password': 'key'
+        }, 'server.napix.io')
+        self.GET = {}
+        self.request = mock.Mock(GET=self.GET)
+
+    def test_authserver_check(self):
+        with mock.patch.object(self.nsp, 'sign', return_value='sign') as sign:
+            self.assertTrue(isinstance(self.nsp.authserver_check({
+                'login': 'local_master',
+                'msg': 'msg',
+                'signature': 'sign'
+            }), Success))
+            sign.assert_called_once_with('msg')
+
+    def test_authserver_check_bad_sign(self):
+        with mock.patch.object(self.nsp, 'sign', return_value='sign'):
+            self.assertTrue(isinstance(self.nsp.authserver_check({
+                'login': 'local_master',
+                'msg': 'msg',
+                'signature': 'bad'
+            }), Fail))
 
 
 class TestGetClass(unittest2.TestCase):

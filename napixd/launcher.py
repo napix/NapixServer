@@ -145,6 +145,7 @@ Non-default:
     cors:       Add Cross-Origin Request Service headers
     secure:     Disable the request tokeb signing
     localhost:  Listen on the loopback interface only
+    autonomous-auth:    Use a local source of authentication
 
 Meta-options:
     only:       Disable default options
@@ -253,7 +254,8 @@ Meta-options:
 
         from napixd.plugins.auth import get_auth_plugin
         aaa_class = get_auth_plugin(secure='secure' in self.options,
-                                    time='time' in self.options)
+                                    time='time' in self.options,
+                                    autonomous='autonomous-auth' in self.options)
         logger.info('Installing auth plugin secure:%s, time:%s',
                     'secure' in self.options, 'time' in self.options)
 

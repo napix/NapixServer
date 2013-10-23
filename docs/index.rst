@@ -30,6 +30,7 @@ Contents:
     validation
     storage
     client
+    auth
     reference/modules
 
 

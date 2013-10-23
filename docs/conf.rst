@@ -103,6 +103,11 @@ service
     The name of this service in the permissions
 get_parameter
     The GET parameter used by non-secure authentication
+password
+    The password used by the autonomous authentication
+host
+    A host or a list of hosts allowed to make request to this server
+
 
 .. _conf.napix.notify:
 

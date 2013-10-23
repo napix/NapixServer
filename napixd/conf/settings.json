@@ -10,7 +10,11 @@
       "#auth_url" : "The authentication URL",
       "auth_url" : "http://central.napix.enix.org:8003/auth/authorization/",
       "#service" : "The name of the service of this host.",
-      "service" : "localhost:8002"
+      "service" : "localhost:8002",
+      "#password" : "The password of this napix server",
+      "password" : "",
+      "#get_parameter": "The name of the GET parameter used for non-secured authentication",
+      "get_parameter": "token"
     },
     "notify" : {
       "#info" : "The notify section",
