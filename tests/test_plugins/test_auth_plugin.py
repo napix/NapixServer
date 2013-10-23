@@ -13,7 +13,12 @@ import bottle
 from permissions.models import Perm
 from permissions.managers import PermSet
 
-from napixd.plugins.auth import AAAPlugin, AAAChecker, Success, Fail
+from napixd.plugins.auth import (
+    AAAPlugin, AAAChecker,
+    Success, Fail,
+    TimeMixin, NoSecureMixin,
+    get_auth_plugin
+)
 
 
 class TestAAAPluginHostCheck(unittest2.TestCase):
@@ -260,3 +265,17 @@ class TestAAACheckerFail(_TestAAAChecker):
         self.connection.getresponse.side_effect = socket.error('unclean pipe')
         self.assertRaises(
             bottle.HTTPError, self.checker.authserver_check, {'path': '/test'})
+
+
+class TestGetClass(unittest2.TestCase):
+    def test_get_no_options(self):
+        cls = get_auth_plugin(False, False)
+        self.assertTrue(issubclass(cls, AAAPlugin))
+        self.assertTrue(issubclass(cls, NoSecureMixin))
+        self.assertFalse(issubclass(cls, TimeMixin))
+
+    def test_get_options(self):
+        cls = get_auth_plugin(True, True)
+        self.assertTrue(issubclass(cls, AAAPlugin))
+        self.assertFalse(issubclass(cls, NoSecureMixin))
+        self.assertTrue(issubclass(cls, TimeMixin))

@@ -172,7 +172,7 @@ class AAAPlugin(BaseAAAPlugin):
     """
     logger = logging.getLogger('Napix.AAA')
 
-    def __init__(self, conf=None, service_name='', with_chrono=False):
+    def __init__(self, conf=None, service_name=''):
         super(AAAPlugin, self).__init__(conf, service_name=service_name)
         url = self.settings.get('auth_url')
         auth_url_parts = urlparse.urlsplit(url)
@@ -181,7 +181,6 @@ class AAAPlugin(BaseAAAPlugin):
         self.url = urlparse.urlunsplit(
             ('', '', auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
         self._local = threading.local()
-        self.with_chrono = with_chrono
 
     @property
     def checker(self):
@@ -198,10 +197,7 @@ class AAAPlugin(BaseAAAPlugin):
         def inner_aaa(*args, **kwargs):
             request = bottle.request
 
-            if self.with_chrono:
-                check = self._checks_with_chrono(request)
-            else:
-                check = self._checks(request)
+            check = self.checks(request)
 
             path = bottle.request.path
             method = bottle.request.method
@@ -232,13 +228,7 @@ class AAAPlugin(BaseAAAPlugin):
             # actually run the callback
         return inner_aaa
 
-    def _checks_with_chrono(self, request):
-        with Chrono() as chrono:
-            r = self._checks(request)
-        bottle.response.headers['x-auth-time'] = chrono.total
-        return r
-
-    def _checks(self, request):
+    def checks(self, request):
         content = self.authorization_extract(request)
 
         # self.logger.debug(msg)
@@ -247,10 +237,18 @@ class AAAPlugin(BaseAAAPlugin):
         return c
 
 
-class NoSecureAAAPlugin(AAAPlugin):
+class TimeMixin(object):
+    def checks(self, request):
+        with Chrono() as chrono:
+            r = super(TimeMixin, self).checks(request)
+        bottle.response.headers['x-auth-time'] = chrono.total
+        return r
+
+
+class NoSecureMixin(object):
 
     def __init__(self, *args, **kw):
-        super(NoSecureAAAPlugin, self).__init__(*args, **kw)
+        super(NoSecureMixin, self).__init__(*args, **kw)
         self.token = self.settings.get('get_parameter', 'token')
 
     def authorization_extract(self, request):
@@ -268,9 +266,19 @@ class NoSecureAAAPlugin(AAAPlugin):
                 'is_secure': False
             }
 
-        return super(NoSecureAAAPlugin, self).authorization_extract(request)
+        return super(NoSecureMixin, self).authorization_extract(request)
 
     def host_check(self, content):
         if not content['is_secure']:
             return True
-        return super(NoSecureAAAPlugin, self).host_check(content)
+        return super(NoSecureMixin, self).host_check(content)
+
+
+def get_auth_plugin(secure=False, time=False):
+    bases = []
+    if not secure:
+        bases.append(NoSecureMixin)
+    if time:
+        bases.append(TimeMixin)
+    bases.append(AAAPlugin)
+    return type(AAAPlugin)('AAAPlugin', tuple(bases), {})

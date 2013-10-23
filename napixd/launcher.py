@@ -251,18 +251,13 @@ Meta-options:
             raise CannotLaunch(
                 '*auth* option is set and no configuration has been found (see Napix.auth key).')
 
-        if 'secure' in self.options:
-            from napixd.plugins.auth import AAAPlugin
-            aaa_class = AAAPlugin
-        else:
-            logger.info('Installing not Secure auth plugin')
-            from napixd.plugins.auth import NoSecureAAAPlugin
-            aaa_class = NoSecureAAAPlugin
+        from napixd.plugins.auth import get_auth_plugin
+        aaa_class = get_auth_plugin(secure='secure' in self.options,
+                                    time='time' in self.options)
+        logger.info('Installing auth plugin secure:%s, time:%s',
+                    'secure' in self.options, 'time' in self.options)
 
-        return aaa_class(conf,
-                         service_name=self.service_name,
-                         with_chrono='time' in self.options,
-                         )
+        return aaa_class(conf, service_name=self.service_name)
 
     def get_bottle(self):
         """
