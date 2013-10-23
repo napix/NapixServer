@@ -142,7 +142,6 @@ class BaseAAAPlugin(object):
             content[x] = content[x][0]
         content['msg'] = msg
         content['signature'] = signature
-        content['is_secure'] = True
         return content
 
     def host_check(self, content):
@@ -259,14 +258,16 @@ class NoSecureMixin(object):
                     'Incorrect NAPIX non-secure Authentication', 401)
             self.logger.debug('Not secured request')
             return {
-                'method': bottle.request.method,
-                'path': bottle.request.path,
+                'method': request.method,
+                'path': request.path,
                 'login': login,
                 'signature': signature,
                 'is_secure': False
             }
 
-        return super(NoSecureMixin, self).authorization_extract(request)
+        content = super(NoSecureMixin, self).authorization_extract(request)
+        content['is_secure'] = True
+        return content
 
     def host_check(self, content):
         if not content['is_secure']:

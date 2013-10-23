@@ -267,6 +267,70 @@ class TestAAACheckerFail(_TestAAAChecker):
             bottle.HTTPError, self.checker.authserver_check, {'path': '/test'})
 
 
+class _MockAAAPlugin(object):
+    def __init__(self, settings, service_name):
+        self.settings = settings
+        self.logger = mock.Mock()
+        self.witness = mock.Mock()
+        self.witness.authorization_extract.return_value = {
+            'method': 'GET',
+            'path': '/',
+            'login': 'login',
+            'signature': 'sign'
+        }
+
+    def authorization_extract(self, request):
+        return self.witness.authorization_extract(request)
+
+    def host_check(self, content):
+        return self.witness.host_check(content)
+
+    def reject(self, reason):
+        raise Exception(reason)
+
+
+class MockAAAPlugin(NoSecureMixin, _MockAAAPlugin):
+    pass
+
+
+class TestNoSecurePugin(unittest2.TestCase):
+    def setUp(self):
+        self.nsp = MockAAAPlugin({
+        }, 'server.napix.io')
+        self.GET = {}
+        self.request = mock.Mock(GET=self.GET)
+
+    def test_authorisation_extract_no_token(self):
+        self.assertEqual(self.nsp.authorization_extract(self.request), {
+            'method': 'GET',
+            'path': '/',
+            'login': 'login',
+            'signature': 'sign',
+            'is_secure': True,
+        })
+
+    def test_authorisation_extract_misformated(self):
+        self.GET['token'] = 'master,sign'
+        self.assertRaises(Exception, self.nsp.authorization_extract,self.request)
+
+    def test_authorisation_extract(self):
+        self.GET['token'] = 'master:sign'
+        self.assertEqual(self.nsp.authorization_extract(self.request), {
+            'method': self.request.method,
+            'path': self.request.path,
+            'login': 'master',
+            'signature': 'sign',
+            'is_secure': False,
+        })
+
+    def test_host_check_not_secure(self):
+        self.assertTrue(self.nsp.host_check({'is_secure': False}))
+
+    def test_host_check_secure(self):
+        self.assertTrue(self.nsp.host_check({'is_secure': True}),
+                        self.nsp.witness.host_check.return_value)
+
+
 class TestGetClass(unittest2.TestCase):
     def test_get_no_options(self):
         cls = get_auth_plugin(False, False)
