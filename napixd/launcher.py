@@ -140,7 +140,6 @@ Non-default:
     silent:     Do not show the messages in the console
     verbose:    Augment the ouptut of the loggers
     print_exc:  Show the exceptions in the console output
-    rocket:     Use Rocket as the server
     times:      Add custom header to show the running time and the total time (requires gevent)
     pprint:     Enable pretty printing of output
     cors:       Add Cross-Origin Request Service headers
@@ -405,9 +404,7 @@ Meta-options:
         """
         Get the bottle server adapter
         """
-        if 'rocket' in self.options:
-            return 'rocket'
-        elif not 'gevent' in self.options:
+        if not 'gevent' in self.options:
             return 'wsgiref'
         elif 'uwsgi' in self.options:
             return 'gevent'
@@ -501,13 +498,6 @@ Meta-options:
             logging.INFO)
 
         console_handler.setFormatter(formatter)
-
-        if 'rocket' in self.options:
-            logging.getLogger('Rocket').addHandler(file_handler)
-            logging.getLogger('Rocket').setLevel(logging.DEBUG)
-            logging.getLogger('Rocket.Errors').setLevel(logging.DEBUG)
-            logging.getLogger(
-                'Rocket.Errors.ThreadPool').setLevel(logging.INFO)
 
         logging.getLogger('Napix').setLevel(logging.DEBUG)
         logging.getLogger('Napix').addHandler(console_handler)
