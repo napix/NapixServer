@@ -107,9 +107,8 @@ class BaseAAAPlugin(object):
     name = 'authentication_plugin'
     api = 2
 
-    def __init__(self, conf=None, allow_bypass=False, service_name=''):
+    def __init__(self, conf=None, service_name=''):
         self.settings = conf or Conf.get_default('Napix.auth')
-        self.allow_bypass = allow_bypass
 
         hosts = self.settings.get('hosts')
         if hosts:
@@ -126,9 +125,6 @@ class BaseAAAPlugin(object):
             self.hosts = None
 
         self.service = service_name
-
-    def debug_check(self, request):
-        return self.allow_bypass and 'authok' in request.GET
 
     def reject(self, cause, code=403):
         self.logger.info('Rejecting request of %s: %s',
@@ -176,9 +172,8 @@ class AAAPlugin(BaseAAAPlugin):
     """
     logger = logging.getLogger('Napix.AAA')
 
-    def __init__(self, conf=None, allow_bypass=False, service_name='', with_chrono=False):
-        super(AAAPlugin, self).__init__(
-            conf, allow_bypass, service_name=service_name)
+    def __init__(self, conf=None, service_name='', with_chrono=False):
+        super(AAAPlugin, self).__init__(conf, service_name=service_name)
         url = self.settings.get('auth_url')
         auth_url_parts = urlparse.urlsplit(url)
         self.logger.info('Set up authentication with %s', url)
@@ -202,8 +197,6 @@ class AAAPlugin(BaseAAAPlugin):
         @functools.wraps(callback)
         def inner_aaa(*args, **kwargs):
             request = bottle.request
-            if self.debug_check(request):
-                return callback(*args, **kwargs)
 
             if self.with_chrono:
                 check = self._checks_with_chrono(request)

@@ -139,7 +139,6 @@ Non-default:
     notify:     Enable the notification thread
     silent:     Do not show the messages in the console
     verbose:    Augment the ouptut of the loggers
-    debug:      Run the DEBUG mode
     print_exc:  Show the exceptions in the console output
     rocket:     Use Rocket as the server
     times:      Add custom header to show the running time and the total time (requires gevent)
@@ -206,7 +205,6 @@ Meta-options:
             return
 
         self._patch_gevent()
-        self.set_debug()
         app = self.get_app()
 
         logger.info('Starting')
@@ -223,10 +221,6 @@ Meta-options:
             console.info('Stopping')
 
         console.info('Stopped')
-
-    def set_debug(self):
-        import bottle
-        bottle.debug('debug' in self.options)
 
     def get_service_name(self):
         """
@@ -267,7 +261,6 @@ Meta-options:
             aaa_class = NoSecureAAAPlugin
 
         return aaa_class(conf,
-                         allow_bypass='debug' in self.options,
                          service_name=self.service_name,
                          with_chrono='time' in self.options,
                          )

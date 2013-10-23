@@ -41,7 +41,7 @@ class AAAPluginBase(unittest2.TestCase):
         cls.patch_aaachecker = mock.patch(
             'napixd.plugins.auth.AAAChecker', spec=AAAChecker)
 
-    def setUp(self, status, allow_bypass=False):
+    def setUp(self, status):
         self.AAAchecker = self.patch_aaachecker.start()
         self.AAAchecker.return_value.authserver_check.return_value = Success(
             None) if status == 200 else Fail(None)
@@ -50,7 +50,6 @@ class AAAPluginBase(unittest2.TestCase):
             'auth_url': 'http://auth.napix.local/auth/authorization/',
             'hosts': ['napix.test'],
         },
-            allow_bypass=allow_bypass,
             service_name='org.napix.test'
         )
         self.success = mock.MagicMock(__name__='my_callback')
@@ -155,25 +154,16 @@ class TestAAAPluginSuccess(AAAPluginBase):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.body, 'You need to sign your request')
 
-    def testNodebugNoAuth(self):
-        response = self._do_request(
-            'GET', '/test', auth=False, query='authok')
-        self.assertEqual(response.status_code, 401)
-
 
 class TestAAAPluginBypass(AAAPluginBase):
 
     def setUp(self):
-        super(TestAAAPluginBypass, self).setUp(403, allow_bypass=True)
+        super(TestAAAPluginBypass, self).setUp(403)
 
     def testBadAuth(self):
         response = self._do_request('GET', '/test', auth='lolnetwork')
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.body, 'Incorrect NAPIX Authentication')
-
-    def testDebugNoauth(self):
-        self._do_request('GET', '/test', auth=False, query='authok')
-        self.success.assert_called_once_with()
 
     def testMismatchMethod(self):
         response = self._do_request(
