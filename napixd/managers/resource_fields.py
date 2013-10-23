@@ -40,6 +40,9 @@ class ResourceFields(object):
                     raise ImproperlyConfigured('`{0}`: {1}'.format(rf, e))
             self.values.append(rf)
 
+    def __nonzero__(self):
+        return bool(self.values)
+
     def __iter__(self):
         return iter(self.values)
 

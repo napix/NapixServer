@@ -116,6 +116,9 @@ class Loader(object):
     def setup(self, manager):
         """
         Loads the managed classes of a manager
+
+
+        It checks that all the manager and sub-managers have defined a resource_fields dict.
         """
         return self._setup(manager, set())
 
@@ -124,6 +127,10 @@ class Loader(object):
             logger.info('Circular manager detected: %s', manager.get_name())
             return manager
         _already_loaded.add(manager)
+
+        if not manager._resource_fields:
+            raise ManagerImportError(manager.__module__, manager,
+                                     'This manager has no resource_fields')
 
         managed_classes = manager.get_managed_classes()
         if managed_classes:

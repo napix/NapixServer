@@ -6,10 +6,12 @@ from __future__ import absolute_import
 import unittest
 import mock
 
+from napixd.managers.base import Manager
+from napixd.managers.resource_fields import ResourceFields
 from napixd.managers.managed_classes import ManagedClass
 
 from napixd.loader.importers import Importer
-from napixd.loader.errors import ModuleImportError
+from napixd.loader.errors import ModuleImportError, ManagerImportError
 from napixd.loader.imports import ManagerImport, ManagerError
 from napixd.loader.loader import Loader
 
@@ -23,6 +25,9 @@ class TestLoader(unittest.TestCase):
         self.manager = mock.MagicMock(
             __module__='a.b',
             __name__='Manager',
+            spec=Manager,
+            get_managed_classes=mock.Mock(return_value=[]),
+            _resource_fields=mock.MagicMock(spec=ResourceFields)
         )
 
     def test_load(self):
@@ -138,3 +143,24 @@ class TestLoader(unittest.TestCase):
             self.loader.setup(self.manager)
 
         Importer.assert_called_once_with(self.manager)
+
+    def test_setup_resource_fields(self):
+        self.manager._resource_fields.__nonzero__.return_value = False
+        self.assertRaises(ManagerImportError, self.loader.setup, self.manager)
+
+    def test_setup_resource_fields_submanager(self):
+        self.manager.get_managed_classes.return_value = ['a.b.C']
+
+        manager_class = mock.MagicMock(name='managed')
+        manager_class._resource_fields.__nonzero__.return_value = False
+        related_manager = mock.Mock(
+            name='related',
+            spec=ManagedClass,
+            manager_class=manager_class
+        )
+        related_manager.is_resolved.return_value = False
+
+        with mock.patch('napixd.loader.loader.RelatedImporter') as Importer:
+            importer = Importer.return_value
+            importer.load.return_value = ([manager_class], [])
+            self.assertRaises(ManagerImportError, self.loader.setup, self.manager)
