@@ -42,8 +42,8 @@ class ExceptionsCatcher(object):
         causing the exception.
         """
         a, b, last_traceback = sys.exc_info()
-        method = environ['REQUEST_METHOD']
-        path = environ['REQUEST_URI']
+        method = environ.get('REQUEST_METHOD')
+        path = environ.get('PATH_INFO')
         self.logger.error('%s on %s failed with %s (%s)',
                           method, path, error.__class__.__name__, str(error))
         res = {
