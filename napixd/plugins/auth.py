@@ -158,6 +158,17 @@ class BaseAAAPlugin(object):
         except KeyError, e:
             raise self.reject('Missing authentication data: %s' % e)
 
+    def __call__(self, callback, request):
+        try:
+            resp = self.authorize(callback, request)
+        except HTTPError as e:
+            self.logger.info('Rejecting request of %s: %s %s',
+                             request.environ.get('REMOTE_ADDR', 'unknow'),
+                             e.status, e.body)
+            raise
+
+        return resp
+
 
 class AAAPlugin(BaseAAAPlugin):
 
@@ -181,17 +192,6 @@ class AAAPlugin(BaseAAAPlugin):
         content['host'] = self.service
         checker = AAAChecker(self.host, self.url)
         return checker.authserver_check(content)
-
-    def __call__(self, callback, request):
-        try:
-            resp = self.authorize(callback, request)
-        except HTTPError as e:
-            self.logger.info('Rejecting request of %s: %s %s',
-                             request.environ.get('REMOTE_ADDR', 'unknow'),
-                             e.status, e.body)
-            raise
-
-        return resp
 
     def authorize(self, callback, request):
         check = self.checks(request)
