@@ -1,4 +1,3 @@
-bottle>=0.11
 git+git://github.com/surfly/gevent.git
 http://builds.enix.org/napix/permissions-latest.tar.gz
 http://builds.enix.org/napix/napix-latest.tar.gz

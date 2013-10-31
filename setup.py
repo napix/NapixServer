@@ -16,7 +16,6 @@ setup(
     author='Enix',
     author_email='gr@enix.org',
     install_requires=[
-        'bottle>=0.11',
         'permissions>=1.4',
         'napix>=0.6',
     ],

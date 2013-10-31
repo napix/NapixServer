@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest2
-import bottle
 import mock
-import json
 import functools
 
 from napix.exceptions import HTTPError
