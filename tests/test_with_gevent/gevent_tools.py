@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import time
+from __future__ import absolute_import
+
+import mock
 import unittest2 as unittest
 
+import time
+import functools
 import gevent
 
 from napixd.gevent_tools import Greenlet, Tracer, AddGeventTimeHeader
@@ -73,7 +77,7 @@ class Resp(object):
 
 class TestGeventHeaders(unittest.TestCase):
 
-    def _do_something(self):
+    def _do_something(self, request):
         """This function should run in .1s with a total run of .2s"""
         gevent.sleep(0.1)  # Yield
         time.sleep(0.1)  # No Yield
@@ -81,7 +85,7 @@ class TestGeventHeaders(unittest.TestCase):
 
     def setUp(self):
         self.plugin = AddGeventTimeHeader()
-        self.callback = self.plugin.apply(self._do_something, None)
+        self.callback = functools.partial(self.plugin, self._do_something, mock.Mock())
 
     def test_run_solo(self):
         resp = self.callback()

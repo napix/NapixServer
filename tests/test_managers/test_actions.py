@@ -55,12 +55,12 @@ class TestServiceAction(_TestServiceAction):
             set([
                 '/my-mock',
                 '/my-mock/',
-                '/my-mock/:f0',
+                '/my-mock/?',
                 '/my-mock/_napix_help',
                 '/my-mock/_napix_resource_fields',
-                '/my-mock/:f0/_napix_all_actions',
-                '/my-mock/:f0/_napix_action/send_mail',
-                '/my-mock/:f0/_napix_action/send_mail/_napix_help',
+                '/my-mock/?/_napix_all_actions',
+                '/my-mock/?/_napix_action/send_mail',
+                '/my-mock/?/_napix_action/send_mail/_napix_help',
                 ]))
 
     def test_all_action(self):

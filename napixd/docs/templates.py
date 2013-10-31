@@ -1,10 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Templates for the documentation generator.
+
+Each template is a class associated to a type of object to document.
+The classes are responsible for the creation and
+rendering of sub-templates recursively.
+"""
+
 from napixd.docs.rendering import DocStrings, DocString, Context
 
 
 class LoaderDocTemplate(object):
+    """
+    The base template for a :class:`napixd.loader.loader.Loader` instance.
+    """
     def __init__(self, loader):
         self.root_managers = map(RootDocTemplate, loader.managers)
 
@@ -13,6 +24,9 @@ class LoaderDocTemplate(object):
 
 
 class DocTemplate(object):
+    """
+    A base class for managers classes.
+    """
     def __init__(self, manager):
         self.manager = manager
         self.resource_doc = ResourceDocTemplate(manager)
@@ -33,6 +47,12 @@ class DocTemplate(object):
 
 
 class RootDocTemplate(DocTemplate):
+    """
+    The template for root managers.
+
+    All sub-managers and their sub-managers are rendered
+    by a :class:`ManagedClassDocTemplate`
+    """
     def __init__(self, manager_import):
         super(RootDocTemplate, self).__init__(manager_import.manager)
         self.alias = manager_import.alias
@@ -64,6 +84,9 @@ class ManagedClassDocTemplate(DocTemplate):
 
 
 class ResourceFieldsDocTemplate(object):
+    """
+    A template class for :attr:`napxixd.managers.resource_fields.ResourceFields`
+    """
     def __init__(self, resource_fields):
         self.rf = resource_fields
 
@@ -72,6 +95,9 @@ class ResourceFieldsDocTemplate(object):
 
 
 class CollectionDocTemplate(object):
+    """
+    A template class for the collection side of managers.
+    """
     def __init__(self, manager):
         self.has_list = (hasattr(manager, 'list_resource') or
                          hasattr(manager, 'get_all_resources') or
@@ -109,6 +135,9 @@ class CollectionDocTemplate(object):
 
 
 class ViewDocTemplate(object):
+    """
+    The template for the :func:`napixd.managers.views.view`
+    """
     def __init__(self, manager, view, method):
         self.view = view
         self.method = method
@@ -124,6 +153,9 @@ class ViewDocTemplate(object):
 
 
 class ActionDocTemplate(object):
+    """
+    The template for the :func:`~napixd.managers.actions.action`
+    """
     def __init__(self, manager, action):
         self.action = action
         self.method = getattr(manager, action)
@@ -141,6 +173,9 @@ class ActionDocTemplate(object):
 
 
 class ResourceDocTemplate(object):
+    """
+    A template class for the resource side of managers.
+    """
     def __init__(self, manager):
         self.manager = manager
         self.has_get = (hasattr(manager, 'get_resource') or

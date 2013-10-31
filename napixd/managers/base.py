@@ -593,7 +593,7 @@ class ManagerInterface(object):
         """
         Return the list of ids of all managed resources matching the *filters*.
 
-        *filters* is the GET parameter of :data:`bottle.request`.
+        *filters* is a mapping of filters to apply to this request
         It behaves like a dict with an additional :meth:`getall(key)` method
         that returns a list of all the values matching the given **key**.
         """

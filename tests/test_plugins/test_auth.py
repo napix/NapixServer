@@ -5,13 +5,15 @@ from __future__ import absolute_import
 
 import socket
 import httplib
+import unittest
 import unittest2
 import mock
 
-import bottle
-
 from permissions.models import Perm
 from permissions.managers import PermSet
+
+from napixd.http.request import Request
+from napixd.http.response import HTTPError
 
 from napixd.plugins.auth import (
     AAAPlugin, AAAChecker,
@@ -19,24 +21,6 @@ from napixd.plugins.auth import (
     TimeMixin, NoSecureMixin, AutonomousMixin,
     get_auth_plugin
 )
-
-
-class TestAAAPluginHostCheck(unittest2.TestCase):
-
-    def test_no_host(self):
-        plugin = AAAPlugin({
-            'auth_url': 'http://auth.napix.local/auth/authorization/',
-        },
-            service_name='org.napix.test'
-        )
-
-        with mock.patch('bottle.request', method='GET', path='/a/b', query_string=''):
-            check = plugin.host_check({
-                'host': 'a.b.c',
-                'method': 'GET',
-                'path': '/a/b'
-            })
-        self.assertEqual(check, None)
 
 
 class AAAPluginBase(unittest2.TestCase):
@@ -258,13 +242,11 @@ class TestAAACheckerFail(_TestAAAChecker):
 
     def testError(self):
         self.response.status = 504
-        self.assertRaises(
-            bottle.HTTPError, self.checker.authserver_check, {'path': '/test'})
+        self.assertRaises(HTTPError, self.checker.authserver_check, {'path': '/test'})
 
     def testSocketError(self):
         self.connection.getresponse.side_effect = socket.error('unclean pipe')
-        self.assertRaises(
-            bottle.HTTPError, self.checker.authserver_check, {'path': '/test'})
+        self.assertRaises(HTTPError, self.checker.authserver_check, {'path': '/test'})
 
 
 class _MockAAAPlugin(object):

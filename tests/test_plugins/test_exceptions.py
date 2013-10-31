@@ -5,6 +5,7 @@ import unittest2
 import bottle
 import mock
 import json
+import functools
 
 from napix.exceptions import HTTPError
 
@@ -12,54 +13,49 @@ from napixd.plugins.exceptions import ExceptionsCatcher
 
 
 class TestExceptionCatcher(unittest2.TestCase):
-
-    @classmethod
-    def setUpClass(self):
-        self.requester = mock.patch('bottle.request', method='GET', path='/')
-
     def setUp(self):
-        self.exc = exc = ExceptionsCatcher()
-        self.requester.start()
-        self.success = mock.MagicMock(__name__='callback')
-        self.cb = exc.apply(self.success, mock.Mock())
-
-    def tearDown(self):
-        self.requester.stop()
+        self.cb = mock.Mock()
+        self.exc = ExceptionsCatcher(self.cb)
+        self.environ = env = {
+            'REQUEST_METHOD': 'GET',
+            'REQUEST_URI': '/abc'
+        }
+        self.start_resp = sr = mock.Mock()
+        self.application = functools.partial(self.exc, env, sr)
 
     def test_success(self):
-        self.success.return_value = 'abcdef'
-        self.assertEqual(self.cb(), 'abcdef')
+        resp = self.application()
+
+        self.cb.assert_called_once_with(self.environ, self.start_resp)
+        self.assertEqual(resp, self.cb.return_value)
+
+    def test_re_raise(self):
+        self.cb.side_effect = KeyboardInterrupt()
+        self.assertRaises(KeyboardInterrupt, self.application)
 
     def test_raise(self):
-        self.success.side_effect = Exception()
+        self.cb.side_effect = Exception()
 
-        resp = self.cb()
+        with mock.patch.object(self.exc, 'extract_error', return_value={'a': 1}):
+            resp = self.application()
 
-        self.assertIsInstance(resp, bottle.HTTPResponse)
-        self.assertEqual(resp.headers['Content-type'], 'application/json')
-        body = json.loads(resp.body)
-        self.assertDictEqual(body['request'], {
-            'method': 'GET', 'path': '/', 'query': {}
-        })
+        self.start_resp.assert_called_once_with('500 Internal Error', mock.ANY)
+        status, headers = self.start_resp.call_args[0]
 
-    def test_error(self):
-        self.success.side_effect = previous_error = bottle.HTTPError(400, 'feels bad')
-        resp = self.cb()
-
-        self.assertIs(resp, previous_error)
+        headers = dict(headers)
+        self.assertEqual(headers['Content-Type'], 'application/json')
+        self.assertEqual(''.join(resp), '{"a": 1}')
 
     def test_filter(self):
         self.exc.napix_path = '/a/b'
-        self.success.side_effect = Exception()
 
         with mock.patch('napixd.plugins.exceptions.traceback') as traceback:
             traceback.extract_tb.return_value = [
                 ['/a/b/fname', 12, 'function', 'patoum(1, 2, 3)'],
                 ['/c/d/fname', 12, 'function', 'patoum(1, 2, 3)'],
             ]
-            resp = self.cb()
+            body = self.exc.extract_error(self.environ, Exception())
 
-        body = json.loads(resp.body)
         self.assertEqual(body['traceback'], [
             {
                 'filename': '/c/d/fname',
@@ -71,15 +67,18 @@ class TestExceptionCatcher(unittest2.TestCase):
 
     def test_remote_exception(self):
         request = 'GET server.napix.nx/captains'
-        response = mock.Mock()
+        response = mock.Mock(status=500, reason='Internal Error')
         cause = {
             'traceback': [],
             'error_class': 'ValueError',
         }
-        self.success.side_effect = HTTPError(request, cause, response)
+        err = HTTPError(request, cause, response)
 
-        resp = self.cb()
-        body = json.loads(resp.body)
+        with mock.patch('napixd.plugins.exceptions.traceback') as traceback:
+            traceback.extract_tb.return_value = [
+                ['/c/d/fname', 12, 'function', 'patoum(1, 2, 3)'],
+            ]
+            body = self.exc.extract_error(self.environ, err)
 
         self.assertEqual(body['remote_call'], 'GET server.napix.nx/captains')
         self.assertEqual(body['remote_error'], {
@@ -91,26 +90,27 @@ class TestExceptionCatcher(unittest2.TestCase):
         request = 'GET server.napix.nx/captains'
         response = mock.Mock()
         cause = '403 Forbidden'
-        self.success.side_effect = remote_error = HTTPError(request, cause, response)
+        remote_error = HTTPError(request, cause, response)
 
-        resp = self.cb()
-        body = json.loads(resp.body)
+        with mock.patch('napixd.plugins.exceptions.traceback') as traceback:
+            traceback.extract_tb.return_value = [
+                ['/c/d/fname', 12, 'function', 'patoum(1, 2, 3)'],
+            ]
+            body = self.exc.extract_error(self.environ, remote_error)
 
         self.assertEqual(body['remote_call'], 'GET server.napix.nx/captains')
         self.assertEqual(body['remote_error'], str(remote_error))
 
     def test_filter_intern(self):
         self.exc.napix_path = '/a/b'
-        self.success.side_effect = Exception()
 
         with mock.patch('napixd.plugins.exceptions.traceback') as traceback:
             traceback.extract_tb.return_value = [
                 ['/a/b/fname', 12, 'function', 'patoum(1, 2, 3)'],
                 ['/a/b/fname', 12, 'function', 'patoum(1, 2, 3)'],
             ]
-            resp = self.cb()
+            body = self.exc.extract_error(self.environ, Exception())
 
-        body = json.loads(resp.body)
         self.assertEqual(body['traceback'], [
             {
                 'filename': '/a/b/fname',

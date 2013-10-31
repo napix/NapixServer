@@ -63,8 +63,11 @@ class LoggedRequest(object):
 
     def __init__(self, start_response, application, environ):
         self._start_response = start_response
-        self.application = application
         self.environ = environ
+        self.chrono = Chrono()
+
+        with self.chrono:
+            self.response = application(self.environ, self.start_response)
 
     def start_response(self, status, headers):
         self.status = status
@@ -80,10 +83,12 @@ class LoggedRequest(object):
 
     def __iter__(self):
         size = 0
-        with Chrono() as chrono:
-            for x in self.application(self.environ, self.start_response):
+        with Chrono() as transfert:
+            for x in self.response:
                 size += len(x)
                 yield x
+
+        total_time = transfert.total + self.chrono.total
 
         self.logger.info('%s - - [%s] "%s %s" %s %s %.2fms',
                          self.environ.get('REMOTE_ADDR', '-'),
@@ -92,7 +97,7 @@ class LoggedRequest(object):
                          self.request_line,
                          self.status.split(' ')[0],
                          size,
-                         chrono.total * 1e3
+                         total_time,
                          )
 
 

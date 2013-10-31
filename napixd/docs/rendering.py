@@ -1,10 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+A collection of helpers and utility classes for the documentation generation.
+"""
+
 import collections
 
 
 class Context(collections.MutableMapping):
+    """
+    A dict-like stack of :class:`dict`.
+
+    The context takes a *previous* argument which is another mapping.
+    Read operations returns the first value in the context or the *previous* context.
+    :class:`list` and :class:`dict` returned from the *previous* context are copied
+    so that modifications are only visible in the current context and its descendants.
+
+    Each :class:`Context` instance can be written and the value is stored in the current context.
+    A value existing in the previous context will be masked but not overwritten.
+    """
     def __init__(self, previous=None):
         self.current = {}
         self.previous = previous if previous is not None else {}
@@ -47,6 +62,9 @@ class Context(collections.MutableMapping):
 
 
 class DocStrings(object):
+    """
+    A proxy class for *value* that returns the doctstrings of the attributes accessed.
+    """
     def __init__(self, value):
         self.value = value
 
@@ -56,4 +74,8 @@ class DocStrings(object):
 
 
 def DocString(method):
+    """
+    A helper that cast the docstring of a method and
+    strips the surrounding whitespaces
+    """
     return (getattr(method, '__doc__', None) or '').strip()

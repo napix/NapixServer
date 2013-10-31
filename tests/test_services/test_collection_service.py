@@ -9,6 +9,7 @@ import unittest2
 from napixd.conf import Conf
 from napixd.services import CollectionService, FirstCollectionService
 from napixd.managers.managed_classes import ManagedClass
+from napixd.http.request import Request
 
 from tests.mock.managers import Manager, Managed
 
@@ -17,6 +18,7 @@ class TestCollectionServiceManaged(unittest2.TestCase):
 
     def setUp(self):
         Managed.reset_mock()
+        Manager.reset_mock()
         self.fcs_conf = mock.Mock(spec=Conf, name='fcs_conf')
         self.cs_conf = mock.Mock(spec=Conf, name='cs_conf')
         self.fcs = FirstCollectionService(Manager, self.fcs_conf, 'parent')
@@ -26,12 +28,27 @@ class TestCollectionServiceManaged(unittest2.TestCase):
         self.cs = CollectionService(
             self.fcs, self.managed_class, self.cs_conf, 'child')
 
-    def test_managed_classes(self):
-        managed_classes_url = self.fcs.as_managed_classes(['p1'])
-        self.assertListEqual(
-            managed_classes_url, ['/parent/p1/my-middle-mock'])
-        # Should be this one
-        #self.assertListEqual( managed_classes_url, [ '/parent/p1/child/' ])
+    def test_as_colletction(self):
+        r = mock.Mock(spec=Request, method='GET')
+        with mock.patch('napixd.services.collection.ServiceCollectionRequest') as SCR:
+            self.fcs.as_collection(r, 'p1', 'c2')
+
+        SCR.assert_called_once_with(r, ['p1', 'c2'], self.fcs)
+
+    def test_as_resource(self):
+        r = mock.Mock(spec=Request, method='GET')
+        with mock.patch('napixd.services.collection.ServiceResourceRequest') as SRR:
+            self.fcs.as_resource(r, 'p1')
+
+        SRR.assert_called_once_with(r, ['p1'], self.fcs)
+
+    def test_as_managed_classes(self):
+        r = mock.Mock(spec=Request, method='GET')
+        with mock.patch('napixd.services.collection.ServiceManagedClassesRequest') as SMCR:
+            managed_classes_url = self.fcs.as_managed_classes(r, 'p1')
+
+        SMCR.assert_called_once_with(r, ['p1'], self.fcs)
+        self.assertEqual(managed_classes_url, SMCR.return_value.handle.return_value)
 
     def test_get_managers(self):
         managed = Managed.return_value

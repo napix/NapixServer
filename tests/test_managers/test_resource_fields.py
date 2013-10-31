@@ -204,6 +204,13 @@ class TestResourceField(unittest.TestCase):
         self.assertRaises(ImproperlyConfigured, ResourceField, 'f', {
         })
 
+    def test_example_from_choice(self):
+        rf = ResourceField('f', {
+            'type': int,
+            'choices': [1, 2, 3]
+        })
+        self.assertEqual(rf.example, 1)
+
     def test_example_unicode(self):
         rf = ResourceField('f', {
             'example': 'dudem',

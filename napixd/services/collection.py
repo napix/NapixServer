@@ -9,7 +9,6 @@ import sys
 
 from napixd.services.urls import URL
 from napixd.services.wrapper import ResourceWrapper
-from napixd.services.plugins import ArgumentsPlugin
 from napixd.services.requests import (
     ServiceCollectionRequest,
     ServiceManagedClassesRequest,
@@ -112,91 +111,71 @@ class BaseCollectionService(object):
         collection/resource/_napix_action/action/_napix_help
             documentation of the action
         """
-        arguments_plugin = ArgumentsPlugin()
         app.route(
             unicode(self.collection_url.add_segment('_napix_resource_fields')),
-            callback=self.as_resource_fields,
-            method='GET',
-            apply=arguments_plugin)
+            self.as_resource_fields)
         app.route(
             unicode(self.collection_url.add_segment('_napix_help')),
-            callback=self.as_help,
-            method='GET',
-            apply=arguments_plugin)
+            self.as_help)
         if hasattr(self.collection, 'create_resource'):
             app.route(
                 unicode(self.collection_url.add_segment('_napix_new')),
-                callback=self.as_example_resource,
-                method='GET',
-                apply=arguments_plugin)
+                self.as_example_resource)
         if self.all_actions:
             app.route(
                 unicode(self.resource_url.add_segment('_napix_all_actions')),
-                callback=self.as_list_actions,
-                method='GET',
-                apply=arguments_plugin)
+                self.as_list_actions)
         for action in self.all_actions:
             action.setup_bottle(app)
 
-        app.route(self.collection_url.with_slash(),
-                  callback=self.as_collection,
-                  method='ANY',
-                  apply=arguments_plugin)
-        app.route(unicode(self.resource_url),
-                  callback=self.as_resource,
-                  method='ANY',
-                  apply=arguments_plugin)
+        app.route(self.collection_url.with_slash(), self.as_collection)
+        app.route(unicode(self.resource_url), self.as_resource)
 
         if self.collection.get_managed_classes():
             app.route(self.resource_url.with_slash(),
-                      callback=self.as_managed_classes,
-                      apply=arguments_plugin)
+                      self.as_managed_classes)
             for managed_class in self.collection.get_managed_classes():
-                app.route(
-                    unicode(
-                        self.resource_url.add_segment(
-                            managed_class.get_name())),
-                    callback=self.noop)
+                app.route(unicode(self.resource_url.add_segment(managed_class.get_name())), self.noop)
 
-    def as_resource(self, path):
+    def as_resource(self, request, *path):
         """
         Launches a request on a resource of this manager
         """
-        return ServiceResourceRequest(path, self).handle()
+        return ServiceResourceRequest(request, list(path), self).handle()
 
-    def as_collection(self, path):
+    def as_collection(self, request, *path):
         """
         Launches a request on this manager as a collection
         """
-        return ServiceCollectionRequest(path, self).handle()
+        return ServiceCollectionRequest(request, list(path), self).handle()
 
-    def as_list_actions(self, path):
+    def as_list_actions(self, request, *path):
         """
         Lists the :meth:`napixd.managers.actions.action`
         available on this manager.
         """
         return [x.name for x in self.all_actions]
 
-    def as_managed_classes(self, path):
+    def as_managed_classes(self, request, *path):
         """
         Lists the :attr:`managed classes<napixd.managers.base.Manager.managed_class>`
         of this manager.
         """
-        return ServiceManagedClassesRequest(path, self).handle()
+        return ServiceManagedClassesRequest(request, list(path), self).handle()
 
-    def as_help(self, path):
+    def as_help(self, request, *path):
         """
         The view server at **_napix_help**
         """
         return self.meta_data
 
-    def as_resource_fields(self, path):
+    def as_resource_fields(self, request, *path):
         """
         The view server at **_napix_resource_fields**
         """
         return self.resource_fields
 
-    def as_example_resource(self, path):
+    def as_example_resource(self, request, *path):
         """
         The view server at **_napix_help**
         """
@@ -247,7 +226,7 @@ class FirstCollectionService(BaseCollectionService):
     def setup_bottle(self, app):
         # Nasty hack so /manager return a 200 response
         # even if it don't act like a resource
-        app.route(unicode(self.collection_url), callback=self.noop)
+        app.route(unicode(self.collection_url), self.noop)
         super(FirstCollectionService, self).setup_bottle(app)
 
     def get_managers(self, path):
@@ -327,25 +306,16 @@ class ActionService(object):
         self.resource_fields = dict(zip(rf, map(dict, rf.values())))
 
     def setup_bottle(self, app):
-        arguments_plugin = ArgumentsPlugin()
-        app.route(
-            unicode(self.url.add_segment('_napix_help')),
-            method='GET',
-            callback=self.as_help,
-            apply=arguments_plugin)
-        app.route(
-            unicode(self.url),
-            method='POST',
-            callback=self.as_action,
-            apply=arguments_plugin)
+        app.route(unicode(self.url.add_segment('_napix_help')), self.as_help)
+        app.route(unicode(self.url), self.as_action)
 
     def get_managers(self, path):
         return self.service.get_managers(path)
 
-    def as_action(self, path):
-        return ServiceActionRequest(path, self, self.name).handle()
+    def as_action(self, request, *path):
+        return ServiceActionRequest(request, path, self, self.name).handle()
 
-    def as_help(self, path):
+    def as_help(self, request, *path):
         """
         View for _napix_help
         """

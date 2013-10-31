@@ -4,11 +4,10 @@
 from __future__ import absolute_import
 import unittest2
 import mock
-import bottle
 
-from napixd.conf import Conf
-from napixd.http import Response
-from napixd.services.collection import FirstCollectionService
+from napixd.http.request import Request
+from napixd.http.response import Response, HTTPResponse
+from napixd.services.collection import CollectionService
 from napixd.services.requests import ServiceResourceRequest
 from napixd.managers.base import ManagerType, Manager
 from napixd.managers.views import view, content_type
@@ -75,35 +74,3 @@ class TestManagerView(_TestManagerView):
             'object': self.as_object,
             'xml': as_xml,
         })
-
-
-class _TestServiceView(_TestManagerView):
-
-    def setUp(self):
-        super(_TestServiceView, self).setUp()
-        self.cs = FirstCollectionService(self.manager, Conf(), 'child')
-
-
-class TestServiceView(_TestServiceView):
-
-    def test_call_serializer_custom_object(self):
-        with mock.patch('bottle.request', method='GET', GET={'format': 'object'}):
-            self.srr = ServiceResourceRequest(['p1', 'c2'], self.cs)
-            resp = self.srr.handle()
-        self.assertIsInstance(resp, bottle.HTTPResponse)
-        self.assertEqual(resp.body, {'a': 1})
-        self.assertEqual(resp.headers['x-my-header'], 'oh-snap')
-
-    def test_call_serializer(self):
-        with mock.patch('bottle.request', method='GET', GET={'format': 'text'}):
-            self.srr = ServiceResourceRequest(['p1', 'c2'], self.cs)
-            resp = self.srr.handle()
-        self.assertIsInstance(resp, Response)
-        resp.seek(0)
-        self.assertEqual(resp.read(), 'oh snap')
-
-    def test_call_unknown_serializer(self):
-        with mock.patch('bottle.request', method='GET', GET={'format': 'png'}):
-            self.srr = ServiceResourceRequest(['p1', 'c2'], self.cs)
-            resp = self.srr.handle()
-        self.assertEqual(resp.status_code, 406)

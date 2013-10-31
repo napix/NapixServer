@@ -31,7 +31,7 @@ class TestServiceEmpty(unittest2.TestCase):
             set([
                 '/my-mock',
                 '/my-mock/',
-                '/my-mock/:f0',
+                '/my-mock/?',
                 '/my-mock/_napix_help',
                 '/my-mock/_napix_new',
                 '/my-mock/_napix_resource_fields',
@@ -56,17 +56,17 @@ class TestServiceWithManaged(unittest2.TestCase):
             set([
                 '/this-mock',
                 '/this-mock/',
-                '/this-mock/:f0',
+                '/this-mock/?',
                 '/this-mock/_napix_help',
                 '/this-mock/_napix_new',
                 '/this-mock/_napix_resource_fields',
-                '/this-mock/:f0/',
-                '/this-mock/:f0/my-middle-mock',
-                '/this-mock/:f0/my-middle-mock/',
-                '/this-mock/:f0/my-middle-mock/:f1',
-                '/this-mock/:f0/my-middle-mock/_napix_help',
-                '/this-mock/:f0/my-middle-mock/_napix_new',
-                '/this-mock/:f0/my-middle-mock/_napix_resource_fields',
+                '/this-mock/?/',
+                '/this-mock/?/my-middle-mock',
+                '/this-mock/?/my-middle-mock/',
+                '/this-mock/?/my-middle-mock/?',
+                '/this-mock/?/my-middle-mock/_napix_help',
+                '/this-mock/?/my-middle-mock/_napix_new',
+                '/this-mock/?/my-middle-mock/_napix_resource_fields',
                 ]))
 
 

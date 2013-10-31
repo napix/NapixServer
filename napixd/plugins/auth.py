@@ -6,17 +6,15 @@ import httplib
 import json
 import socket
 import urlparse
-import functools
-import threading
+
 import hmac
 import hashlib
 
-from napixd.conf import Conf
-from napixd.chrono import Chrono
-import bottle
-
 from permissions.models import Perm
 from permissions.managers import PermSet
+
+from napixd.http.response import HTTPError, HTTPResponse
+from napixd.chrono import Chrono
 
 TIMEOUT = 5
 
@@ -79,13 +77,13 @@ class AAAChecker(object):
             content = resp.read()
         except socket.gaierror, e:
             self.logger.error('Auth server %s not found %s', self.host, e)
-            raise bottle.HTTPError(500, 'Auth server did not respond')
+            raise HTTPError(500, 'Auth server did not respond')
         except socket.timeout as e:
             self.logger.error('Auth server timed out, %r', e)
-            raise bottle.HTTPError(504, 'Auth server timeout')
+            raise HTTPError(504, 'Auth server timeout')
         except socket.error as e:
             self.logger.error('Auth server did not respond, %r', e)
-            raise bottle.HTTPError(500, 'Auth server did not respond')
+            raise HTTPError(500, 'Auth server did not respond')
         finally:
             self.http_client.close()
             self.logger.debug('Finished the request to the auth server')
@@ -93,7 +91,7 @@ class AAAChecker(object):
         if resp.status != 200 and resp.status != 403:
             self.logger.error('Auth server responded a %s', resp.status)
             self.logger.debug('Auth server said: %s', content)
-            raise bottle.HTTPError(
+            raise HTTPError(
                 500, 'Auth server responded unexpected %s code' % resp.status)
 
         if resp.getheader('content-type') == 'application/json':
@@ -106,11 +104,9 @@ class AAAChecker(object):
 
 
 class BaseAAAPlugin(object):
-    name = 'authentication_plugin'
-    api = 2
 
-    def __init__(self, conf=None, service_name=''):
-        self.settings = conf or Conf.get_default('Napix.auth')
+    def __init__(self, conf, service_name=''):
+        self.settings = conf
 
         hosts = self.settings.get('hosts')
         if hosts:
@@ -130,9 +126,7 @@ class BaseAAAPlugin(object):
         self.service = service_name
 
     def reject(self, cause, code=403):
-        self.logger.info('Rejecting request of %s: %s',
-                         bottle.request.environ['REMOTE_ADDR'], cause)
-        return bottle.HTTPError(code, cause)
+        return HTTPError(code, cause)
 
     def authorization_extract(self, request):
         if not 'Authorization' in request.headers:
@@ -147,15 +141,15 @@ class BaseAAAPlugin(object):
         content['signature'] = signature
         return content
 
-    def host_check(self, content):
+    def host_check(self, request, content):
         try:
             if self.hosts is not None and content['host'] not in self.hosts:
                 raise self.reject('Bad host')
-            path = bottle.request.path
-            if bottle.request.query_string:
-                path += '?' + bottle.request.query_string
+            path = request.path
+            if request.query_string:
+                path += '?' + request.query_string
 
-            if content['method'] != bottle.request.method:
+            if content['method'] != request.method:
                 raise self.reject(
                     'Bad authorization data method does not match')
             signed = content['path']
@@ -174,7 +168,7 @@ class AAAPlugin(BaseAAAPlugin):
     """
     logger = logging.getLogger('Napix.AAA')
 
-    def __init__(self, conf=None, service_name=''):
+    def __init__(self, conf, service_name=''):
         super(AAAPlugin, self).__init__(conf, service_name=service_name)
         url = self.settings.get('auth_url')
         auth_url_parts = urlparse.urlsplit(url)
@@ -182,60 +176,68 @@ class AAAPlugin(BaseAAAPlugin):
         self.host = auth_url_parts.netloc
         self.url = urlparse.urlunsplit(
             ('', '', auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
-        self._local = threading.local()
 
-    @property
     def checker(self):
-        if not hasattr(self._local, 'checker'):
-            self._local.checker = AAAChecker(self.host, self.url)
-        return self._local.checker
+        return AAAChecker(self.host, self.url)
 
     def authserver_check(self, content):
         content['host'] = self.service
-        return self.checker.authserver_check(content)
+        return self.checker().authserver_check(content)
 
-    def apply(self, callback, route):
-        @functools.wraps(callback)
-        def inner_aaa(*args, **kwargs):
-            request = bottle.request
+    def __call__(self, callback, request):
+        try:
+            resp = self.authorize(callback, request)
+        except HTTPError as e:
+            self.logger.info('Rejecting request of %s: %s %s',
+                             request.environ['REMOTE_ADDR'], e.status, e.body)
+            raise
 
-            check = self.checks(request)
-
-            path = bottle.request.path
-            method = bottle.request.method
-            is_collection_request = path.endswith('/')
-
-            if not check:
-                if (check.content and is_collection_request and
-                        method in ('GET', 'HEAD')):
-                    if not any('*' in path for path in check.raw):
-                        return bottle.HTTPError(203, check.raw)
-                    # The request is a collection and the central
-                    # returned a list of authorized paths.
-                else:
-                    raise self.reject('Access Denied')
-
-            resp = callback(*args, **kwargs)
-            if method == 'GET' and is_collection_request and check.content:
-                permissions = check.content
-                allowed_paths = permissions.filter_paths(self.service, resp)
-                self.logger.debug('Filtered %s/%s urls',
-                                  len(allowed_paths), len(resp))
-                if isinstance(resp, list):
-                    return list(allowed_paths)
-                elif isinstance(resp, dict):
-                    return dict((k, resp[k]) for k in resp if k in allowed_paths)
+        if request.auth_duration is None:
             return resp
 
-            # actually run the callback
-        return inner_aaa
+        return HTTPResponse({'x-auth-time': request.auth_duration}, resp)
+
+    def authorize(self, callback, request):
+        if self.with_chrono:
+            check = self._checks_with_chrono(request)
+        else:
+            check = self._checks(request)
+
+        path = request.path
+        method = request.method
+        is_collection_request = path.endswith('/')
+
+        if not check:
+            if (check.content and is_collection_request and
+                    method in ('GET', 'HEAD')):
+                if not any('*' in path for path in check.raw):
+                    return HTTPError(203, check.raw)
+                # The request is a collection and the central
+                # returned a list of authorized paths.
+            else:
+                raise self.reject('Access Denied')
+
+        resp = callback(request)
+        if method == 'GET' and is_collection_request and check.content:
+            permissions = check.content
+            allowed_paths = permissions.filter_paths(self.service, resp)
+            self.logger.debug('Filtered %s/%s urls',
+                              len(allowed_paths), len(resp))
+            if isinstance(resp, list):
+                return list(allowed_paths)
+            elif isinstance(resp, dict):
+                return dict((k, resp[k]) for k in resp if k in allowed_paths)
+
+        return resp
+
 
     def checks(self, request):
         content = self.authorization_extract(request)
 
         # self.logger.debug(msg)
-        self.host_check(content)
+        self.host_check(request, content)
         c = self.authserver_check(content)
+        request.auth_duration = None
         return c
 
 
@@ -273,10 +275,10 @@ class NoSecureMixin(object):
         content['is_secure'] = True
         return content
 
-    def host_check(self, content):
+    def host_check(self, request, content):
         if not content['is_secure']:
             return True
-        return super(NoSecureMixin, self).host_check(content)
+        return super(NoSecureMixin, self).host_check(request, content)
 
 
 class AutonomousMixin(object):

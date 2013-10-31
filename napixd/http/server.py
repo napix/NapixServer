@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+A WSGI server implementation
+"""
+
+
+import logging
+import json
+
+from napixd.http.router.router import Router
+from napixd.http.request import Request, HeadersDict
+from napixd.http.response import HTTPError, Response, HTTPResponse, HTTP404
+
+logger = logging.getLogger('Napix.conversations')
+
+
+class WSGIServer(object):
+    def __init__(self, pprint=False, show_errors=False):
+        self._router = r = Router()
+        self._routers = [r]
+        self._pprint = 4 if pprint else None
+        self._show_errors = show_errors
+
+    def __call__(self, environ, start_response):
+        try:
+            environ['napixd.request'] = request = Request(environ)
+            resp = self.handle(request)
+        except HTTPError as error:
+            resp = error
+
+        resp = self.cast(resp)
+
+        start_response(resp.status_line, resp.headers.items())
+        return resp.body
+
+    def handle(self, request):
+        callback = self.resolve(request.path)
+        if callback is None:
+            return HTTP404()
+        return callback(request)
+
+    def resolve(self, target):
+        """
+        Resolve the route at target.
+
+        The first router having a match is used.
+        """
+        for router in self._routers:
+            resolved = router.resolve(target)
+            if resolved is not None:
+                return resolved
+
+    @property
+    def router(self):
+        return self._router
+
+    def route(self, url, callback, **kw):
+        return self._router.route(url, callback, **kw)
+
+    def unroute(self, url, all=False):
+        return self._router.unroute(url, all=all)
+
+    def push(self, router=None):
+        """
+        Add a new router at the end of the stack.
+
+        If *router* is ``None``, a new :class:`router.Router` is created.
+
+        The router added to the stack is returned.
+        """
+        if router is None:
+            router = Router()
+        self._routers.append(router)
+        return router
+
+    def cast(self, response):
+        if isinstance(response, Response):
+            return HTTPResponse(200, response.headers, response)
+        elif isinstance(response, (HTTPError, HTTPResponse)):
+            status = response.status
+            body = response.body
+            headers = response.headers
+        else:
+            status = 200
+            headers = HeadersDict()
+            body = response
+
+        content_type = headers.get('Content-Type', '')
+        content_length = headers.get('Content-Length', None)
+
+        if status != 200 and isinstance(body, basestring):
+            if isinstance(body, unicode):
+                if not content_type:
+                    content_type = 'text/plain; charset=utf-8'
+                body = body.encode('utf-8')
+        elif hasattr(body, 'read'):
+            body = iter(body.read, '')
+        elif body is not None:
+            content_type = 'application/json'
+            body = json.dumps(body, indent=self._pprint)
+        else:
+            content_type = ''
+            body = []
+
+        if isinstance(body, str):
+            content_length = len(body)
+            body = [body]
+
+        headers.setdefault('Content-Type', content_type)
+        if content_length is not None:
+            headers.setdefault('Content-Length', content_length)
+        return HTTPResponse(status, headers, body)

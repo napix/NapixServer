@@ -14,17 +14,17 @@ class TestURL(unittest.TestCase):
 
     def test_url_args(self):
         url = URL(['ab', None])
-        self.assertEqual(unicode(url), u'/ab/:f0')
+        self.assertEqual(unicode(url), u'/ab/?')
 
     def test_add_segment(self):
         url = URL(['ab', None])
         url = url.add_segment('cd')
-        self.assertEqual(unicode(url), u'/ab/:f0/cd')
+        self.assertEqual(unicode(url), u'/ab/?/cd')
 
     def test_add_variable(self):
         url = URL(['ab', None])
         url = url.add_variable()
-        self.assertEqual(unicode(url), u'/ab/:f0/:f1')
+        self.assertEqual(unicode(url), u'/ab/?/?')
 
     def test_reverse(self):
         url = URL(['ab', None, 'cd', None])
@@ -41,4 +41,4 @@ class TestURL(unittest.TestCase):
 
     def test_with_slash(self):
         url = URL(['ab', None])
-        self.assertEqual(url.with_slash(), '/ab/:f0/')
+        self.assertEqual(url.with_slash(), '/ab/?/')

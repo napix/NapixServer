@@ -133,5 +133,6 @@ class TestLock(unittest.TestCase):
         self.lock2.release()
 
     def test_timeout(self):
-        with self.lock1:
-            self.assertRaises(Timeout, self.lock2.acquire, timeout=1)
+        with gevent.Timeout(2):
+            with self.lock1:
+                self.assertRaises(Timeout, self.lock2.acquire, timeout=1)

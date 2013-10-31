@@ -12,10 +12,8 @@ The other feature is :class:`GeventServer` witch acts as a WSGI server
 and overrides the value of the environ key PATH_INFO to undo all unescaping.
 """
 
-import functools
 import time
 import logging
-import bottle
 
 import gevent
 import gevent.greenlet
@@ -23,6 +21,9 @@ import gevent.wsgi
 import gevent.hub
 
 from napixd.chrono import Chrono
+
+from napixd.http import Adapter
+from napixd.http.response import HTTPResponse
 
 logger = logging.getLogger('Napix.gevent')
 
@@ -115,23 +116,15 @@ class AddGeventTimeHeader(object):
         self.tracer = Tracer()
         self.tracer.set_trace()
 
-    def apply(self, callback, route):
-        @functools.wraps(callback)
-        def inner_gevent_time_header(*args, **kw):
-            import bottle
-            before = bottle._lctx.__dict__
+    def __call__(self, callback, request):
+        with Chrono() as timing:
+            proc = Greenlet.spawn(callback, request)
+            resp = proc.get()
 
-            def bs(cb, *args, **kw):
-                bottle._lctx.__dict__.update(before)
-                return cb(*args, **kw)
-
-            with Chrono() as timing:
-                proc = Greenlet.spawn(bs, callback, *args, **kw)
-                resp = proc.get()
-            resp.headers['x-total-time'] = timing.total
-            resp.headers['x-running-time'] = proc.get_running_time()
-            return resp
-        return inner_gevent_time_header
+        return HTTPResponse({
+            'x-total-time': timing.total,
+            'x-running-time': proc.get_running_time()
+        }, resp)
 
 
 class WSGIHandler(gevent.pywsgi.WSGIHandler):
@@ -147,7 +140,7 @@ class WSGIHandler(gevent.pywsgi.WSGIHandler):
         return env
 
 
-class GeventServer(bottle.ServerAdapter):
+class GeventServer(Adapter):
     """
     This object installs the :class:`WSGIHandler` as its handler.
     """

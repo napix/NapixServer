@@ -213,10 +213,15 @@ Meta-options:
                 server_options = self.get_server_options()
                 application = self.apply_middleware(app)
 
-                import bottle
                 logger.info('Listening on %s:%s',
                             server_options['host'], server_options['port'])
-                bottle.run(application, **server_options)
+
+                adapter_class = server_options.pop('server', None)
+                if not adapter_class:
+                    raise CannotLaunch('No server available')
+
+                adapter = adapter_class(server_options)
+                adapter.run(application)
         finally:
             console.info('Stopping')
 
@@ -261,15 +266,14 @@ Meta-options:
 
         return aaa_class(conf, service_name=self.service_name)
 
-    def get_bottle(self):
+    def get_napixd(self, server):
         """
-        Return the bottle application for the napixd server.
+        Return the main application for the napixd server.
         """
         from napixd.application import NapixdBottle
         from napixd.loader import Loader
         self.loader = loader = Loader(self.get_loaders())
-        napixd = NapixdBottle(loader=loader)
-        self.install_plugins(napixd)
+        napixd = NapixdBottle(loader=loader, server=server)
 
         return napixd
 
@@ -299,46 +303,40 @@ Meta-options:
             loaders.append(AutoImporter(auto_path))
         return loaders
 
-    def install_plugins(self, app):
+    def install_plugins(self, router):
         """
         Install the plugins in the bottle application.
         """
         if 'time' in self.options:
             from napixd.plugins.times import TimePlugin
-            app.install(TimePlugin('x-total-time'))
-
-        pprint = 'pprint' in self.options
+            router.add_filter(TimePlugin('x-total-time'))
 
         if 'times' in self.options:
             if not 'gevent' in self.options:
                 raise CannotLaunch('`times` option requires `gevent`')
             from napixd.gevent_tools import AddGeventTimeHeader
-            app.install(AddGeventTimeHeader())
-
-        from napixd.plugins.exceptions import ExceptionsCatcher
-        app.install(ExceptionsCatcher(
-            show_errors=('print_exc' in self.options), pprint=pprint))
-
-        from napixd.plugins.conversation import ConversationPlugin
-        app.install(ConversationPlugin(pprint=pprint))
+            router.add_filter(AddGeventTimeHeader())
 
         if 'useragent' in self.options:
             from napixd.plugins.conversation import UserAgentDetector
-            app.install(UserAgentDetector())
+            router.add_filter(UserAgentDetector())
 
-        return app
+        if 'auth' in self.options:
+            self.auth_handler = self.get_auth_handler()
+            router.add_filter(self.auth_handler)
+        else:
+            self.auth_handler = None
+
+        return router
 
     def get_app(self):
         """
         Return the bottle application with the plugins added
         """
-        napixd = self.get_bottle()
-
-        if 'auth' in self.options:
-            self.auth_handler = self.get_auth_handler()
-            napixd.install(self.auth_handler)
-        else:
-            self.auth_handler = None
+        from napixd.http.server import WSGIServer
+        server = WSGIServer()
+        self.install_plugins(server.router)
+        napixd = self.get_napixd(server)
 
         # attach autoreloaders
         if 'reload' in self.options:
@@ -366,11 +364,11 @@ Meta-options:
         if 'webclient' in self.options:
             self.web_client = self.get_webclient()
             if self.web_client:
-                self.web_client.setup_bottle(napixd)
+                self.web_client.setup_bottle(napixd.server)
         else:
             self.web_client = None
 
-        return napixd
+        return napixd.server
 
     def apply_middleware(self, application):
         """
@@ -387,6 +385,13 @@ Meta-options:
             application = CORSMiddleware(application)
         if 'logger' in self.options:
             application = LoggerMiddleware(application)
+
+        from napixd.plugins.exceptions import ExceptionsCatcher
+        application = ExceptionsCatcher(
+            application,
+            show_errors=('print_exc' in self.options),
+            pprint='pprint' in self.options)
+
         return application
 
     def get_application(self):
@@ -402,9 +407,10 @@ Meta-options:
         Get the bottle server adapter
         """
         if not 'gevent' in self.options:
-            return 'wsgiref'
+            from napixd.wsgiref import WSGIRefServer
+            return WSGIRefServer
         elif 'uwsgi' in self.options:
-            return 'gevent'
+            return ''
         else:
             from napixd.gevent_tools import GeventServer
             return GeventServer
@@ -418,9 +424,6 @@ Meta-options:
         return self.keys.port
 
     def get_server_options(self):
-        """
-        Returns a dict of the options of :func:`bottle.run`
-        """
         self.server = server = self.get_server()
         server_options = {
             'host': self.get_host(),

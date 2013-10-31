@@ -407,20 +407,19 @@ class ResourceField(object):
                     'The choices should all have the same type')
             explicit_type = types.pop()
 
-        try:
+        if 'example' in meta:
             self.example = meta['example']
-        except KeyError:
-            if self.computed:
-                self.example = u''
-            elif choices:
-                choices_list = self.get_choices()
-                try:
-                    self.example = choices_list[0]
-                except IndexError:
-                    raise ImproperlyConfigured(
-                        'There should be at least one choice')
-            else:
-                raise ImproperlyConfigured('Missing example')
+        elif self.computed:
+            self.example = u''
+        elif choices:
+            choices_list = self.get_choices()
+            try:
+                self.example = choices_list[0]
+            except IndexError:
+                raise ImproperlyConfigured(
+                    'There should be at least one choice')
+        else:
+            raise ImproperlyConfigured('Missing example')
 
         implicit_type = type(self.example)
         if implicit_type is str:
