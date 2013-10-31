@@ -177,31 +177,24 @@ class AAAPlugin(BaseAAAPlugin):
         self.url = urlparse.urlunsplit(
             ('', '', auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
 
-    def checker(self):
-        return AAAChecker(self.host, self.url)
-
     def authserver_check(self, content):
         content['host'] = self.service
-        return self.checker().authserver_check(content)
+        checker = AAAChecker(self.host, self.url)
+        return checker.authserver_check(content)
 
     def __call__(self, callback, request):
         try:
             resp = self.authorize(callback, request)
         except HTTPError as e:
             self.logger.info('Rejecting request of %s: %s %s',
-                             request.environ['REMOTE_ADDR'], e.status, e.body)
+                             request.environ.get('REMOTE_ADDR', 'unknow'),
+                             e.status, e.body)
             raise
 
-        if request.auth_duration is None:
-            return resp
-
-        return HTTPResponse({'x-auth-time': request.auth_duration}, resp)
+        return resp
 
     def authorize(self, callback, request):
-        if self.with_chrono:
-            check = self._checks_with_chrono(request)
-        else:
-            check = self._checks(request)
+        check = self.checks(request)
 
         path = request.path
         method = request.method
@@ -230,22 +223,25 @@ class AAAPlugin(BaseAAAPlugin):
 
         return resp
 
-
     def checks(self, request):
         content = self.authorization_extract(request)
 
         # self.logger.debug(msg)
         self.host_check(request, content)
         c = self.authserver_check(content)
-        request.auth_duration = None
         return c
 
 
 class TimeMixin(object):
+    def __call__(self, callback, request):
+        resp = super(TimeMixin, self).__call__(callback, request)
+        return HTTPResponse({'x-auth-time': request.auth_duration}, resp)
+
     def checks(self, request):
         with Chrono() as chrono:
             r = super(TimeMixin, self).checks(request)
-        bottle.response.headers['x-auth-time'] = chrono.total
+
+        request.auth_duration = chrono.total
         return r
 
 
