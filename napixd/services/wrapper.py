@@ -41,6 +41,10 @@ class ResourceWrapper(collections.Mapping):
         if resource:
             self.resource = resource
 
+    @property
+    def loaded(self):
+        return 'resource' in self.__dict__
+
     def __len__(self):
         return len(self.resource)
 
@@ -63,7 +67,7 @@ class ResourceWrapper(collections.Mapping):
     def __repr__(self):
         return 'Resource {0} of `{1}` {2}'.format(
             self.id, self.manager.get_name(),
-            'loaded' if 'resource' in self.__dict__ else 'not loaded')
+            'loaded' if self.loaded else 'not loaded')
 
     def __eq__(self, other):
         return (
