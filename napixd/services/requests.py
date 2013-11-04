@@ -65,7 +65,7 @@ class ServiceRequest(object):
         Retreive the manager associated with the current request
         """
         self.all_managers, manager = self.service.get_managers(
-            self.path if path is None else path)
+            self.path if path is None else path, self.request)
         return manager
 
     def get_callback(self):

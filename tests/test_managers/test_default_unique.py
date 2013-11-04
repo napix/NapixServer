@@ -32,7 +32,8 @@ class RandomManager(ReadOnlyUniqueManager):
 class TestROUM(unittest.TestCase):
     def setUp(self):
         self.context = mock.Mock()
-        self.rm = RandomManager(self.context)
+        self.request = mock.Mock()
+        self.rm = RandomManager(self.context, self.request)
 
     def tearDown(self):
         random.reset_mock()
@@ -74,7 +75,8 @@ class PRNGSeedManager(UniqueManager):
 class TestUM(unittest.TestCase):
     def setUp(self):
         self.context = mock.Mock()
-        self.sm = PRNGSeedManager(self.context)
+        self.request = mock.Mock()
+        self.sm = PRNGSeedManager(self.context, self.request)
 
     def tearDown(self):
         random.reset_mock()

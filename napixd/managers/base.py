@@ -340,7 +340,7 @@ class Manager(object):
             name = name[:-len('manager')]
         return name
 
-    def __init__(self, wrapper):
+    def __init__(self, wrapper, request):
         """
         intialize the Manager with the wrapped resource *wrapper* creating it
 
@@ -358,6 +358,7 @@ class Manager(object):
 
         """
         self.context = wrapper
+        self.request = request
 
     def __repr__(self):
         return '<Manager {module}:{cls} `{name}` of "{context}">'.format(

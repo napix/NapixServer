@@ -9,6 +9,7 @@ import mock
 from napixd.managers.default import ReadOnlyDictManager, DictManager, FileManager
 from napixd.exceptions import NotFound, Duplicate
 from napixd.services.wrapper import ResourceWrapper
+from napixd.http.request import Request
 
 
 class _TestDM(unittest2.TestCase):
@@ -27,7 +28,8 @@ class _TestDM(unittest2.TestCase):
         if attrs:
             values.update(attrs)
         Manager = type(kls)(kls.__name__, (kls, ), values)
-        self.manager = Manager(self.parent)
+        self.request = mock.Mock(spec=Request)
+        self.manager = Manager(self.parent, self.request)
 
 
 class TestReadOnlyDict(_TestDM):
@@ -164,7 +166,8 @@ class TestFileManager(unittest2.TestCase):
 
     def setUp(self):
         self.parent = mock.Mock()
-        self.fm = MyFileManager(self.parent)
+        self.request = mock.Mock(spec=Request)
+        self.fm = MyFileManager(self.parent, self.request)
 
     def test_save(self):
         resources = mock.Mock()
