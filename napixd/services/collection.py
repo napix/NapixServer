@@ -46,9 +46,10 @@ class BaseCollectionService(object):
         requests on the resource are served
     """
 
-    def __init__(self, collection, config, collection_url):
+    def __init__(self, collection, config, collection_url, namespace):
         self.collection = collection
         self.config = config
+        self.namespace = namespace
 
         self.collection_url = collection_url
         self.resource_url = self.collection_url.add_variable()
@@ -187,7 +188,7 @@ class BaseCollectionService(object):
         return None
 
     def get_name(self):
-        raise NotImplementedError()
+        return self.namespace
 
     def get_managers(self, path):
         raise NotImplementedError()
@@ -204,9 +205,8 @@ class FirstCollectionService(BaseCollectionService):
 
     def __init__(self, collection, config, namespace):
         super(FirstCollectionService, self).__init__(
-            collection, config, URL([namespace]))
+            collection, config, URL([namespace]), namespace)
         self._cache = None
-        self.namespace = namespace
 
     def generate_manager(self):
         """
@@ -224,9 +224,6 @@ class FirstCollectionService(BaseCollectionService):
     def get_managers(self, path):
         return [], self.generate_manager()
 
-    def get_name(self):
-        return self.namespace
-
 
 class CollectionService(BaseCollectionService):
     """
@@ -239,23 +236,13 @@ class CollectionService(BaseCollectionService):
     """
 
     def __init__(self, previous_service, managed_class, config, namespace):
-        if namespace:
-            collection_url = previous_service.resource_url.add_segment(
-                namespace)
-        else:
-            collection_url = previous_service.resource_url
+        collection_url = previous_service.resource_url.add_segment(namespace)
+        namespace = '{0}.{1}'.format(previous_service.get_name(), namespace)
 
         super(CollectionService, self).__init__(
-            managed_class.manager_class, config, collection_url)
+            managed_class.manager_class, config, collection_url, namespace)
         self.extractor = managed_class.extractor
         self.previous_service = previous_service
-
-        self.namespace = '{0}.{1}'.format(
-            self.previous_service.get_name(), namespace)
-        # collection and resource urls of this service
-
-    def get_name(self):
-        return self.namespace
 
     def generate_manager(self, resource):
         """
