@@ -30,8 +30,7 @@ or if its an empty list, meaning a held lock.
 import redis
 import time
 import functools
-
-import gevent
+import threading
 
 __all__ = ('synchronized', 'Lock', 'Timeout')
 
@@ -88,7 +87,7 @@ def synchronized(lock, **kw):
 class Timeout(Exception):
     """
     An exception meaning that a call to :meth:`Lock.acquire` took
-    at least :attr:`Lock.timeout` seconds.
+    more than the specified timeout to complete.
     """
     pass
 
@@ -151,6 +150,7 @@ class Lock(object):
         self.key = PREFIX + name
         self.control = CONTROL_PREFIX + name
         self.expire = expire
+        self._owner = None
         self._acquired = 0
         self._acquired_until = None
 
@@ -193,7 +193,10 @@ class Lock(object):
 
                 The call with the context manager are always blocking.
         """
-        if self._acquired != 0:
+        if self.owned:
+            if self._acquired == 0:
+                raise RuntimeError('Reentering in a non-acquired lock')
+
             self._acquired += 1
             return self
 
@@ -207,6 +210,7 @@ class Lock(object):
             if blocking:
                 raise Timeout()
         else:
+            self._owner = threading.current_thread()
             self._acquired_until = until = time.time() + self.expire
             self.conn.expireat(self.key, int(until))
 
@@ -225,15 +229,23 @@ class Lock(object):
         ... else:
         ...     print 'The lock is not held'
         """
+        if not self.owned:
+            raise RuntimeError('Releasing a non-owned lock')
+
         if self._acquired == 0:
             raise RuntimeError('Releasing a non-acquired lock')
 
         self._acquired -= 1
         if self._acquired == 0:
+            self._owner = None
             if time.time() < self._acquired_until:
                 self.conn.rpush(self.key, 1)
 
         return self
+
+    @property
+    def owned(self):
+        return self._owner is not None and self._owner == threading.current_thread()
 
     def __enter__(self):
         self.acquire()
@@ -243,4 +255,4 @@ class Lock(object):
         self.release()
 
     def __nonzero__(self):
-        return bool(self._acquired)
+        return self.owned and bool(self._acquired)
