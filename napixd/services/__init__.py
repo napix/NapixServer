@@ -48,13 +48,13 @@ class Service(object):
     def _append_service(self, service):
         self.collection_services.append(service)
 
-    def make_collection_service(self, previous_service, managed_class, namespace, level):
+    def make_collection_service(self, previous_service, managed_class, level):
         """
         Called from create_collection as a recursive method to collect all
         submanagers of the root manager we want to manager with this service.
         """
-        config_key = '{0}.{1}'.format(previous_service.get_name(),
-                                      namespace or managed_class.get_name())
+        namespace = managed_class.get_name()
+        config_key = '{0}.{1}'.format(previous_service.get_name(), namespace)
         service = CollectionService(
             previous_service,
             managed_class,
@@ -68,11 +68,7 @@ class Service(object):
     def create_collection_service(self, collection, previous_service, level):
         if level < MAX_LEVEL:
             for managed_class in collection.get_managed_classes():
-                self.make_collection_service(
-                    previous_service,
-                    managed_class,
-                    managed_class.get_name(),
-                    level)
+                self.make_collection_service(previous_service, managed_class, level)
 
     def setup_bottle(self, app):
         """
