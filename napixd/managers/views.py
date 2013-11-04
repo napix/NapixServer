@@ -138,6 +138,10 @@ def view(format):
 
         The :func:`content_type` helper is available to set it easily
     """
+    if not isinstance(format, basestring):
+        raise TypeError('format must be a string')
+    if format == '':
+        raise ValueError('format must not be empty')
 
     def inner(fn):
         fn._napix_view = format
