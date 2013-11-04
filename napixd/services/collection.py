@@ -128,14 +128,12 @@ class BaseCollectionService(object):
         for action in self.all_actions:
             action.setup_bottle(app)
 
+        app.route(unicode(self.collection_url), self.noop)
         app.route(self.collection_url.with_slash(), self.as_collection)
         app.route(unicode(self.resource_url), self.as_resource)
 
         if self.collection.get_managed_classes():
-            app.route(self.resource_url.with_slash(),
-                      self.as_managed_classes)
-            for managed_class in self.collection.get_managed_classes():
-                app.route(unicode(self.resource_url.add_segment(managed_class.get_name())), self.noop)
+            app.route(self.resource_url.with_slash(), self.as_managed_classes)
 
     def as_resource(self, request, *path):
         """
@@ -222,12 +220,6 @@ class FirstCollectionService(BaseCollectionService):
             self._cache = super(
                 FirstCollectionService, self).generate_manager(None)
         return self._cache
-
-    def setup_bottle(self, app):
-        # Nasty hack so /manager return a 200 response
-        # even if it don't act like a resource
-        app.route(unicode(self.collection_url), self.noop)
-        super(FirstCollectionService, self).setup_bottle(app)
 
     def get_managers(self, path):
         return [], self.generate_manager()
