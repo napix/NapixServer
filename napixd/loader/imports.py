@@ -27,6 +27,8 @@ class ManagerImport(object):
         The :class:`napixd.conf.Conf` used to configure this service.
     """
 
+    __slots__ = ('manager', 'alias', 'config')
+
     def __init__(self, manager, alias, config):
         self.manager = manager
         self.alias = alias
@@ -35,15 +37,14 @@ class ManagerImport(object):
     def __repr__(self):
         return '<Import {0} "{1}">'.format(self.manager.__name__, self.alias)
 
-    def _as_tuple(self):
-        return (self.manager, self.alias, self.config)
-
     def __hash__(self):
         return hash((self.manager, self.alias))
 
     def __eq__(self, other):
         return (isinstance(other, ManagerImport) and
-                self._as_tuple() == other._as_tuple())
+                self.manager == other.manager and
+                self.alias == other.alias and
+                self.config == other.config)
 
     def __ne__(self, other):
         return not self == other
