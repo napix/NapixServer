@@ -107,18 +107,18 @@ class Request(object):
 
     @lazy
     def data(self):
-        raise NotImplementedError('Sorry :(')
-
-    @lazy
-    def json(self):
         """
         The parsed version of the request if it is a JSON request.
+
+        Raises a 415 Unsupported Media Type for other content-types
         """
-        # unserialize the request
-        if self.content_length != 0 and self.content_type.startswith('application/json'):
+        if not self.content_type or not self.content_length:
+            return None
+
+        if self.content_type.startswith('application/json'):
             try:
                 return json.load(self._body())
             except ValueError:
                 raise HTTPError(400, 'Misformated JSON object')
 
-        return None
+        raise HTTPError(415, 'This method only accepts application/json')

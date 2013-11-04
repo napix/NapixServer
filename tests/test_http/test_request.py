@@ -18,6 +18,7 @@ class TestRequest(unittest.TestCase):
         }
         environ.update(values)
         return Request(environ)
+
     def test_path(self):
         r = self._r()
         self.assertEqual(r.path, '/')
@@ -92,7 +93,7 @@ class TestRequest(unittest.TestCase):
                 'wsgi.input': StringIO(data)
             })
 
-        self.assertEqual(r.json, {'mpm': 'prefork', 'x': 1})
+        self.assertEqual(r.data, {'mpm': 'prefork', 'x': 1})
 
     def test_request_bad_json(self):
         data = '{ "mpm": prefork", "x": 1 }'
@@ -103,14 +104,25 @@ class TestRequest(unittest.TestCase):
                 'wsgi.input': StringIO(data)
             })
 
-        self.assertRaises(HTTPError, lambda: r.json)
+        self.assertRaises(HTTPError, lambda: r.data)
 
     def test_request_no_json(self):
         r = self._r(**{
-                'wsgi.input': StringIO('')
+            'wsgi.input': StringIO('')
+        })
+
+        self.assertEqual(r.data, None)
+
+    def test_request_data_json(self):
+        data = '<value><mpm>prefork</mpm><x>1</x></value>'
+        r = self._r(
+            CONTENT_TYPE='text/xml',
+            CONTENT_LENGTH=len(data),
+            **{
+                'wsgi.input': StringIO(data)
             })
 
-        self.assertEqual(r.json, None)
+        self.assertRaises(HTTPError, lambda: r.data)
 
 
 class TestInputStream(unittest.TestCase):
