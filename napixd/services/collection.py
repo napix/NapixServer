@@ -218,10 +218,7 @@ class FirstCollectionService(BaseCollectionService):
         The manager is reused if :meth:`napixd.managers.base.Manager.is_up_to_date`
         returns :obj:`True`
         """
-        if self._cache is None or not self._cache.is_up_to_date():
-            self._cache = super(
-                FirstCollectionService, self).generate_manager(None)
-        return self._cache
+        return super(FirstCollectionService, self).generate_manager(None)
 
     def setup_bottle(self, app):
         # Nasty hack so /manager return a 200 response

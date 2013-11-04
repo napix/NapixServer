@@ -166,16 +166,6 @@ class TestFileManager(unittest2.TestCase):
         self.parent = mock.Mock()
         self.fm = MyFileManager(self.parent)
 
-    def test_is_up_to_date_first(self):
-        self.assertFalse(self.fm.is_up_to_date())
-
-    def test_is_up_to_date(self):
-        with mock.patch('napixd.managers.default.time', return_value=2):
-            with self.patch_open:
-                self.fm.load(self.parent)
-        with mock.patch('os.path.getmtime', return_value=1):
-            self.assertTrue(self.fm.is_up_to_date())
-
     def test_save(self):
         resources = mock.Mock()
 

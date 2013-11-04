@@ -466,13 +466,6 @@ class Manager(object):
             resource_dict = self._resource_fields.validate(resource_dict, None)
         return self.validate_resource(resource_dict, original)
 
-    def is_up_to_date(self):
-        """
-        Method to check if the data contained are fresh.
-        If it's not the manager is recreated
-        """
-        return False
-
     def end_managed_request(self, request, resource):
         """
         Place holder method which is called
