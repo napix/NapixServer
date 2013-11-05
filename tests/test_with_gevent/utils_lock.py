@@ -30,7 +30,7 @@ def tearDownModule():
 
 class TestLock(unittest.TestCase):
     def setUp(self):
-        self.lock = Lock('l1')
+        self.lock = Lock('l1', redis.Redis())
         self.lock._clean()
 
     def test_acquire(self):

@@ -27,7 +27,6 @@ or if its an empty list, meaning a held lock.
 
 """
 
-import redis
 import time
 import functools
 import threading
@@ -144,8 +143,8 @@ class Lock(object):
         at least *expire* seconds, it can assume that it died without releasing
         the resource and acquire it.
     """
-    def __init__(self, name, expire=60):
-        self.conn = redis.Redis()
+    def __init__(self, name, conn, expire=60):
+        self.conn = conn
         self.name = name
         self.key = PREFIX + name
         self.control = CONTROL_PREFIX + name
