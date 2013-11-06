@@ -14,6 +14,7 @@ The defautl configuration is loaded from a JSON file
 """
 
 
+import __builtin__
 import logging
 import json
 import os.path
@@ -172,7 +173,7 @@ class Conf(collections.MutableMapping):
                 other.keys() == self.keys() and
                 other.values() == self.values())
 
-    def get(self, section_id, default_value=_sentinel):
+    def get(self, section_id, default_value=_sentinel, type=None):
         """
         Return the value pointed at **section_id**.
 
@@ -185,7 +186,14 @@ class Conf(collections.MutableMapping):
         except (KeyError, ValueError):
             if default_value is not _sentinel:
                 return default_value
+            if type is not None:
+                raise
             return Conf()
+
+        if type and not isinstance(value, type):
+            raise TypeError('{key} has not the required type "{required}" but is a "{actual}"'.format(
+                key=section_id, required=type, actual=__builtin__.type(value).__name__))
+
         if isinstance(value, dict):
             return Conf(value)
         return value

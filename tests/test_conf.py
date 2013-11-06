@@ -232,3 +232,26 @@ class TestDotted(unittest2.TestCase):
     def test_get_conflict(self):
         self.assertEqual(self.conf.get('b.c.d'), 5)
         self.assertEqual(self.conf.get('b.c'), {'d': 4})
+
+
+class TestConfType(unittest2.TestCase):
+    def setUp(self):
+        self.conf = Conf({
+            'int': 1,
+            'str': 'abc',
+            'dict': {
+                'a': 1
+            },
+            'list': [1, 2, 3]
+        })
+
+    def test_get_type(self):
+        self.assertEqual(self.conf.get('int', type=int), 1)
+
+    def test_get_bad_type(self):
+        self.assertRaises(TypeError, self.conf.get, 'int', type=str)
+
+    def test_get_type_dict(self):
+        v = self.conf.get('dict', type=dict)
+        self.assertEqual(v, {'a': 1})
+        self.assertTrue(isinstance(v, Conf))
