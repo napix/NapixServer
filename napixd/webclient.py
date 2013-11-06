@@ -52,7 +52,7 @@ class WebClient(object):
         path = path or 'index.html'
         return self._static(request, path)
 
-    def docs(self):
+    def docs(self, request):
         return self.doc.generate()
 
     def infos(self, request):
