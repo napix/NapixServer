@@ -5,7 +5,7 @@
 A WSGI server implementation
 """
 
-
+import time
 import logging
 import json
 
@@ -31,8 +31,11 @@ class WSGIServer(object):
             resp = error
 
         resp = self.cast(resp)
+        headers = resp.headers
+        headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
+        headers['Server'] = 'napixd'
 
-        start_response(resp.status_line, resp.headers.items())
+        start_response(resp.status_line, headers.items())
         return resp.body
 
     def handle(self, request):
