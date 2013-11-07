@@ -44,6 +44,10 @@ class Importer(object):
         self.errors = []
         self.raise_on_first_import = raise_on_first_import
 
+    @property
+    def should_raise(self):
+        return self.raise_on_first_import and self.timestamp == 0
+
     def get_paths(self):
         """
         Return the paths watched by this manager.
@@ -73,13 +77,7 @@ class Importer(object):
         """
         # first module import
         logger.debug('import %s', module_path)
-        try:
-            import_fn(module_path)
-        except (Exception, ImportError) as e:
-            if self.raise_on_first_import:
-                raise
-            logger.error('Failed to import %s, %s', module_path, e)
-            raise ModuleImportError(module_path, e)
+        import_fn(module_path)
         return sys.modules[module_path]
 
     def has_been_modified(self, module_file, module_name):
@@ -96,8 +94,7 @@ class Importer(object):
                              'reload' if last_modif > self.timestamp else '')
         except OSError, e:
             logger.error('Failed to get file %s, %s', module_name, e)
-            raise ModuleImportError(module_name,
-                                    'Module does not exists anymore')
+            raise ModuleImportError(module_name, 'Module does not exists anymore')
 
         return last_modif > self.timestamp
 
@@ -114,11 +111,7 @@ class Importer(object):
         if self.has_been_modified(module_file, module_path):
             # modified since last access
             logger.debug('Reloading module %s', module_path)
-            try:
-                reload(module)
-            except Exception as e:
-                logger.error('Failed to reload %s, %s', module_path, e)
-                raise ModuleImportError(module_path, e)
+            reload(module)
         return module
 
     def import_module(self, module_path):
@@ -127,10 +120,17 @@ class Importer(object):
         """
         if not isinstance(module_path, basestring):
             raise TypeError('module_path is a string')
-        elif not module_path in sys.modules or self.timestamp == 0:
-            return self.first_import(module_path)
-        else:
-            return self.reload(module_path)
+
+        try:
+            if not module_path in sys.modules or self.timestamp == 0:
+                return self.first_import(module_path)
+            else:
+                return self.reload(module_path)
+        except NapixImportError:
+            raise
+        except Exception as e:
+            logger.error('Failed to import %s, %s', module_path, e)
+            raise ModuleImportError(module_path, e)
 
     def import_manager(self, manager_path, reference=None):
         """
@@ -157,14 +157,41 @@ class Importer(object):
         module = self.import_module(module_path)
         try:
             return getattr(module, manager_name)
-        except AttributeError as e:
-            logger.error('Module %s does not contain %s',
-                         module_path, manager_name)
-            if self.raise_on_first_import and self.timestamp == 0:
-                raise ImportError('Module {0} has no {1}'.format(
-                    module_path, manager_name))
+        except AttributeError:
+            logger.error('Module %s does not contain %s', module_path, manager_name)
+            raise ManagerImportError(module_path, manager_name,
+                                     'Module {0} has no {1}'.format(module_path, manager_name))
 
-            raise ManagerImportError(module_path, manager_name, e)
+    def setup(self, manager):
+        """
+        Loads the managed classes of a manager
+
+
+        It checks that all the manager and sub-managers have defined a resource_fields dict.
+        """
+        return self._setup(manager, set())
+
+    def _setup(self, manager, _already_loaded):
+        if manager in _already_loaded:
+            logger.info('Circular manager detected: %s', manager.get_name())
+            return manager
+        _already_loaded.add(manager)
+
+        if not manager._resource_fields:
+            raise ManagerImportError(manager.__module__, manager,
+                                     'This manager has no resource_fields')
+
+        managed_classes = manager.get_managed_classes()
+        if managed_classes:
+            importer = RelatedImporter(manager, raise_on_first_import=self.should_raise)
+            managed_classes, errors = importer.load(managed_classes)
+            if errors:
+                raise ManagerImportError(
+                    manager.__module__, manager, errors[0])
+            for managed_class in managed_classes:
+                self._setup(managed_class, _already_loaded)
+
+        return manager
 
 
 class FixedImporter(Importer):
@@ -198,7 +225,10 @@ class FixedImporter(Importer):
             logger.info('Import fixed %s', manager)
             try:
                 manager = self.import_manager(manager)
-            except NapixImportError, e:
+                manager = self.setup(manager)
+            except NapixImportError as e:
+                if self.should_raise:
+                    raise
                 errors.append(e)
             else:
                 managers.append(ManagerImport(manager, alias, conf))
@@ -231,10 +261,13 @@ class ConfImporter(Importer):
                 manager = self.import_manager(manager_path)
                 logger.info('load %s from conf', manager_path)
                 config = self.conf.get(alias)
-                import_ = ManagerImport(manager, alias, config)
+                manager = self.setup(manager)
             except NapixImportError, e:
+                if self.should_raise:
+                    raise
                 errors.append(e)
             else:
+                import_ = ManagerImport(manager, alias, config)
                 managers.append(import_)
         return managers, errors
 
@@ -288,7 +321,7 @@ class AutoImporter(Importer):
         path = os.path.join(self.path, filename)
         name = 'napixd.auto.' + module_name
 
-        if not self.has_been_modified(path, name):
+        if name in sys.modules and not self.has_been_modified(path, name):
             return sys.modules[name]
 
         logger.debug('Opening %s', path)
@@ -300,7 +333,7 @@ class AutoImporter(Importer):
                     path,
                     ('py', 'U', imp.PY_SOURCE),
                 )
-            except (Exception, ImportError) as e:
+            except Exception as e:
                 raise ModuleImportError(name, e)
         return module
 
@@ -337,14 +370,22 @@ class AutoImporter(Importer):
                     module.__name__, manager_name, e))
                 continue
 
-            if detect:
-                managers.append(ManagerImport(
-                    obj, obj.get_name(), self.get_config_from(obj)))
-                logger.info('Found Manager %s.%s',
-                            module.__name__, manager_name)
-            else:
+            if not detect:
                 logger.info('Manager %s.%s not detected',
                             module.__name__, manager_name)
+                continue
+
+            try:
+                manager = self.setup(obj)
+            except NapixImportError as e:
+                errors.append(e)
+            except Exception as e:
+                errors.append(ManagerImportError(
+                    module.__name__, manager_name, e))
+            else:
+                logger.info('Found Manager %s.%s', module.__name__, manager_name)
+                managers.append(ManagerImport(
+                    manager, manager.get_name(), self.get_config_from(manager)))
 
         return managers, errors
 
@@ -376,8 +417,8 @@ class RelatedImporter(Importer):
     class if the path does not contains ``.``
     """
 
-    def __init__(self, reference):
-        super(RelatedImporter, self).__init__()
+    def __init__(self, reference, raise_on_first_import=False):
+        super(RelatedImporter, self).__init__(raise_on_first_import=raise_on_first_import)
         self.reference = reference
 
     def load(self, classes):

@@ -32,15 +32,17 @@ class TestImporter(unittest.TestCase):
         self.patch_sys_modules.stop()
 
     def test_first_import_error(self):
-        with mock.patch('napixd.loader.importers.import_fn', side_effect=ImportError()):
+        with mock.patch('napixd.loader.importers.import_fn',
+                        side_effect=ImportError()):
             self.assertRaises(
-                ImportError, self.importer.first_import, 'package')
+                ModuleImportError, self.importer.import_module, 'package')
 
     def test_first_import_error_ignore(self):
         importer = Importer(False)
-        with mock.patch('napixd.loader.importers.import_fn', side_effect=ImportError()):
+        with mock.patch('napixd.loader.importers.import_fn',
+                        side_effect=ImportError()):
             self.assertRaises(
-                ModuleImportError, importer.first_import, 'package')
+                ModuleImportError, importer.import_module, 'package')
 
     def test_first_import(self):
         with mock.patch('napixd.loader.importers.import_fn') as import_fn:
@@ -74,11 +76,10 @@ class TestImporter(unittest.TestCase):
                     ModuleImportError, self.importer.reload, 'package')
 
     def test_reload_import_error(self):
+        self.importer.set_timestamp(100)
         with mock.patch('__builtin__.reload', side_effect=ImportError):
-            with mock.patch('os.stat') as stat:
-                stat.return_value.st_mtime = 1
-                self.assertRaises(
-                    ModuleImportError, self.importer.reload, 'package')
+            with mock.patch.object(self.importer, 'has_been_modified', return_value=True):
+                self.assertRaises(ModuleImportError, self.importer.import_module, 'package')
 
     def test_import_reload(self):
         self.importer.set_timestamp(1000)
@@ -100,15 +101,12 @@ class TestImporter(unittest.TestCase):
 
     def test_import_manager_not_there(self):
         with mock.patch.object(self.importer, 'import_module', return_value=mock.Mock(spec=object())):
-            self.assertRaises(ImportError, self.importer.import_manager,
-                              'package.Manager')
+            self.assertRaises(ManagerImportError, self.importer.import_manager, 'package.Manager')
 
     def test_import_manager_not_there_reload(self):
         self.importer.set_timestamp(1000)
         with mock.patch.object(self.importer, 'import_module', return_value=mock.Mock(spec=object())):
-            self.assertRaises(ManagerImportError, self.importer.import_manager,
-                              'package.Manager')
-
+            self.assertRaises(ManagerImportError, self.importer.import_manager, 'package.Manager')
 
     def test_import_manager_class(self):
         manager = type('MyManager', (Manager,), {
@@ -129,7 +127,7 @@ class TestImporter(unittest.TestCase):
 
 class TestFixedImporter(unittest.TestCase):
 
-    def test_fixed_importer(self):
+    def test_importer(self):
         conf = mock.Mock(spec=Conf)
         fi = FixedImporter({
             'my': ('a.b.c.Manager', conf),
@@ -141,7 +139,7 @@ class TestFixedImporter(unittest.TestCase):
         self.assertEqual(
             managers, [ManagerImport(meth_import.return_value, 'my', conf)])
 
-    def test_fixed_importer_conf_convert(self):
+    def test_importer_conf_convert(self):
         fi = FixedImporter({
             'my': ('a.b.c.Manager', {"a": 1}),
         })
@@ -153,7 +151,7 @@ class TestFixedImporter(unittest.TestCase):
             managers, [ManagerImport(meth_import.return_value, 'my', Conf({'a': 1}))])
         self.assertTrue(isinstance(managers[0].config, Conf))
 
-    def test_fixed_importer_no_conf(self):
+    def test_importer_no_conf(self):
         fi = FixedImporter({
             'my': 'a.b.c.Manager',
         })
@@ -165,10 +163,11 @@ class TestFixedImporter(unittest.TestCase):
             managers, [ManagerImport(meth_import.return_value, 'my', Conf())])
         self.assertTrue(isinstance(managers[0].config, Conf))
 
-    def test_fixed_importer_error(self):
+    def test_importer_error(self):
         fi = FixedImporter({
             'my': 'a.b.c.Manager',
         })
+        fi.set_timestamp(100)
         error = ModuleImportError('a.b.c', ImportError('Fail'))
         with mock.patch.object(fi, 'import_manager', side_effect=error):
             managers, errors = fi.load()
@@ -179,7 +178,7 @@ class TestFixedImporter(unittest.TestCase):
 
 class TestConfImporter(unittest.TestCase):
 
-    def test_conf_importer(self):
+    def test_importer(self):
         ci = ConfImporter(Conf({
             'Napix.managers': {
                 'a': 'a.b.c.Manager'
@@ -196,7 +195,7 @@ class TestConfImporter(unittest.TestCase):
         self.assertEqual(
             managers, [ManagerImport(meth_import.return_value, 'a', {'d': 123})])
 
-    def test_conf_importer_error(self):
+    def test_importer_error(self):
         ci = ConfImporter(Conf({
             'Napix.managers': {
                 'a': 'a.b.c.Manager'
@@ -205,6 +204,7 @@ class TestConfImporter(unittest.TestCase):
                 'd': 123
             }
         }))
+        ci.set_timestamp(100)
 
         error = ManagerImportError(
             'a.b.c', 'Manager', AttributeError('No Manager in a.b.c'))
@@ -257,6 +257,9 @@ class TestAutoImporter(unittest.TestCase):
             A=object(),
             B=type('Manager', (Manager, ), {
                 '__module__': 'napixd.auto.module',
+                'resource_fields': {
+                    's': {'example': 1}
+                },
                 'name': 'my_manager',
                 'configure': mock.MagicMock(__doc__='{ "a" : 1 }')
             }),

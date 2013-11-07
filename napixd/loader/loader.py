@@ -99,47 +99,7 @@ class Loader(object):
             else:
                 old_managers.add(previous_error)
 
-        for import_ in list(new_managers):
-            try:
-                self.setup(import_.manager)
-            except NapixImportError as e:
-                managers.discard(import_)
-                new_managers.discard(import_)
-                old_managers.add(import_)
-                errors.add(ManagerError(import_.manager, import_.alias, e))
-
         self.managers = managers
         self.errors = errors
         self.timestamp = time.time()
         return Load(old_managers, managers, new_managers, errors)
-
-    def setup(self, manager):
-        """
-        Loads the managed classes of a manager
-
-
-        It checks that all the manager and sub-managers have defined a resource_fields dict.
-        """
-        return self._setup(manager, set())
-
-    def _setup(self, manager, _already_loaded):
-        if manager in _already_loaded:
-            logger.info('Circular manager detected: %s', manager.get_name())
-            return manager
-        _already_loaded.add(manager)
-
-        if not manager._resource_fields:
-            raise ManagerImportError(manager.__module__, manager,
-                                     'This manager has no resource_fields')
-
-        managed_classes = manager.get_managed_classes()
-        if managed_classes:
-            importer = RelatedImporter(manager)
-            managed_classes, errors = importer.load(managed_classes)
-            if errors:
-                raise ManagerImportError(
-                    manager.__module__, manager, errors[0])
-            for managed_class in managed_classes:
-                self._setup(managed_class, _already_loaded)
-
-        return manager
