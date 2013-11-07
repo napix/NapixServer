@@ -109,18 +109,18 @@ class TestServerRouter(unittest.TestCase):
         self.assertEqual(self.server.router, self.router1)
 
     def test_priority(self):
-        self.router1.resolve.return_value = None
+        self.router2.resolve.return_value = None
 
         route = self.server.resolve('/a/b/c')
         self.router1.resolve.assert_called_once_with('/a/b/c')
         self.router2.resolve.assert_called_once_with('/a/b/c')
-        self.assertEqual(route, self.router2.resolve.return_value)
+        self.assertEqual(route, self.router1.resolve.return_value)
 
     def test_no_priority(self):
         route = self.server.resolve('/a/b/c')
-        self.router1.resolve.assert_called_once_with('/a/b/c')
-        self.assertEqual(self.router2.resolve.call_count, 0)
-        self.assertEqual(route, self.router1.resolve.return_value)
+        self.router2.resolve.assert_called_once_with('/a/b/c')
+        self.assertEqual(self.router1.resolve.call_count, 0)
+        self.assertEqual(route, self.router2.resolve.return_value)
 
     def test_nothing(self):
         self.router1.resolve.return_value = None

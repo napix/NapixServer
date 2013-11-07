@@ -47,7 +47,7 @@ class WSGIServer(object):
 
         The first router having a match is used.
         """
-        for router in self._routers:
+        for router in reversed(self._routers):
             resolved = router.resolve(target)
             if resolved is not None:
                 return resolved
