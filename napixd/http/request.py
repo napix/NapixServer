@@ -113,12 +113,17 @@ class Request(object):
         Raises a 415 Unsupported Media Type for other content-types
         """
         if not self.content_type or not self.content_length:
-            return None
-
-        if self.content_type.startswith('application/json'):
-            try:
-                return json.load(self._body())
-            except ValueError:
-                raise HTTPError(400, 'Misformated JSON object')
+            return {}
+        elif self.content_type.startswith('application/json'):
+            if not isinstance(self.json, dict):
+                raise HTTPError(400, 'json object is not a dict')
+            return self.json
 
         raise HTTPError(415, 'This method only accepts application/json')
+
+    @lazy
+    def json(self):
+        try:
+            return json.load(self._body())
+        except ValueError:
+            raise HTTPError(400, 'Misformated JSON object')

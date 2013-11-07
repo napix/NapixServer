@@ -111,7 +111,7 @@ class TestRequest(unittest.TestCase):
             'wsgi.input': StringIO('')
         })
 
-        self.assertEqual(r.data, None)
+        self.assertEqual(r.data, {})
 
     def test_request_data_json(self):
         data = '<value><mpm>prefork</mpm><x>1</x></value>'
