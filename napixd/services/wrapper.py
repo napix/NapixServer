@@ -42,6 +42,10 @@ class ResourceWrapper(collections.Mapping):
             self.resource = resource
 
     @property
+    def request(self):
+        return self.manager.request
+
+    @property
     def loaded(self):
         return 'resource' in self.__dict__
 
