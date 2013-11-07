@@ -3,11 +3,14 @@
 
 import unittest
 
-import gevent
-import threading
-import redis.connection
+try:
+    import gevent
+    import redis.connection
+    from napixd.utils.lock import Lock, Timeout
+except ImportError:
+    __test__ = False
 
-from napixd.utils.lock import Lock, Timeout
+import threading
 
 
 old_socket = None

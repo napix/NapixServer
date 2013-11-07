@@ -6,10 +6,12 @@ from __future__ import absolute_import
 import unittest2 as unittest
 import mock
 
-import gevent
-
-from napixd.client.pool import ClientPool
-from napixd.client.gevent import Client
+try:
+    import gevent
+    from napixd.client.gevent import Client
+    from napixd.client.pool import ClientPool
+except ImportError:
+    __test__ = False
 
 
 class TestClientPool(unittest.TestCase):

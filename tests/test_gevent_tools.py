@@ -8,9 +8,12 @@ import unittest2 as unittest
 
 import time
 import functools
-import gevent
 
-from napixd.gevent_tools import Greenlet, Tracer, AddGeventTimeHeader
+try:
+    import gevent
+    from napixd.gevent_tools import Greenlet, Tracer, AddGeventTimeHeader
+except ImportError:
+    __test__ = False
 
 
 class TestTimedGreenlet(unittest.TestCase):
@@ -69,19 +72,12 @@ class TestTracer(unittest.TestCase):
         self.assertEquals(len(list(g2.get_running_intervals())), 2)
 
 
-class Resp(object):
-
-    def __init__(self):
-        self.headers = {}
-
-
 class TestGeventHeaders(unittest.TestCase):
 
     def _do_something(self, request):
         """This function should run in .1s with a total run of .2s"""
         gevent.sleep(0.1)  # Yield
         time.sleep(0.1)  # No Yield
-        return Resp()
 
     def setUp(self):
         self.plugin = AddGeventTimeHeader()
