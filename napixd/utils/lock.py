@@ -144,8 +144,11 @@ class Lock(object):
         the resource and acquire it.
     """
     def __init__(self, name, conn, expire=60):
-        self.conn = conn
+        if isinstance(name, Lock):
+            name = name.name
+
         self.name = name
+        self.conn = conn
         self.key = PREFIX + name
         self.control = CONTROL_PREFIX + name
         self.expire = expire
