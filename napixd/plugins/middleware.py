@@ -88,7 +88,7 @@ class LoggedRequest(object):
                 size += len(x)
                 yield x
 
-        total_time = transfert.total + self.chrono.total
+        total_time = (transfert.total + self.chrono.total) * 1000
 
         self.logger.info('%s - - [%s] "%s %s" %s %s %.2fms',
                          self.environ.get('REMOTE_ADDR', '-'),
