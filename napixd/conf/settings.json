@@ -16,6 +16,15 @@
       "#get_parameter": "The name of the GET parameter used for non-secured authentication",
       "get_parameter": "token"
     },
+    "lock": {
+        "#info" : "The shared locking section",
+        "#host" : "A redis server used by all the Napix Server to share their locks",
+        "host" : "localhost",
+        "#port" :  "The port on which the server listens",
+        "port" : 6379,
+        "#database" : "The database number on which this server listens",
+        "database" : 3
+    },
     "notify" : {
       "#info" : "The notify section",
       "#url" : "The URL of the notify server",
