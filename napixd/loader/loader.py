@@ -56,9 +56,9 @@ class Loader(object):
         """
         List the paths to watch with :mod:`napixd.reload`
         """
-        paths = []
+        paths = set()
         for importer in self.importers:
-            paths.extend(importer.get_paths())
+            paths.update(importer.get_paths())
         return paths
 
     def load(self):

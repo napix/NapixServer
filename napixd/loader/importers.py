@@ -211,6 +211,12 @@ class FixedImporter(Importer):
         super(FixedImporter, self).__init__()
         self.managers = managers
 
+    def get_paths(self):
+        for spec in self.managers.values():
+            module = sys.modules.get(spec)
+            if module:
+                yield os.path.dirname(module.__file__)
+
     def load(self):
         managers, errors = [], []
         for alias, spec in self.managers.items():
@@ -249,6 +255,12 @@ class ConfImporter(Importer):
     def __init__(self, conf):
         super(ConfImporter, self).__init__()
         self.conf = conf
+
+    def get_paths(self):
+        for manager_path in self.conf.get('Napix.managers').values():
+            module = sys.modules.get(manager_path.rsplit('.', 1)[0])
+            if module:
+                yield os.path.dirname(module.__file__)
 
     def load(self):
         """
