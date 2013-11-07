@@ -110,5 +110,5 @@ class Notifier(object):
             'host': Conf.get_default('Napix.auth.service') or socket.gethostname(),
             'service': self.service_name,
             'description': Conf.get_default('Napix.description') or '',
-            'managers': list(self.app.root_urls),
+            'managers': self.app.list_managers(),
         })

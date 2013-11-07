@@ -43,6 +43,9 @@ class NapixdBottle(object):
 
         self._root_urls.sort()
 
+    def list_managers(self):
+        return self._root_urls
+
     def reload(self):
         """
         Launch a reloading sequence.
