@@ -7,6 +7,7 @@ A static file server.
 
 import os
 import time
+import mimetypes
 import email.utils
 
 from napixd.http.response import HTTP403, HTTP404, HTTPResponse
@@ -61,11 +62,20 @@ class StaticFile(HTTPResponse):
             body = None
         else:
             status = 200
+            content_type, encoding = mimetypes.guess_type(self.filename)
+
+            if content_type.startswith('text/'):
+                content_type += '; charset=utf-8'
+
             headers = {
+                'Content-Type': content_type,
                 'Content-length': self.content_length,
                 'Last-Modified': self.last_modified,
             }
+            if encoding:
+                headers['Content-Encoding'] = encoding
             body = '' if request.method == 'HEAD' else self.open_file()
+
         super(StaticFile, self).__init__(status, headers, body)
 
     @property
