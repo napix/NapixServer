@@ -60,7 +60,8 @@ class NapixdBottle(object):
         for mi in load.old_managers:
             rule = '/' + mi.alias
             self.server.unroute(rule, all=True)
-            self._root_urls.remove(mi.alias)
+            if mi.alias in self._root_urls:
+                self._root_urls.remove(mi.alias)
 
         if logger.isEnabledFor(logging.DEBUG) and load.new_managers:
             logger.debug('New services: %s',
