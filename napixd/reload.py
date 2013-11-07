@@ -91,12 +91,16 @@ class Reloader(object):
 
     def setup_inotify(self):
         patch_select()
-        watch_manager = pyinotify.WatchManager()
-        for path in self.app.loader.get_paths():
-            if os.path.isdir(path):
-                watch_manager.add_watch(path, pyinotify.IN_CLOSE_WRITE)
+        self.watch_manager = watch_manager = pyinotify.WatchManager()
+        self._update_path()
         notifier = pyinotify.Notifier(watch_manager, self.on_file_change)
         run_background(notifier.loop)
+
+    def _update_path(self):
+        for path in self.app.loader.get_paths():
+            if os.path.isdir(path):
+                logger.info('Watch path %s', path)
+                self.watch_manager.add_watch(path, pyinotify.IN_CLOSE_WRITE)
 
     def on_sighup(self, signum, frame):
         """
@@ -112,4 +116,5 @@ class Reloader(object):
         if (event.dir or not event.name.endswith('.py')):
             return
         logger.info('Caught file change, reloading')
+        self._update_path()
         self.app.reload()
