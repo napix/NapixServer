@@ -10,6 +10,7 @@ import contextlib
 from napixd.notify import Notifier
 from napixd.conf import Conf
 from napixd.client import Client
+from napixd.application import NapixdBottle
 
 
 class RunStop(Exception):
@@ -24,7 +25,8 @@ class TestNotifier(unittest2.TestCase):
             'spec': Client,
             'return_value.spec': Client,
         })
-        cls.app = mock.Mock(root_urls=['base'])
+        cls.app = mock.Mock(spec=NapixdBottle)
+        cls.app.list_managers.return_value = ['base']
         cls.credentials = mock.Mock()
         cls.uid = mock.patch(
             'napixd.notify.uid', '2550ba7b-aec4-4a67-8047-2ce1ec8ca8ae')
