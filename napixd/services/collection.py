@@ -81,11 +81,11 @@ class BaseCollectionService(object):
             },
         }
 
-    def generate_manager(self, resource):
+    def generate_manager(self, resource, request):
         """
         instantiate a manager for the given resource
         """
-        manager = self.collection(resource)
+        manager = self.collection(resource, request)
         manager.configure(self.config)
         return manager
 
@@ -190,7 +190,7 @@ class BaseCollectionService(object):
     def get_name(self):
         return self.namespace
 
-    def get_managers(self, path):
+    def get_managers(self, path, request):
         raise NotImplementedError()
 
 
@@ -208,21 +208,8 @@ class FirstCollectionService(BaseCollectionService):
             collection, config, URL([namespace]), namespace)
         self._cache = None
 
-    def generate_manager(self):
-        """
-        Generates a manager.
-
-        Keeps a cached version of the manager for a later use.
-        The manager is reused if :meth:`napixd.managers.base.Manager.is_up_to_date`
-        returns :obj:`True`
-        """
-        if self._cache is None or not self._cache.is_up_to_date():
-            self._cache = super(
-                FirstCollectionService, self).generate_manager(None)
-        return self._cache
-
-    def get_managers(self, path):
-        return [], self.generate_manager()
+    def get_managers(self, path, request):
+        return [], self.generate_manager(None, request)
 
 
 class CollectionService(BaseCollectionService):
@@ -244,15 +231,15 @@ class CollectionService(BaseCollectionService):
         self.extractor = managed_class.extractor
         self.previous_service = previous_service
 
-    def generate_manager(self, resource):
+    def generate_manager(self, resource, request):
         """
         instanciate a manager for the given resource
         """
         resource = self.extractor(resource)
-        return super(CollectionService, self).generate_manager(resource)
+        return super(CollectionService, self).generate_manager(resource, request)
 
-    def get_managers(self, path):
-        managers_list, manager = self.previous_service.get_managers(path[:-1])
+    def get_managers(self, path, request):
+        managers_list, manager = self.previous_service.get_managers(path[:-1], request)
 
         id_ = manager.validate_id(path[-1])
         resource = manager.get_resource(id_)
@@ -261,7 +248,7 @@ class CollectionService(BaseCollectionService):
         managers_list.append((manager, wrapped))
 
         # The manager for self is generated here.
-        manager = self.generate_manager(wrapped)
+        manager = self.generate_manager(wrapped, request)
         return managers_list, manager
 
 
@@ -288,8 +275,8 @@ class ActionService(object):
         app.route(unicode(self.url.add_segment('_napix_help')), self.as_help)
         app.route(unicode(self.url), self.as_action)
 
-    def get_managers(self, path):
-        return self.service.get_managers(path)
+    def get_managers(self, path, request):
+        return self.service.get_managers(path, request)
 
     def as_action(self, request, *path):
         return ServiceActionRequest(request, path, self, self.name).handle()

@@ -340,7 +340,7 @@ class Manager(object):
             name = name[:-len('manager')]
         return name
 
-    def __init__(self, wrapper):
+    def __init__(self, wrapper, request):
         """
         intialize the Manager with the wrapped resource *wrapper* creating it
 
@@ -358,6 +358,7 @@ class Manager(object):
 
         """
         self.context = wrapper
+        self.request = request
 
     def __repr__(self):
         return '<Manager {module}:{cls} `{name}` of "{context}">'.format(
@@ -465,13 +466,6 @@ class Manager(object):
         else:
             resource_dict = self._resource_fields.validate(resource_dict, None)
         return self.validate_resource(resource_dict, original)
-
-    def is_up_to_date(self):
-        """
-        Method to check if the data contained are fresh.
-        If it's not the manager is recreated
-        """
-        return False
 
     def end_managed_request(self, request, resource):
         """

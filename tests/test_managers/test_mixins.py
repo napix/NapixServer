@@ -25,6 +25,6 @@ class TestMixinSerialize(unittest.TestCase):
         })
 
     def test_serialize(self):
-        mgr = self.Manager(None)
+        mgr = self.Manager(None, mock.Mock())
         serialized = mgr.serialize(mock.Mock(a=2, b='def'))
         self.assertEqual(serialized, {'a': 2, 'b': 'def'})

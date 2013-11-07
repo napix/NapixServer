@@ -16,7 +16,7 @@ from napixd.managers.actions import action
 class TestManager(unittest.TestCase):
 
     def setUp(self):
-        self.manager = Manager({})
+        self.manager = Manager({}, mock.Mock())
         self.resource_fields = mock.patch.object(
             self.manager, '_resource_fields', spec=ResourceFieldsDescriptor).start()
 
