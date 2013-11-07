@@ -39,7 +39,7 @@ PREFIX = 'napixd:locks:queues:'
 CONTROL_PREFIX = 'napixd:locks:control:'
 
 
-def synchronized(lock, **kw):
+def synchronized(lock):
     """
     Decorator for synchronized methods/functions.
 
@@ -72,7 +72,7 @@ def synchronized(lock, **kw):
     is held.
     """
     if not isinstance(lock, Lock):
-        lock = Lock(lock, **kw)
+        raise ValueError('lock should be a Lock instance')
 
     def decorator(fn):
         @functools.wraps(fn)
