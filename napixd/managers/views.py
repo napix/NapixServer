@@ -51,10 +51,9 @@ so the Napix server will forward this to the client.
 
 .. code-block:: python
 
-    @view('csv')
+    @view('text/csv')
     def view_as_csv( self, resource_id, resource, response):
         "Dump the race as a CSV file"
-        response.set_header('Content-Type', 'text/csv' )
         response.write( '"Firstname";"Lastname";"laps";"avg time";"min time"' )
         for line in resource['lines']:
             response.write(
@@ -74,8 +73,7 @@ The methods return ``None``. The server will use the *response* object.
     import reportlab
     import PIL
 
-    @view('pdf')
-    @content_type('application/pdf')
+    @view('pdf', content_type='application/pdf')
     def export_as_pdf( self, resource_id, resource, response):
         doc = reportlab.platypus.SimpleDocTemplate( response,
                 pagesize=reportlab.lib.pagesizes.A4,
@@ -83,8 +81,7 @@ The methods return ``None``. The server will use the *response* object.
                 title='file.pdf'
         doc.build( self._pdf_story( resource) )
 
-    @view('png')
-    @content_type('image/png')
+    @view('png', content_type='image/png')
     def export_as_png( self, resource_id, resource, response):
         image = PIL.Image.new( 'RGB', (200, 200), color)
         draw = PIL.ImageDraw.Draw(image)
@@ -99,10 +96,11 @@ The depreciation warning header will be sent to the client, even if the response
 .. code-block:: python
 
     @view('v1')
-    def compat_v1( self, resource_id, resource, response):
+    def compat_v1( self, resource_wrapper, response):
         " Compatibility layer with the Version 1 of the API "
         #foo has changed name to bar
-        response.set_header( 'x-depreciation-warning', '1')
+        resource = resource_wrapper.resource
+        response.set_header('x-depreciation-warning', '1')
         resource['foo'] = resource['bar']
 
         #foobar was not implemented
@@ -113,7 +111,7 @@ The depreciation warning header will be sent to the client, even if the response
 
     @view('v2')
     def actual_version( self, resource_id, resource, response):
-        return resource
+        return resource.resource
 
 """
 
