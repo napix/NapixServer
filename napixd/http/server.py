@@ -90,6 +90,10 @@ class WSGIServer(object):
             headers = HeadersDict()
             body = response
 
+        if request.method == 'HEAD':
+            body = None
+            headers['Content-Length'] = 0
+
         content_type = headers.get('Content-Type', '')
         content_length = headers.get('Content-Length', None)
 

@@ -62,6 +62,12 @@ class TestServer(unittest.TestCase):
         self.cb.assert_called_once_with(self.request)
         self.assertEqual(resp, self.cb.return_value)
 
+    def test_cast_HEAD(self):
+        self.request.method = 'HEAD'
+        resp = self.cast('VALUE')
+        self.assertEqual(resp.headers['Content-Length'], '0')
+        self.assertEqual(resp.body, [])
+
     def test_cast_text_plain(self):
         resp = self.server.cast(HTTPError(404, u'This does not exist'))
         self.assertEqual(resp.headers['Content-type'], 'text/plain; charset=utf-8')
