@@ -163,6 +163,17 @@ def view(format, content_type=None):
         def inner_view(self, resource, response):
             return_value = fn(self, resource, response)
             if not 'Content-Type' in response.headers:
+                if isinstance(return_value, unicode):
+                    response.set_header('Content-Type', 'text/plain; charset=utf-8')
+                    return return_value.encode('utf-8')
+
+                if isinstance(return_value, str):
+                    response.set_header('Content-Type', 'text/plain')
+                    return return_value
+
+                if isinstance(return_value, (dict, list)):
+                    return return_value
+
                 response.set_header('Content-Type', _content_type)
 
             return return_value

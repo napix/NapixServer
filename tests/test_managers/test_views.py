@@ -29,6 +29,24 @@ class TestDecorators(unittest2.TestCase):
         as_text(None, None, resp)
         resp.set_header.assert_called_once_with('Content-Type', 'application/json')
 
+    def test_content_type_auto_json(self):
+        @view('text')
+        def as_text(self, resource, response):
+            return {'value': 1}
+
+        resp = mock.Mock(spec=Response, headers={})
+        as_text(None, None, resp)
+        self.assertEqual(resp.set_header.call_count, 0)
+
+    def test_content_type_auto_unicode(self):
+        @view('text')
+        def as_text(self, resource, response):
+            return u'dadà'
+
+        resp = mock.Mock(spec=Response, headers={})
+        as_text(None, None, resp)
+        resp.set_header.assert_called_once_with('Content-Type', 'text/plain; charset=utf-8')
+
     def test_content_type(self):
         @view('text', content_type='text/plain')
         def as_text(self, resource, response):
