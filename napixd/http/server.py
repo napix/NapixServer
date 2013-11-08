@@ -24,13 +24,13 @@ class WSGIServer(object):
         self._show_errors = show_errors
 
     def __call__(self, environ, start_response):
+        environ['napixd.request'] = request = Request(environ)
         try:
-            environ['napixd.request'] = request = Request(environ)
             resp = self.handle(request)
         except HTTPError as error:
             resp = error
 
-        resp = self.cast(resp)
+        resp = self.cast(request, resp)
         headers = resp.headers
         headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
         headers['Server'] = 'napixd'
@@ -78,7 +78,7 @@ class WSGIServer(object):
         self._routers.append(router)
         return router
 
-    def cast(self, response):
+    def cast(self, request, response):
         if isinstance(response, Response):
             return HTTPResponse(200, response.headers, response)
         elif isinstance(response, (HTTPError, HTTPResponse)):
