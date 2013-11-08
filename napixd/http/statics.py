@@ -64,6 +64,9 @@ class StaticFile(HTTPResponse):
             status = 200
             content_type, encoding = mimetypes.guess_type(self.filename)
 
+            if content_type is None:
+                content_type = 'application/octet-stream'
+
             if content_type.startswith('text/'):
                 content_type += '; charset=utf-8'
 
