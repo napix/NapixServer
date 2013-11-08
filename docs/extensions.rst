@@ -194,6 +194,24 @@ If the manager implements a view, this view is requested with the
 There is not yet a ``png`` format. Only the default JSON format is available now.
 
 To implement a view, one need to implement a method and decorated it with :func:`views.view`
+This decorator takes the name of the view and a *content_type*.
+The name of the view is the name used as a GET parameter,
+and the *content_type* is the HTTP header Content-Type.
+
+The Content-Type is **application/json** for :class:`dict` and :class:`list`.
+It is **text/plain** for :class:`str`.
+For :class:`unicode` instances the Content-Type is **text/plain; charset=utf-8** and the string is encoded in UTF-8.
+Otherwise, the content type is set to *text/plain*
+
+If the name of the view contains a ``/`` and no content-type is specified,
+the name is used as the content_type and the second part of the content type is used as the name.
+
+.. code-block:: python
+
+   # Those 2 decorators are equivalent
+   @view('image/png')
+   @view('png', 'image/png')
+
 
 .. code-block:: python
 
@@ -201,7 +219,7 @@ To implement a view, one need to implement a method and decorated it with :func:
 
     class HostManager(DictManager):
         #...
-        @view('png')
+        @view('image/png')
         def show_as_view( self, resource_id, resource, response):
             pass
 
@@ -228,7 +246,7 @@ Now the server has a format, it does not return anything yet::
 
 The callback interface is documented in :mod:`views`.
 
-The response object is an instance of :class:`napixd.http.Response`.
+The response object is an instance of :class:`napixd.http.response.Response`.
 It behave like a :class:`StringIO.StringIO` for its body.
 It can be given to the **save** method of the PIL Image.
 
@@ -237,13 +255,12 @@ It can be given to the **save** method of the PIL Image.
 
     import PIL
 
-    @view('png')
+    @view('png', content_type='image/png')
     def as_picture(self, id_, resource, response):
         """Show a picture.
         The background color depends on the IP """
         #Set the header, else it will be interpreted as HTML
         #set the file name
-        response.set_header('Content-type', 'image/png')
         response.set_header('Content-Disposition', 'filename=%s.png'%id_)
 
         #compute a color from the resource
