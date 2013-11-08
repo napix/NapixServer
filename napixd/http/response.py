@@ -45,6 +45,9 @@ class Response(object):
         """
         Write content in the buffer
         """
+        if isinstance(content, unicode):
+            content = content.encode('utf-8')
+
         self._length += len(content)
         self._body.write(content)
 

@@ -69,9 +69,14 @@ class TestServer(unittest.TestCase):
         self.assertEqual(resp.body, [])
 
     def test_cast_text_plain(self):
-        resp = self.server.cast(HTTPError(404, u'This does not exist'))
-        self.assertEqual(resp.headers['Content-type'], 'text/plain; charset=utf-8')
+        resp = self.cast(HTTPError(404, 'This does not exist'))
+        self.assertEqual(resp.headers['Content-type'], 'text/plain')
         self.assertEqual(resp.body, ['This does not exist'])
+
+    def test_cast_text_unicode(self):
+        resp = self.cast(HTTPError(404, u'Unicøde!'))
+        self.assertEqual(resp.headers['Content-type'], 'text/plain; charset=utf-8')
+        self.assertEqual(resp.body, ['Unic\xc3\xb8de!'])
         self.assertTrue(isinstance(resp.body[0], str))
 
     def test_cast_dict(self):

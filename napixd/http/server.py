@@ -98,9 +98,10 @@ class WSGIServer(object):
         content_length = headers.get('Content-Length', None)
 
         if status != 200 and isinstance(body, basestring):
+            if not content_type:
+                content_type = 'text/plain'
             if isinstance(body, unicode):
-                if not content_type:
-                    content_type = 'text/plain; charset=utf-8'
+                content_type += '; charset=utf-8'
                 body = body.encode('utf-8')
         elif hasattr(body, 'read'):
             body = iter(body.read, '')
