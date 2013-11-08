@@ -5,41 +5,53 @@ from __future__ import absolute_import
 import unittest2
 import mock
 
-from napixd.http.request import Request
-from napixd.http.response import Response, HTTPResponse
-from napixd.services.collection import CollectionService
-from napixd.services.requests import ServiceResourceRequest
+from napixd.http.response import Response
 from napixd.managers.base import ManagerType, Manager
 from napixd.managers.views import view, content_type
 
 
-class _TestDecorators(unittest2.TestCase):
-
-    def setUp(self):
-        @view('text')
+class TestDecorators(unittest2.TestCase):
+    def test_set_view(self):
+        @view('text', content_type='text/plain')
         def as_text(self, resource, response):
             response.write('oh snap')
-        self.fn = as_text
 
+        self.assertEqual(as_text._napix_view, 'text')
 
-class TestDecorators(_TestDecorators):
+    def test_content_type_auto(self):
+        @view('application/json')
+        def as_text(self, resource, response):
+            response.write('oh snap')
 
-    def test_set_view(self):
-        self.assertEqual(self.fn._napix_view, 'text')
+        self.assertEqual(as_text._napix_view, 'json')
+
+        resp = mock.Mock(spec=Response, headers={})
+        as_text(None, None, resp)
+        resp.set_header.assert_called_once_with('Content-Type', 'application/json')
 
     def test_content_type(self):
-        as_text = content_type('application/pip+pampoum')(self.fn)
-        resp = mock.Mock()
+        @view('text', content_type='text/plain')
+        def as_text(self, resource, response):
+            response.write('oh snap')
+
+        resp = mock.Mock(spec=Response, headers={})
         as_text(None, None, resp)
-        resp.set_header.assert_called_once_with(
-            'Content-Type', 'application/pip+pampoum')
+        resp.set_header.assert_called_once_with('Content-Type', 'text/plain')
+
+    def test_content_type_old(self):
+        @view('text')
+        @content_type('application/pip+pampoum')
+        def as_text(self, resource, response):
+            response.write('oh snap')
+
+        resp = mock.Mock(spec=Response, headers={})
+        as_text(None, None, resp)
+        resp.set_header.assert_called_once_with('Content-Type', 'application/pip+pampoum')
 
 
-class _TestManagerView(_TestDecorators):
+class TestManagerView(unittest2.TestCase):
 
     def setUp(self):
-        super(_TestManagerView, self).setUp()
-
         @view('object')
         def as_object(self, resource, response):
             response.set_header('x-my-header', 'oh-snap')
@@ -47,17 +59,11 @@ class _TestManagerView(_TestDecorators):
         self.as_object = as_object
 
         self.manager = ManagerType('NewManager', (Manager, ), {
-            'as_text': self.fn,
-            'as_object': as_object,
-            'get_resource': mock.Mock(spec=True, return_value={'mpm': 'prefork'}),
+            'as_object': as_object
         })
-
-
-class TestManagerView(_TestManagerView):
 
     def test_class_with_views(self):
         self.assertDictEqual(self.manager.get_all_formats(), {
-            'text': self.fn,
             'object': self.as_object,
         })
 
@@ -70,7 +76,6 @@ class TestManagerView(_TestManagerView):
         })
 
         self.assertDictEqual(other_manager.get_all_formats(), {
-            'text': self.fn,
             'object': self.as_object,
             'xml': as_xml,
         })
