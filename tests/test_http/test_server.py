@@ -86,6 +86,13 @@ class TestServer(unittest.TestCase):
         self.assertEqual(resp.body, ['{"mpm": "prefork"}'])
         self.assertTrue(isinstance(resp.body[0], str))
 
+    def test_cast_list(self):
+        resp = self.cast(['abc', 'def'])
+        self.assertEqual(resp.headers['content-type'], 'application/json')
+        self.assertEqual(resp.headers['content-length'], '14')
+        self.assertEqual(resp.body, ['["abc", "def"]'])
+        self.assertTrue(isinstance(resp.body[0], str))
+
     def test_cast_response(self):
         r = HTTPResponse(302, {'Location': '/pim/pam/poum'}, u'See /pim/pam/poum')
         resp = self.cast(r)
