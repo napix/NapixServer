@@ -15,6 +15,17 @@ from napixd.http.response import HTTPError, Response, HTTPResponse, HTTP404
 
 logger = logging.getLogger('Napix.conversations')
 
+__all__ = ('WSGIServer', )
+
+block_size = 1024**2
+
+
+def file_wrapper(environ, filelike):
+    if 'wsgi.file_wrapper' in environ:
+        return environ['wsgi.file_wrapper'](filelike, block_size)
+    else:
+        return iter(lambda: filelike.read(block_size), '')
+
 
 class WSGIServer(object):
     def __init__(self, pprint=False, show_errors=False):
@@ -104,7 +115,7 @@ class WSGIServer(object):
                 content_type += '; charset=utf-8'
                 body = body.encode('utf-8')
         elif hasattr(body, 'read'):
-            body = iter(body.read, '')
+            body = file_wrapper(request.environ, body)
         elif body is not None:
             content_type = 'application/json'
             body = json.dumps(body, indent=self._pprint)
