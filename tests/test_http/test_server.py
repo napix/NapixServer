@@ -77,7 +77,7 @@ class TestServer(unittest.TestCase):
     def test_cast_dict(self):
         resp = self.cast({'mpm': u'prefork'})
         self.assertEqual(resp.headers['content-type'], 'application/json')
-        self.assertEqual(resp.headers['content-length'], 18)
+        self.assertEqual(resp.headers['content-length'], '18')
         self.assertEqual(resp.body, ['{"mpm": "prefork"}'])
         self.assertTrue(isinstance(resp.body[0], str))
 
@@ -87,7 +87,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(resp.status, 302)
         self.assertEqual(resp.headers['Location'], '/pim/pam/poum')
         self.assertEqual(resp.headers['content-type'], 'text/plain; charset=utf-8')
-        self.assertEqual(resp.headers['content-length'], 17)
+        self.assertEqual(resp.headers['content-length'], '17')
         self.assertEqual(resp.body, ['See /pim/pam/poum'])
 
 

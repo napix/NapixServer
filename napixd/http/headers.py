@@ -18,6 +18,10 @@ class HeadersDict(collections.MutableMapping):
             self.update(headers)
 
     def __setitem__(self, key, value):
+        if isinstance(value, unicode):
+            value = value.encode('iso-8859-1')
+        else:
+            value = str(value)
         self.headers[key.replace('_', '-').lower()] = value
 
     def __getitem__(self, key):
@@ -34,3 +38,6 @@ class HeadersDict(collections.MutableMapping):
 
     def __contains__(self, key):
         return key.replace('_', '-').lower() in self.headers
+
+    def __repr__(self):
+        return repr(self.headers)
