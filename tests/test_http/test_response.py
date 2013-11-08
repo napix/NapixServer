@@ -61,6 +61,12 @@ class TestResponse(unittest.TestCase):
         self.assertEqual(r.headers['header1'], 'value1')
         self.assertEqual(r.body, resp)
 
+    def test_with_respons_length(self):
+        resp = Response()
+        resp.write('1234')
+
+        r = HTTPResponse(resp)
+        self.assertEqual(r.headers['Content-Length'], '4')
 
 class TestResponseWithResponse(unittest.TestCase):
     def setUp(self):
