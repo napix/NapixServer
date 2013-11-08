@@ -45,7 +45,7 @@ class TestResolvedRequest(unittest.TestCase):
 
 class TestRouterStep(unittest.TestCase):
     def setUp(self):
-        self.rs = RouterStep('')
+        self.rs = RouterStep()
         self.cb = mock.Mock()
 
     def test_empty(self):
@@ -129,7 +129,7 @@ class TestCatchallRouterStep(unittest.TestCase):
 
 class TestCatchallRouterStep(unittest.TestCase):
     def setUp(self):
-        self.rs = RouterStep('')
+        self.rs = RouterStep()
         self.cb = mock.Mock()
 
     def test_route_root(self):
