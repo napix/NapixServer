@@ -85,12 +85,11 @@ class TestGeventHeaders(unittest.TestCase):
 
     def test_run_solo(self):
         resp = self.callback()
-        self.assertAlmostEquals(resp.headers['x-total-time'], .2, places=1)
-        self.assertAlmostEquals(resp.headers['x-running-time'], .1, places=1)
+        self.assertAlmostEquals(float(resp.headers['x-total-time']), .2, places=1)
+        self.assertAlmostEquals(float(resp.headers['x-running-time']), .1, places=1)
 
     def test_run(self):
         resps = [self.callback() for x in xrange(4)]
         for resp in resps:
-            self.assertAlmostEquals(resp.headers['x-total-time'], .2, places=1)
-            self.assertAlmostEquals(
-                resp.headers['x-running-time'], .1, places=1)
+            self.assertAlmostEquals(float(resp.headers['x-total-time']), .2, places=1)
+            self.assertAlmostEquals(float(resp.headers['x-running-time']), .1, places=1)
