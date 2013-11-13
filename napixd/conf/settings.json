@@ -14,7 +14,10 @@
       "#password" : "The password of this napix server",
       "password" : "",
       "#get_parameter": "The name of the GET parameter used for non-secured authentication",
-      "get_parameter": "token"
+      "get_parameter": "token",
+      "#hosts": "A string or a list of string listing the server names",
+      "hosts": [
+      ]
     },
     "notify" : {
       "#info" : "The notify section",
