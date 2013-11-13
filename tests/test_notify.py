@@ -37,12 +37,8 @@ class TestNotifier(unittest2.TestCase):
         cls.uid.stop()
 
     def setUp(self):
-        self.force_conf = contextlib.nested(
-            Conf.get_default().force(
-                'Napix.auth.service', 'server.napix.nx:8002'),
-            Conf.get_default().force(
-                'Napix.description', u'The base Napix server')
-        )
+        self.force_conf = Conf.get_default().force(
+            'Napix.description', u'The base Napix server')
         with self.patch_client as Client_:
             self.Client = Client_
             self.client = Client_.return_value
@@ -51,7 +47,7 @@ class TestNotifier(unittest2.TestCase):
             self.notifier = Notifier(self.app, {
                 'url': 'http://auth.server.nx/notify/',
                 'credentials': self.credentials
-            }, 'server.napix.io')
+            }, 'server.napix.io', 'server.napix.nx:8002')
 
     notify_create = mock.call('POST', '/notify/', body={
         'uid': '2550ba7b-aec4-4a67-8047-2ce1ec8ca8ae',

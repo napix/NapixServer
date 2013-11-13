@@ -376,7 +376,9 @@ Meta-options:
                 raise CannotLaunch('Notifier has no configuration options')
 
             logger.info('Set up notifier')
-            self.notifier = notifier = Notifier(napixd, conf, self.service_name)
+            hostname = self.get_hostnames()
+            self.notifier = notifier = Notifier(
+                napixd, conf, self.service_name, hostname)
             notifier.start()
         else:
             self.notifier = None
