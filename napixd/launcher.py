@@ -146,6 +146,7 @@ Non-default:
     secure:     Disable the request tokeb signing
     localhost:  Listen on the loopback interface only
     autonomous-auth:    Use a local source of authentication
+    hosts:      Checks the HTTP host to the expected value
 
 Meta-options:
     only:       Disable default options
@@ -400,11 +401,15 @@ Meta-options:
         """
         from napixd.plugins.middleware import (PathInfoMiddleware,
                                                CORSMiddleware,
-                                               LoggerMiddleware)
+                                               LoggerMiddleware,
+                                               HTTPHostMiddleware,
+                                               )
         if 'uwsgi' in self.options:
             application = PathInfoMiddleware(application)
         if 'cors' in self.options:
             application = CORSMiddleware(application)
+        if 'hosts' in self.options:
+            application = HTTPHostMiddleware(self.hosts, application)
         if 'logger' in self.options:
             application = LoggerMiddleware(application)
 

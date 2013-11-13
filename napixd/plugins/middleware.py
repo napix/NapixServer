@@ -109,3 +109,20 @@ def LoggerMiddleware(application):
     def inner_logger(environ, start_response):
         return LoggedRequest(start_response, application, environ)
     return inner_logger
+
+
+class HTTPHostMiddleware(object):
+    def __init__(self, hosts, application):
+        self.hosts = frozenset(hosts)
+        self.application = application
+
+    def __call__(self, environ, start_response):
+        if environ.get('HTTP_HOST') not in self.hosts:
+            response = 'Bad host'
+            start_response('400 Bad Request', [
+                ('Content-Length', str(len(response))),
+                ('Content-Type', 'text/plain'),
+            ])
+            return [response]
+
+        return self.application(environ, start_response)
