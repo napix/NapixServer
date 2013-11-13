@@ -226,12 +226,13 @@ class TestAAAPlugin(unittest.TestCase):
         self.Checker = self.patch_checker.start()
         self.checker = self.Checker.return_value
         self.checker.authserver_check.return_value = Success()
+        self.hosts = None
 
     def tearDown(self):
         self.patch_checker.stop()
 
     def plugin(self):
-        return AAAPlugin(self.conf, 'server.napix.nx')
+        return AAAPlugin(self.conf, 'server.napix.nx', hosts=self.hosts)
 
     def call(self):
         try:
@@ -261,17 +262,17 @@ class TestAAAPlugin(unittest.TestCase):
         self.assertEqual(r.status, 403)
 
     def test_refuse_host(self):
-        self.conf['hosts'] = 'server.napix.io'
+        self.hosts = ['server.napix.io']
         r = self.call()
         self.assertEqual(r.status, 403)
 
     def test_authorize_host(self):
-        self.conf['hosts'] = 'server.napix.nx'
+        self.hosts = ['server.napix.nx']
         r = self.call()
         self.assertEqual(r, self.cb.return_value)
 
     def test_refuse_host_list(self):
-        self.conf['hosts'] = ['server.napix.org', 'server.napix.io']
+        self.hosts = ['server.napix.org', 'server.napix.io']
         r = self.call()
         self.assertEqual(r.status, 403)
 

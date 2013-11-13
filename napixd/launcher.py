@@ -146,7 +146,7 @@ Non-default:
     secure:     Disable the request tokeb signing
     localhost:  Listen on the loopback interface only
     autonomous-auth:    Use a local source of authentication
-    hosts:      Checks the HTTP host to the expected value
+    hosts:      Check the HTTP Host header
 
 Meta-options:
     only:       Disable default options
@@ -267,7 +267,9 @@ Meta-options:
                     'secure' in self.options, 'time' in self.options,
                     autonomous='autonomous-auth' in self.options)
 
-        return aaa_class(conf, service_name=self.service_name)
+        hosts = self.hosts if 'hosts' in self.options else None
+
+        return aaa_class(conf, service_name=self.service_name, hosts=hosts)
 
     def get_napixd(self, server):
         """
