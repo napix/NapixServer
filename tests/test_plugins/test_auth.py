@@ -307,6 +307,7 @@ class TestAAAPlugin(unittest.TestCase):
 
     def test_refuse_list_star(self):
         p = mock.MagicMock(name='permset')
+        p.on_host.return_value = p
         p.filter_paths.return_value = ['/abc']
         c = self.checker.authserver_check.return_value = mock.MagicMock(
             spec=Fail,
@@ -318,10 +319,12 @@ class TestAAAPlugin(unittest.TestCase):
 
         r = self.call()
         self.assertEqual(r, p.filter_paths.return_value)
-        p.filter_paths.assert_called_once_with('server.napix.nx', resp)
+        p.on_host.assert_called_once_with('server.napix.nx')
+        p.filter_paths.assert_called_once_with(resp)
 
     def test_refuse_dict_star(self):
         p = mock.MagicMock(name='permset')
+        p.on_host.return_value = p
         p.filter_paths.return_value = ['/abc']
         c = self.checker.authserver_check.return_value = mock.MagicMock(
             spec=Fail,
@@ -336,4 +339,5 @@ class TestAAAPlugin(unittest.TestCase):
 
         r = self.call()
         self.assertEqual(r, {'/abc': {'this': 1}})
-        p.filter_paths.assert_called_once_with('server.napix.nx', resp)
+        p.on_host.assert_called_once_with('server.napix.nx')
+        p.filter_paths.assert_called_once_with(resp)

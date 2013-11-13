@@ -213,7 +213,7 @@ class AAAPlugin(BaseAAAPlugin):
         resp = callback(request)
         if method == 'GET' and is_collection_request and check.content:
             permissions = check.content
-            allowed_paths = permissions.filter_paths(self.service, resp)
+            allowed_paths = permissions.on_host(self.service).filter_paths(resp)
             self.logger.debug('Filtered %s/%s urls',
                               len(allowed_paths), len(resp))
             if isinstance(resp, list):
