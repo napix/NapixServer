@@ -71,10 +71,19 @@ class Loader(object):
         logger.info('Run a load at %s', self.timestamp)
         managers = set()
         import_errors = []
+        aliases = set()
 
         for importer in self.importers:
             importer.set_timestamp(self.timestamp)
             imports, errors_ = importer.load()
+
+            for import_ in list(imports):
+                if import_.alias in aliases:
+                    logger.warning('Alias %s already exists, discarding %s',
+                                   import_.alias, import_.manager.get_name())
+                    imports.remove(import_)
+                else:
+                    aliases.add(import_.alias)
 
             managers.update(imports)
             import_errors.extend(errors_)

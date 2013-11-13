@@ -30,6 +30,25 @@ class TestLoader(unittest.TestCase):
             _resource_fields=mock.MagicMock(spec=ResourceFields)
         )
 
+    def test_load_identical(self):
+        manager = mock.MagicMock(
+            __module__='a.b',
+            __name__='Manager',
+            spec=Manager,
+            get_managed_classes=mock.Mock(return_value=[]),
+            _resource_fields=mock.MagicMock(spec=ResourceFields)
+        )
+
+        m1 = ManagerImport(self.manager, 'alias', {})
+        m2 = ManagerImport(manager, 'alias', {})
+
+        self.importer.load.return_value = ([m1, m2], [])
+        load = self.loader.load()
+        self.assertEqual(load.managers, set([m1]))
+        self.assertEqual(load.old_managers, set())
+        self.assertEqual(load.new_managers, set([m1]))
+        self.assertEqual(load.error_managers, set())
+
     def test_load(self):
         m = ManagerImport(self.manager, 'alias', {})
         self.importer.load.return_value = ([m], [])
