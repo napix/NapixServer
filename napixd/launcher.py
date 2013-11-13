@@ -263,8 +263,9 @@ Meta-options:
         aaa_class = get_auth_plugin(secure='secure' in self.options,
                                     time='time' in self.options,
                                     autonomous='autonomous-auth' in self.options)
-        logger.info('Installing auth plugin secure:%s, time:%s',
-                    'secure' in self.options, 'time' in self.options)
+        logger.info('Installing auth plugin secure:%s, time:%s autonomous:%s',
+                    'secure' in self.options, 'time' in self.options,
+                    autonomous='autonomous-auth' in self.options)
 
         return aaa_class(conf, service_name=self.service_name)
 
