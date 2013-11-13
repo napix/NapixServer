@@ -5,6 +5,7 @@ import time
 import uuid
 
 from napixd.managers import Manager
+from napixd.managers import validators
 from napixd.exceptions import NotFound, ValidationError
 from napixd.store import Store
 
@@ -16,9 +17,23 @@ class NapixDirectoryManager(Manager):
     """
 
     resource_fields = {
+        'service': {
+            'description': 'The service name of this napix',
+            'example': 'dns.enix',
+            'validators': [
+                validators.not_empty,
+                validators.strip,
+                validators.single_lined,
+            ]
+        },
         'host': {
             'description': 'The server that hosts the napix',
-            'example': 'server.napix.com'
+            'example': 'server.napix.io',
+            'validators': [
+                validators.not_empty,
+                validators.strip,
+                validators.single_lined,
+            ]
         },
         'managers': {
             'description': 'the list of managers',
@@ -34,7 +49,12 @@ class NapixDirectoryManager(Manager):
             'WAITING if it is late of less than a period, '
             'LOST after for ten periods',
             'computed': True,
-            'example': 'OK'
+            'example': 'OK',
+            'choices': [
+                'OK',
+                'WAITING',
+                'LOST',
+            ]
         },
         'description': {
             'description': 'Human readable description of the server',
