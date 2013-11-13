@@ -170,6 +170,7 @@ Meta-options:
 
         self.set_loggers()
         self.service_name = self.get_service_name()
+        self.hosts = self.get_hostnames()
 
         console.info('Napixd Home is %s', get_path())
         console.info('Options are %s', ','.join(self.options))
@@ -328,6 +329,27 @@ Meta-options:
             self.auth_handler = None
 
         return router
+
+    def get_hostnames(self):
+        hosts = Conf.get_default('Napix.auth.hosts')
+        if isinstance(hosts, basestring):
+            return [hosts]
+        elif isinstance(hosts, list):
+            if all(isinstance(host, basestring) for host in hosts):
+                logger.error('All values in hosts conf key are not strings')
+                hosts = [h for h in hosts if isinstance(h, basestring)]
+
+            if hosts:
+                return hosts
+            else:
+                logger.error('hosts conf key is empty. Guessing instead.')
+        elif 'localhost' in self.options:
+            return ['localhost:{0}'.format(self.get_port())]
+
+        import socket
+        hostname = socket.gethostname()
+        logger.warning('Cannot reliably determine the hostname, using hostname "%s"', hostname)
+        return [hostname]
 
     def get_app(self):
         """
