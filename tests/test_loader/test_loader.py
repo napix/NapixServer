@@ -8,10 +8,9 @@ import mock
 
 from napixd.managers.base import Manager
 from napixd.managers.resource_fields import ResourceFields
-from napixd.managers.managed_classes import ManagedClass
 
 from napixd.loader.importers import Importer
-from napixd.loader.errors import ModuleImportError, ManagerImportError
+from napixd.loader.errors import ModuleImportError
 from napixd.loader.imports import ManagerImport, ManagerError
 from napixd.loader.loader import Loader
 
@@ -116,4 +115,3 @@ class TestLoader(unittest.TestCase):
         self.assertEqual(load.old_managers, set())
         self.assertEqual(load.new_managers, set())
         self.assertEqual(load.error_managers, set([me]))
-
