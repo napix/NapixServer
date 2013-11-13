@@ -265,7 +265,7 @@ Meta-options:
                                     autonomous='autonomous-auth' in self.options)
         logger.info('Installing auth plugin secure:%s, time:%s autonomous:%s',
                     'secure' in self.options, 'time' in self.options,
-                    autonomous='autonomous-auth' in self.options)
+                    'autonomous-auth' in self.options)
 
         hosts = self.hosts if 'hosts' in self.options else None
 
