@@ -339,7 +339,7 @@ Meta-options:
         if isinstance(hosts, basestring):
             return [hosts]
         elif isinstance(hosts, list):
-            if all(isinstance(host, basestring) for host in hosts):
+            if not all(isinstance(host, basestring) for host in hosts):
                 logger.error('All values in hosts conf key are not strings')
                 hosts = [h for h in hosts if isinstance(h, basestring)]
 
