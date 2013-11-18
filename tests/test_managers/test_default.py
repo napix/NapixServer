@@ -10,6 +10,7 @@ from napixd.managers.default import ReadOnlyDictManager, DictManager, FileManage
 from napixd.exceptions import NotFound, Duplicate
 from napixd.services.wrapper import ResourceWrapper
 from napixd.http.request import Request
+from napixd.managers.changeset import DiffDict
 
 
 class _TestDM(unittest2.TestCase):
@@ -192,3 +193,47 @@ class TestFileManager(unittest2.TestCase):
         with self.patch_open as popen:
             popen.side_effect = IOError()
             self.assertEqual(self.fm.resources, {})
+
+
+class MyManager(DictManager):
+    resource_fields = {
+        'abc': {
+            'example': 0
+        }
+    }
+
+    def load(self, parent):
+        return {
+            'id': parent.load()
+        }
+
+    def save(self, parent, resources):
+        parent.save(resources)
+
+
+class TestHiddenFields(unittest2.TestCase):
+    def setUp(self):
+        self.res = mock.Mock()
+        self.res.load.return_value = {
+            'abc': 123,
+            'zip': 'zap'
+        }
+        self.dm = MyManager(self.res, None)
+
+    def test_get_resource(self):
+        self.assertEqual(self.dm.get_resource('id'), {
+            'abc': 123,
+            'zip': 'zap'
+        })
+
+    def test_serialize(self):
+        self.assertEqual(
+            self.dm.serialize(self.dm.get_resource('id')),
+            {'abc': 123})
+
+    def test_modify_resource(self):
+        dd = DiffDict({'abc': 123}, {'abc': 124, 'zip': 'zap'})
+        self.dm.modify_resource(ResourceWrapper(self.dm, 'id', {'abc': 123}), dd)
+
+        self.dm.end_request(mock.Mock(method='POST'))
+        self.res.save.assert_called_once_with({'id': {'abc': 124, 'zip': 'zap'}})
