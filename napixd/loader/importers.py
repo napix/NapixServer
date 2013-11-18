@@ -211,12 +211,6 @@ class FixedImporter(Importer):
         super(FixedImporter, self).__init__()
         self.managers = managers
 
-    def get_paths(self):
-        for spec in self.managers.values():
-            module = sys.modules.get(spec)
-            if module:
-                yield os.path.dirname(module.__file__)
-
     def load(self):
         managers, errors = [], []
         for alias, spec in self.managers.items():
