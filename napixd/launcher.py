@@ -437,14 +437,14 @@ Meta-options:
         """
         Get the bottle server adapter
         """
-        if not 'gevent' in self.options:
-            from napixd.wsgiref import WSGIRefServer
-            return WSGIRefServer
-        elif 'uwsgi' in self.options:
-            return ''
-        else:
+        if 'gevent' in self.options:
             from napixd.gevent_tools import GeventServer
             return GeventServer
+        elif 'uwsgi' in self.options:
+            raise CannotLaunch('The server cannot run on its own with uwsgi option')
+        else:
+            from napixd.wsgiref import WSGIRefServer
+            return WSGIRefServer
 
     def get_host(self):
         if 'localhost' in self.options:
@@ -462,7 +462,7 @@ Meta-options:
             'server': server,
             'quiet': 'logger' in self.options,
         }
-        if server == 'wsgiref':
+        if not 'gevent' in self.options:
             if server_options['quiet']:
                 from napixd.wsgiref import QuietWSGIRequestHandler
                 server_options['handler_class'] = QuietWSGIRequestHandler
