@@ -276,6 +276,9 @@ class ServiceResourceRequest(ServiceRequest):
         if self.method != 'GET':
             return result
 
+        if result is None:
+            raise ValueError('resource cannot be None')
+
         format_ = self.request.GET.get('format', None)
         if not format_:
             return self.default_formatter(result)
