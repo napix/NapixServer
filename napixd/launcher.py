@@ -192,6 +192,7 @@ Meta-options:
                     u'Napix require gevent >= 1.0, Try to install it, or run napix with *nogevent* option')
 
             from gevent.monkey import patch_all
+            logger.info('Installing gevent monkey patch')
             patch_all()
 
     def run(self):
