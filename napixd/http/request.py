@@ -99,6 +99,9 @@ class Request(object):
         self.method = environ['REQUEST_METHOD']
         self.path = environ['PATH_INFO'] or '/'
 
+    def __repr__(self):
+        return 'Request: {method} {path}'.format(**self.__dict__)
+
     @lazy
     def content_type(self):
         """The content-type of the request"""
