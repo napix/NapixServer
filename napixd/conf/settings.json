@@ -8,7 +8,7 @@
     "auth" : {
       "#info" : "The authentication section.",
       "#auth_url" : "The authentication URL",
-      "auth_url" : "http://central.napix.enix.org:8003/auth/authorization/",
+      "auth_url" : "http://auth.napix.io:8003/auth/authorization/",
       "#service" : "The name of the service of this host.",
       "service" : "localhost:8002",
       "#password" : "The password of this napix server",
@@ -22,7 +22,7 @@
     "notify" : {
       "#info" : "The notify section",
       "#url" : "The URL of the notify server",
-      "url" : "http://central.napix.enix.org:8002/directory/",
+      "url" : "http://directory.napix.io:8002/directory/",
       "credentials" : {
           "#info" : "The credential used by this server to send notifications",
           "login" : "notification",
