@@ -38,6 +38,7 @@ class ServiceRequest(object):
         self.service = service
         # Parse the url components
         self.path = list(path)
+        self.lock = service.lock
 
     @classmethod
     def available_methods(cls, manager):
@@ -111,6 +112,9 @@ class ServiceRequest(object):
         Actually handle the request.
         Call a set of methods that may be overrident by subclasses.
         """
+        if self.lock is not None:
+            self.lock.acquire()
+
         try:
             # obtient l'object designé
             self.manager = self.get_manager()
@@ -132,6 +136,9 @@ class ServiceRequest(object):
         except Duplicate, e:
             raise HTTPError(409, '`{0}` already exists'.format(
                 unicode(e) or 'object'))
+        finally:
+            if self.lock is not None:
+                self.lock.release()
 
     def make_url(self, result):
         """

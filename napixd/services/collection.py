@@ -9,6 +9,7 @@ import sys
 
 from napixd.services.urls import URL
 from napixd.services.wrapper import ResourceWrapper
+from napixd.services.lock import Lock
 from napixd.services.requests import (
     ServiceCollectionRequest,
     ServiceManagedClassesRequest,
@@ -206,7 +207,10 @@ class FirstCollectionService(BaseCollectionService):
     def __init__(self, collection, config, namespace):
         super(FirstCollectionService, self).__init__(
             collection, config, URL([namespace]), namespace)
-        self._cache = None
+        if collection.has_lock():
+            self.lock = Lock()
+        else:
+            self.lock = None
 
     def get_managers(self, path, request):
         return [], self.generate_manager(None, request)
@@ -230,6 +234,10 @@ class CollectionService(BaseCollectionService):
             managed_class.manager_class, config, collection_url, namespace)
         self.extractor = managed_class.extractor
         self.previous_service = previous_service
+
+    @property
+    def lock(self):
+        return self.previous_service.lock
 
     def generate_manager(self, resource, request):
         """
@@ -270,6 +278,10 @@ class ActionService(object):
             '_napix_action').add_segment(self.name)
         rf = self.action.resource_fields
         self.resource_fields = dict(zip(rf, map(dict, rf.values())))
+
+    @property
+    def lock(self):
+        return self.service.lock
 
     def setup_bottle(self, app):
         app.route(unicode(self.url.add_segment('_napix_help')), self.as_help)
