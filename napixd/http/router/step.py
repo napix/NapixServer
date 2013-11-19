@@ -72,9 +72,7 @@ class RouteTaken(Exception):
     """
     The exception raised when trying to register a route already taken.
     """
-    def __init__(self, route, reason):
-        self.route = route
-        super(RouteTaken, self).__init__(reason)
+    pass
 
 
 class ResolvedRequest(object):
@@ -101,15 +99,11 @@ class RouterStep(object):
     Each :class:`RouterStep` handles the path without the '/'
     and delegates to children class:`RouterStep` for the path.
     """
-    def __init__(self, route):
-        self._route = route
+    def __init__(self):
         # _fixed, the map of the static paths token
         self._fixed = {}
         # Callback associated to this '/'
         self._callback = None
-
-    def __repr__(self):
-        return '<Router of {0}>'.format(self._route or '/')
 
     def __nonzero__(self):
         #A router is truthy if it has at least a rule
@@ -129,7 +123,7 @@ class RouterStep(object):
         if dest is None:
             # <router>
             if self._callback:
-                raise RouteTaken(self._route, 'This route is already register to {0}'.format(self._callback))
+                raise RouteTaken('This route is already register to {0}'.format(self._callback))
             self._callback = callback
             return self
 
@@ -138,16 +132,16 @@ class RouterStep(object):
             if dest:
                 raise ValueError('catchall URL must end with a "/"')
             if '' in self._fixed:
-                raise RouteTaken(self._route, 'The / route is taken')
+                raise RouteTaken('The / route is taken')
             if '?' in self._fixed:
-                raise RouteTaken(self._route, 'Impossible to record all routes under {0}'.format(self._route))
-            router = self._fixed['?'] = CatchAllRouterStep(self._route + '/' + dest, callback)
+                raise RouteTaken('Impossible to record all routes')
+            router = self._fixed['?'] = CatchAllRouterStep(callback)
             return router
 
         if dest in self._fixed:
             router = self._fixed[dest]
         else:
-            router = self._fixed[dest] = RouterStep(self._route + '/' + dest)
+            router = self._fixed[dest] = RouterStep()
         return router.route(target, callback, catchall)
 
     def unroute(self, target, all=False):
@@ -218,12 +212,8 @@ class CatchAllRouterStep(object):
     The callback takes the arguments of the url and as last argument,
     the remaining portion of path.
     """
-    def __init__(self, route, callback):
-        self._route = route
+    def __init__(self, callback):
         self._callback = callback
-
-    def __repr__(self):
-        return '<Catchall of {0}/**>'.format(self._route or '/')
 
     def __nonzero__(self):
         return self._callback is not None
@@ -236,7 +226,7 @@ class CatchAllRouterStep(object):
         self._callback = None
 
     def route(self, target, callback, catchall=False):
-        raise RouteTaken(self._route, 'The router catches all routes under this path')
+        raise RouteTaken('The router catches all routes under this path')
 
     def resolve(self, target):
         if self._callback is None:

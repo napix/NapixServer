@@ -56,7 +56,7 @@ class Router(object):
     """
     def __init__(self):
         self._filters = []
-        self._router = RouterStep('')
+        self._router = RouterStep()
 
     def add_filter(self, filter):
         """

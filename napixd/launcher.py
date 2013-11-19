@@ -146,6 +146,7 @@ Non-default:
     secure:     Disable the request tokeb signing
     localhost:  Listen on the loopback interface only
     autonomous-auth:    Use a local source of authentication
+    hosts:      Check the HTTP Host header
 
 Meta-options:
     only:       Disable default options
@@ -170,6 +171,7 @@ Meta-options:
 
         self.set_loggers()
         self.service_name = self.get_service_name()
+        self.hosts = self.get_hostnames()
 
         console.info('Napixd Home is %s', get_path())
         console.info('Options are %s', ','.join(self.options))
@@ -190,6 +192,7 @@ Meta-options:
                     u'Napix require gevent >= 1.0, Try to install it, or run napix with *nogevent* option')
 
             from gevent.monkey import patch_all
+            logger.info('Installing gevent monkey patch')
             patch_all()
 
     def run(self):
@@ -261,10 +264,13 @@ Meta-options:
         aaa_class = get_auth_plugin(secure='secure' in self.options,
                                     time='time' in self.options,
                                     autonomous='autonomous-auth' in self.options)
-        logger.info('Installing auth plugin secure:%s, time:%s',
-                    'secure' in self.options, 'time' in self.options)
+        logger.info('Installing auth plugin secure:%s, time:%s autonomous:%s',
+                    'secure' in self.options, 'time' in self.options,
+                    'autonomous-auth' in self.options)
 
-        return aaa_class(conf, service_name=self.service_name)
+        hosts = self.hosts if 'hosts' in self.options else None
+
+        return aaa_class(conf, service_name=self.service_name, hosts=hosts)
 
     def get_napixd(self, server):
         """
@@ -329,6 +335,27 @@ Meta-options:
 
         return router
 
+    def get_hostnames(self):
+        hosts = Conf.get_default('Napix.auth.hosts')
+        if isinstance(hosts, basestring):
+            return [hosts]
+        elif isinstance(hosts, list):
+            if not all(isinstance(host, basestring) for host in hosts):
+                logger.error('All values in hosts conf key are not strings')
+                hosts = [h for h in hosts if isinstance(h, basestring)]
+
+            if hosts:
+                return hosts
+            else:
+                logger.error('hosts conf key is empty. Guessing instead.')
+        elif 'localhost' in self.options:
+            return ['localhost:{0}'.format(self.get_port())]
+
+        import socket
+        hostname = socket.gethostname()
+        logger.warning('Cannot reliably determine the hostname, using hostname "%s"', hostname)
+        return [hostname]
+
     def get_app(self):
         """
         Return the bottle application with the plugins added
@@ -350,7 +377,8 @@ Meta-options:
                 raise CannotLaunch('Notifier has no configuration options')
 
             logger.info('Set up notifier')
-            self.notifier = notifier = Notifier(napixd, conf, self.service_name)
+            self.notifier = notifier = Notifier(
+                napixd, conf, self.service_name, self.hosts[0])
             notifier.start()
         else:
             self.notifier = None
@@ -378,11 +406,15 @@ Meta-options:
         """
         from napixd.plugins.middleware import (PathInfoMiddleware,
                                                CORSMiddleware,
-                                               LoggerMiddleware)
+                                               LoggerMiddleware,
+                                               HTTPHostMiddleware,
+                                               )
         if 'uwsgi' in self.options:
             application = PathInfoMiddleware(application)
         if 'cors' in self.options:
             application = CORSMiddleware(application)
+        if 'hosts' in self.options:
+            application = HTTPHostMiddleware(self.hosts, application)
         if 'logger' in self.options:
             application = LoggerMiddleware(application)
 
@@ -406,14 +438,14 @@ Meta-options:
         """
         Get the bottle server adapter
         """
-        if not 'gevent' in self.options:
-            from napixd.wsgiref import WSGIRefServer
-            return WSGIRefServer
-        elif 'uwsgi' in self.options:
-            return ''
-        else:
+        if 'gevent' in self.options:
             from napixd.gevent_tools import GeventServer
             return GeventServer
+        elif 'uwsgi' in self.options:
+            raise CannotLaunch('The server cannot run on its own with uwsgi option')
+        else:
+            from napixd.wsgiref import WSGIRefServer
+            return WSGIRefServer
 
     def get_host(self):
         if 'localhost' in self.options:
@@ -431,7 +463,7 @@ Meta-options:
             'server': server,
             'quiet': 'logger' in self.options,
         }
-        if server == 'wsgiref':
+        if not 'gevent' in self.options:
             if server_options['quiet']:
                 from napixd.wsgiref import QuietWSGIRequestHandler
                 server_options['handler_class'] = QuietWSGIRequestHandler

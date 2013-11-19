@@ -226,12 +226,13 @@ class TestAAAPlugin(unittest.TestCase):
         self.Checker = self.patch_checker.start()
         self.checker = self.Checker.return_value
         self.checker.authserver_check.return_value = Success()
+        self.hosts = None
 
     def tearDown(self):
         self.patch_checker.stop()
 
     def plugin(self):
-        return AAAPlugin(self.conf, 'server.napix.nx')
+        return AAAPlugin(self.conf, 'server.napix.nx', hosts=self.hosts)
 
     def call(self):
         try:
@@ -261,17 +262,17 @@ class TestAAAPlugin(unittest.TestCase):
         self.assertEqual(r.status, 403)
 
     def test_refuse_host(self):
-        self.conf['hosts'] = 'server.napix.io'
+        self.hosts = ['server.napix.io']
         r = self.call()
         self.assertEqual(r.status, 403)
 
     def test_authorize_host(self):
-        self.conf['hosts'] = 'server.napix.nx'
+        self.hosts = ['server.napix.nx']
         r = self.call()
         self.assertEqual(r, self.cb.return_value)
 
     def test_refuse_host_list(self):
-        self.conf['hosts'] = ['server.napix.org', 'server.napix.io']
+        self.hosts = ['server.napix.org', 'server.napix.io']
         r = self.call()
         self.assertEqual(r.status, 403)
 
@@ -307,6 +308,7 @@ class TestAAAPlugin(unittest.TestCase):
 
     def test_refuse_list_star(self):
         p = mock.MagicMock(name='permset')
+        p.on_host.return_value = p
         p.filter_paths.return_value = ['/abc']
         c = self.checker.authserver_check.return_value = mock.MagicMock(
             spec=Fail,
@@ -318,10 +320,12 @@ class TestAAAPlugin(unittest.TestCase):
 
         r = self.call()
         self.assertEqual(r, p.filter_paths.return_value)
-        p.filter_paths.assert_called_once_with('server.napix.nx', resp)
+        p.on_host.assert_called_once_with('server.napix.nx')
+        p.filter_paths.assert_called_once_with(resp)
 
     def test_refuse_dict_star(self):
         p = mock.MagicMock(name='permset')
+        p.on_host.return_value = p
         p.filter_paths.return_value = ['/abc']
         c = self.checker.authserver_check.return_value = mock.MagicMock(
             spec=Fail,
@@ -336,4 +340,5 @@ class TestAAAPlugin(unittest.TestCase):
 
         r = self.call()
         self.assertEqual(r, {'/abc': {'this': 1}})
-        p.filter_paths.assert_called_once_with('server.napix.nx', resp)
+        p.on_host.assert_called_once_with('server.napix.nx')
+        p.filter_paths.assert_called_once_with(resp)

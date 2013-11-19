@@ -15,7 +15,6 @@ except ImportError:
     from time import sleep
 
 import logging
-import socket
 import urlparse
 
 from napixd.client import Client, HTTPError
@@ -36,9 +35,10 @@ class Notifier(object):
     The *app* is the source of the **applications** sent to the directory.
     """
 
-    def __init__(self, app, conf, service_name):
+    def __init__(self, app, conf, service_name, hostname):
         self.app = app
         self.service_name = service_name
+        self.hostname = hostname
 
         self.directory = post_url = conf.get('url')
         post_url_bits = urlparse.urlsplit(post_url)
@@ -107,8 +107,8 @@ class Notifier(object):
     def send_request(self, method, url):
         return self.client.request(method, url, body={
             'uid': str(uid),
-            'host': Conf.get_default('Napix.auth.service') or socket.gethostname(),
+            'host': self.hostname,
             'service': self.service_name,
             'description': Conf.get_default('Napix.description') or '',
-            'managers': list(self.app.root_urls),
+            'managers': self.app.list_managers(),
         })

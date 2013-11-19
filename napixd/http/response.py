@@ -27,8 +27,13 @@ class Response(object):
     """
 
     def __init__(self, headers=None):
-        self.headers = headers or {}
+        self.headers = HeadersDict(headers or {})
         self._body = StringIO()
+        self._length = 0
+
+    @property
+    def size(self):
+        return self._length
 
     def set_header(self, header, content):
         """
@@ -40,6 +45,10 @@ class Response(object):
         """
         Write content in the buffer
         """
+        if isinstance(content, unicode):
+            content = content.encode('utf-8')
+
+        self._length += len(content)
         self._body.write(content)
 
     def read(self, size=-1):
@@ -91,7 +100,13 @@ class HTTPResponse(object):
         else:
             raise TypeError('HTTPResponse takes up to 3 arguments')
 
-        if isinstance(body, (HTTPResponse, HTTPError)):
+        if isinstance(body, Response):
+            self._headers = HeadersDict(body.headers)
+            self._headers.update(headers)
+            self._headers.setdefault('Content-Length', body.size)
+            body.seek(0)
+            self._body = body
+        elif isinstance(body, (HTTPResponse, HTTPError)):
             self._headers = HeadersDict(body.headers)
             self._headers.update(headers)
             self._body = body.body

@@ -5,7 +5,7 @@
 A WSGI server implementation
 """
 
-
+import time
 import logging
 import json
 
@@ -14,6 +14,17 @@ from napixd.http.request import Request, HeadersDict
 from napixd.http.response import HTTPError, Response, HTTPResponse, HTTP404
 
 logger = logging.getLogger('Napix.conversations')
+
+__all__ = ('WSGIServer', )
+
+block_size = 1024**2
+
+
+def file_wrapper(environ, filelike):
+    if 'wsgi.file_wrapper' in environ:
+        return environ['wsgi.file_wrapper'](filelike, block_size)
+    else:
+        return iter(lambda: filelike.read(block_size), '')
 
 
 class WSGIServer(object):
@@ -24,15 +35,18 @@ class WSGIServer(object):
         self._show_errors = show_errors
 
     def __call__(self, environ, start_response):
+        environ['napixd.request'] = request = Request(environ)
         try:
-            environ['napixd.request'] = request = Request(environ)
             resp = self.handle(request)
         except HTTPError as error:
             resp = error
 
-        resp = self.cast(resp)
+        resp = self.cast(request, resp)
+        headers = resp.headers
+        headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
+        headers['Server'] = 'napixd'
 
-        start_response(resp.status_line, resp.headers.items())
+        start_response(resp.status_line, headers.items())
         return resp.body
 
     def handle(self, request):
@@ -47,7 +61,7 @@ class WSGIServer(object):
 
         The first router having a match is used.
         """
-        for router in self._routers:
+        for router in reversed(self._routers):
             resolved = router.resolve(target)
             if resolved is not None:
                 return resolved
@@ -75,7 +89,7 @@ class WSGIServer(object):
         self._routers.append(router)
         return router
 
-    def cast(self, response):
+    def cast(self, request, response):
         if isinstance(response, Response):
             return HTTPResponse(200, response.headers, response)
         elif isinstance(response, (HTTPError, HTTPResponse)):
@@ -87,16 +101,21 @@ class WSGIServer(object):
             headers = HeadersDict()
             body = response
 
+        if request.method == 'HEAD':
+            body = None
+            headers['Content-Length'] = 0
+
         content_type = headers.get('Content-Type', '')
         content_length = headers.get('Content-Length', None)
 
         if status != 200 and isinstance(body, basestring):
+            if not content_type:
+                content_type = 'text/plain'
             if isinstance(body, unicode):
-                if not content_type:
-                    content_type = 'text/plain; charset=utf-8'
+                content_type += '; charset=utf-8'
                 body = body.encode('utf-8')
         elif hasattr(body, 'read'):
-            body = iter(body.read, '')
+            body = file_wrapper(request.environ, body)
         elif body is not None:
             content_type = 'application/json'
             body = json.dumps(body, indent=self._pprint)

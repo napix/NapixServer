@@ -65,7 +65,7 @@ class ServiceRequest(object):
         Retreive the manager associated with the current request
         """
         self.all_managers, manager = self.service.get_managers(
-            self.path if path is None else path)
+            self.path if path is None else path, self.request)
         return manager
 
     def get_callback(self):
@@ -275,6 +275,9 @@ class ServiceResourceRequest(ServiceRequest):
 
         if self.method != 'GET':
             return result
+
+        if result is None:
+            raise ValueError('resource cannot be None')
 
         format_ = self.request.GET.get('format', None)
         if not format_:

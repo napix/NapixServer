@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="napixd",
-    version="1.4",
+    version="1.5",
     packages=find_packages(
         exclude=[
             'napixd.examples',
@@ -16,7 +16,7 @@ setup(
     author='Enix',
     author_email='gr@enix.org',
     install_requires=[
-        'permissions>=1.4',
+        'permissions>=1.7',
         'napix>=0.6',
     ],
     include_package_data=True,

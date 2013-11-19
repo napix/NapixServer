@@ -105,20 +105,11 @@ class AAAChecker(object):
 
 class BaseAAAPlugin(object):
 
-    def __init__(self, conf, service_name=''):
+    def __init__(self, conf, service_name='', hosts=None):
         self.settings = conf
 
-        hosts = self.settings.get('hosts')
         if hosts:
-            if (isinstance(hosts, list) and
-                    all(isinstance(h, basestring) for h in hosts)):
-                self.hosts = set(hosts)
-            elif isinstance(hosts, basestring):
-                self.hosts = set([hosts])
-            else:
-                self.logger.error(
-                    'Napix.auth.hosts is not a string or a list of strings')
-                self.hosts = None
+            self.hosts = set(hosts)
         else:
             self.logger.warning('No host settings, every host is allowed')
             self.hosts = None
@@ -179,8 +170,8 @@ class AAAPlugin(BaseAAAPlugin):
     """
     logger = logging.getLogger('Napix.AAA')
 
-    def __init__(self, conf, service_name=''):
-        super(AAAPlugin, self).__init__(conf, service_name=service_name)
+    def __init__(self, *args, **kw):
+        super(AAAPlugin, self).__init__(*args, **kw)
         url = self.settings.get('auth_url')
         auth_url_parts = urlparse.urlsplit(url)
         self.logger.info('Set up authentication with %s', url)
@@ -213,7 +204,7 @@ class AAAPlugin(BaseAAAPlugin):
         resp = callback(request)
         if method == 'GET' and is_collection_request and check.content:
             permissions = check.content
-            allowed_paths = permissions.filter_paths(self.service, resp)
+            allowed_paths = permissions.on_host(self.service).filter_paths(resp)
             self.logger.debug('Filtered %s/%s urls',
                               len(allowed_paths), len(resp))
             if isinstance(resp, list):

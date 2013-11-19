@@ -6,8 +6,56 @@ import mock
 
 from cStringIO import StringIO
 
-from napixd.http.request import Request, InputStream
+from napixd.http.request import Request, InputStream, Query
 from napixd.http.response import HTTPError
+
+
+class TestQuery(unittest.TestCase):
+    def test_query_string_none(self):
+        s = Query('a')
+        self.assertEqual(s['a'], None)
+
+    def test_contains(self):
+        self.assertTrue('a' in Query('a'))
+        self.assertTrue('a' in Query('a='))
+        self.assertTrue('a' in Query('a=b'))
+
+    def test_query_string_nothing(self):
+        s = Query('a=1')
+        self.assertRaises(KeyError, lambda: s['b'])
+
+    def test_query_string_value(self):
+        s = Query('a=1')
+        self.assertEqual(s['a'], '1')
+
+    def test_query_string_empty(self):
+        s = Query('a=')
+        self.assertEqual(s['a'], '')
+
+    def test_query_string_values(self):
+        s = Query('a=1&a=2')
+        self.assertEqual(s['a'], '1')
+
+    def test_query_all_values(self):
+        s = Query('a=1&a=2')
+        self.assertEqual(s.getall('a'), ['1', '2'])
+
+    def test_query_all_one(self):
+        s = Query('a=1')
+        self.assertEqual(s.getall('a'), ['1'])
+
+    def test_query_all_none(self):
+        s = Query('a=1')
+        self.assertEqual(s.getall('c'), [])
+
+    def test_dict(self):
+        s = Query({'a': 'abc'})
+        self.assertEqual(s.getall('a'), ['abc'])
+
+    def test_copy(self):
+        s = Query({'a': 'abc'})
+        s = Query(s)
+        self.assertEqual(s.getall('a'), ['abc'])
 
 
 class TestRequest(unittest.TestCase):
@@ -111,7 +159,7 @@ class TestRequest(unittest.TestCase):
             'wsgi.input': StringIO('')
         })
 
-        self.assertEqual(r.data, None)
+        self.assertEqual(r.data, {})
 
     def test_request_data_json(self):
         data = '<value><mpm>prefork</mpm><x>1</x></value>'

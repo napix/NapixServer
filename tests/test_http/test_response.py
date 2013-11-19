@@ -4,7 +4,7 @@
 import unittest
 import mock
 
-from napixd.http.response import HTTPResponse
+from napixd.http.response import HTTPResponse, Response
 from napixd.http.headers import HeadersDict
 
 
@@ -55,6 +55,18 @@ class TestResponse(unittest.TestCase):
         r = HTTPResponse(198, {}, None)
         self.assertEqual(r.status_line, '198 Unknown')
 
+    def test_with_response(self):
+        resp = Response({'header2': 'value2'})
+        r = HTTPResponse({'header1': 'value1'}, resp)
+        self.assertEqual(r.headers['header1'], 'value1')
+        self.assertEqual(r.body, resp)
+
+    def test_with_respons_length(self):
+        resp = Response()
+        resp.write('1234')
+
+        r = HTTPResponse(resp)
+        self.assertEqual(r.headers['Content-Length'], '4')
 
 class TestResponseWithResponse(unittest.TestCase):
     def setUp(self):

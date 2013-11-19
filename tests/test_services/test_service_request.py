@@ -211,6 +211,11 @@ class TestServiceResourceRequest(unittest.TestCase):
         r = self.srr().handle()
         self.assertEqual(r, {'mpm': 'prefork', '_s': True})
 
+    def test_handle_get_None(self):
+        self.manager.get_resource.return_value = None
+        self.assertRaises(ValueError, self.srr().handle)
+
+
     def test_handle_get_404(self):
         self.manager.get_resource.side_effect = NotFound()
         try:

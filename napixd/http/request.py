@@ -4,6 +4,8 @@
 from __future__ import absolute_import
 
 import json
+import collections
+
 from cStringIO import StringIO
 from napixd.http.response import HTTPError
 from napixd.http.headers import HeadersDict
@@ -20,6 +22,50 @@ class lazy(object):
             return self.fn
         instance.__dict__[self.fn.__name__] = value = self.fn(instance)
         return value
+
+
+class Query(collections.Mapping):
+    def __init__(self, raw):
+        if isinstance(raw, basestring):
+            values = collections.defaultdict(list)
+            for bit in raw.split('&'):
+                if '=' in bit:
+                    key, value = bit.split('=', 1)
+                    values[key].append(value)
+                else:
+                    values[bit].append(None)
+        elif isinstance(raw, Query):
+            values = dict()
+            for key in raw:
+                values[key] = raw.getall(key)
+        elif isinstance(raw, collections.Mapping):
+            values = dict()
+            for key, value in raw.items():
+                values[key] = [value]
+        else:
+            raise TypeError('value is instanciated with a dict or a string')
+
+        self.values = dict(values)
+
+    def getall(self, key):
+        if not key in self.values:
+            return []
+        return self.values[key]
+
+    def __contains__(self, key):
+        return key in self.values
+
+    def __getitem__(self, key):
+        if not key in self.values:
+            raise KeyError(key)
+
+        return self.values[key][0]
+
+    def __iter__(self):
+        return iter(self.values)
+
+    def __len__(self):
+        return len(self.values)
 
 
 class InputStream(object):
@@ -53,6 +99,9 @@ class Request(object):
         self.method = environ['REQUEST_METHOD']
         self.path = environ['PATH_INFO'] or '/'
 
+    def __repr__(self):
+        return 'Request: {method} {path}'.format(**self.__dict__)
+
     @lazy
     def content_type(self):
         """The content-type of the request"""
@@ -70,7 +119,6 @@ class Request(object):
             return value
         return 0
 
-
     @property
     def query_string(self):
         """The string of the values after the ?"""
@@ -81,9 +129,7 @@ class Request(object):
         """
         The parsed version of the :attr:`query_string`.
         """
-        return dict(
-            bit.split('=', 1) if '=' in bit else (bit, None)
-            for bit in self.query_string.split('&'))
+        return Query(self.query_string)
 
     @property
     def GET(self):
@@ -113,12 +159,17 @@ class Request(object):
         Raises a 415 Unsupported Media Type for other content-types
         """
         if not self.content_type or not self.content_length:
-            return None
-
-        if self.content_type.startswith('application/json'):
-            try:
-                return json.load(self._body())
-            except ValueError:
-                raise HTTPError(400, 'Misformated JSON object')
+            return {}
+        elif self.content_type.startswith('application/json'):
+            if not isinstance(self.json, dict):
+                raise HTTPError(400, 'json object is not a dict')
+            return self.json
 
         raise HTTPError(415, 'This method only accepts application/json')
+
+    @lazy
+    def json(self):
+        try:
+            return json.load(self._body())
+        except ValueError:
+            raise HTTPError(400, 'Misformated JSON object')

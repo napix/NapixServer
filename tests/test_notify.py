@@ -10,6 +10,7 @@ import contextlib
 from napixd.notify import Notifier
 from napixd.conf import Conf
 from napixd.client import Client
+from napixd.application import NapixdBottle
 
 
 class RunStop(Exception):
@@ -24,7 +25,8 @@ class TestNotifier(unittest2.TestCase):
             'spec': Client,
             'return_value.spec': Client,
         })
-        cls.app = mock.Mock(root_urls=['base'])
+        cls.app = mock.Mock(spec=NapixdBottle)
+        cls.app.list_managers.return_value = ['base']
         cls.credentials = mock.Mock()
         cls.uid = mock.patch(
             'napixd.notify.uid', '2550ba7b-aec4-4a67-8047-2ce1ec8ca8ae')
@@ -35,12 +37,8 @@ class TestNotifier(unittest2.TestCase):
         cls.uid.stop()
 
     def setUp(self):
-        self.force_conf = contextlib.nested(
-            Conf.get_default().force(
-                'Napix.auth.service', 'server.napix.nx:8002'),
-            Conf.get_default().force(
-                'Napix.description', u'The base Napix server')
-        )
+        self.force_conf = Conf.get_default().force(
+            'Napix.description', u'The base Napix server')
         with self.patch_client as Client_:
             self.Client = Client_
             self.client = Client_.return_value
@@ -49,7 +47,7 @@ class TestNotifier(unittest2.TestCase):
             self.notifier = Notifier(self.app, {
                 'url': 'http://auth.server.nx/notify/',
                 'credentials': self.credentials
-            }, 'server.napix.io')
+            }, 'server.napix.io', 'server.napix.nx:8002')
 
     notify_create = mock.call('POST', '/notify/', body={
         'uid': '2550ba7b-aec4-4a67-8047-2ce1ec8ca8ae',

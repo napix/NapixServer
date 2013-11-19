@@ -53,7 +53,7 @@ class TestCollectionServiceManaged(unittest2.TestCase):
     def test_get_managers(self):
         managed = Managed.return_value
         manager = Manager.return_value
-        all, this = self.cs.get_managers(['p1'])
+        all, this = self.cs.get_managers(['p1'], mock.Mock(spec=Request))
         self.assertEqual(managed, this)
 
         self.assertEqual(len(all), 1)
@@ -67,9 +67,10 @@ class TestCollectionServiceManaged(unittest2.TestCase):
 
     def test_generate_manager(self):
         resource = mock.Mock()
-        self.cs.generate_manager(resource)
+        request = mock.Mock(spec=Request)
+        self.cs.generate_manager(resource, request)
         self.managed_class.extractor.assert_called_once_with(resource)
-        Managed.assert_called_once_with(resource)
+        Managed.assert_called_once_with(resource, request)
 
     def test_get_name_fcs(self):
         self.assertEqual(self.fcs.get_name(), 'parent')
