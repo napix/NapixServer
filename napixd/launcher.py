@@ -307,7 +307,7 @@ Meta-options:
         loaders = []
 
         if 'conf' in self.options:
-            loaders.append(ConfImporter(self.conf))
+            loaders.append(ConfImporter(self.conf.get('Napix.managers'), self.conf))
         if 'auto' in self.options:
             auto_path = get_path('auto')
             logger.info('Using %s as auto directory', auto_path)

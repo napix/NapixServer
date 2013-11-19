@@ -180,9 +180,8 @@ class TestConfImporter(unittest.TestCase):
 
     def test_importer(self):
         ci = ConfImporter(Conf({
-            'Napix.managers': {
-                'a': 'a.b.c.Manager'
-            },
+            'a': 'a.b.c.Manager'
+        }), Conf({
             'a': {
                 'd': 123
             }
@@ -197,9 +196,8 @@ class TestConfImporter(unittest.TestCase):
 
     def test_importer_error(self):
         ci = ConfImporter(Conf({
-            'Napix.managers': {
-                'a': 'a.b.c.Manager'
-            },
+            'a': 'a.b.c.Manager'
+        }), Conf({
             'a': {
                 'd': 123
             }

@@ -246,12 +246,13 @@ class ConfImporter(Importer):
     :mod:`default configuration<napixd.conf>` of Napix.
     """
 
-    def __init__(self, conf):
+    def __init__(self, managers, conf):
         super(ConfImporter, self).__init__()
+        self.managers = managers
         self.conf = conf
 
     def get_paths(self):
-        for manager_path in self.conf.get('Napix.managers').values():
+        for manager_path in self.managers.values():
             module = sys.modules.get(manager_path.rsplit('.', 1)[0])
             if module:
                 yield os.path.dirname(module.__file__)
@@ -262,7 +263,7 @@ class ConfImporter(Importer):
         return a list of Manager subclasses
         """
         managers, errors = [], []
-        for alias, manager_path in self.conf.get('Napix.managers').items():
+        for alias, manager_path in self.managers.items():
             try:
                 manager = self.import_manager(manager_path)
                 logger.info('load %s from conf', manager_path)
