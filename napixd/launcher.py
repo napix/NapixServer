@@ -169,6 +169,8 @@ Meta-options:
             options = options.union(self.DEFAULT_OPTIONS)
         self.options = options = options.difference(nooptions)
 
+        self.conf = self.get_conf()
+
         self.set_loggers()
         self.service_name = self.get_service_name()
         self.hosts = self.get_hostnames()
@@ -178,6 +180,9 @@ Meta-options:
         console.info('Starting process %s', os.getpid())
         console.info('Logging activity in %s', self.LOG_FILE)
         console.info('Service Name is %s', self.service_name)
+
+    def get_conf(self):
+        return Conf.get_default()
 
     def _patch_gevent(self):
         if 'gevent' in self.options:
@@ -239,7 +244,7 @@ Meta-options:
         The configuration option ``Napix.auth.service`` is used.
         If it does not exists, the name is fetched from :file:`/etc/hostname`
         """
-        service = Conf.get_default('Napix.auth.service')
+        service = self.conf.get('Napix.auth.service')
         if not service:
             logger.info(
                 'No setting Napix.auth.service, guessing from /etc/hostname')
@@ -255,7 +260,7 @@ Meta-options:
         """
         Load the authentication handler.
         """
-        conf = Conf.get_default('Napix.auth')
+        conf = self.conf.get('Napix.auth')
         if not conf:
             raise CannotLaunch(
                 '*auth* option is set and no configuration has been found (see Napix.auth key).')
@@ -302,7 +307,7 @@ Meta-options:
         loaders = []
 
         if 'conf' in self.options:
-            loaders.append(ConfImporter(Conf.get_default()))
+            loaders.append(ConfImporter(self.conf))
         if 'auto' in self.options:
             auto_path = get_path('auto')
             logger.info('Using %s as auto directory', auto_path)
@@ -336,7 +341,7 @@ Meta-options:
         return router
 
     def get_hostnames(self):
-        hosts = Conf.get_default('Napix.auth.hosts')
+        hosts = self.conf.get('Napix.auth.hosts')
         if isinstance(hosts, basestring):
             return [hosts]
         elif isinstance(hosts, list):
@@ -372,7 +377,7 @@ Meta-options:
 
         if 'notify' in self.options:
             from napixd.notify import Notifier
-            conf = Conf.get_default('Napix.notify')
+            conf = self.conf.get('Napix.notify')
             if not 'url' in conf:
                 raise CannotLaunch('Notifier has no configuration options')
 
@@ -493,7 +498,7 @@ Meta-options:
         module_path = os.path.join(os.path.dirname(module_file), 'web')
         napix_default = os.path.join(os.path.dirname(__file__), 'web')
         for directory in [
-                Conf.get_default('Napix.webclient.path'),
+                self.conf.get('Napix.webclient.path'),
                 get_path('web', create=False),
                 module_path,
                 napix_default,
