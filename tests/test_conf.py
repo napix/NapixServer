@@ -163,43 +163,6 @@ class TestConfLoader(unittest2.TestCase):
         self.assertTrue('Napix.managers' in conf)
 
 
-class TestForce(unittest2.TestCase):
-
-    def setUp(self):
-        self.conf = Conf({
-            'a': {
-                'b': 1,
-                'c': {
-                    'd': 'e'
-                }
-            }
-        }
-        )
-
-    def test_force(self):
-        with self.conf.force('a.b', 3):
-            self.assertEqual(self.conf['a.b'], 3)
-        self.assertEqual(self.conf['a.b'], 1)
-
-    def test_force_dict(self):
-        with self.conf.force('a.b', {'f': 12, 'y': 14}):
-            self.assertEqual(self.conf['a.b.f'], 12)
-            self.assertEqual(self.conf['a.b.y'], 14)
-        self.assertEqual(self.conf['a.b'], 1)
-
-    def test_force_inexisting(self):
-        with self.conf.force('z.b.c', 'd'):
-            self.assertEqual(self.conf['z.b.c'], 'd')
-        with self.assertRaises(KeyError):
-            self.conf['z']
-
-    def test_force_inexisting_inside(self):
-        with self.conf.force('a.k.j', 'd'):
-            pass
-        with self.assertRaises(KeyError):
-            self.conf['a.k']
-
-
 class TestDotted(unittest2.TestCase):
 
     def setUp(self):

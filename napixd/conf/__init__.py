@@ -31,7 +31,7 @@ DEFAULT_CONF = os.path.join(os.path.dirname(__file__), 'settings.json')
 _sentinel = object()
 
 
-class Conf(collections.MutableMapping):
+class Conf(collections.Mapping):
 
     """
     Configuration Object
@@ -142,19 +142,6 @@ class Conf(collections.MutableMapping):
                 return Conf(base)[suffix]
         raise KeyError(item)
 
-    def __setitem__(self, key, value):
-        self.data[key] = value
-
-    def __delitem__(self, item):
-        if '.' in item:
-            prefix, x, suffix = item.rpartition('.')
-            cont = self[prefix]
-            del cont[suffix]
-            if not cont:
-                del self[prefix]
-        else:
-            del self.data[item]
-
     def __contains__(self, item):
         if not self:
             return False
@@ -197,39 +184,3 @@ class Conf(collections.MutableMapping):
         if isinstance(value, dict):
             return Conf(value)
         return value
-
-    def _set(self, item, value):
-        self._do_set(self.data, item, value)
-
-    def _do_set(self, dataset, item, value):
-        if '.' in item:
-            prefix, x, suffix = item.partition('.')
-            self._do_set(dataset.setdefault(prefix, {}), suffix, value)
-        else:
-            dataset[item] = value
-
-    @contextmanager
-    def force(self, param, value):
-        """
-        Forces the param to be set to value for
-        the duration of the context manager.
-
-        .. warning::
-
-            This method is meant to be used in testing/debug
-            and not in production
-
-        >>> c = Conf({'a': 1})
-        >>> with c.force('a', 2):
-        ...     c.get('a')
-        2
-        >>> c.get('a')
-        1
-        """
-        old_value = self.get(param)
-        self._set(param, value)
-        yield
-        if old_value:
-            self._set(param, old_value)
-        else:
-            del self[param]
