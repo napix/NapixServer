@@ -3,7 +3,14 @@
 
 import json
 
-from napixd.store import loader
+import napixd
+from napixd.store import Loader
+from napixd.conf.json import ConfLoader
+
+conf_loader = ConfLoader([
+    napixd.get_path('conf/'),
+])
+loader = Loader(conf_loader())
 
 
 def load(fd, backend, reset=False):
