@@ -31,7 +31,7 @@
       "#delay" : "The interval at which this sever sends notifications",
       "delay" : 300
     },
-    "#storage" : {
+    "storage" : {
         "#info" : "The configuration of the stores",
         "#store" : "The default backend for Key value storage",
         "store" : "napixd.store.backends.file.FileBackend",
