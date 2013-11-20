@@ -22,7 +22,6 @@ Contents:
     conf
     submanagers
     extensions
-    using-django
     thread_manager
     templates
     undo
