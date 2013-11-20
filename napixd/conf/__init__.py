@@ -123,7 +123,8 @@ class Conf(collections.Mapping):
                 if not key.startswith('#'))
 
     def __len__(self):
-        return len(self.data)
+        return sum(0 if key.startswith('#') else 1
+                   for key in self.data)
 
     @classmethod
     def get_default(cls, value=None):
@@ -169,7 +170,7 @@ class Conf(collections.Mapping):
         return False
 
     def __nonzero__(self):
-        return bool(self.data)
+        return any(not key.startswith('#') for key in self.data)
 
     def __eq__(self, other):
         return (isinstance(other, collections.Mapping) and

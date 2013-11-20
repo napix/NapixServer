@@ -73,11 +73,20 @@ class TestConfComment(unittest2.TestCase):
             '#a': 'this is three letters'
         })
 
+    def test_length(self):
+        self.assertEqual(len(self.conf), 1)
+
     def test_comment_items(self):
         self.assertEqual(self.conf.items(), [('a', 'abc')])
 
     def test_comment_keys(self):
         self.assertEqual(self.conf.keys(), ['a'])
+
+    def test_truth_value(self):
+        conf = Conf({
+            '#a': 1
+        })
+        self.assertFalse(bool(conf))
 
 
 class TestDotted(unittest2.TestCase):
