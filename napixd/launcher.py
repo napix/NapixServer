@@ -169,9 +169,10 @@ Meta-options:
             options = options.union(self.DEFAULT_OPTIONS)
         self.options = options = options.difference(nooptions)
 
+        self.set_loggers()
+
         self.conf = self.get_conf()
 
-        self.set_loggers()
         self.service_name = self.get_service_name()
         self.hosts = self.get_hostnames()
 
@@ -182,7 +183,12 @@ Meta-options:
         console.info('Service Name is %s', self.service_name)
 
     def get_conf(self):
-        return Conf.get_default()
+        from napixd.conf.json import ConfLoader
+
+        loader = ConfLoader([
+            get_path('conf/'),
+        ])
+        return Conf.set_default(loader())
 
     def _patch_gevent(self):
         if 'gevent' in self.options:

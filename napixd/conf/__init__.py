@@ -16,19 +16,80 @@ The defautl configuration is loaded from a JSON file
 
 import __builtin__
 import logging
-import json
 import os.path
 import collections
-import napixd
-from contextlib import contextmanager
 
 logger = logging.getLogger('Napix.conf')
 
 # So that it's overridable in the tests
 open = open
-DEFAULT_CONF = os.path.join(os.path.dirname(__file__), 'settings.json')
 
 _sentinel = object()
+
+
+class ConfLoader(object):
+    """
+    Load the configuration from the default file.
+
+    If the configuration file does not exists,
+    a new configuration file is created.
+    """
+    def __init__(self, paths, filename):
+        self.filename = filename
+        self.paths = [os.path.join(path, filename) for path in paths]
+
+    def get_default_conf(self):
+        return os.path.join(os.path.dirname(__file__), self.filename)
+
+    def load_file(self, path):
+        logger.info('Using %s configuration file', path)
+        handle = open(path, 'rb')
+        try:
+            return self.parse_file(handle)
+        finally:
+            handle.close()
+
+    def parse_file(self, handle):
+        raise NotImplementedError()
+
+    def copy_default_conf(self):
+        default_conf = self.get_default_conf()
+        logger.warning('Did not find any configuration, trying default conf from %s',
+                       default_conf)
+        with open(default_conf, 'r') as handle:
+            conf = self.parse_file(handle)
+
+        for path in self.paths:
+            try:
+                logger.info('Try to write default conf to %s', path)
+                with open(path, 'w') as destination:
+                    with open(default_conf, 'r') as source:
+                        destination.write(source.read())
+            except IOError:
+                logger.warning('Failed to write conf in %s', path)
+            else:
+                logger.info('Conf written to %s', path)
+                break
+        else:
+            logger.error('Cannot write defaulf conf')
+
+        return conf
+
+    def __call__(self):
+        conf = None
+        paths = iter(self.paths)
+        for path in paths:
+            if os.path.isfile(path):
+                conf = self.load_file(path)
+                break
+        else:
+            try:
+                conf = self.copy_default_conf()
+            except IOError:
+                logger.error('Did not find any configuration at all')
+                conf = {}
+
+        return Conf(conf)
 
 
 class Conf(collections.Mapping):
@@ -64,73 +125,28 @@ class Conf(collections.Mapping):
     def __len__(self):
         return len(self.data)
 
-    paths = [
-        napixd.get_file('conf/settings.json'),
-        '/etc/napixd/settings.json',
-    ]
-
     @classmethod
     def get_default(cls, value=None):
         """
         Get a value on the default conf instance.
         """
         if cls._default is None:
-            cls.make_default()
+            raise ValueError('Configuration is not loaded')
         if value is None:
             return cls._default
         else:
             return cls._default.get(value)
 
     @classmethod
-    def make_default(cls):
-        """
-        Load the configuration from the default file.
+    def set_default(cls, instance):
+        if instance is None:
+            cls._default = None
+            return None
 
-        If the configuration file does not exists,
-        a new configuration file is created.
-        """
-        conf = None
-        paths = iter(cls.paths)
-        for path in paths:
-            try:
-                handle = open(path, 'r')
-                logger.info('Using %s configuration file', path)
-            except IOError:
-                pass
-            else:
-                try:
-                    conf = json.load(handle)
-                    break
-                except ValueError, e:
-                    raise ValueError(
-                        'Configuration file {0} contains a bad JSON object ({0})'.format(path, e))
-                finally:
-                    handle.close()
-        else:
-            try:
-                logger.warning('Did not find any configuration, trying default conf from %s',
-                               DEFAULT_CONF)
-                with open(DEFAULT_CONF, 'r') as handle:
-                    conf = json.load(handle)
-                for path in cls.paths:
-                    try:
-                        logger.info('Try to write default conf to %s', path)
-                        with open(path, 'w') as destination:
-                            with open(DEFAULT_CONF, 'r') as source:
-                                destination.write(source.read())
-                    except IOError:
-                        logger.warning('Failed to write conf in %s', path)
-                    else:
-                        logger.info('Conf written to %s', path)
-                        break
-                else:
-                    logger.error('Cannot write defaulf conf')
-            except IOError:
-                logger.error('Did not find any configuration at all')
-                conf = {}
-
-        cls._default = cls(conf)
-        return cls._default
+        if not isinstance(instance, cls):
+            raise TypeError('value must be an instance of the class')
+        cls._default = instance
+        return instance
 
     def __getitem__(self, item):
         if item in self.data:
