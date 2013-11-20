@@ -383,7 +383,8 @@ Meta-options:
 
             logger.info('Set up notifier')
             self.notifier = notifier = Notifier(
-                napixd, conf, self.service_name, self.hosts[0])
+                napixd, conf, self.service_name, self.hosts[0],
+                self.conf.get('Napix.description'))
             notifier.start()
         else:
             self.notifier = None

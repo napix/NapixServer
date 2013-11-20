@@ -8,7 +8,6 @@ import httplib
 import contextlib
 
 from napixd.notify import Notifier
-from napixd.conf import Conf
 from napixd.client import Client
 from napixd.application import NapixdBottle
 
@@ -37,8 +36,6 @@ class TestNotifier(unittest2.TestCase):
         cls.uid.stop()
 
     def setUp(self):
-        self.force_conf = Conf.get_default().force(
-            'Napix.description', u'The base Napix server')
         with self.patch_client as Client_:
             self.Client = Client_
             self.client = Client_.return_value
@@ -47,7 +44,8 @@ class TestNotifier(unittest2.TestCase):
             self.notifier = Notifier(self.app, {
                 'url': 'http://auth.server.nx/notify/',
                 'credentials': self.credentials
-            }, 'server.napix.io', 'server.napix.nx:8002')
+            }, 'server.napix.io', 'server.napix.nx:8002',
+                u'The base Napix server')
 
     notify_create = mock.call('POST', '/notify/', body={
         'uid': '2550ba7b-aec4-4a67-8047-2ce1ec8ca8ae',
@@ -72,7 +70,6 @@ class TestNotifier(unittest2.TestCase):
         self.client.request.return_value.getheader.return_value = '/notify/entity'
         with contextlib.nested(
                 self.assertRaises(RunStop),
-                self.force_conf,
                 mock.patch('napixd.notify.sleep', side_effect=[None, RunStop()])):
             self.notifier.run()
 
@@ -84,8 +81,7 @@ class TestNotifier(unittest2.TestCase):
     def test_run_fail(self):
         self.client.request.return_value.status = 403
         with mock.patch('napixd.notify.sleep', side_effect=[None, None, None]):
-            with self.force_conf:
-                self.notifier.run()
+            self.notifier.run()
 
         self.assertEqual(self.client.request.call_args_list, [
             self.notify_create,
