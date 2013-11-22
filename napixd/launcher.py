@@ -16,7 +16,8 @@ import optparse
 
 from napixd import get_file, get_path
 
-from napixd.conf import Conf
+from napixd.conf import Conf, ConfLoader
+
 
 __all__ = ['launch', 'Setup']
 
@@ -171,7 +172,11 @@ Meta-options:
 
         self.set_loggers()
 
-        self.conf = self.get_conf()
+        self.raw_conf = self.get_conf()
+        if 'dotconf' in self.options:
+            self.conf = self.raw_conf
+        else:
+            self.conf = self.raw_conf.get('Napix')
 
         self.service_name = self.get_service_name()
         self.hosts = self.get_hostnames()
@@ -183,12 +188,23 @@ Meta-options:
         console.info('Service Name is %s', self.service_name)
 
     def get_conf(self):
-        from napixd.conf.json import ConfLoader
-
-        loader = ConfLoader([
+        logger.info('Loading configuration')
+        paths = [
             get_path('conf/'),
-        ])
-        return Conf.set_default(loader())
+        ]
+        if 'dotconf' in self.options:
+            try:
+                from napixd.conf.dotconf import ConfFactory
+            except ImportError:
+                raise CannotLaunch('dotconf option requires the external library dotconf')
+            loader = ConfLoader(paths, ConfFactory())
+            conf = loader()
+        else:
+            from napixd.conf.json import ConfFactory, CompatConf
+            loader = ConfLoader(paths, ConfFactory())
+            conf = CompatConf(loader())
+
+        return Conf.set_default(conf)
 
     def _patch_gevent(self):
         if 'gevent' in self.options:
@@ -250,7 +266,11 @@ Meta-options:
         The configuration option ``Napix.auth.service`` is used.
         If it does not exists, the name is fetched from :file:`/etc/hostname`
         """
-        service = self.conf.get('Napix.auth.service')
+        try:
+            service = self.conf.get('service', type=unicode)
+        except KeyError:
+            service = self.conf.get('auth.service', type=unicode)
+
         if not service:
             logger.info(
                 'No setting Napix.auth.service, guessing from /etc/hostname')
@@ -266,7 +286,7 @@ Meta-options:
         """
         Load the authentication handler.
         """
-        conf = self.conf.get('Napix.auth')
+        conf = self.conf.get('auth')
         if not conf:
             raise CannotLaunch(
                 '*auth* option is set and no configuration has been found (see Napix.auth key).')
@@ -313,7 +333,8 @@ Meta-options:
         loaders = []
 
         if 'conf' in self.options:
-            loaders.append(ConfImporter(self.conf.get('Napix.managers'), self.conf))
+            ci = ConfImporter(self.conf.get('managers'), self.raw_conf)
+            loaders.append(ci)
         if 'auto' in self.options:
             auto_path = get_path('auto')
             logger.info('Using %s as auto directory', auto_path)
@@ -347,7 +368,11 @@ Meta-options:
         return router
 
     def get_hostnames(self):
-        hosts = self.conf.get('Napix.auth.hosts')
+        hosts = self.conf.get('hosts')
+        if not hosts:
+            logger.warning('Using old location of setting hosts inside auth')
+            self.conf.get('auth.hosts')
+
         if isinstance(hosts, basestring):
             return [hosts]
         elif isinstance(hosts, list):
@@ -383,14 +408,14 @@ Meta-options:
 
         if 'notify' in self.options:
             from napixd.notify import Notifier
-            conf = self.conf.get('Napix.notify')
+            conf = self.conf.get('notify')
             if not 'url' in conf:
                 raise CannotLaunch('Notifier has no configuration options')
 
             logger.info('Set up notifier')
             self.notifier = notifier = Notifier(
                 napixd, conf, self.service_name, self.hosts[0],
-                self.conf.get('Napix.description'))
+                self.conf.get('description'))
             notifier.start()
         else:
             self.notifier = None
@@ -502,14 +527,13 @@ Meta-options:
         Retrieve the web client interface statics path.
         """
         module_file = sys.modules[self.__class__.__module__].__file__
-        module_path = os.path.join(os.path.dirname(module_file), 'web')
-        napix_default = os.path.join(os.path.dirname(__file__), 'web')
-        for directory in [
-                self.conf.get('Napix.webclient.path'),
-                get_path('web', create=False),
-                module_path,
-                napix_default,
-        ]:
+        directories = [
+            self.conf.get('webclient.path'),
+            get_path('web', create=False),
+            os.path.join(os.path.dirname(module_file), 'web'),
+            os.path.join(os.path.dirname(__file__), 'web'),
+        ]
+        for directory in directories:
             logger.debug('Try WebClient in directory %s', directory)
             if directory and os.path.isdir(directory):
                 return directory

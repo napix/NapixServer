@@ -7,11 +7,10 @@ import socket
 import httplib
 import unittest
 import mock
-import functools
 
 from permissions.models import Perm
-from permissions.managers import PermSet
 
+from napixd.conf import Conf
 from napixd.http.request import Request
 from napixd.http.response import HTTPError
 
@@ -208,10 +207,10 @@ class TestAAAPlugin(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.patch_checker = mock.patch('napixd.plugins.auth.AAAChecker',
-                                 spec=AAAChecker)
+                                       spec=AAAChecker)
 
     def setUp(self):
-        self.conf = {'auth_url': 'http://napix.io/auth/authorization/'}
+        self.conf = Conf({'auth_url': u'http://napix.io/auth/authorization/'})
         self.headers = {
             'Authorization': 'method=GET&path=/&host=server.napix.nx:sign'
         }
@@ -237,7 +236,7 @@ class TestAAAPlugin(unittest.TestCase):
     def call(self):
         try:
             return self.plugin()(self.cb, self.request)
-        except HTTPError as err: 
+        except HTTPError as err:
             return err
 
     def test_call(self):

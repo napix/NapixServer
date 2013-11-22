@@ -8,7 +8,8 @@ import mock
 
 from napixd.managers import Manager
 from napixd.managers.managed_classes import ManagedClass
-from napixd.conf import Conf
+
+from napixd.conf import Conf, EmptyConf
 
 from napixd.loader.importers import (Importer, FixedImporter, ConfImporter,
                                      AutoImporter, RelatedImporter)
@@ -160,8 +161,8 @@ class TestFixedImporter(unittest.TestCase):
 
         meth_import.assert_called_once_with('a.b.c.Manager')
         self.assertEqual(
-            managers, [ManagerImport(meth_import.return_value, 'my', Conf())])
-        self.assertTrue(isinstance(managers[0].config, Conf))
+            managers, [ManagerImport(meth_import.return_value, 'my', EmptyConf())])
+        self.assertTrue(isinstance(managers[0].config, EmptyConf))
 
     def test_importer_error(self):
         fi = FixedImporter({
@@ -320,8 +321,7 @@ class TestAutoImporter(unittest.TestCase):
         })
 
         conf = self.ai.get_config_from(mgr)
-        self.assertEqual(conf, {})
-        self.assertTrue(isinstance(conf, Conf))
+        self.assertTrue(isinstance(conf, EmptyConf))
 
 
 class TestRelatedImporter(unittest.TestCase):

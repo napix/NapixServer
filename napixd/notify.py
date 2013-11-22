@@ -88,7 +88,7 @@ class Notifier(object):
         """
         try:
             resp = self.send_request('POST', self.post_url)
-        except HTTPError, err:
+        except HTTPError as err:
             logger.warning('Got %s', err)
             return False
 

@@ -9,14 +9,14 @@ import unittest2
 from tests.mock.managers import Manager, Managed
 from napixd.services import Service
 from napixd.services.collection import BaseCollectionService
-from napixd.conf import Conf
+from napixd.conf import EmptyConf
 from napixd.managers import ManagedClass
 
 
 class TestServiceEmpty(unittest2.TestCase):
 
     def setUp(self):
-        self.service = Service(Managed, 'my-mock', Conf())
+        self.service = Service(Managed, 'my-mock', EmptyConf())
 
     def test_collection_service(self):
         self.assertTrue(all(isinstance(s, BaseCollectionService)
@@ -41,7 +41,7 @@ class TestServiceEmpty(unittest2.TestCase):
 class TestServiceWithManaged(unittest2.TestCase):
 
     def setUp(self):
-        self.service = Service(Manager, 'this-mock', Conf())
+        self.service = Service(Manager, 'this-mock', EmptyConf())
 
     def test_collection_service(self):
         self.assertTrue(all(isinstance(s, BaseCollectionService)
@@ -85,7 +85,7 @@ def FakeCS(*args):
 class TestServiceServiceCollection(unittest2.TestCase):
 
     def setUp(self):
-        self.config = mock.Mock(spec=Conf)
+        self.config = mock.Mock(spec=EmptyConf)
         self.config.get.side_effect = lambda x: x
         self.CS = CS = mock.Mock(
             spec=BaseCollectionService, side_effect=FakeCS)

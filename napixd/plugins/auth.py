@@ -172,7 +172,12 @@ class AAAPlugin(BaseAAAPlugin):
 
     def __init__(self, *args, **kw):
         super(AAAPlugin, self).__init__(*args, **kw)
-        url = self.settings.get('auth_url')
+        try:
+            url = self.settings.get('url', type=unicode)
+        except (KeyError, TypeError):
+            self.logger.warning('Using old parameter auth_url')
+            url = self.settings.get('auth_url', type=unicode)
+
         auth_url_parts = urlparse.urlsplit(url)
         self.logger.info('Set up authentication with %s', url)
         self.host = auth_url_parts.netloc

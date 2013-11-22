@@ -5,7 +5,7 @@ from __future__ import absolute_import
 
 import unittest
 
-from napixd.store import Store, NoSuchStoreBackend
+from napixd.store import Store, NoSuchStoreBackend, Loader
 from napixd.store.backends.file import FileStore
 from napixd.conf import Conf
 
@@ -14,12 +14,17 @@ from tests.mock.store_backend import MockBackend
 
 class TestStore(unittest.TestCase):
     @classmethod
-    def setUpClass(self):
-        Conf.set_default(Conf({
-            'Napix.storage': {
-                'store': 'tests.mock.store_backend.MockBackend'
+    def setUpClass(cls):
+        cls.conf = Conf({
+            'store': 'tests.mock.store_backend.MockBackend',
+            'Store tests.mock.store_backend.MockBackend': {
+                'this': 'that'
             }
-        }))
+        })
+
+    def setUp(self):
+        Loader._instance = Loader(self.conf)
+        MockBackend.set_options.reset_mock()
 
     @classmethod
     def tearDownClass(self):
@@ -27,6 +32,7 @@ class TestStore(unittest.TestCase):
 
     def test_default_store(self):
         store = Store('collection')
+        MockBackend.set_options.assert_called_once_with({'this': 'that'})
         self.assertEqual(store, MockBackend.return_value.return_value)
 
     def testImportStore(self):
