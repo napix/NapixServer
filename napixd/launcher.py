@@ -148,6 +148,7 @@ Non-default:
     localhost:  Listen on the loopback interface only
     autonomous-auth:    Use a local source of authentication
     hosts:      Check the HTTP Host header
+    dotconf:    Use a dotconf file as the source of configuration
 
 Meta-options:
     only:       Disable default options
