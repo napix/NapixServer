@@ -105,6 +105,7 @@ class Setup(object):
         'time',  # Show duration
         'logger',  # Ouput of the logs in the console is consistent
         'docs',
+        'dotconf',
     ])
 
     LOG_FILE = get_file('log/napix.log')
@@ -135,6 +136,7 @@ Default options:
     time:       Add custom header to show the duration of the request
     logger:     Standardize the ouptut on the console accross servers
     docs:       Generate automated documentation
+    dotconf:    Use a dotconf file as the source of configuration
 
 Non-default:
     notify:     Enable the notification thread
@@ -148,7 +150,6 @@ Non-default:
     localhost:  Listen on the loopback interface only
     autonomous-auth:    Use a local source of authentication
     hosts:      Check the HTTP Host header
-    dotconf:    Use a dotconf file as the source of configuration
 
 Meta-options:
     only:       Disable default options
