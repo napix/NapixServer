@@ -21,14 +21,6 @@ Loading
     :undoc-members:
     :show-inheritance:
 
-:mod:`conf` Package
--------------------
-
-.. automodule:: napixd.conf
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 HTTP Binding
 ============
 
@@ -144,6 +136,7 @@ Subpackages
 .. toctree::
 
     napixd.client
+    napixd.conf
     napixd.connectors
     napixd.loader
     napixd.managers
