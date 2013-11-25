@@ -88,7 +88,7 @@ Default options
     :mod:`wsgiref` of the standard library of Python is used.
 
 :uwsgi:
-    Use with uwsgi
+    Use with uwsgi.
 
 :auto:
     Automatically detect and :class:`loads<napixd.loader.importers.AutoImporter>` from :file:`HOME/auto/` directory.
