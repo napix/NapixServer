@@ -1,0 +1,108 @@
+
+============================
+Deployment of a Napix server
+============================
+
+Installation
+============
+
+pip install
+-----------
+
+You can install Napix by using py.
+
+It's recommended to use a virtual-env::
+
+    $ virtualenv napix
+    $ cd napix
+    $ source bin/activate
+    (napix)$ pip install http://builds.napix.io/latest/napixd dotconf
+
+Dependencies
+============
+
+Napix have some optional features.
+Most of them are enabled by default, but they are disabled by using
+*no``option``* in the command line.
+
+gevent
+------
+
+The napixd daemon uses the :mod:`gevent` event loop in order to handle concurrency.
+Gevent is recommended for the services using long treatments, or heavy loads.
+Unless you want concurrent requests, it's not required.
+
+Napixd requires at least the 1.0 version of :mod:`gevent`.
+
+:mod:`gevent` requires :mod:`cython` to compile and is installable from the git repo::
+
+    (napix)$ pip install cython -e git://github.com/surfly/gevent.git@1.0rc2#egg=gevent
+
+
+pynotify
+--------
+
+If you use Linux, you should also install Pyinotify.
+This python lib enable the use of inotify to detect changes on the files
+and automatically reload the server::
+
+    (napix)$ pip install inotify
+
+The HOME directory
+==================
+
+The napixd server depends on a directory, referenced as **HOME**.
+All the files (conf, auto dir, storage, etc) are inside this directory.
+When napixd is installed in a virtual env, the **HOME** directory
+is the root of the venv.
+
+You can force **HOME** by using the :envvar:`NAPIXHOME` environment variable.
+
+Create the skeleton
+--------------------
+
+You may run napixd with the *noapp* or just stop it once it started.
+The first start will create the structure with the directories and
+the sample configuration file::
+
+    (napixd)$ napixd noapp nogevent
+    (napixd)$ ls
+    auto  bin  conf  include  lib  lib64  log
+
+Content
+-------
+
+auto
+    The Python files in this directory are imported by the
+    server and the classes inheriting of :class:`~base.Manager`.
+conf
+    The location of the configuration file :file:`settings.conf`.
+log
+    The logs of the server.
+
+Configuration
+=============
+
+The Napix server does not require configuration.
+After the first run, a sample configuration file named :file:`settings.conf`
+is created in the :file:`conf/` folder.
+
+auth
+----
+
+Napix uses an authentication protocol to authenticate and authorize the requests.
+
+In development mode, the authentication layer can be disabled by using
+the argument *noauth* when launching the server::
+
+    napixd noauth
+
+
+"auto" directory
+----------------
+
+The python files in this directory are imported by the napixd server.
+Classes inheriting of :class:`base.Manager` are loaded inside the server.
+
+The module is imported inside the package :mod:`napixd.auto`.
+

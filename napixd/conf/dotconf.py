@@ -7,7 +7,6 @@ from dotconf import Dotconf
 from dotconf.parser import ParsingError
 from dotconf.tree import (
     ConfigValue,
-    ConfigSection,
     MultipleSectionsWithThisNameError,
 )
 

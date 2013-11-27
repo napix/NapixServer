@@ -42,14 +42,6 @@ The napixd.wsgi module contains the WSGI application.
     :undoc-members:
     :show-inheritance:
 
-:mod:`http` Module
-------------------
-
-.. automodule:: napixd.http
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 Daemon
 ======
 
@@ -131,13 +123,15 @@ Napix Infrastructure
     :show-inheritance:
 
 Subpackages
------------
+===========
 
 .. toctree::
 
     napixd.client
     napixd.conf
-    napixd.connectors
+    napixd.contrib
+    napixd.docs
+    napixd.http
     napixd.loader
     napixd.managers
     napixd.plugins

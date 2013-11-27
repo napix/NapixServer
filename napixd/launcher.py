@@ -130,7 +130,6 @@ Default options:
     reload:     The reloader events attachement on signal, page and inotify
     webclient:  The web interface accessible on /_napix_js/
     gevent:     Use gevent as the wsgi interface
-    uwsgi:      Use with uwsgi
     auto:       Load from HOME/auto/ directory
     conf:       Load from the Napix.managers section of the config
     time:       Add custom header to show the duration of the request
@@ -139,6 +138,7 @@ Default options:
     dotconf:    Use a dotconf file as the source of configuration
 
 Non-default:
+    uwsgi:      Use with uwsgi (by default when loading napixd.application)
     notify:     Enable the notification thread
     silent:     Do not show the messages in the console
     verbose:    Augment the ouptut of the loggers
@@ -270,8 +270,11 @@ Meta-options:
         """
         try:
             service = self.conf.get('service', type=unicode)
-        except KeyError:
-            service = self.conf.get('auth.service', type=unicode)
+        except TypeError:
+            try:
+                service = self.conf.get('auth.service', type=unicode)
+            except TypeError:
+                raise CannotLaunch('The service name is not specified')
 
         if not service:
             logger.info(

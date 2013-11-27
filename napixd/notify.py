@@ -48,7 +48,7 @@ class Notifier(object):
         self.client = Client(post_url_bits.netloc, credentials)
         self.put_url = None
 
-        self.delay = conf.get('delay') or 300
+        self.delay = conf.get('delay', 300, type=int)
         logger.info('Notify on %s%s as %s every %ss', post_url_bits.netloc,
                     self.post_url, credentials.get('login', '<anon>'), self.delay)
         if self.delay < 1:

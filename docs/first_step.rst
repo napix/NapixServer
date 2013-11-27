@@ -11,7 +11,7 @@ First steps in the writing of a manager
 In Napix, managers behaves like collection and have the logic to maintain a set of resources.
 
 Napix uses the REST approach: an URI defines a resource and HTTP verbs ( GET, PUT, POST, etc) defines the action on it.
-``PUT /htaccess/toto`` is used to modify the resource identified by /htaccess/toto with the data given in the request body.
+``PUT /htaccess/toto`` is used to modify the resource identified by ``/htaccess/toto`` with the data given in the request body.
 ``GET /htaccess/toto`` is used to retrieve the same resource.
 ``GET /htaccess/tata`` retrieves another resource.
 
@@ -23,10 +23,10 @@ Launch
 ======
 
 The first step is to launch the server as described in :ref:`installation`.
-Install pyinotify to enable the auto-reloading (so you don't have to Ctrl+C / rerun all the time), and the napix client to query the server::
+Install pyinotify to enable the auto-reloading (so you don't have to Ctrl+C / rerun all the time), and the Napix client to query the server::
 
     (napix)$ pip install pyinotify
-    (napix)$ pip install http://builds.enix.org/napix/NapixCLI-latest.tar.gz
+    (napix)$ pip install http://builds.napix.io/latest/napix_cli
 
 If you pay attention to napixd output, you'll see some valuable information when you start it :
 
@@ -37,7 +37,7 @@ If you pay attention to napixd output, you'll see some valuable information when
 
 The server can be stopped by hitting Ctrl+c::
 
-    (napix)$ bin/napixd nodoc debug print_exc noauth nonotify
+    (napix)$ bin/napixd nodoc debug print_exc noauth nonotify nogevent
     Napixd Home is /home/napix/NapixServer/new_home
     INFO:Napix.console:Napixd Home is /home/napix/NapixServer/new_home
     Options are print_exc,auto,app,nodoc,reload,gevent,noauth,nonotify,cors,debug,useragent,webclient
@@ -139,7 +139,7 @@ the :class:`~default.DictManager` instance store an internal dict of all its res
 The :class:`~default.DictManager` implements the method to modify, create, list, etc and does the operation on the internal dict,
 so you just have to define a load and a save method to get things working (and an id generator, which we'll explain later).
 
-Append the following lines in the password.py file.
+Append the following lines in the :file:`password.py` file.
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 12-15
@@ -153,6 +153,7 @@ A GET request will show you it.::
     ]
 
 .. note::
+
     You'll probably need to restart your napix client as it cache request by default.
 
 If you make a mistake while writing a manager, and cause the import to fail, Napix will forgive you.
@@ -238,7 +239,7 @@ See more details about the configuration in :ref:`configuration`.
 
 The resources of our manager will contain two field, a ``username`` and a ``password``.
 In the description, we comment our field to explain what they'll contain (quite obvious here),
-and we give an example a valid value. Example is used to build a template of the ressource, which
+and we give an example a valid value. Example is used to build a template of the resource, which
 can then be used by napixd client to help user fill correctly the resource.
 
 .. note::
@@ -277,11 +278,9 @@ To get our internal dict populated, we'll override the :meth:`~default.DictManag
 
 The load method takes one parameters : the parent manager.
 It can be used to write multi level manager, eg if we wanted to edit multiple files,
-we could have written a manager that list the files, and then instanciate a BasicPasswordFileManager for each file found.
+we could have written a manager that list the files, and then instantiate
+a :class:`BasicPasswordFileManager` for each file found.
 Anyway, in our case, we don't use this, and as our manager is a *first level* manager (directly under /), parent is set to :obj:`None`.
-
-The inheritance cases are treated in :ref:`inheritance`.
-;; FIXME not working
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :lines: 4,12,16,36-49
@@ -309,9 +308,9 @@ Still, as we don't write yet a :meth:`~default.DictManager.save` method, any att
 
     >> put /passwords/bigbro_rssi password=s4fr34$er- username=bigbro_rssi
     Napixd Error NotImplementedError
-    
+
     [ ... ]
-    
+
     /home/napix/NapixServer/napixd/managers/default.py in end_request
         130   self.save(self.parent,self.resources)
 
@@ -373,9 +372,11 @@ But if we try to create a resource, with a POST request, this will fail miserabl
     NotImplementedError: generate_new_id
 
 
-This is due to the need for every resource in your manager to be identified by an unique id. Napixd has no way
-to guess how you want to discriminate your ressource, so it ask for you to do so, by writing a :meth:`~default.DictManager.generate_new_id`, which get the resource_dict as a parameters, and have to return an unique id.
-You could return anything, like a serial number, a random string, or something 
+This is due to the need for every resource in your manager to be identified by an unique id.
+Napix has no way to guess how you want to discriminate your resource, so it ask for you to do so,
+by writing a :meth:`~default.DictManager.generate_new_id`,
+which get the resource_dict as a parameters, and have to return an unique id.
+You could return anything, like a serial number, a random string, or something
 generated from the resources field, but remember that you'll have to save it in your persistent storage.
 
 In our manager, as we don't want multiple user with same login, we'll use the username field to generate the id.
@@ -384,7 +385,7 @@ In our manager, as we don't want multiple user with same login, we'll use the us
     :pyobject: BasicPasswordFileManager.generate_new_id
 
 The objects can be created and are persisted.
-When an object is created, the napixd returns a 201 created code and
+When an object is created, the Napix server returns a 201 created code and
 send the URI of the newly created resource in the Location header ::
 
     >> post /passwords/ password=whiterabbit username=tanderson
@@ -462,7 +463,7 @@ Now the managers responds with a 400 Error code when we submit a forged password
 Secondly, the manager has a method :meth:`~base.Manager.validate_resource`
 which verifies the whole resource dict.
 
-In our case, we can implement a verification to avoid that the password contains the username
+In our case, we can implement a verification to avoid that the password contains the username.
 
 .. literalinclude:: /samples/basicpasswordfile.py
     :pyobject: BasicPasswordFileManager.validate_resource

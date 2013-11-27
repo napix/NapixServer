@@ -54,7 +54,7 @@ describing the kind of error that has been done.
                 'content': content
             }
 
-This code sample has a vulnerability if an id containg slashes is given.
+This code sample has a vulnerability if an id containing slashes is given.
 The validation method :meth:`~Manager.validate_id` can check the id
 to protect the :meth:`~ManagerInterface.get_resource` method.
 

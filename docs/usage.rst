@@ -15,10 +15,12 @@ Installation process using a Virtual-env::
     virtualenv napix
     cd napix
     source bin/activate
-    pip install http://builds.napix.io/lastest/napixd dotconf
+    pip install http://builds.napix.io/latest/napixd dotconf
+
+.. _usage-gevent:
 
 gevent
--------
+------
 
 The napixd daemon uses the gevent event loop in order to handle concurrency.
 Gevent is recommended for the services using long treatments, or heavy loads.
@@ -41,13 +43,13 @@ It is a default option, but it's easily disabled by using the nogevent option::
 --system-site-package
 ^^^^^^^^^^^^^^^^^^^^^
 
-If you already have gevent installed from debian package,
+if you already have gevent installed from debian package,
 you can tell to virtual-env to use it::
 
     $ virtualenv --system-site-package venv
 
 
-Configuration
+configuration
 =============
 
 Authentication settings

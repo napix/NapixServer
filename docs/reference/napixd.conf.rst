@@ -19,7 +19,7 @@ napixd.conf Package
     :show-inheritance:
 
 :mod:`dotconf` Module
-------------------
+---------------------
 
 .. automodule:: napixd.conf.dotconf
     :members:

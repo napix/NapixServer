@@ -72,36 +72,48 @@ Default options
     See :class:`napixd.plugins.conversation.UserAgentDetector`.
 
 :auth:
-    Enable the :class:`authentication layer<napixd.plugins.auth.AAAPlugin>`
+    Enable the :ref:`auth`
 
 :reload:
-    The :class:`reloader<napixd.reload.Reloader>` events attachement on signal, page and :mod:`inotify<pyinotify>`.
-    The inotify handler requires a Linux kernel and that pyinotify is installed.
+    Enable the :ref:`reloading`
 
 :webclient:
-    The web interface accessible on /_napix_js/
+    The web interface accessible on ``/_napix_js/``
 
 :gevent:
     Use :mod:`gevent` as the wsgi interface.
-
-    With Gevent disabled and Rocket not enabled,
-    :mod:`wsgiref` of the standard library of Python is used.
-
-:uwsgi:
-    Use with uwsgi.
+    When gevent is disabled, the :mod:`wsgiref` of the standard library of Python is used.
 
 :auto:
     Automatically detect and :class:`loads<napixd.loader.importers.AutoImporter>` from :file:`HOME/auto/` directory.
     See :ref:`auto-loading`
 
 :conf:
-    :class:`Load<napixd.loader.importers.ConfImporter>` from the :ref:`conf.napix.managers` section of the config
+    :class:`Load<napixd.loader.importers.ConfImporter>` from the :ref:`conf.managers` section of the config
+
+:time:
+    Add custom header to show the duration of the request.
+    See :mod:`napixd.plugins.times`.
+
+:logger:
+    Standardize the ouptut on the console accross servers
+    See :class:`napxid.plugins.middleware.LoggerMiddleware`.
+
+:docs:
+    Generate automated documentation
+    See :mod:`napixd.docs`
+
+:dotconf:
+    Use a dotconf file as the source of configuration
 
 
 Non-default
 -----------
 :notify:
-    Enable the :class:`notification thread<napixd.notify.Notifier>`
+    Enable the :ref:`notify`
+
+:uwsgi:
+    Use with uwsgi.
 
 :silent:
     Do not show the messages in the console
@@ -112,12 +124,9 @@ Non-default
 :print_exc:
     Show the exceptions in the console output
 
-:rocket:
-    Use Rocket as the server
-
 :times:
-    Add custom header to show the running time and the total time
-    It requires gevent.
+    Add custom header to show the total time and the time spent without the IO.
+    It requires :mod:`gevent`.
 
 :pprint:
     Enable pretty printing of the JSON output
@@ -132,4 +141,9 @@ Non-default
 :autonomous-auth:
     Use :ref:`autonomous-auth` in the authentication process.
 
+:localhost:
+    Listen on the loopback interface only
 
+:hosts:
+    Check the HTTP Host header
+    See :ref:`conf.hosts`
