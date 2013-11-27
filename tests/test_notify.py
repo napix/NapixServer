@@ -9,6 +9,7 @@ import contextlib
 
 from napixd.notify import Notifier
 from napixd.client import Client
+from napixd.conf import Conf
 from napixd.application import NapixdBottle
 
 
@@ -41,10 +42,10 @@ class TestNotifier(unittest2.TestCase):
             self.client = Client_.return_value
             self.client.request.return_value = mock.Mock(
                 spec=httplib.HTTPResponse, status=200, reason='OK')
-            self.notifier = Notifier(self.app, {
+            self.notifier = Notifier(self.app, Conf({
                 'url': 'http://auth.server.nx/notify/',
                 'credentials': self.credentials
-            }, 'server.napix.io', 'server.napix.nx:8002',
+            }), 'server.napix.io', 'server.napix.nx:8002',
                 u'The base Napix server')
 
     notify_create = mock.call('POST', '/notify/', body={
