@@ -29,7 +29,7 @@ Napixd requires a version 1.0 of gevent.
 
 gevent requires cython to compile and is installable from the git repo::
 
-    (napix)$ pip install cython -e git://github.com/surfly/gevent.git@1.0rc2#egg=gevent
+    (napix)$ pip install gevent
 
 nogevent
 ^^^^^^^^

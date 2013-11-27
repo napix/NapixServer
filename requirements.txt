@@ -1,4 +1,4 @@
-git+git://github.com/surfly/gevent.git
-http://builds.enix.org/napix/permissions-latest.tar.gz
-http://builds.enix.org/napix/napix-latest.tar.gz
+http://builds.napix.io/latest/permissions
+http://builds.napix.io/latest/napix
 dotconf
+gevent
