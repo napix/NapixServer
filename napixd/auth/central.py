@@ -88,17 +88,18 @@ class CentralAuthProvider(object):
 
         have_filter = request.path.endswith('/') and request.method in ('GET', 'HEAD')
         if resp.status != 200:
-            if not have_filter:
+            if not have_filter or content is None:
                 # Discard Non GET/HEAD requests and requests on resources
                 return False
 
             paths = [perm['path'] for perm in content]
-            if content and not any('*' in path for path in paths):
+            if not any('*' in path for path in paths):
                 # Return a non-authoritative response
                 raise HTTPError(203, paths)
             else:
                 # Return a response that filters the content of the response
                 return self.filter_factory(content)
+
         elif have_filter:
             return self.filter_factory(content)
         else:
