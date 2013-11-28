@@ -73,6 +73,8 @@ Default options
 
 :auth:
     Enable the :ref:`auth`
+:central:
+    Use a Napix Central Server
 
 :reload:
     Enable the :ref:`reloading`

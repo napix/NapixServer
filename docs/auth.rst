@@ -6,7 +6,7 @@ Authentication protocols
 
 
 Napix implements an authentication protocol.
-This protocol uses cryptographic technics to garantee the authenticity of the user.
+This protocol uses cryptographic technology to guarantee the authenticity of the user.
 
 There is a default protocol, and exceptions to this protocol
 that can be enabled by :ref:`options`.
@@ -18,7 +18,7 @@ The Standard Protocol
 By default, the protocol requires that the users signs his request with an HMAC signature
 unique to each request.
 
-When a Napix Server recieve a request, its checks that the values signed by the user
+When a Napix Server receive a request, its checks that the values signed by the user
 correspond to the actual request parameters, then it submits the request to its Napix Server.
 
 The host
