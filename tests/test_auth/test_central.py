@@ -17,7 +17,7 @@ try:
 except ImportError:
     __test__ = False
 else:
-    from napixd.auth.central import CentralAuthProvider, Filter
+    from napixd.auth.central import CentralAuthProvider, Filter, ConnectionFactory
 
 
 class TestFilter(unittest.TestCase):
@@ -44,15 +44,6 @@ class TestFilter(unittest.TestCase):
 
 
 class TestCentralAuthProviderBuilder(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.patch_con = mock.patch('httplib.HTTPConnection') 
-
-    def setUp(self):
-        self.Con = self.patch_con.start()
-
-    def tearDown(self):
-        self.patch_con.stop()
 
     def test_from_settings(self):
         cap = CentralAuthProvider.from_settings('service.name', Conf({
@@ -60,7 +51,7 @@ class TestCentralAuthProviderBuilder(unittest.TestCase):
             'auth_url': u'http://old.url/abc/ghi',
         }))
         self.assertEqual(cap.url, '/abc/def')
-        self.assertEqual(cap.http_client, self.Con.return_value)
+        self.assertEqual(cap.http_client_factory, ConnectionFactory('new.url'))
 
     def test_from_settings_old(self):
         cap = CentralAuthProvider.from_settings('service.name', Conf({
@@ -71,12 +62,13 @@ class TestCentralAuthProviderBuilder(unittest.TestCase):
 
 class TestCentralAuthProvider(unittest.TestCase):
     def setUp(self):
-        self.connection = con = mock.Mock(httplib.HTTPConnection)
+        con_fac = mock.Mock()
+        self.connection = con_fac.return_value = mock.Mock(httplib.HTTPConnection)
         self.response = self.connection.getresponse.return_value
         self.response.status = 200
 
         self.filter_factory = ff = mock.Mock()
-        self.checker = CentralAuthProvider(con, '/auth/authorization/', ff)
+        self.checker = CentralAuthProvider(con_fac, '/auth/authorization/', ff)
 
         self.request = mock.Mock(spec=Request, path='/abc/', method='GET')
         self.content = {

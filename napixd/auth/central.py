@@ -44,6 +44,18 @@ class Filter(object):
             raise ValueError()
 
 
+class ConnectionFactory(object):
+    def __init__(self, host, timeout=TIMEOUT):
+        self.host = host
+        self.timeout = timeout
+
+    def __call__(self):
+        return httplib.HTTPConnection(self.host, timeout=self.timeout)
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.host == other.host
+
+
 class CentralAuthProvider(object):
     headers = {
         'Accept': 'application/json',
@@ -62,12 +74,11 @@ class CentralAuthProvider(object):
         host = auth_url_parts.netloc
         url = urlparse.urlunsplit(
             ('', '', auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
-        return cls(httplib.HTTPConnection(host, timeout=TIMEOUT),
-                   url, FilterFactory(service))
+        return cls(ConnectionFactory(host), url, FilterFactory(service))
 
-    def __init__(self, connection, url, filter_factory):
+    def __init__(self, connection_factory, url, filter_factory):
         self.url = url
-        self.http_client = connection
+        self.http_client_factory = connection_factory
         self.filter_factory = filter_factory
 
     def __call__(self, request, content):
@@ -93,10 +104,11 @@ class CentralAuthProvider(object):
 
     def _do_request(self, body):
         body = json.dumps(body)
+        http_client = self.http_client_factory()
         try:
             logger.debug('Sending request to the auth server')
-            self.http_client.request('POST', self.url, body=body, headers=self.headers)
-            resp = self.http_client.getresponse()
+            http_client.request('POST', self.url, body=body, headers=self.headers)
+            resp = http_client.getresponse()
             content = resp.read()
         except socket.gaierror, e:
             logger.error('Auth server %s not found %s', self.host, e)
@@ -108,7 +120,7 @@ class CentralAuthProvider(object):
             logger.error('Auth server did not respond, %r', e)
             raise HTTPError(500, 'Auth server did not respond')
         finally:
-            self.http_client.close()
+            http_client.close()
             logger.debug('Finished the request to the auth server')
 
         if resp.status != 200 and resp.status != 403:
