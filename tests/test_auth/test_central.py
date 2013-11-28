@@ -68,7 +68,7 @@ class TestCentralAuthProvider(unittest.TestCase):
         self.response.status = 200
 
         self.filter_factory = ff = mock.Mock()
-        self.checker = CentralAuthProvider(con_fac, '/auth/authorization/', ff)
+        self.checker = CentralAuthProvider(con_fac, '/auth/authorization/', ff, 'server.napix.io')
 
         self.request = mock.Mock(spec=Request, path='/abc/', method='GET')
         self.content = {
@@ -83,7 +83,7 @@ class TestCentralAuthProvider(unittest.TestCase):
         self.assertTrue(self.call() is True)
         self.connection.request.assert_called_once_with(
             'POST', '/auth/authorization/',
-            body='''{"authorization": 1}''', headers={
+            body='''{"host": "server.napix.io", "authorization": 1}''', headers={
                 'Accept': 'application/json',
                 'Content-type': 'application/json',
             })

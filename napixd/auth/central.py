@@ -74,14 +74,16 @@ class CentralAuthProvider(object):
         host = auth_url_parts.netloc
         url = urlparse.urlunsplit(
             ('', '', auth_url_parts[2], auth_url_parts[3], auth_url_parts[4]))
-        return cls(ConnectionFactory(host), url, FilterFactory(service))
+        return cls(ConnectionFactory(host), url, FilterFactory(service), service)
 
-    def __init__(self, connection_factory, url, filter_factory):
+    def __init__(self, connection_factory, url, filter_factory, service_name):
         self.url = url
         self.http_client_factory = connection_factory
         self.filter_factory = filter_factory
+        self.service_name = service_name
 
     def __call__(self, request, content):
+        content['host'] = self.service_name
         resp, content = self._do_request(content)
 
         have_filter = request.path.endswith('/') and request.method in ('GET', 'HEAD')
