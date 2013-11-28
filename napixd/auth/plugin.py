@@ -33,7 +33,7 @@ class AAAPlugin(object):
         for source in self._sources:
             extract = source(request)
             if extract is not None:
-                logger.info('Extracting from %s', source.__call__.__name__)
+                logger.info('Extracting from %s', source.__class__.__name__)
                 return extract
         else:
             raise HTTPError(401, 'You need to sign your request')
