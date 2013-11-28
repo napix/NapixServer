@@ -13,7 +13,7 @@ from permissions.managers import PermSet
 from napixd.http.response import HTTPError
 
 
-logger = logging.getLogger('Napix.AAA.Checker')
+logger = logging.getLogger('Napix.auth.central')
 
 TIMEOUT = 5
 

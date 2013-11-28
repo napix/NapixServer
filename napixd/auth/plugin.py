@@ -7,7 +7,7 @@ from napixd.http.response import HTTPError, HTTPResponse
 from napixd.chrono import Chrono
 
 
-logger = logging.getLogger('Napix.AAA')
+logger = logging.getLogger('Napix.auth')
 
 
 class AAAPlugin(object):
@@ -33,7 +33,7 @@ class AAAPlugin(object):
         for source in self._sources:
             extract = source(request)
             if extract is not None:
-                logger.info('Extracting from %s', source.__class__.__name__)
+                logger.debug('Extracting from %s', source.__class__.__name__)
                 return extract
         else:
             raise HTTPError(401, 'You need to sign your request')
@@ -42,6 +42,7 @@ class AAAPlugin(object):
         for provider in self._providers:
             result = provider(request, content)
             if result is not None:
+                logger.debug('Authorisation provided by %s', provider.__class__.__name__)
                 return result
         else:
             raise HTTPError(403, 'No source')

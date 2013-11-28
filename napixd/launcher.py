@@ -310,6 +310,7 @@ Meta-options:
         if 'autonomous-auth' in self.options:
             from napixd.auth.autonomous import AutonomousAuthProvider
             providers.append(AutonomousAuthProvider.from_settings(conf))
+            logger.info('Enable autonomous authentication')
 
         if 'central' in self.options:
             try:
@@ -317,6 +318,7 @@ Meta-options:
             except ImportError:
                 raise CannotLaunch('Central authentication requires permissions')
             providers.append(CentralAuthProvider.from_settings(self.service_name, conf))
+            logger.info('Enable central server authentication')
 
         return providers
 
@@ -325,6 +327,7 @@ Meta-options:
         sources = [SecureAuthProtocol()]
         if not 'secure' in self.options:
             sources.append(NonSecureAuthProtocol.from_settings(conf))
+            logger.info('Enable authentication by tokens')
         return sources
 
     def get_napixd(self, server):
