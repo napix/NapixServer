@@ -16,7 +16,6 @@ setup(
     author='Enix',
     author_email='gr@enix.org',
     install_requires=[
-        'permissions>=1.7',
         'napix>=0.6',
     ],
     include_package_data=True,
@@ -24,7 +23,6 @@ setup(
         'bin/napixd'
     ],
     dependency_links=[
-        'http://builds.enix.org/napix/permissions-latest.tar.gz#egg=permissions-9999',
         'http://builds.enix.org/napix/napix-latest.tar.gz#egg=napix-9999',
     ],
 )

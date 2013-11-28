@@ -106,6 +106,7 @@ class Setup(object):
         'logger',  # Ouput of the logs in the console is consistent
         'docs',
         'dotconf',
+        'central',  # Use a central Napix server for the authentication
     ])
 
     LOG_FILE = get_file('log/napix.log')
@@ -136,6 +137,7 @@ Default options:
     logger:     Standardize the ouptut on the console accross servers
     docs:       Generate automated documentation
     dotconf:    Use a dotconf file as the source of configuration
+    central:    Use a central Napix server for the authentication
 
 Non-default:
     uwsgi:      Use with uwsgi (by default when loading napixd.application)
@@ -146,7 +148,7 @@ Non-default:
     times:      Add custom header to show the running time and the total time (requires gevent)
     pprint:     Enable pretty printing of output
     cors:       Add Cross-Origin Request Service headers
-    secure:     Disable the request tokeb signing
+    secure:     Disable the request token signing
     localhost:  Listen on the loopback interface only
     autonomous-auth:    Use a local source of authentication
     hosts:      Check the HTTP Host header
@@ -292,21 +294,38 @@ Meta-options:
         Load the authentication handler.
         """
         conf = self.conf.get('auth')
-        if not conf:
-            raise CannotLaunch(
-                '*auth* option is set and no configuration has been found (see Napix.auth key).')
+        from napixd.auth.plugin import AAAPlugin
+        sources = self.get_auth_sources(conf)
+        providers = self.get_auth_providers(conf)
+        plugin = AAAPlugin(sources, providers, timed='time' in self.options)
+        return plugin
 
-        from napixd.plugins.auth import get_auth_plugin
-        aaa_class = get_auth_plugin(secure='secure' in self.options,
-                                    time='time' in self.options,
-                                    autonomous='autonomous-auth' in self.options)
-        logger.info('Installing auth plugin secure:%s, time:%s autonomous:%s',
-                    'secure' in self.options, 'time' in self.options,
-                    'autonomous-auth' in self.options)
+    def get_auth_providers(self, conf):
+        from napixd.auth.request import RequestParamaterChecker, HostChecker
+        providers = [RequestParamaterChecker()]
 
-        hosts = self.hosts if 'hosts' in self.options else None
+        if 'hosts' in self.options:
+            providers.append(HostChecker(self.hosts))
 
-        return aaa_class(conf, service_name=self.service_name, hosts=hosts)
+        if 'autonomous-auth' in self.options:
+            from napixd.auth.autonomous import AutonomousAuthProvider
+            providers.append(AutonomousAuthProvider.from_settings(conf))
+
+        if 'central' in self.options:
+            try:
+                from napixd.auth.central import CentralAuthProvider
+            except ImportError:
+                raise CannotLaunch('Central authentication requires permissions')
+            providers.append(CentralAuthProvider.from_settings(self.service_name, conf))
+
+        return providers
+
+    def get_auth_sources(self, conf):
+        from napixd.auth.sources import SecureAuthProtocol, NonSecureAuthProtocol
+        sources = [SecureAuthProtocol()]
+        if not 'secure' in self.options:
+            sources.append(NonSecureAuthProtocol.from_settings(conf))
+        return sources
 
     def get_napixd(self, server):
         """
