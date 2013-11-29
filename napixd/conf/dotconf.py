@@ -98,3 +98,21 @@ class Conf(conf.BaseConf):
             return ss[suffix]
 
         raise KeyError(key)
+
+    def __contains__(self, key):
+        value = self._get_own(key)
+        if value is not None:
+            return True
+
+        prefix, dot, suffix = key.partition('.')
+        if not dot:
+            return False
+
+        if ' ' in prefix:
+            prefix, dot, suffix = key.rpartition('.')
+
+        ss = self._subsection(prefix)
+        if ss is not None:
+            return suffix in ss
+
+        return False

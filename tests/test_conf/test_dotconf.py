@@ -36,6 +36,27 @@ s 'a.b.c' {
 }
 ''')
 
+    def test_contains_variable(self):
+        self.assertTrue('a' in self.conf)
+
+    def test_contains_block(self):
+        self.assertTrue('e' in self.conf)
+
+    def test_contains_named_block(self):
+        self.assertTrue('e h' in self.conf)
+
+    def test_contains_named_and_dots(self):
+        self.assertTrue('s a.b.c' in self.conf)
+
+    def test_contains_named_empty(self):
+        self.assertTrue('b.c' in self.conf)
+
+    def test_contains_span(self):
+        self.assertTrue('h' in self.conf['e'])
+
+    def test_contains_variable_not(self):
+        self.assertFalse('z' in self.conf)
+
     def test_bool_value(self):
         self.assertTrue(bool(self.conf['e']))
         self.assertFalse(bool(self.conf['e.h']))
