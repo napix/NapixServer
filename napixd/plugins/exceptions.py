@@ -11,9 +11,9 @@ import traceback
 import json
 import logging
 
-from napix.exceptions import HTTPError
-
 import napixd
+
+from napixd.exceptions import RemoteError
 
 
 class ExceptionsCatcher(object):
@@ -54,7 +54,7 @@ class ExceptionsCatcher(object):
             }
         }
         res.update(self.traceback_info(last_traceback))
-        if isinstance(error, HTTPError):
+        if isinstance(error, RemoteError):
             res.update(self.remote_exception(error))
         res.update(self.exception_details(error))
         return res
