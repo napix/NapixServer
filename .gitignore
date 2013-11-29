@@ -11,15 +11,15 @@ docs/_build
 
 venv
 venv-*
-venv-docs/
-venv-nogevent
-venv-oldgevent/
 
-napixd_id
-auto
-conf/
-stores/
-log/
+.agignore
+.coverage
+
+/napixd_id
+/auto
+/conf/
+/stores/
+/log/
 
 napix
 permissions

@@ -24,6 +24,11 @@ class ManagedClass(object):
             self.extractor = extractor
         self.name = name
 
+    def __repr__(self):
+        return '<ManagedClass{resolved} {path}>'.format(
+            path=self.path,
+            resolved=' resolved' if self.is_resolved() else '')
+
     def is_resolved(self):
         return self.manager_class is not None
 

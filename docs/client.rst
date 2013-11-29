@@ -41,7 +41,7 @@ to the user making the query.
 The details are: the original network call in ``remote_call`` and the
 error response in the ``remote_error``.
 The error response may be a string of the error like ``"404 NOT FOUND" `10` not found``
-or a full exception detail like returned by the ::class:`~napixd.plugins.exceptions.ExceptionsCatcher`
+or a full exception detail like returned by the :class:`~napixd.plugins.exceptions.ExceptionsCatcher`
 of the remote server.
 
 An exception can bubble through multiple Napix servers.

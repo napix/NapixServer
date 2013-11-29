@@ -1,11 +1,11 @@
+.. _storage:
+
 =============
 Local stotage
 =============
 
-
 Napix proposes an mechanism for easy storage of dict-like objects,
 and integers.
-
 
 Usage
 =====
@@ -22,8 +22,8 @@ The :class:`backends.BaseStore` and :class:`backends.Store` are
 :class:`collections.MutableMapping` sub-classes, the first is a synchronous implementation
 and the other an asynchronous implementation.
 
-Synchronous implementations propagates modifications from and to the persistance layer immediately.
-Asynchronous implementations write the modifications in the persistance layer after
+Synchronous implementations propagates modifications from and to the persistence layer immediately.
+Asynchronous implementations write the modifications in the persistence layer after
 :meth:`Store.save` is called.
 
 Calling :class:`BaseStore.save` does nothing.

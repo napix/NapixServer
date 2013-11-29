@@ -5,7 +5,7 @@ from __future__ import absolute_import
 import unittest
 import mock
 
-from napixd.exceptions import ValidationError
+from napixd.exceptions import ValidationError, ImproperlyConfigured
 
 from napixd.managers.base import Manager, ManagerType
 from napixd.managers.managed_classes import ManagedClass
@@ -16,7 +16,7 @@ from napixd.managers.actions import action
 class TestManager(unittest.TestCase):
 
     def setUp(self):
-        self.manager = Manager({})
+        self.manager = Manager({}, mock.Mock())
         self.resource_fields = mock.patch.object(
             self.manager, '_resource_fields', spec=ResourceFieldsDescriptor).start()
 
@@ -50,14 +50,12 @@ class TestManagerTypeDirectPlug(unittest.TestCase):
         m = ManagerType('Manager', (Manager,), {
             'managed_class': None
         })
-        self.assertEqual(m.direct_plug(), None)
         self.assertEqual(m.get_managed_classes(), [])
 
     def testFalse(self):
         m = ManagerType('Manager', (Manager,), {
             'managed_class': [self.SubManager]
         })
-        self.assertEqual(m.direct_plug(), False)
         self.assertEqual(
             m.get_managed_classes(), [ManagedClass(self.SubManager)])
 
@@ -65,7 +63,6 @@ class TestManagerTypeDirectPlug(unittest.TestCase):
         m = ManagerType('Manager', (Manager,), {
             'managed_class': [ManagedClass(self.SubManager, 'ploc')]
         })
-        self.assertEqual(m.direct_plug(), False)
         self.assertEqual(m.get_managed_classes(), [
                          ManagedClass(self.SubManager, 'ploc')])
 
@@ -73,32 +70,25 @@ class TestManagerTypeDirectPlug(unittest.TestCase):
         m = ManagerType('Manager', (Manager,), {
             'managed_class': ['abc']
         })
-        self.assertEqual(m.direct_plug(), False)
         self.assertEqual(m.get_managed_classes(), [ManagedClass('abc')])
 
     def testTrue(self):
-        m = ManagerType('Manager', (Manager,), {
-            'managed_class': self.SubManager
-        })
-        self.assertEqual(m.direct_plug(), True)
+        self.assertRaises(ImproperlyConfigured, ManagerType,
+                          'Manager', (Manager,), {
+                              'managed_class': self.SubManager
+                          })
 
     def testTrueString(self):
-        m = ManagerType('Manager', (Manager,), {
-            'managed_class': 'abc'
-        })
-        self.assertEqual(m.direct_plug(), True)
-        self.assertEqual(m.get_managed_classes(), [
-            ManagedClass('abc')
-        ])
+        self.assertRaises(ImproperlyConfigured, ManagerType,
+                          'Manager', (Manager,), {
+                              'managed_class': 'abc'
+                          })
 
     def testTrueManagedClass(self):
-        m = ManagerType('Manager', (Manager,), {
-            'managed_class': ManagedClass('abc', 'ploc')
-        })
-        self.assertEqual(m.direct_plug(), True)
-        self.assertEqual(m.get_managed_classes(), [
-            ManagedClass('abc', 'ploc')
-        ])
+        self.assertRaises(ImproperlyConfigured, ManagerType,
+                          'Manager', (Manager,), {
+                              'managed_class': ManagedClass('abc', 'ploc')
+                          })
 
 
 class TestManagerType(unittest.TestCase):

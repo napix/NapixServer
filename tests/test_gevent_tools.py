@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import time
+from __future__ import absolute_import
+
+import mock
 import unittest2 as unittest
+
+import time
+import functools
+
 try:
     import gevent
-except ImportError:
-    gevent = None
-
-if gevent is not None:
     from napixd.gevent_tools import Greenlet, Tracer, AddGeventTimeHeader
+except ImportError:
+    __test__ = False
 
 
-@unittest.skipIf(gevent is None, 'Gevent is required to test gevent_tools')
 class TestTimedGreenlet(unittest.TestCase):
 
     def setUp(self):
@@ -38,7 +41,6 @@ class TestTimedGreenlet(unittest.TestCase):
         self.assertAlmostEquals(self.greenlet.get_running_time(), .2, places=2)
 
 
-@unittest.skipIf(gevent is None, 'Gevent is required to test gevent_tools')
 class TestTracer(unittest.TestCase):
 
     def setUp(self):
@@ -70,33 +72,24 @@ class TestTracer(unittest.TestCase):
         self.assertEquals(len(list(g2.get_running_intervals())), 2)
 
 
-class Resp(object):
-
-    def __init__(self):
-        self.headers = {}
-
-
-@unittest.skipIf(gevent is None, 'Gevent is required to test gevent_tools')
 class TestGeventHeaders(unittest.TestCase):
 
-    def _do_something(self):
+    def _do_something(self, request):
         """This function should run in .1s with a total run of .2s"""
         gevent.sleep(0.1)  # Yield
         time.sleep(0.1)  # No Yield
-        return Resp()
 
     def setUp(self):
         self.plugin = AddGeventTimeHeader()
-        self.callback = self.plugin.apply(self._do_something, None)
+        self.callback = functools.partial(self.plugin, self._do_something, mock.Mock())
 
     def test_run_solo(self):
         resp = self.callback()
-        self.assertAlmostEquals(resp.headers['x-total-time'], .2, places=1)
-        self.assertAlmostEquals(resp.headers['x-running-time'], .1, places=1)
+        self.assertAlmostEquals(float(resp.headers['x-total-time']), .2, places=1)
+        self.assertAlmostEquals(float(resp.headers['x-running-time']), .1, places=1)
 
     def test_run(self):
         resps = [self.callback() for x in xrange(4)]
         for resp in resps:
-            self.assertAlmostEquals(resp.headers['x-total-time'], .2, places=1)
-            self.assertAlmostEquals(
-                resp.headers['x-running-time'], .1, places=1)
+            self.assertAlmostEquals(float(resp.headers['x-total-time']), .2, places=1)
+            self.assertAlmostEquals(float(resp.headers['x-running-time']), .1, places=1)

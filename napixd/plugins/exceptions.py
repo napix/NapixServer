@@ -2,17 +2,15 @@
 # -*- coding: utf-8 -*-
 
 """
-:mod:`bottle` plugin for the exceptions
+WSGI middlewares to catch and export exceptions
 """
 
 import sys
 import os.path
 import traceback
-import functools
 import json
 import logging
 
-import bottle
 from napix.exceptions import HTTPError
 
 import napixd
@@ -28,16 +26,15 @@ class ExceptionsCatcher(object):
     If *pprint* is True, the produced JSON will be indented.
     If *show_errors* is True, the exceptions are printed on the console.
     """
-    name = 'exceptions_catcher'
-    api = 2
     logger = logging.getLogger('Napix.Errors')
 
-    def __init__(self, show_errors=False, pprint=False):
+    def __init__(self, application, show_errors=False, pprint=False):
+        self.application = application
         self.show_errors = show_errors
         self.napix_path = os.path.dirname(napixd.__file__)
         self.pprint = 4 if pprint else None
 
-    def extract_error(self, error):
+    def extract_error(self, environ, error):
         """
         Extract a :class:`dict` from an exception.
 
@@ -45,15 +42,15 @@ class ExceptionsCatcher(object):
         causing the exception.
         """
         a, b, last_traceback = sys.exc_info()
-        method = bottle.request.method
-        path = bottle.request.path
+        method = environ.get('REQUEST_METHOD')
+        path = environ.get('PATH_INFO')
         self.logger.error('%s on %s failed with %s (%s)',
                           method, path, error.__class__.__name__, str(error))
         res = {
             'request': {
                 'method': method,
                 'path': path,
-                'query': dict(bottle.request.GET),
+                #'query': dict(bottle.request.GET),
             }
         }
         res.update(self.traceback_info(last_traceback))
@@ -104,7 +101,7 @@ class ExceptionsCatcher(object):
             'error_class': error.__class__.__name__,
         }
 
-    def apply(self, callback, route):
+    def __call__(self, environ, start_response):
         """
         This plugin run the view and catch the exception that are not
         :class:`HTTPResponses<bottle.HTTPResponse>`.
@@ -112,18 +109,19 @@ class ExceptionsCatcher(object):
         :class:`napixd.plugins.conversation.ConversationPlugin`,
         the rest are errors.
         """
-        @functools.wraps(callback)
-        def inner_exception_catcher(*args, **kwargs):
-            try:
-                return callback(*args, **kwargs)  # Exception
-            except bottle.HTTPResponse, e:
-                return e
-            except Exception, e:
-                res = self.extract_error(e)
-                if self.show_errors:
-                    traceback.print_exc()
-                return bottle.HTTPResponse(
-                    json.dumps(res, indent=self.pprint),
-                    status=500,
-                    content_type='application/json')
-        return inner_exception_catcher
+        try:
+            return self.application(environ, start_response)
+        except (MemoryError, SystemExit, KeyboardInterrupt):
+            raise
+        except Exception, e:
+            res = self.extract_error(environ, e)
+            if self.show_errors:
+                traceback.print_exc()
+
+        response = json.dumps(res, indent=self.pprint)
+        start_response('500 Internal Error', [
+            ('Content-Type', 'application/json'),
+            ('Content-Length', str(len(response))),
+        ])
+
+        return [response]

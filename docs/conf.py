@@ -30,6 +30,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx']
 intersphinx_mapping = {
     'python': ('http://docs.python.org/2.7', None),
     'napix': ('http://napixclient.docs.enix.org/en/latest/', None),
+    'dotconf': ('http://dotconf.readthedocs.org/en/latest/', None),
 }
 
 # Add any paths that contain templates here, relative to this directory.

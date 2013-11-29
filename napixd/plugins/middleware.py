@@ -34,9 +34,9 @@ class CORSMiddleware(object):
     def __init__(self, application):
         self.application = application
 
-    def __call__(self, environ, start_response):
+    def __call__(self, environ, orig_start_response):
         if environ['REQUEST_METHOD'] == 'OPTIONS':
-            start_response('200 OK', [
+            orig_start_response('200 OK', [
                 ('Access-Control-Allow-Origin', '*'),
                 ('Access-Control-Allow-Methods',
                  'GET, POST, PUT, CREATE, DELETE, OPTIONS'),
@@ -44,6 +44,12 @@ class CORSMiddleware(object):
                  'Authorization, Content-Type'),
             ])
             return []
+
+        def start_response(status, headers):
+            headers = list(headers)
+            headers.append(('Access-Control-Allow-Origin', '*'))
+            orig_start_response(status, headers)
+
         return self.application(environ, start_response)
 
 
@@ -57,8 +63,11 @@ class LoggedRequest(object):
 
     def __init__(self, start_response, application, environ):
         self._start_response = start_response
-        self.application = application
         self.environ = environ
+        self.chrono = Chrono()
+
+        with self.chrono:
+            self.response = application(self.environ, self.start_response)
 
     def start_response(self, status, headers):
         self.status = status
@@ -74,19 +83,21 @@ class LoggedRequest(object):
 
     def __iter__(self):
         size = 0
-        with Chrono() as chrono:
-            for x in self.application(self.environ, self.start_response):
+        with Chrono() as transfert:
+            for x in self.response:
                 size += len(x)
                 yield x
 
-        self.logger.info('%s - - [%s] "%s %s" %s %s %s',
+        total_time = (transfert.total + self.chrono.total) * 1000
+
+        self.logger.info('%s - - [%s] "%s %s" %s %s %.2fms',
                          self.environ.get('REMOTE_ADDR', '-'),
                          datetime.datetime.now().replace(microsecond=0),
                          self.environ['REQUEST_METHOD'],
                          self.request_line,
                          self.status.split(' ')[0],
                          size,
-                         chrono.total
+                         total_time,
                          )
 
 
@@ -98,3 +109,20 @@ def LoggerMiddleware(application):
     def inner_logger(environ, start_response):
         return LoggedRequest(start_response, application, environ)
     return inner_logger
+
+
+class HTTPHostMiddleware(object):
+    def __init__(self, hosts, application):
+        self.hosts = frozenset(hosts)
+        self.application = application
+
+    def __call__(self, environ, start_response):
+        if environ.get('HTTP_HOST') not in self.hosts:
+            response = 'Bad host'
+            start_response('400 Bad Request', [
+                ('Content-Length', str(len(response))),
+                ('Content-Type', 'text/plain'),
+            ])
+            return [response]
+
+        return self.application(environ, start_response)

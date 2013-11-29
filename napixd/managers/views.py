@@ -51,10 +51,9 @@ so the Napix server will forward this to the client.
 
 .. code-block:: python
 
-    @view('csv')
+    @view('text/csv')
     def view_as_csv( self, resource_id, resource, response):
         "Dump the race as a CSV file"
-        response.set_header('Content-Type', 'text/csv' )
         response.write( '"Firstname";"Lastname";"laps";"avg time";"min time"' )
         for line in resource['lines']:
             response.write(
@@ -74,8 +73,7 @@ The methods return ``None``. The server will use the *response* object.
     import reportlab
     import PIL
 
-    @view('pdf')
-    @content_type('application/pdf')
+    @view('pdf', content_type='application/pdf')
     def export_as_pdf( self, resource_id, resource, response):
         doc = reportlab.platypus.SimpleDocTemplate( response,
                 pagesize=reportlab.lib.pagesizes.A4,
@@ -83,8 +81,7 @@ The methods return ``None``. The server will use the *response* object.
                 title='file.pdf'
         doc.build( self._pdf_story( resource) )
 
-    @view('png')
-    @content_type('image/png')
+    @view('png', content_type='image/png')
     def export_as_png( self, resource_id, resource, response):
         image = PIL.Image.new( 'RGB', (200, 200), color)
         draw = PIL.ImageDraw.Draw(image)
@@ -99,10 +96,11 @@ The depreciation warning header will be sent to the client, even if the response
 .. code-block:: python
 
     @view('v1')
-    def compat_v1( self, resource_id, resource, response):
+    def compat_v1( self, resource_wrapper, response):
         " Compatibility layer with the Version 1 of the API "
         #foo has changed name to bar
-        response.set_header( 'x-depreciation-warning', '1')
+        resource = resource_wrapper.resource
+        response.set_header('x-depreciation-warning', '1')
         resource['foo'] = resource['bar']
 
         #foobar was not implemented
@@ -113,7 +111,7 @@ The depreciation warning header will be sent to the client, even if the response
 
     @view('v2')
     def actual_version( self, resource_id, resource, response):
-        return resource
+        return resource.resource
 
 """
 
@@ -122,45 +120,73 @@ import functools
 __all__ = ('view', 'content_type')
 
 
-def view(format):
+DEFAULT_CONTENT_TYPE = 'text/plain'
+
+
+def view(format, content_type=None):
     """
 
     Declares a view function.
 
-    The ``format`` parameter is the name of the format that the view returns.
-    It is recommended to use the file extension even though it is not mandatory.
+    .. code-block:: python
 
-    .. note::
-
-        It is recommended to set the Content-Type header of the returned file
-        as it is **not** guessed, neither from the format parameter,
-        nor from the content of the response.
-
-        The :func:`content_type` helper is available to set it simply
-
+        @view('csv','text/csv')
+        def view_as_csv( self, resource, response):
+            #...
     """
+    if not isinstance(format, basestring):
+        raise TypeError('format must be a string')
+    if format == '':
+        raise ValueError('format must not be empty')
+
+    if content_type is None:
+        if format.count('/') == 1:
+            content_type = format
+            a, format = format.split('/')
+    elif not isinstance(content_type, basestring):
+        raise TypeError('content_type must be a string')
+    elif content_type.count('/') != 1:
+        raise ValueError('content_type must be <domain>/<format>')
 
     def inner(fn):
-        fn._napix_view = format
-        return fn
+        if content_type is None:
+            _content_type = getattr(fn, '_napix_view_content_type', None)
+        else:
+            _content_type = content_type
+
+        if _content_type is None:
+            _content_type = DEFAULT_CONTENT_TYPE
+
+        @functools.wraps(fn)
+        def inner_view(self, resource, response):
+            return_value = fn(self, resource, response)
+            if not 'Content-Type' in response.headers:
+                if isinstance(return_value, unicode):
+                    response.set_header('Content-Type', 'text/plain; charset=utf-8')
+                    return return_value.encode('utf-8')
+
+                if isinstance(return_value, str):
+                    response.set_header('Content-Type', 'text/plain')
+                    return return_value
+
+                if isinstance(return_value, (dict, list)):
+                    return return_value
+
+                response.set_header('Content-Type', _content_type)
+
+            return return_value
+
+        inner_view._napix_view = format
+        return inner_view
     return inner
 
 
 def content_type(content_type):
-    """
-    Convenience decorator to use with view to set the content-type.
+    import warnings
+    warnings.warn('The content_type decorator is depreciated, please use the content_type argument of @view')
 
-    .. code-block:: python
-
-        @view('csv')
-        @content_type( 'text/csv' )
-        def view_as_csv( self, resource, response):
-            #...
-    """
     def inner(fn):
-        @functools.wraps(fn)
-        def wrapper(self, resource, response):
-            response.set_header('Content-Type', content_type)
-            return fn(self, resource, response)
-        return wrapper
+        fn._napix_view_content_type = content_type
+        return fn
+
     return inner

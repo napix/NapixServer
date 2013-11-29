@@ -14,6 +14,8 @@ Manager are created by the corresponding resource
 """
 
 import types
+import collections
+
 from napixd.exceptions import ValidationError, ImproperlyConfigured
 from napixd.managers.managed_classes import ManagedClass
 from napixd.managers.resource_fields import ResourceFields
@@ -58,7 +60,6 @@ class ManagerType(type):
     def __init__(self, name, bases, attrs):
         super(ManagerType, self).__init__(name, bases, attrs)
 
-        self._direct_plug = self._cast_direct_plug()
         self._managed_class = self._cast_managed_class()
 
         methods = [(attr_name, meth)
@@ -91,44 +92,24 @@ class ManagerType(type):
                            attribute._napix_view))
         return formats
 
-    def _cast_direct_plug(self):
-        if self.managed_class is None:
-            return None
-        elif isinstance(self.managed_class, (basestring, type, ManagedClass)):
-            return True
-        else:
-            try:
-                iter(self.managed_class)
-            except ValueError:
-                raise TypeError('managed_class attribute must be None or one'
-                                'or an iterable of ManagedClass instance,'
-                                'class or string')
-            return False
-
     def _cast_managed_class(self):
-        if (self.managed_class is None or
-                self.direct_plug() is False and len(self.managed_class) == 0):
+        if self.managed_class is None:
             return []
 
-        managed_classes = ([self.managed_class]
-                           if self.direct_plug() else list(self.managed_class))
+        if isinstance(self.managed_class, (basestring, ManagerType)):
+            raise ImproperlyConfigured('Depreciation Error, direct_plug=True of {0}.{1} are not supported anymore'.format(
+                self.__module__, self.__name__))
+
+        if not isinstance(self.managed_class, collections.Iterable):
+            raise ImproperlyConfigured('managed_class attribute of {0} is not an list'.format(
+                self.__name__))
+
+        managed_classes = list(self.managed_class)
         for i, managed_class in enumerate(managed_classes):
             if isinstance(managed_class, ManagedClass):
                 continue
             managed_classes[i] = ManagedClass(managed_class)
         return managed_classes
-
-    def direct_plug(self):
-        """
-        Direct plug describe how the sub-managers are linked from this one.
-
-        It can one of
-        * ``None`` when there is no sub-manager,
-        * ``True`` when there is only one sub-manager and its name is not inserted bewteen eg (``/mgr1/<id1>/<id2>`` )
-        * ``False`` when the name of the manager is bewteen the ids eg (``/mgr1/<id1>/sub/<id2>`` )
-
-        """
-        return self._direct_plug
 
     def get_managed_classes(self):
         """
@@ -200,16 +181,16 @@ class Manager(object):
     example::
 
         >>> class FirstManager(Manager):
-        >>>     managed_class = SecondManager
+        ...     managed_class = SecondManager
 
         >>> class SecondManager(Manager):
-        >>>     def list_resource(self):
-        >>>         return {}
+        ...     def list_resource(self):
+        ...         return {}
 
         GET /first/second/third
         >>> second_resource = FirstManager().get_resource('second') #/first
-        >>> second_manager = SecondManager(second_resource)  # [..]/second
-        >>> return second_manager.get_resource('third')  # [..]/third
+        ... second_manager = SecondManager(second_resource)  # [..]/second
+        ... return second_manager.get_resource('third')  # [..]/third
 
     If it's a tuple or a list of classes,
     the children have multiple subressource managers attached.
@@ -217,12 +198,12 @@ class Manager(object):
     example::
 
         >>> class Main(Manager):
-        >>>     managed_class = [ManagerA,ManagerB]
-        >>>
-        >>> class ManagerA(Manager):
-        >>>     pass
-        >>> class ManagerB(Manager):
-        >>>     pass
+        ...     managed_class = [ManagerA,ManagerB]
+        ...
+        ... class ManagerA(Manager):
+        ...     pass
+        ... class ManagerB(Manager):
+        ...     pass
 
         GET /main/1
         >>> Main().get_resource(1)
@@ -359,9 +340,9 @@ class Manager(object):
             name = name[:-len('manager')]
         return name
 
-    def __init__(self, wrapper):
+    def __init__(self, context, request):
         """
-        intialize the Manager with the wrapped resource *wrapper* creating it
+        intialize the Manager with the wrapped resource *context* creating it
 
         example::
 
@@ -376,7 +357,8 @@ class Manager(object):
         >>> SecondManager(FirstManager.get_resource('second')).list_resource()
 
         """
-        self.context = wrapper
+        self.context = context
+        self.request = request
 
     def __repr__(self):
         return '<Manager {module}:{cls} `{name}` of "{context}">'.format(
@@ -484,13 +466,6 @@ class Manager(object):
         else:
             resource_dict = self._resource_fields.validate(resource_dict, None)
         return self.validate_resource(resource_dict, original)
-
-    def is_up_to_date(self):
-        """
-        Method to check if the data contained are fresh.
-        If it's not the manager is recreated
-        """
-        return False
 
     def end_managed_request(self, request, resource):
         """
@@ -612,7 +587,7 @@ class ManagerInterface(object):
         """
         Return the list of ids of all managed resources matching the *filters*.
 
-        *filters* is the GET parameter of :data:`bottle.request`.
+        *filters* is a mapping of filters to apply to this request
         It behaves like a dict with an additional :meth:`getall(key)` method
         that returns a list of all the values matching the given **key**.
         """
@@ -622,7 +597,7 @@ class ManagerInterface(object):
         """
         Return the tuple of (id, resource) for all the managed resources.
 
-        See :meth:`list_resource` and :meth`get_resource`.
+        See :meth:`list_resource` and :meth:`get_resource`.
         """
 
     def get_all_resources_filter(self, filters):

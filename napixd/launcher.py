@@ -12,10 +12,12 @@ import logging
 import logging.handlers
 import os
 import sys
+import optparse
 
 from napixd import get_file, get_path
 
-from napixd.conf import Conf
+from napixd.conf import Conf, ConfLoader
+
 
 __all__ = ['launch', 'Setup']
 
@@ -102,17 +104,19 @@ class Setup(object):
         'conf',
         'time',  # Show duration
         'logger',  # Ouput of the logs in the console is consistent
+        'docs',
+        'dotconf',
+        'central',  # Use a central Napix server for the authentication
     ])
 
     LOG_FILE = get_file('log/napix.log')
     HELP_TEXT = '''
 napixd daemon runner.
-usage: napixd [(no)option] ...
+usage: napixd [--port PORT] [only] [(no)option ...]
        napixd help: show this message
-       napixd [only] [(no)option] ... options: show enabled options
 
 option to enable the option.
-nooptions to disable the option
+nooption to disable the option
 
 napixd help will show this message
 napixd only ... will run only the given options and not enable the defaults options
@@ -132,27 +136,39 @@ Default options:
     conf:       Load from the Napix.managers section of the config
     time:       Add custom header to show the duration of the request
     logger:     Standardize the ouptut on the console accross servers
+    docs:       Generate automated documentation
+    dotconf:    Use a dotconf file as the source of configuration
+    central:    Use a central Napix server for the authentication
 
 Non-default:
+    uwsgi:      Use with uwsgi (by default when loading napixd.application)
     notify:     Enable the notification thread
     silent:     Do not show the messages in the console
     verbose:    Augment the ouptut of the loggers
-    debug:      Run the DEBUG mode
     print_exc:  Show the exceptions in the console output
-    rocket:     Use Rocket as the server
     times:      Add custom header to show the running time and the total time (requires gevent)
     pprint:     Enable pretty printing of output
-    cors:       Add Cross-Site Request Service headers
-    secure:     Disable the request tokeb signing
+    cors:       Add Cross-Origin Request Service headers
+    secure:     Disable the request token signing
+    localhost:  Listen on the loopback interface only
+    autonomous-auth:    Use a local source of authentication
+    hosts:      Check the HTTP Host header
     ratelimit:  Enable the rate-limiting  plugin
 
 Meta-options:
     only:       Disable default options
     help:       Show this message and quit
     options:    Show the enabled options and quit
-        '''
+'''
 
     def __init__(self, options):
+        parser = optparse.OptionParser(usage=self.HELP_TEXT)
+        parser.add_option('-p', '--port',
+                          help='The TCP port to listen to',
+                          type='int',
+                          default=self.DEFAULT_PORT)
+        self.keys, options = parser.parse_args()
+
         nooptions = [opt[2:] for opt in options if opt.startswith('no')]
 
         options = set(options)
@@ -161,13 +177,40 @@ Meta-options:
         self.options = options = options.difference(nooptions)
 
         self.set_loggers()
+
+        self.raw_conf = self.get_conf()
+        if 'dotconf' in self.options:
+            self.conf = self.raw_conf
+        else:
+            self.conf = self.raw_conf.get('Napix')
+
         self.service_name = self.get_service_name()
+        self.hosts = self.get_hostnames()
 
         console.info('Napixd Home is %s', get_path())
         console.info('Options are %s', ','.join(self.options))
         console.info('Starting process %s', os.getpid())
         console.info('Logging activity in %s', self.LOG_FILE)
         console.info('Service Name is %s', self.service_name)
+
+    def get_conf(self):
+        logger.info('Loading configuration')
+        paths = [
+            get_path('conf/'),
+        ]
+        if 'dotconf' in self.options:
+            try:
+                from napixd.conf.dotconf import ConfFactory
+            except ImportError:
+                raise CannotLaunch('dotconf option requires the external library dotconf')
+            loader = ConfLoader(paths, ConfFactory())
+            conf = loader()
+        else:
+            from napixd.conf.json import ConfFactory, CompatConf
+            loader = ConfLoader(paths, ConfFactory())
+            conf = CompatConf(loader())
+
+        return Conf.set_default(conf)
 
     def _patch_gevent(self):
         if 'gevent' in self.options:
@@ -182,6 +225,7 @@ Meta-options:
                     u'Napix require gevent >= 1.0, Try to install it, or run napix with *nogevent* option')
 
             from gevent.monkey import patch_all
+            logger.info('Installing gevent monkey patch')
             patch_all()
 
     def run(self):
@@ -197,7 +241,6 @@ Meta-options:
             return
 
         self._patch_gevent()
-        self.set_debug()
         app = self.get_app()
 
         logger.info('Starting')
@@ -206,16 +249,19 @@ Meta-options:
                 server_options = self.get_server_options()
                 application = self.apply_middleware(app)
 
-                import bottle
-                bottle.run(application, **server_options)
+                logger.info('Listening on %s:%s',
+                            server_options['host'], server_options['port'])
+
+                adapter_class = server_options.pop('server', None)
+                if not adapter_class:
+                    raise CannotLaunch('No server available')
+
+                adapter = adapter_class(server_options)
+                adapter.run(application)
         finally:
             console.info('Stopping')
 
         console.info('Stopped')
-
-    def set_debug(self):
-        import bottle
-        bottle.debug('debug' in self.options)
 
     def get_service_name(self):
         """
@@ -226,7 +272,14 @@ Meta-options:
         The configuration option ``Napix.auth.service`` is used.
         If it does not exists, the name is fetched from :file:`/etc/hostname`
         """
-        service = Conf.get_default('Napix.auth.service')
+        try:
+            service = self.conf.get('service', type=unicode)
+        except TypeError:
+            try:
+                service = self.conf.get('auth.service', type=unicode)
+            except TypeError:
+                raise CannotLaunch('The service name is not specified')
+
         if not service:
             logger.info(
                 'No setting Napix.auth.service, guessing from /etc/hostname')
@@ -242,34 +295,51 @@ Meta-options:
         """
         Load the authentication handler.
         """
-        conf = Conf.get_default('Napix.auth')
-        if not conf:
-            raise CannotLaunch(
-                '*auth* option is set and no configuration has been found (see Napix.auth key).')
+        conf = self.conf.get('auth')
+        from napixd.auth.plugin import AAAPlugin
+        sources = self.get_auth_sources(conf)
+        providers = self.get_auth_providers(conf)
+        plugin = AAAPlugin(sources, providers, timed='time' in self.options)
+        return plugin
 
-        if 'secure' in self.options:
-            from napixd.plugins.auth import AAAPlugin
-            aaa_class = AAAPlugin
-        else:
-            logger.info('Installing not Secure auth plugin')
-            from napixd.plugins.auth import NoSecureAAAPlugin
-            aaa_class = NoSecureAAAPlugin
+    def get_auth_providers(self, conf):
+        from napixd.auth.request import RequestParamaterChecker, HostChecker
+        providers = [RequestParamaterChecker()]
 
-        return aaa_class(conf,
-                         allow_bypass='debug' in self.options,
-                         service_name=self.service_name,
-                         with_chrono='time' in self.options,
-                         )
+        if 'hosts' in self.options:
+            providers.append(HostChecker(self.hosts))
 
-    def get_bottle(self):
+        if 'autonomous-auth' in self.options:
+            from napixd.auth.autonomous import AutonomousAuthProvider
+            providers.append(AutonomousAuthProvider.from_settings(conf))
+            logger.info('Enable autonomous authentication')
+
+        if 'central' in self.options:
+            try:
+                from napixd.auth.central import CentralAuthProvider
+            except ImportError:
+                raise CannotLaunch('Central authentication requires permissions')
+            providers.append(CentralAuthProvider.from_settings(self.service_name, conf))
+            logger.info('Enable central server authentication')
+
+        return providers
+
+    def get_auth_sources(self, conf):
+        from napixd.auth.sources import SecureAuthProtocol, NonSecureAuthProtocol
+        sources = [SecureAuthProtocol()]
+        if not 'secure' in self.options:
+            sources.append(NonSecureAuthProtocol.from_settings(conf))
+            logger.info('Enable authentication by tokens')
+        return sources
+
+    def get_napixd(self, server):
         """
-        Return the bottle application for the napixd server.
+        Return the main application for the napixd server.
         """
         from napixd.application import NapixdBottle
         from napixd.loader import Loader
-        loader = Loader(self.get_loaders())
-        napixd = NapixdBottle(loader=loader)
-        self.install_plugins(napixd)
+        self.loader = loader = Loader(self.get_loaders())
+        napixd = NapixdBottle(loader=loader, server=server)
 
         return napixd
 
@@ -292,82 +362,112 @@ Meta-options:
         loaders = []
 
         if 'conf' in self.options:
-            loaders.append(ConfImporter(Conf.get_default()))
+            ci = ConfImporter(self.conf.get('managers'), self.raw_conf)
+            loaders.append(ci)
         if 'auto' in self.options:
             auto_path = get_path('auto')
             logger.info('Using %s as auto directory', auto_path)
             loaders.append(AutoImporter(auto_path))
         return loaders
 
-    def install_plugins(self, app):
+    def install_plugins(self, router):
         """
         Install the plugins in the bottle application.
         """
         if 'time' in self.options:
             from napixd.plugins.times import TimePlugin
-            app.install(TimePlugin('x-total-time'))
-
-        pprint = 'pprint' in self.options
+            router.add_filter(TimePlugin('x-total-time'))
 
         if 'times' in self.options:
             if not 'gevent' in self.options:
                 raise CannotLaunch('`times` option requires `gevent`')
             from napixd.gevent_tools import AddGeventTimeHeader
-            app.install(AddGeventTimeHeader())
-
-        from napixd.plugins.exceptions import ExceptionsCatcher
-        app.install(ExceptionsCatcher(
-            show_errors=('print_exc' in self.options), pprint=pprint))
+            router.add_filter(AddGeventTimeHeader())
 
         if 'ratelimit' in self.options:
             from napixd.plugins.ratelimit import RateLimitingPlugin
-            conf = Conf.get_default('Napix.rate_limit')
-            app.install(RateLimitingPlugin(conf))
-
-        from napixd.plugins.conversation import ConversationPlugin
-        app.install(ConversationPlugin(pprint=pprint))
+            conf = self.conf.get('rate_limit')
+            router.add_filter(RateLimitingPlugin(conf))
 
         if 'useragent' in self.options:
             from napixd.plugins.conversation import UserAgentDetector
-            app.install(UserAgentDetector())
+            router.add_filter(UserAgentDetector())
 
-        return app
+        if 'auth' in self.options:
+            self.auth_handler = self.get_auth_handler()
+            router.add_filter(self.auth_handler)
+        else:
+            self.auth_handler = None
+
+        return router
+
+    def get_hostnames(self):
+        hosts = self.conf.get('hosts')
+        if not hosts:
+            logger.warning('Using old location of setting hosts inside auth')
+            self.conf.get('auth.hosts')
+
+        if isinstance(hosts, basestring):
+            return [hosts]
+        elif isinstance(hosts, list):
+            if not all(isinstance(host, basestring) for host in hosts):
+                logger.error('All values in hosts conf key are not strings')
+                hosts = [h for h in hosts if isinstance(h, basestring)]
+
+            if hosts:
+                return hosts
+            else:
+                logger.error('hosts conf key is empty. Guessing instead.')
+        elif 'localhost' in self.options:
+            return ['localhost:{0}'.format(self.get_port())]
+
+        import socket
+        hostname = socket.gethostname()
+        logger.warning('Cannot reliably determine the hostname, using hostname "%s"', hostname)
+        return [hostname]
 
     def get_app(self):
         """
         Return the bottle application with the plugins added
         """
-        napixd = self.get_bottle()
-
-        if 'auth' in self.options:
-            self.auth_handler = self.get_auth_handler()
-            napixd.install(self.auth_handler)
-        else:
-            self.auth_handler = None
+        from napixd.http.server import WSGIServer
+        server = WSGIServer()
+        self.install_plugins(server.router)
+        napixd = self.get_napixd(server)
 
         # attach autoreloaders
         if 'reload' in self.options:
             from napixd.reload import Reloader
             Reloader(napixd).start()
 
-        if 'webclient' in self.options:
-            self.web_client = self.get_webclient()
-            if self.web_client:
-                self.web_client.setup_bottle(napixd)
-        else:
-            self.web_client = None
-
         if 'notify' in self.options:
             from napixd.notify import Notifier
-            conf = Conf.get_default('Napix.notify')
+            conf = self.conf.get('notify')
             if not 'url' in conf:
                 raise CannotLaunch('Notifier has no configuration options')
 
             logger.info('Set up notifier')
-            notifier = Notifier(napixd, conf)
+            self.notifier = notifier = Notifier(
+                napixd, conf, self.service_name, self.hosts[0],
+                self.conf.get('description'))
             notifier.start()
+        else:
+            self.notifier = None
 
-        return napixd
+        if 'docs' in self.options:
+            from napixd.docs import DocGenerator
+            self.doc = DocGenerator(self.loader)
+        else:
+            self.doc = None
+
+        if 'webclient' in self.options:
+            self.web_client = self.get_webclient()
+            if self.web_client:
+                self.web_client.setup_bottle(napixd.server)
+        else:
+            self.web_client = None
+
+        return napixd.server
 
     def apply_middleware(self, application):
         """
@@ -377,13 +477,24 @@ Meta-options:
         """
         from napixd.plugins.middleware import (PathInfoMiddleware,
                                                CORSMiddleware,
-                                               LoggerMiddleware)
+                                               LoggerMiddleware,
+                                               HTTPHostMiddleware,
+                                               )
         if 'uwsgi' in self.options:
             application = PathInfoMiddleware(application)
         if 'cors' in self.options:
             application = CORSMiddleware(application)
+        if 'hosts' in self.options:
+            application = HTTPHostMiddleware(self.hosts, application)
         if 'logger' in self.options:
             application = LoggerMiddleware(application)
+
+        from napixd.plugins.exceptions import ExceptionsCatcher
+        application = ExceptionsCatcher(
+            application,
+            show_errors=('print_exc' in self.options),
+            pprint='pprint' in self.options)
+
         return application
 
     def get_application(self):
@@ -398,30 +509,40 @@ Meta-options:
         """
         Get the bottle server adapter
         """
-        if 'rocket' in self.options:
-            return 'rocket'
-        elif not 'gevent' in self.options:
-            return 'wsgiref'
-        elif 'uwsgi' in self.options:
-            return 'gevent'
-        else:
+        if 'gevent' in self.options:
             from napixd.gevent_tools import GeventServer
             return GeventServer
+        elif 'uwsgi' in self.options:
+            raise CannotLaunch('The server cannot run on its own with uwsgi option')
+        else:
+            from napixd.wsgiref import WSGIRefServer
+            return WSGIRefServer
+
+    def get_host(self):
+        if 'localhost' in self.options:
+            return '127.0.0.1'
+        return self.DEFAULT_HOST
+
+    def get_port(self):
+        return self.keys.port
 
     def get_server_options(self):
-        """
-        Returns a dict of the options of :func:`bottle.run`
-        """
         self.server = server = self.get_server()
         server_options = {
-            'host': self.DEFAULT_HOST,
-            'port': self.DEFAULT_PORT,
+            'host': self.get_host(),
+            'port': self.get_port(),
             'server': server,
             'quiet': 'logger' in self.options,
         }
-        if server == 'wsgiref':
-            from napixd.wsgiref import WSGIRequestHandler
-            server_options['handler_class'] = WSGIRequestHandler
+        if not 'gevent' in self.options:
+            if server_options['quiet']:
+                from napixd.wsgiref import QuietWSGIRequestHandler
+                server_options['handler_class'] = QuietWSGIRequestHandler
+                server_options['quiet'] = False
+            else:
+                from napixd.wsgiref import WSGIRequestHandler
+                server_options['handler_class'] = WSGIRequestHandler
+
         return server_options
 
     def get_webclient(self):
@@ -432,21 +553,21 @@ Meta-options:
 
         from napixd.webclient import WebClient
         logger.info('Using %s as webclient', webclient_path)
-        return WebClient(webclient_path, self)
+        return WebClient(webclient_path, self,
+                         generate_docs='docs' in self.options)
 
     def get_webclient_path(self):
         """
         Retrieve the web client interface statics path.
         """
         module_file = sys.modules[self.__class__.__module__].__file__
-        module_path = os.path.join(os.path.dirname(module_file), 'web')
-        napix_default = os.path.join(os.path.dirname(__file__), 'web')
-        for directory in [
-                Conf.get_default('Napix.webclient.path'),
-                get_path('web', create=False),
-                module_path,
-                napix_default,
-        ]:
+        directories = [
+            self.conf.get('webclient.path'),
+            get_path('web', create=False),
+            os.path.join(os.path.dirname(module_file), 'web'),
+            os.path.join(os.path.dirname(__file__), 'web'),
+        ]
+        for directory in directories:
             logger.debug('Try WebClient in directory %s', directory)
             if directory and os.path.isdir(directory):
                 return directory
@@ -479,13 +600,6 @@ Meta-options:
             logging.INFO)
 
         console_handler.setFormatter(formatter)
-
-        if 'rocket' in self.options:
-            logging.getLogger('Rocket').addHandler(file_handler)
-            logging.getLogger('Rocket').setLevel(logging.DEBUG)
-            logging.getLogger('Rocket.Errors').setLevel(logging.DEBUG)
-            logging.getLogger(
-                'Rocket.Errors.ThreadPool').setLevel(logging.INFO)
 
         logging.getLogger('Napix').setLevel(logging.DEBUG)
         logging.getLogger('Napix').addHandler(console_handler)

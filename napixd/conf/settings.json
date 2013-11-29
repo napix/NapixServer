@@ -2,9 +2,11 @@
   "Napix" : {
     "#info" : "The default configuration for a Napix server. Directives starting by a # are comments.",
     "description" : "The base Napix server",
-    "loader" : {
-        "autoreload" : true
-    },
+    "#service" : "The name of the service of this host.",
+    "service" : "localhost:8002",
+    "#hosts": "A string or a list of string listing the server names",
+    "hosts": [
+    ],
     "rate_limit": {
         "#info": "The rate-limit section",
         "#excludes": "The list of ips exempted from rate limiting",
@@ -16,15 +18,17 @@
     },
     "auth" : {
       "#info" : "The authentication section.",
-      "#auth_url" : "The authentication URL",
-      "auth_url" : "http://central.napix.enix.org:8003/auth/authorization/",
-      "#service" : "The name of the service of this host.",
-      "service" : "localhost:8002"
+      "#url" : "The authentication URL",
+      "url" : "http://auth.napix.io:8003/auth/authorization/",
+      "#password" : "The password of this napix server",
+      "password" : "",
+      "#get_parameter": "The name of the GET parameter used for non-secured authentication",
+      "get_parameter": "token"
     },
     "notify" : {
       "#info" : "The notify section",
       "#url" : "The URL of the notify server",
-      "url" : "http://central.napix.enix.org:8002/directory/",
+      "url" : "http://directory.napix.io:8002/directory/",
       "credentials" : {
           "#info" : "The credential used by this server to send notifications",
           "login" : "notification",
@@ -33,7 +37,7 @@
       "#delay" : "The interval at which this sever sends notifications",
       "delay" : 300
     },
-    "#storage" : {
+    "storage" : {
         "#info" : "The configuration of the stores",
         "#store" : "The default backend for Key value storage",
         "store" : "napixd.store.backends.file.FileBackend",
@@ -50,7 +54,7 @@
             "napixd.store.backends.redis.RedisKeyBackend" :
                 "Store the list of the keys of a collection as a set and each key as a Redis key"
         },
-        "napixd.store.backends.file.FileBackend" : {
+        "Store napixd.store.backends.file.FileBackend" : {
             "#infos" : "The FileBackend configuration"
         },
         "#counter" : "The default backend for counters",
@@ -63,7 +67,8 @@
         }
     },
     "managers" : {
-      "#info" : "The list of the managers in this server. They key is the URL prefix, the value is a dotted python path to the manager class"
+      "#info" : "The list of the managers in this server. They key is the URL prefix, the value is a dotted python path to the manager class",
+      "local" : "napixd.contrib.host.HostInfo"
     }
   }
 }

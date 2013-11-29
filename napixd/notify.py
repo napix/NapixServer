@@ -1,29 +1,46 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Notify the Napix Directory
+--------------------------
+
+This module implements the notify protocol between a Napix Server
+and a directory.
+"""
+
 try:
     from gevent import sleep
 except ImportError:
     from time import sleep
 
 import logging
-import socket
 import urlparse
 
 from napixd.client import Client, HTTPError
 from napixd.thread_manager import background
-from napixd.conf import Conf
 from napixd.guid import uid
 
 logger = logging.getLogger('Napix.notifications')
 
 
 class Notifier(object):
+    """
+    The object handling the notification process.
 
-    def __init__(self, app, conf, delay=None):
+    It notifies at regular intervals a server.
+    The delay and the target server are defined in *conf*
+
+    The *app* is the source of the **applications** sent to the directory.
+    """
+
+    def __init__(self, app, conf, service_name, hostname, description):
         self.app = app
+        self.service_name = service_name
+        self.hostname = hostname
+        self.description = description
 
-        post_url = conf.get('url')
+        self.directory = post_url = conf.get('url')
         post_url_bits = urlparse.urlsplit(post_url)
         self.post_url = post_url_bits.path
 
@@ -31,7 +48,7 @@ class Notifier(object):
         self.client = Client(post_url_bits.netloc, credentials)
         self.put_url = None
 
-        self.delay = delay or conf.get('delay') or 300
+        self.delay = conf.get('delay', 300, type=int)
         logger.info('Notify on %s%s as %s every %ss', post_url_bits.netloc,
                     self.post_url, credentials.get('login', '<anon>'), self.delay)
         if self.delay < 1:
@@ -63,9 +80,15 @@ class Notifier(object):
             self.send_notification()
 
     def send_first_notification(self):
+        """
+        Sends the first notification, a POST request.
+
+        The POST request retrieves the url at which the values
+        are PUT by :meth:`send_notification` afterwards.
+        """
         try:
             resp = self.send_request('POST', self.post_url)
-        except HTTPError, err:
+        except HTTPError as err:
             logger.warning('Got %s', err)
             return False
 
@@ -75,14 +98,17 @@ class Notifier(object):
             return True
 
     def send_notification(self):
+        """
+        Sends the next notifications through PUT requests
+        """
         logger.info('updating %s', self.put_url)
         self.send_request('PUT', self.put_url)
 
     def send_request(self, method, url):
-        return self.client.request(method, url,
-                                   body={
-                                       'uid': str(uid),
-                                       'host': Conf.get_default('Napix.auth.service') or socket.gethostname(),
-                                       'description': Conf.get_default('Napix.description') or '',
-                                       'managers': list(self.app.root_urls),
-                                   })
+        return self.client.request(method, url, body={
+            'uid': str(uid),
+            'host': self.hostname,
+            'service': self.service_name,
+            'description': self.description,
+            'managers': self.app.list_managers(),
+        })

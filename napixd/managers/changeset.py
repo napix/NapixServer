@@ -4,7 +4,7 @@
 import collections
 
 
-class DiffDict(collections.Mapping):
+class DiffDict(collections.MutableMapping):
     """
     A mapping that keeps tracks of the changes between a source
     and a patch.
@@ -33,6 +33,14 @@ class DiffDict(collections.Mapping):
 
     def __len__(self):
         return len(self.merge)
+
+    def __setitem__(self, key, value):
+        self.patches[key] = value
+        self.merge[key] = value
+
+    def __delitem__(self, key):
+        del self.patches[key]
+        del self.merge[key]
 
     @property
     def added(self):

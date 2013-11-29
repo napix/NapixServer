@@ -6,10 +6,10 @@ from __future__ import absolute_import
 import unittest2
 import mock
 
-from napixd.conf import Conf
+from napixd.conf import EmptyConf
 from napixd.managers.base import ManagerType, Manager
-from napixd.managers.actions import action, parameter
-from napixd.services.collection_services import FirstCollectionService
+from napixd.managers.actions import action
+from napixd.services.collection import FirstCollectionService
 
 
 class _TestDecorator(unittest2.TestCase):
@@ -42,7 +42,7 @@ class _TestServiceAction(_TestManagerAction):
 
     def setUp(self):
         super(_TestServiceAction, self).setUp()
-        self.cs = FirstCollectionService(self.Manager, Conf(), 'my-mock')
+        self.cs = FirstCollectionService(self.Manager, EmptyConf(), 'my-mock')
 
 
 class TestServiceAction(_TestServiceAction):
@@ -55,12 +55,12 @@ class TestServiceAction(_TestServiceAction):
             set([
                 '/my-mock',
                 '/my-mock/',
-                '/my-mock/:f0',
+                '/my-mock/?',
                 '/my-mock/_napix_help',
                 '/my-mock/_napix_resource_fields',
-                '/my-mock/:f0/_napix_all_actions',
-                '/my-mock/:f0/_napix_action/send_mail',
-                '/my-mock/:f0/_napix_action/send_mail/_napix_help',
+                '/my-mock/?/_napix_all_actions',
+                '/my-mock/?/_napix_action/send_mail',
+                '/my-mock/?/_napix_action/send_mail/_napix_help',
                 ]))
 
     def test_all_action(self):

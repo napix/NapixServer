@@ -40,11 +40,9 @@ class URL(object):
         if not self.segments:
             return u'/'
         urls = ['']
-        count = 0
         for segment in self.segments:
             if segment is None:
-                urls.append(':f{0}'.format(count))
-                count += 1
+                urls.append('?')
             else:
                 urls.append(segment)
         return u'/'.join(urls)

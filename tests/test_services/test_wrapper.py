@@ -26,3 +26,15 @@ class TestWrapper(unittest.TestCase):
         mgr = mock.Mock()
         rw = ResourceWrapper(mgr, 'id', {'a': 1})
         self.assertEqual(dict(rw), {'a': 1})
+
+    def test_loaded_init(self):
+        mgr = mock.Mock()
+        rw = ResourceWrapper(mgr, 'id', {'a': 1})
+        self.assertTrue(rw.loaded)
+
+    def test_loaded(self):
+        mgr = mock.Mock()
+        rw = ResourceWrapper(mgr, 'id')
+        self.assertFalse(rw.loaded)
+        rw.resource
+        self.assertTrue(rw.loaded)

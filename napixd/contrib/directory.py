@@ -5,6 +5,7 @@ import time
 import uuid
 
 from napixd.managers import Manager
+from napixd.managers import validators
 from napixd.exceptions import NotFound, ValidationError
 from napixd.store import Store
 
@@ -16,9 +17,23 @@ class NapixDirectoryManager(Manager):
     """
 
     resource_fields = {
+        'service': {
+            'description': 'The service name of this napix',
+            'example': 'dns.enix',
+            'validators': [
+                validators.not_empty,
+                validators.strip,
+                validators.single_lined,
+            ]
+        },
         'host': {
             'description': 'The server that hosts the napix',
-            'example': 'server.napix.com'
+            'example': 'server.napix.io',
+            'validators': [
+                validators.not_empty,
+                validators.strip,
+                validators.single_lined,
+            ]
         },
         'managers': {
             'description': 'the list of managers',
@@ -34,7 +49,12 @@ class NapixDirectoryManager(Manager):
             'WAITING if it is late of less than a period, '
             'LOST after for ten periods',
             'computed': True,
-            'example': 'OK'
+            'example': 'OK',
+            'choices': [
+                'OK',
+                'WAITING',
+                'LOST',
+            ]
         },
         'description': {
             'description': 'Human readable description of the server',
@@ -50,10 +70,9 @@ class NapixDirectoryManager(Manager):
     name = 'directory'
     TICK = 300
 
-    def __init__(self, context):
-        super(NapixDirectoryManager, self).__init__(context)
-        self.store = Store(
-            'directory', backend='napixd.store.backends.file.FileBackend')
+    def configure(self, conf):
+        self.store = Store('directory',
+                           backend='napixd.store.backends.file.FileBackend')
 
     def validate_resource_managers(self, managers):
         if (not isinstance(managers, list) or
@@ -91,12 +110,17 @@ class NapixDirectoryManager(Manager):
     def list_resource(self):
         max_delay = self.TICK * 10
         dirty = False
-        for key in list(self.store.keys()):
-            if self.store[key]['last_seen'] < max_delay:
+        timestamp = time.time()
+        keys = list(self.store.keys())
+
+        for key in keys:
+            if (timestamp - self.store[key]['last_seen']) > max_delay:
                 del self.store[key]
                 dirty = True
+
         if dirty:
             self.store.save()
+
         return self.store.keys()
 
     def modify_resource(self, resource, diffdict):

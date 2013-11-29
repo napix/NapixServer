@@ -7,7 +7,11 @@ import unittest
 import mock
 
 from napixd.managers.base import Manager
-from napixd.managers.resource_fields import ResourceFields, ResourceField, ResourceFieldsDescriptor
+from napixd.managers.resource_fields import (
+    ResourceFields,
+    ResourceField,
+    ResourceFieldsDescriptor,
+)
 from napixd.exceptions import ValidationError, ImproperlyConfigured
 
 
@@ -65,7 +69,9 @@ class TestResourceFields(unittest.TestCase):
                 'type': 'int',
                 'example': 123,
                 'computed': False,
-                'validators': []
+                'validators': [
+                    'A b should be a B or a b'
+                ]
             }
         }
         )
@@ -198,6 +204,13 @@ class TestResourceField(unittest.TestCase):
         self.assertRaises(ImproperlyConfigured, ResourceField, 'f', {
         })
 
+    def test_example_from_choice(self):
+        rf = ResourceField('f', {
+            'type': int,
+            'choices': [1, 2, 3]
+        })
+        self.assertEqual(rf.example, 1)
+
     def test_example_unicode(self):
         rf = ResourceField('f', {
             'example': 'dudem',
@@ -315,6 +328,19 @@ class TestResourceField(unittest.TestCase):
             'example': 'mpm',
             'choices': 123
         })
+
+    def test_choice_default_on_null(self):
+        rf = ResourceField('f', {
+            'example': 'mpm',
+            'default_on_null': True,
+            'choices': [
+                'prefork',
+                'worker'
+            ]
+        })
+        manager = mock.Mock()
+        self.assertEqual(rf.validate(manager, None),
+                         manager.validate_resource_f.return_value)
 
     def test_choice(self):
         rf = ResourceField('f', {

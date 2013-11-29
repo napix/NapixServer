@@ -10,6 +10,11 @@ class _BaseTestCounter(unittest2.TestCase):
         self.counter = self.counter_class('test')
         self.counter.reset()
 
+    def test_keep_value(self):
+        counter = self.counter_class('test')
+        value = self.counter.increment()
+        self.assertEqual(value, counter.value)
+
     def testIncrement(self):
         self.assertEqual(self.counter.value, 0)
         self.assertEqual(self.counter.increment(), 1)

@@ -10,7 +10,7 @@ class HostFiles(ReadOnlyDictManager):
     """
     Host Files manager
     """
-    managed_class = 'HostManager'
+    managed_class = ['HostManager']
     resource_fields = {
         'file': {
             'example': '/etc/hosts',

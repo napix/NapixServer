@@ -2,46 +2,47 @@
 # -*- coding: utf-8 -*-
 
 from napix.manager import Manager
-from napix.executor import run_comman_or_fail, executor
-from napix.exceptions import NotFound, ValidationError, Duplicate
+from napix.exceptions import NotFound, ValidationError
 import subprocess
 
-class LVMManager( Manager ):
+
+class LVMManager(Manager):
     """
     LVM logical volumes manager
     """
     resource_fields = {
-            'name' : {
-                'description' : 'Name of the logical volume',
-                'example' : 'lv_home'
-                },
-            'group' : {
-                'description' : 'Name of the volume group',
-                'example' : 'vg01'
-                },
-            'size' : {
-                'description' : 'Total size of the logical volume in Mo',
-                'example' : 20000
-                }
-            }
+        'name': {
+            'description': 'Name of the logical volume',
+            'example': 'lv_home'
+        },
+        'group': {
+            'description': 'Name of the volume group',
+            'example': 'vg01'
+        },
+        'size': {
+            'description': 'Total size of the logical volume in Mo',
+            'example': 20000
+        }
+    }
 
     def _lv_list( self):
-        process = executor.create_job(
-                ['sudo','lvm','lvs','--nosuffix', '--noheading',
-                    '--separator',';','-o',
-                    'lv_uuid,lv_size,lv_name,vg_name' ], discard_output= False)
+        process = subprocess.Popen([
+            'sudo',
+            'lvm', 'lvs', '--nosuffix', '--noheading',
+            '--separator',';','-o',
+            'lv_uuid,lv_size,lv_name,vg_name'])
         if process.wait() != 0:
             raise subprocess.CalledProcessException(
                 'The command exited with a non 0 return code'+
                 process.stderr.read())
-        for lv in map( str.strip, process.stdout.read().split('\n')):
+        for lv in map(str.strip, process.stdout.read().split('\n')):
             if lv:
                 yield lv.split(';')
 
-    def _vg_list( self):
-        process = executor.create_job(['sudo','lvm','vgs','--noheading','-o','vg_name'])
+    def _vg_list(self):
+        process = subprocess.Popen(['sudo', 'lvm', 'vgs', '--noheading', '-o', 'vg_name'])
         process.wait()
-        return map( str.strip, process.stdout.split('\n'))
+        return map(str.strip, process.stdout.split('\n'))
 
     def list_resource( self):
         #run the command that spit the UUID line by line

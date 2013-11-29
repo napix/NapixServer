@@ -8,12 +8,10 @@ The webclient of Napixd.
 Napixd propose a generic web client usable with  every server.
 """
 
-import bottle
-
-from napixd.plugins.conversation import ConversationPlugin
+from napixd.http.statics import StaticFiles
 
 
-class WebClient(bottle.Bottle):
+class WebClient(object):
     """
     An object to represent the Webclient.
 
@@ -21,39 +19,43 @@ class WebClient(bottle.Bottle):
     *launcher* is the :class:`napixd.launcher.Setup` class.
     """
 
-    def __init__(self, root, launcher):
-        super(WebClient, self).__init__(autojson=False)
-        self.root = root
+    def __init__(self, root, launcher, generate_docs=True):
         self.service_name = launcher.service_name
+        self._static = StaticFiles(root)
+
+        if generate_docs:
+            self.doc = launcher.doc
+        else:
+            self.doc = None
 
         if launcher.auth_handler:
             self.auth_server = getattr(launcher.auth_handler, 'host', '')
         else:
             self.auth_server = ''
 
-        self.get('/', callback=self.index)
-        self.get('/<filename:path>', callback=self.static)
-        self.get('/infos.json', callback=self.infos, apply=[
-            ConversationPlugin()
-        ])
+        if launcher.notifier:
+            self.directory_server = launcher.notifier.directory
+        else:
+            self.directory_server = None
 
     def setup_bottle(self, app):
-        app.mount('/_napix_js', self)
+        router = app.push()
+        router.route('/_napix_js/', self.index, catchall=True)
+        router.route('/_napix_js/infos.json', self.infos)
+        if self.doc:
+            router.route('/_napix_js/docs.json', self.docs)
 
-    def index(self):
+    def index(self, request, path):
         """
         Returns the index.
         """
-        return bottle.static_file('index.html', root=self.root,
-                                  mimetype='text/html; charset=UTF-8')
+        path = path or 'index.html'
+        return self._static(request, path)
 
-    def static(self, filename):
-        """
-        Returns the medias related to index.html.
-        """
-        return bottle.static_file(filename, root=self.root)
+    def docs(self, request):
+        return self.doc.generate()
 
-    def infos(self):
+    def infos(self, request):
         """
         Returns informations about the server to the client.
 
@@ -62,4 +64,5 @@ class WebClient(bottle.Bottle):
         return {
             'name': self.service_name,
             'auth_server': self.auth_server,
+            'directory_server': self.directory_server,
         }

@@ -7,7 +7,7 @@ import os
 try:
     import napixd
 except ImportError:
-    path = os.path.realpath( os.path.join( os.path.dirname(__file__), '..' ))
+    path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
     sys.path.append(path)
 
 import optparse
@@ -17,7 +17,7 @@ usage = '''%prog dump [-b source] [-o file]
 %prog load [--reset] [-i source] [-b destination]
 %prog move [--reset] [-b source] destination
 '''
-description='''
+description = '''
 load:
     Extract all the keys from a Napix store to a JSON document
 dump:
@@ -25,55 +25,55 @@ dump:
 move:
     Transfer all the data between two Napix stores.
 '''
-parser = optparse.OptionParser( usage=usage, description=description )
-parser.add_option( '-b', '--backend',
-        help='Force the backend.',
-        default='default',
-        )
-parser.add_option( '-r', '--reset',
-        action='store_true',
-        default=False,
-        help='Clear the backend before loading',
-        )
-parser.add_option( '-i', '--input',
-        help='Set the input file. Default is stdin',
-        default='-',
-        )
-parser.add_option( '-o', '--output',
-        help='Set the ouput file. Default is stdout',
-        default='-',
-        )
-parser.add_option( '-t', '--indent',
-        help='Indent the output',
-        type='int',
-        default=0,
-        )
+parser = optparse.OptionParser(usage=usage, description=description)
+parser.add_option('-b', '--backend',
+                  help='Force the backend.',
+                  default='default',
+                  )
+parser.add_option('-r', '--reset',
+                  action='store_true',
+                  default=False,
+                  help='Clear the backend before loading',
+                  )
+parser.add_option('-i', '--input',
+                  help='Set the input file. Default is stdin',
+                  default='-',
+                  )
+parser.add_option('-o', '--output',
+                  help='Set the ouput file. Default is stdout',
+                  default='-',
+                  )
+parser.add_option('-t', '--indent',
+                  help='Indent the output',
+                  type='int',
+                  default=0,
+                  )
+
 
 def main():
     options, args = parser.parse_args()
 
-    if len( args) == 0 :
+    if len(args) == 0:
         parser.print_help()
         sys.exit(1)
 
-
     operation = args[0]
-    if operation == 'load' :
+    if operation == 'load':
         with open(options.input, 'rb') if options.input != '-' else sys.stdin as input:
-            load( input, options.backend, options.reset)
-    elif operation == 'dump' :
-        with open( options.output, 'wb') if options.output != '-' else sys.stdout as output:
-            dump( options.backend, output, options.indent)
+            load(input, options.backend, options.reset)
+    elif operation == 'dump':
+        with open(options.output, 'wb') if options.output != '-' else sys.stdout as output:
+            dump(options.backend, output, options.indent)
             if output.isatty():
                 output.write('\n')
-    elif operation == 'move' :
+    elif operation == 'move':
         try:
             dest = args[1]
         except IndexError:
-            parser.error( 'Move takes the destination backend')
-        move( options.backend, dest, options.reset)
+            parser.error('Move takes the destination backend')
+        move(options.backend, dest, options.reset)
     else:
-        parser.error( 'Operations are load, dump and move')
+        parser.error('Operations are load, dump and move')
         return
 
 if __name__ == '__main__':

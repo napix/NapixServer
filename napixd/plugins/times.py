@@ -2,19 +2,16 @@
 # -*- coding: utf-8 -*-
 
 from napixd.chrono import Chrono
+from napixd.http.response import HTTPResponse
 
 
 class TimePlugin(object):
-    name = 'time_plugin'
-    api = 2
 
     def __init__(self, header_name):
         self.header_name = header_name
 
-    def apply(self, callback, route):
-        def inner_time(*args, **kw):
-            with Chrono() as chrono:
-                resp = callback(*args, **kw)
-            resp.headers[self.header_name] = chrono.total
-            return resp
-        return inner_time
+    def __call__(self, callback, request):
+        with Chrono() as chrono:
+            resp = callback(request)
+
+        return HTTPResponse({self.header_name: chrono.total}, resp)
