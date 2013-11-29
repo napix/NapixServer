@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import unittest2
+import unittest
 import mock
 import functools
 
@@ -10,7 +10,7 @@ from napix.exceptions import HTTPError
 from napixd.plugins.exceptions import ExceptionsCatcher
 
 
-class TestExceptionCatcher(unittest2.TestCase):
+class TestExceptionCatcher(unittest.TestCase):
     def setUp(self):
         self.cb = mock.Mock()
         self.exc = ExceptionsCatcher(self.cb)
