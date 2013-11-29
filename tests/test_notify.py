@@ -7,10 +7,16 @@ import mock
 import httplib
 import contextlib
 
-from napixd.notify import Notifier
-from napixd.client import Client
 from napixd.conf import Conf
 from napixd.application import NapixdBottle
+
+try:
+    import napix
+except ImportError:
+    __test__ = False
+else:
+    from napixd.notify import Notifier
+    from napixd.client import Client
 
 
 class RunStop(Exception):

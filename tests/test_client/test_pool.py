@@ -8,10 +8,12 @@ import mock
 
 try:
     import gevent
-    from napixd.client.gevent import Client
-    from napixd.client.pool import ClientPool
+    import napix
 except ImportError:
     __test__ = False
+else:
+    from napixd.client.gevent import Client
+    from napixd.client.pool import ClientPool
 
 
 class TestClientPool(unittest.TestCase):
