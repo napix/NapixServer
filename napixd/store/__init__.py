@@ -89,8 +89,12 @@ Counters
 """
 
 import sys
+import logging
+
 from napixd.conf import Conf
 from napixd.store.backends import BaseBackend
+
+logger = logging.getLogger('Napix.store')
 
 __all__ = ('NoSuchStoreBackend', 'Store', 'Counter')
 
@@ -136,7 +140,7 @@ def Store(collection, backend='default', **opts):
         that_store.save()
 
     """
-    backend = loader.get_store_backend(backend, opts)
+    backend = Loader.get_default_loader().get_store_backend(backend, opts)
     return backend(collection)
 
 
@@ -145,7 +149,7 @@ def Counter(name, backend='default', **opts):
     Returns a counter with the specified ``backend`` and the given ``name``.
     See :func:`Store` for more details.
     """
-    backend = loader.get_counter_backend(backend, opts)
+    backend = Loader.get_default_loader().get_counter_backend(backend, opts)
     return backend(name)
 
 
@@ -155,10 +159,19 @@ class Loader(object):
     Loader for the store and counter backends
     """
 
-    def __init__(self):
-        self.conf = Conf.get_default('Napix.storage')
+    def __init__(self, conf):
+        self.conf = conf
         self._class_cache = {}
         self._backend_cache = {}
+
+    _instance = None
+
+    @classmethod
+    def get_default_loader(cls):
+        if cls._instance is not None:
+            return cls._instance
+        ins = cls._instance = cls(Conf.get_default('storage'))
+        return ins
 
     def _get_class(self, fqdn):
         if not fqdn in self._class_cache:
@@ -180,13 +193,16 @@ class Loader(object):
             raise ValueError('{0} is not a BaseBackend subclass'.format(backend))
         return cls(opts)
 
-    def _get_backend_conf(self, backend):
+    def _get_backend_conf(self, backend, section):
         if backend not in self._backend_cache:
-            self._backend_cache[backend] = self._get_backend(
-                backend, dict(self.conf.get(backend)))
+            conf = self.conf.get('{0} {1}'.format(section, backend))
+            if not conf:
+                logger.warning('Use old conf. Now section `%s %s`', section, backend)
+                conf = self.conf.get(backend)
+            self._backend_cache[backend] = self._get_backend(backend, conf)
         return self._backend_cache[backend]
 
-    def get_backend(self, backend, opts, default):
+    def get_backend(self, backend, opts, default, section):
         """
         Get the backend name ``backend``.
         If opts are specified, the backend is instantiated with those options.
@@ -198,12 +214,12 @@ class Loader(object):
         if opts:
             return self._get_backend(backend, opts)
         else:
-            return self._get_backend_conf(backend)
+            return self._get_backend_conf(backend, section)
 
     def get_store_backend(self, backend, options=None):
-        return self.get_backend(backend, options, DEFAULT_STORE)
+        default_store = self.conf.get('store', DEFAULT_STORE)
+        return self.get_backend(backend, options, default_store, 'Store')
 
     def get_counter_backend(self, backend, options=None):
-        return self.get_backend(backend, options, DEFAULT_COUNTER)
-
-loader = Loader()
+        default_counter = self.conf.get('counter', DEFAULT_COUNTER)
+        return self.get_backend(backend, options, default_counter, 'Counter')

@@ -38,12 +38,6 @@ services Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`plugins` Module
----------------------
-
-.. automodule:: napixd.services.plugins
-    :members:
-
 :mod:`urls` Module
 ------------------
 

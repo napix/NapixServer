@@ -159,6 +159,8 @@ class ActionDocTemplate(object):
     def __init__(self, manager, action):
         self.action = action
         self.method = getattr(manager, action)
+        self.fields_doc = ResourceFieldsDocTemplate(
+            self.method.resource_fields)
 
     def render(self, context):
         context = Context(context)
@@ -169,6 +171,7 @@ class ActionDocTemplate(object):
             'anchor': context['anchor'] + '/' + self.action,
             'action': self.action,
             'docstring': DocString(self.method),
+            'fields': self.fields_doc.render(context),
         }
 
 

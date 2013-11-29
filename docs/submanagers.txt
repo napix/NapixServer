@@ -40,7 +40,7 @@ Both managers are in :download:`/samples/protecteddir.py`.
 HTAccessManager
 ---------------
 
-The htaccess manager takes care of the .htaccess file found inside of the protected directory.
+The htaccess manager takes care of the :file:`.htaccess` file found inside of the protected directory.
 It looks like this::
 
     AuthType Basic
@@ -57,13 +57,13 @@ but it will be passed to the managed resources spawned.
 
 .. literalinclude:: /samples/protecteddir.py
     :language: python
-    :lines: 10-12,18-27,46-73,92-96
+    :lines: 11-97
 
 
 PasswordsManager
 ----------------
 
-We will use the BasicPasswordFileManager of the first step guide with a very few modifications.
+We will use the :class:`BasicPasswordFileManager` of the first step guide with a very few modifications.
 The validations and resources_fields will be kept, but we will add several lines in save and load.
 
 We replace ``self.FILEPATH`` by ``parent['authuserfile']``.
@@ -74,58 +74,40 @@ The rest of the file is untouched
 
 
 .. literalinclude:: /samples/protecteddir.py
-    :lines: 102-105,125-139,145-151
-
+    :lines: 99-170
 
 Plug
 ====
 
-To plug PasswordsManager as a sub-manager of HTAccessManager, you just need to add it to the :attr:`~Manager.managed_class`.
+To plug :class:`PasswordsManager` as a sub-manager of :class:`HTAccessManager`,
+you just need to add it to the :attr:`Manager.managed_class`.
+You can add the class object or the class name as a string.
 
-There is two choices: either plug directly the password manager or use a bit of namespace.
+.. code-block:: python
 
-In the first case, the id of the resource is only separated by a slash of the id of the subresource,
-else the sub manager names gets between.
+    managed_class = ['PasswordsManager']
 
-Example for a customer alice, who lets an access to bob::
-
-    managed_class = [ 'PasswordsManager' ]
-    /htaccess/alice/passwords/bob
-
-    managed_class = 'PasswordsManager'
-    /htaccess/alice/bob
-
-The first methods is recommended, as it let add another submanager without compatibility problems.
-The change only impacts URL, it has no incidence on the manager.
-A manager plugged with the first method can be plugged with the second method without any change.
-
-.. warning::
+.. note::
 
     Those two lines are almost equivalent.
-    In order to use the second, you have to declare the class PasswordsManager before the class HTAccessManager
-    else it will raise a NameError
+    In order to use the second, you have to declare the class :class:`PasswordsManager`
+    before the class :class:`HTAccessManager`
+    else it will raise a :exc:`NameError`
 
     .. code-block:: python
 
-        managed_class = [ 'PasswordsManager' ]
-        managed_class = [ PasswordsManager ]
+        managed_class = ['PasswordsManager']
+        managed_class = [PasswordsManager]
 
     If PasswordsManager in another module, those two structures are almost equivalent to the previous.
     The behavior is not the same if ``another.module`` fails to import.
 
     .. code-block:: python
 
-        managed_class = [ 'another.module.PasswordsManager' ]
+        managed_class = ['another.module.PasswordsManager']
 
         from another.module import PasswordsManager
-        managed_class = [ PasswordsManager ]
-
-    Those two next lines are equivalent between themselves but they behaves differently from the examples above.
-
-    .. code-block:: python
-
-        managed_class = 'PasswordsManager'
-        managed_class = PasswordsManager
+        managed_class = [PasswordsManager]
 
 Usage
 =====
@@ -162,51 +144,53 @@ This is used like a normal manager::
     }
 
     $ cat /var/http/virtualhosts/client/.htaccess
-
-        AuthUserFile /var/http/passwords/client
-        AuthType Basic
-        AuthName enter your password
-        Require valid-user
+    AuthUserFile /var/http/passwords/client
+    AuthType Basic
+    AuthName enter your password
+    Require valid-user
 
     $ cat /var/http/passwords/client
-
-        jason:bourne09
+    jason:bourne09
 
 
 Configuration of the link
 =========================
 
+.. currentmodule:: napixd.managers.managed_classes
+
 When the link between the parent and the managed class must be set more precisely,
-you can use the :class:`napixd.managers.managed_classes.ManagedClass` class.
+you can use the :class:`ManagedClass` class.
 
-It defines two properties, the :meth:`name<napixd.managers.managed_classes.ManagedClass.get_name>`
-and the :meth:`~napixd.managers.managed_classes.ManagedClass.extractor`.
+It defines two properties, the :meth:`name<ManagedClass.get_name>`
+and the :meth:`~ManagedClass.extractor`.
 
-:class:`~napixd.managers.managed_classes.ManagedClass` is usable with both the path
+:class:`ManagedClass` is usable with both the path
 and manager class designation and both in direct and with a list
-A managed_class list can contains ManagerClass instances, strings and Manager subclasses mixed.
+The :attr:`Manager.managed_class` list can contains :class:`ManagerClass` instances, strings and :class:`Manager` subclasses mixed.
 
 
 name
 ----
 
 The name is the bit of namespace between the two resources.
-If the *direct_plug* method is used, this is not used.
 
 For example in order to set the url format to /htacces/``client``/htpasswd/``login``
-without changing the name of the manager, the name argument of the :class:`~napixd.managers.managed_classes.ManagedClass`
+without changing the name of the manager, the name argument of the :class:`ManagedClass`
 can be used with inside class.
 
 .. code-block:: python
 
-    class HTAccessManager( Manager):
+    class HTAccessManager(Manager):
         """ Manages the protection of the directories of the users """
 
         VHOSTPATH = '/var/http/virtualhosts'
         PASSPATH = '/var/http/passwords'
 
-        managed_class = [ 'PasswordsManager' ]
+        managed_class = [ManagedClass('PasswordsManager', name='htpasswd')]
 
+With the :class:`ManagedClass` instance, the same rules applies
+regarding the reference to the class.
+You can either use a diret reference, or the name or the dotted path with the module.
 
 extractor
 ---------
@@ -215,3 +199,38 @@ The extractor is a callback called with the parent and returning the arguments f
 instanciation of the Sub manager.
 
 By default the extractor returns the parent.
+
+The extractor use cases include the reuse of a same manager with different sources.
+For examples the Central server of napix uses a same :class:`PermissionManager`
+for public and users permissions.
+An extractor in the *managed_class* of the :class:`UserManager` returns
+the permissions of the users.
+A root manager :class:`PublicPermissionsManager` inheriting of :class:`PermissionManager`
+instanciates it with the public permissions set ad context.
+
+Other uses includes the url permissions, for example, if you want to create groups of resources.
+For example, in :mod:`django` inspired code:
+
+.. code-block:: python
+
+    class RouterManager(Manager):
+        """Manager for the routers"""
+
+    class ByNetwork(Manager):
+        managed_class = [
+            ManagedClass(RouterManager, extractor=lambda r: Router.objects.filter(network=r.id)),
+            ]
+
+    class ByBrand(Manager):
+        managed_class = [
+            ManagedClass(RouterManager, extractor=lambda r: Router.objects.filter(brand=r.id)),
+            ]
+
+Thus you can set permissions to all the Cisco routers for Cisco professionals: ``/bybrand/cisco/router/*``
+and by network for the admins of a specific subnet: ``/bynetwork/10.23.0.0-24/router/*``.
+
+
+Instanciate Managers
+====================
+
+Dont do it.

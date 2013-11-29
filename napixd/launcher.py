@@ -16,7 +16,8 @@ import optparse
 
 from napixd import get_file, get_path
 
-from napixd.conf import Conf
+from napixd.conf import Conf, ConfLoader
+
 
 __all__ = ['launch', 'Setup']
 
@@ -104,6 +105,8 @@ class Setup(object):
         'time',  # Show duration
         'logger',  # Ouput of the logs in the console is consistent
         'docs',
+        'dotconf',
+        'central',  # Use a central Napix server for the authentication
     ])
 
     LOG_FILE = get_file('log/napix.log')
@@ -128,14 +131,16 @@ Default options:
     reload:     The reloader events attachement on signal, page and inotify
     webclient:  The web interface accessible on /_napix_js/
     gevent:     Use gevent as the wsgi interface
-    uwsgi:      Use with uwsgi
     auto:       Load from HOME/auto/ directory
     conf:       Load from the Napix.managers section of the config
     time:       Add custom header to show the duration of the request
     logger:     Standardize the ouptut on the console accross servers
     docs:       Generate automated documentation
+    dotconf:    Use a dotconf file as the source of configuration
+    central:    Use a central Napix server for the authentication
 
 Non-default:
+    uwsgi:      Use with uwsgi (by default when loading napixd.application)
     notify:     Enable the notification thread
     silent:     Do not show the messages in the console
     verbose:    Augment the ouptut of the loggers
@@ -143,7 +148,7 @@ Non-default:
     times:      Add custom header to show the running time and the total time (requires gevent)
     pprint:     Enable pretty printing of output
     cors:       Add Cross-Origin Request Service headers
-    secure:     Disable the request tokeb signing
+    secure:     Disable the request token signing
     localhost:  Listen on the loopback interface only
     autonomous-auth:    Use a local source of authentication
     hosts:      Check the HTTP Host header
@@ -170,6 +175,13 @@ Meta-options:
         self.options = options = options.difference(nooptions)
 
         self.set_loggers()
+
+        self.raw_conf = self.get_conf()
+        if 'dotconf' in self.options:
+            self.conf = self.raw_conf
+        else:
+            self.conf = self.raw_conf.get('Napix')
+
         self.service_name = self.get_service_name()
         self.hosts = self.get_hostnames()
 
@@ -178,6 +190,25 @@ Meta-options:
         console.info('Starting process %s', os.getpid())
         console.info('Logging activity in %s', self.LOG_FILE)
         console.info('Service Name is %s', self.service_name)
+
+    def get_conf(self):
+        logger.info('Loading configuration')
+        paths = [
+            get_path('conf/'),
+        ]
+        if 'dotconf' in self.options:
+            try:
+                from napixd.conf.dotconf import ConfFactory
+            except ImportError:
+                raise CannotLaunch('dotconf option requires the external library dotconf')
+            loader = ConfLoader(paths, ConfFactory())
+            conf = loader()
+        else:
+            from napixd.conf.json import ConfFactory, CompatConf
+            loader = ConfLoader(paths, ConfFactory())
+            conf = CompatConf(loader())
+
+        return Conf.set_default(conf)
 
     def _patch_gevent(self):
         if 'gevent' in self.options:
@@ -239,7 +270,14 @@ Meta-options:
         The configuration option ``Napix.auth.service`` is used.
         If it does not exists, the name is fetched from :file:`/etc/hostname`
         """
-        service = Conf.get_default('Napix.auth.service')
+        try:
+            service = self.conf.get('service', type=unicode)
+        except TypeError:
+            try:
+                service = self.conf.get('auth.service', type=unicode)
+            except TypeError:
+                raise CannotLaunch('The service name is not specified')
+
         if not service:
             logger.info(
                 'No setting Napix.auth.service, guessing from /etc/hostname')
@@ -255,22 +293,42 @@ Meta-options:
         """
         Load the authentication handler.
         """
-        conf = Conf.get_default('Napix.auth')
-        if not conf:
-            raise CannotLaunch(
-                '*auth* option is set and no configuration has been found (see Napix.auth key).')
+        conf = self.conf.get('auth')
+        from napixd.auth.plugin import AAAPlugin
+        sources = self.get_auth_sources(conf)
+        providers = self.get_auth_providers(conf)
+        plugin = AAAPlugin(sources, providers, timed='time' in self.options)
+        return plugin
 
-        from napixd.plugins.auth import get_auth_plugin
-        aaa_class = get_auth_plugin(secure='secure' in self.options,
-                                    time='time' in self.options,
-                                    autonomous='autonomous-auth' in self.options)
-        logger.info('Installing auth plugin secure:%s, time:%s autonomous:%s',
-                    'secure' in self.options, 'time' in self.options,
-                    'autonomous-auth' in self.options)
+    def get_auth_providers(self, conf):
+        from napixd.auth.request import RequestParamaterChecker, HostChecker
+        providers = [RequestParamaterChecker()]
 
-        hosts = self.hosts if 'hosts' in self.options else None
+        if 'hosts' in self.options:
+            providers.append(HostChecker(self.hosts))
 
-        return aaa_class(conf, service_name=self.service_name, hosts=hosts)
+        if 'autonomous-auth' in self.options:
+            from napixd.auth.autonomous import AutonomousAuthProvider
+            providers.append(AutonomousAuthProvider.from_settings(conf))
+            logger.info('Enable autonomous authentication')
+
+        if 'central' in self.options:
+            try:
+                from napixd.auth.central import CentralAuthProvider
+            except ImportError:
+                raise CannotLaunch('Central authentication requires permissions')
+            providers.append(CentralAuthProvider.from_settings(self.service_name, conf))
+            logger.info('Enable central server authentication')
+
+        return providers
+
+    def get_auth_sources(self, conf):
+        from napixd.auth.sources import SecureAuthProtocol, NonSecureAuthProtocol
+        sources = [SecureAuthProtocol()]
+        if not 'secure' in self.options:
+            sources.append(NonSecureAuthProtocol.from_settings(conf))
+            logger.info('Enable authentication by tokens')
+        return sources
 
     def get_napixd(self, server):
         """
@@ -302,7 +360,8 @@ Meta-options:
         loaders = []
 
         if 'conf' in self.options:
-            loaders.append(ConfImporter(Conf.get_default()))
+            ci = ConfImporter(self.conf.get('managers'), self.raw_conf)
+            loaders.append(ci)
         if 'auto' in self.options:
             auto_path = get_path('auto')
             logger.info('Using %s as auto directory', auto_path)
@@ -336,7 +395,11 @@ Meta-options:
         return router
 
     def get_hostnames(self):
-        hosts = Conf.get_default('Napix.auth.hosts')
+        hosts = self.conf.get('hosts')
+        if not hosts:
+            logger.warning('Using old location of setting hosts inside auth')
+            self.conf.get('auth.hosts')
+
         if isinstance(hosts, basestring):
             return [hosts]
         elif isinstance(hosts, list):
@@ -372,13 +435,14 @@ Meta-options:
 
         if 'notify' in self.options:
             from napixd.notify import Notifier
-            conf = Conf.get_default('Napix.notify')
+            conf = self.conf.get('notify')
             if not 'url' in conf:
                 raise CannotLaunch('Notifier has no configuration options')
 
             logger.info('Set up notifier')
             self.notifier = notifier = Notifier(
-                napixd, conf, self.service_name, self.hosts[0])
+                napixd, conf, self.service_name, self.hosts[0],
+                self.conf.get('description'))
             notifier.start()
         else:
             self.notifier = None
@@ -490,14 +554,13 @@ Meta-options:
         Retrieve the web client interface statics path.
         """
         module_file = sys.modules[self.__class__.__module__].__file__
-        module_path = os.path.join(os.path.dirname(module_file), 'web')
-        napix_default = os.path.join(os.path.dirname(__file__), 'web')
-        for directory in [
-                Conf.get_default('Napix.webclient.path'),
-                get_path('web', create=False),
-                module_path,
-                napix_default,
-        ]:
+        directories = [
+            self.conf.get('webclient.path'),
+            get_path('web', create=False),
+            os.path.join(os.path.dirname(module_file), 'web'),
+            os.path.join(os.path.dirname(__file__), 'web'),
+        ]
+        for directory in directories:
             logger.debug('Try WebClient in directory %s', directory)
             if directory and os.path.isdir(directory):
                 return directory

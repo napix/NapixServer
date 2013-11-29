@@ -4,9 +4,7 @@
 import logging
 import time
 
-from napixd.loader.importers import RelatedImporter
 from napixd.loader.imports import ManagerError
-from napixd.loader.errors import NapixImportError, ManagerImportError
 
 __all__ = ('Loader', 'Load')
 
@@ -24,9 +22,6 @@ class Load(object):
         self.managers = managers
         self.new_managers = new_managers
         self.error_managers = error_managers
-
-import_fn = __import__
-open = open
 
 
 class Loader(object):

@@ -6,9 +6,9 @@ from __future__ import absolute_import
 import unittest2
 import mock
 
-from napixd.conf import Conf
+from napixd.conf import EmptyConf
 from napixd.managers.base import ManagerType, Manager
-from napixd.managers.actions import action, parameter
+from napixd.managers.actions import action
 from napixd.services.collection import FirstCollectionService
 
 
@@ -42,7 +42,7 @@ class _TestServiceAction(_TestManagerAction):
 
     def setUp(self):
         super(_TestServiceAction, self).setUp()
-        self.cs = FirstCollectionService(self.Manager, Conf(), 'my-mock')
+        self.cs = FirstCollectionService(self.Manager, EmptyConf(), 'my-mock')
 
 
 class TestServiceAction(_TestServiceAction):

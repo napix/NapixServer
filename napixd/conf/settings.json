@@ -2,22 +2,19 @@
   "Napix" : {
     "#info" : "The default configuration for a Napix server. Directives starting by a # are comments.",
     "description" : "The base Napix server",
-    "loader" : {
-        "autoreload" : true
-    },
+    "#service" : "The name of the service of this host.",
+    "service" : "localhost:8002",
+    "#hosts": "A string or a list of string listing the server names",
+    "hosts": [
+    ],
     "auth" : {
       "#info" : "The authentication section.",
-      "#auth_url" : "The authentication URL",
-      "auth_url" : "http://auth.napix.io:8003/auth/authorization/",
-      "#service" : "The name of the service of this host.",
-      "service" : "localhost:8002",
+      "#url" : "The authentication URL",
+      "url" : "http://auth.napix.io:8003/auth/authorization/",
       "#password" : "The password of this napix server",
       "password" : "",
       "#get_parameter": "The name of the GET parameter used for non-secured authentication",
-      "get_parameter": "token",
-      "#hosts": "A string or a list of string listing the server names",
-      "hosts": [
-      ]
+      "get_parameter": "token"
     },
     "lock": {
         "#info" : "The shared locking section",
@@ -40,7 +37,7 @@
       "#delay" : "The interval at which this sever sends notifications",
       "delay" : 300
     },
-    "#storage" : {
+    "storage" : {
         "#info" : "The configuration of the stores",
         "#store" : "The default backend for Key value storage",
         "store" : "napixd.store.backends.file.FileBackend",
@@ -57,7 +54,7 @@
             "napixd.store.backends.redis.RedisKeyBackend" :
                 "Store the list of the keys of a collection as a set and each key as a Redis key"
         },
-        "napixd.store.backends.file.FileBackend" : {
+        "Store napixd.store.backends.file.FileBackend" : {
             "#infos" : "The FileBackend configuration"
         },
         "#counter" : "The default backend for counters",

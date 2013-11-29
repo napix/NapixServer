@@ -21,14 +21,6 @@ Loading
     :undoc-members:
     :show-inheritance:
 
-:mod:`conf` Package
--------------------
-
-.. automodule:: napixd.conf
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 HTTP Binding
 ============
 
@@ -46,14 +38,6 @@ The napixd.wsgi module contains the WSGI application.
 -------------------------
 
 .. automodule:: napixd.application
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`http` Module
-------------------
-
-.. automodule:: napixd.http
     :members:
     :undoc-members:
     :show-inheritance:
@@ -139,12 +123,15 @@ Napix Infrastructure
     :show-inheritance:
 
 Subpackages
------------
+===========
 
 .. toctree::
 
     napixd.client
-    napixd.connectors
+    napixd.conf
+    napixd.contrib
+    napixd.docs
+    napixd.http
     napixd.loader
     napixd.managers
     napixd.plugins

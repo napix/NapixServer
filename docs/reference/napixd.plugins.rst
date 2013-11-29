@@ -9,14 +9,6 @@ plugins Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`auth` Module
-------------------
-
-.. automodule:: napixd.plugins.auth
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`conversation` Module
 --------------------------
 

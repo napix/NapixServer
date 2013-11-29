@@ -6,7 +6,7 @@ from napixd.http.response import HTTPError
 
 class UserAgentDetector(object):
     """
-    Display a human readable message when a browser is detected
+    Display a human readable message when a browser is detected.
     """
 
     def __call__(self, callback, request):

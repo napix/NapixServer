@@ -48,11 +48,6 @@ The :meth:`~Manager.list_resource` method return the list of the possible ID.
 
 We choose to use the uuid of the LVM volume as the identifier of the resource.
 
-.. note::
-
-    We use the :data:`~executor.executor` to run the processes. The executor needs to have its control thread running
-    in order to work.
-
 .. literalinclude:: /samples/sample2.py
     :lines: 46-59
 

@@ -6,8 +6,8 @@ from __future__ import absolute_import
 import unittest
 import mock
 
-from napixd.client.client import Client
 from napixd.conf import Conf
+from napixd.client.client import Client
 
 
 class TestClient(unittest.TestCase):

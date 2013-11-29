@@ -19,7 +19,6 @@ import urlparse
 
 from napixd.client import Client, HTTPError
 from napixd.thread_manager import background
-from napixd.conf import Conf
 from napixd.guid import uid
 
 logger = logging.getLogger('Napix.notifications')
@@ -35,10 +34,11 @@ class Notifier(object):
     The *app* is the source of the **applications** sent to the directory.
     """
 
-    def __init__(self, app, conf, service_name, hostname):
+    def __init__(self, app, conf, service_name, hostname, description):
         self.app = app
         self.service_name = service_name
         self.hostname = hostname
+        self.description = description
 
         self.directory = post_url = conf.get('url')
         post_url_bits = urlparse.urlsplit(post_url)
@@ -48,7 +48,7 @@ class Notifier(object):
         self.client = Client(post_url_bits.netloc, credentials)
         self.put_url = None
 
-        self.delay = conf.get('delay') or 300
+        self.delay = conf.get('delay', 300, type=int)
         logger.info('Notify on %s%s as %s every %ss', post_url_bits.netloc,
                     self.post_url, credentials.get('login', '<anon>'), self.delay)
         if self.delay < 1:
@@ -88,7 +88,7 @@ class Notifier(object):
         """
         try:
             resp = self.send_request('POST', self.post_url)
-        except HTTPError, err:
+        except HTTPError as err:
             logger.warning('Got %s', err)
             return False
 
@@ -109,6 +109,6 @@ class Notifier(object):
             'uid': str(uid),
             'host': self.hostname,
             'service': self.service_name,
-            'description': Conf.get_default('Napix.description') or '',
+            'description': self.description,
             'managers': self.app.list_managers(),
         })

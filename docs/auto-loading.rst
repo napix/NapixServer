@@ -4,7 +4,7 @@
 Auto Loading
 ============
 
-Napixd proposes a feature that allow to develop and test easily.
+Napix proposes a feature that allow to develop and test easily.
 A directory in the :file:`HOME` directory.
 
 This feature is enabled by default by the **auto** :ref:`option<options>`.
@@ -19,6 +19,8 @@ Once imported, the loader will browse the module to find
 
 The loader check the presence of the `auto_load` attribute on each manager. If true, the manager
 class is added to the root services of the server.
+
+.. _reloading:
 
 Auto-reloading
 ==============
@@ -37,7 +39,7 @@ Errors
 Errors during the import may occur, such as :exc:`NameError`, :exc:`SyntaxError`, etc.
 
 If the error occurs during the first import, either when the server starts or when
-the the file has been created and is detected for the first time, it is ignored.
+the file has been created and is detected for the first time, it is ignored.
 
 If the error occurs on an module that was already loaded,
 the manager affected by the error are removed from the service,

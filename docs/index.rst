@@ -12,7 +12,8 @@ Contents:
     :maxdepth: 2
 
     quickstart
-    deployment
+    usage
+    development
     auto-loading
     running
     resources
@@ -20,17 +21,14 @@ Contents:
     high_level
     low_level
     conf
-    submanagers
-    extensions
-    using-django
     thread_manager
     templates
     undo
     tests
-    validation
     storage
     client
     auth
+    notify
     reference/modules
 
 

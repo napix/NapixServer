@@ -6,14 +6,20 @@ Managers Extensions
 ===================
 
 Napix allows to write quickly managers that can do CRUD operations with JSON objects.
-This page deals with extensions to thoses CRUD operations: the :ref:`actions<actions>`
+This page deals with extensions to those CRUD operations: the :ref:`actions<actions>`
 that allow arbitrary operation with arbitrary parameters and the :ref:`views<views>`
-that let the the resource to be presented as arbitrary file types.
+that let the resources to be presented as arbitrary file types.
 
-This page assumes that a Napix server runs on localhost:8002
-with this simple manager:  :download:`/samples/extensions.py`
+This page assumes that a Napix server runs on ``localhost:8002``
+with this simple manager:  :download:`/samples/extensions.py`::
 
-This very simple manager show the content of the /etc/hosts file.
+    $ virtualenv action_example
+    $ cd action_example
+    $ source bin/activate
+    (napix)$ pip install http://builds.napix.io/latest/napixd dotconf pyinotify
+    (napix)$ napixd only
+
+This very simple manager show the content of the :file:`/etc/hosts` file.
 The resource are identified by the first hostname and contains
 the ip and an array of hostnames.
 
@@ -69,14 +75,15 @@ The following arguments are mandatory if they have not a default value, else the
     class HostManager(DictManager):
         #...
         @action
-        def scan( self, resource, port, timeout=1):
+        def scan(self, resource, port, timeout=1):
             """Scan the port and return OPEN or CLOSED."""
-            if scan_port( resource['ip'], port):
+            if scan_port(resource['ip'], port):
                 return 'OPEN'
             else:
                 return 'CLOSED'
 
-Now the action appears in the metadatas of the manager and in  the _napix_all_actions child of each of HostManager resources::
+Now the action appears in the metadatas of the manager and in  the *_napix_all_actions*
+child of each of :class:`HostManager` resources::
 
     >> info /hosts/
     {
@@ -121,9 +128,9 @@ Calling the action
 
 In order to call an action, send a dict containing the desired parameters to the action URL::
 
-    >> action /hosts/localhost/ scan port=22
+    >> action /hosts/localhost scan port=22
     OPEN
-    >> action /hosts/localhost/ scan port=4352
+    >> action /hosts/localhost scan port=4352
     CLOSED
 
 The data returned by the action are encoded in JSON.
@@ -135,9 +142,9 @@ The additional documentation on the parameters of the action can be set with :fu
     class HostManager(DictManager):
         #...
         @action
-        @parameter( 'port', description='The port to scan', example=22)
-        @parameter( 'timeout', description='The time to wait in seconds', example=1 )
-        def scan( self, resource, port, timeout=1):
+        @parameter('port', description='The port to scan', example=22)
+        @parameter('timeout', description='The time to wait in seconds', example=1 )
+        def scan(self, resource, port, timeout=1):
             #...
 
 Now, the resource_fields dict of the help is populated.::
@@ -171,8 +178,7 @@ Managers Views
 
 Views operate on a resource and are instance methods of a manager.
 
-
-For this example, we will use the HostManager written in
+For this example, we will use the :class:`HostManager` written in
 :ref:`the high-level how-to<high_level>` and represent the host as picture.
 
 Implementing the view
@@ -282,6 +288,6 @@ It can be given to the **save** method of the PIL Image.
         #does not return anything, the response object will be sent.
 
 
-The url localhost:8002/hosts/localhost?format=png produces the following picture:
+The url http://localhost:8002/hosts/localhost?format=png produces the following picture:
 
 .. image:: /images/localhost.png

@@ -5,9 +5,15 @@ import logging
 import os
 import sys
 import imp
-import json
 
-from napixd.conf import Conf
+from napixd.conf import Conf, BaseConf, EmptyConf
+from napixd.conf.json import ConfFactory as JSONConfFactory
+
+try:
+    from napixd.conf.dotconf import ConfFactory as DotconfConfFactory
+except ImportError:
+    DotconfConfFactory = None
+
 from napixd.managers.base import Manager
 
 from napixd.loader.errors import (
@@ -217,9 +223,9 @@ class FixedImporter(Importer):
             try:
                 manager, conf = spec
             except ValueError:
-                manager, conf = spec, Conf()
+                manager, conf = spec, EmptyConf()
             else:
-                if not isinstance(conf, Conf):
+                if not isinstance(conf, BaseConf):
                     conf = Conf(conf)
 
             logger.info('Import fixed %s', manager)
@@ -246,12 +252,13 @@ class ConfImporter(Importer):
     :mod:`default configuration<napixd.conf>` of Napix.
     """
 
-    def __init__(self, conf):
+    def __init__(self, managers, conf):
         super(ConfImporter, self).__init__()
+        self.managers = managers
         self.conf = conf
 
     def get_paths(self):
-        for manager_path in self.conf.get('Napix.managers').values():
+        for manager_path in self.managers.values():
             module = sys.modules.get(manager_path.rsplit('.', 1)[0])
             if module:
                 yield os.path.dirname(module.__file__)
@@ -262,7 +269,7 @@ class ConfImporter(Importer):
         return a list of Manager subclasses
         """
         managers, errors = [], []
-        for alias, manager_path in self.conf.get('Napix.managers').items():
+        for alias, manager_path in self.managers.items():
             try:
                 manager = self.import_manager(manager_path)
                 logger.info('load %s from conf', manager_path)
@@ -403,15 +410,29 @@ class AutoImporter(Importer):
         :meth:`~napixd.managers.base.Manager.configure`
         """
         try:
-            doc_string = manager.configure.__doc__
-            if doc_string:
-                return Conf(json.loads(doc_string))
+            doc_string = manager.configure.__doc__ or ''
+            doc_string = doc_string.strip()
+
+            if not doc_string:
+                return EmptyConf()
+
+            if doc_string.startswith('{'):
+                #JSON object
+                logger.debug('Parse JSON configuration')
+                return JSONConfFactory().parse_string(doc_string)
+            elif DotconfConfFactory is None:
+                logger.warning('Cannot parse configuration with dotconf')
+                return EmptyConf()
+            else:
+                logger.debug('Parse dotconf configuration')
+                return DotconfConfFactory().parse_string(doc_string)
+
         except (ValueError, AttributeError) as e:
             logger.debug(
                 'Auto configuration of %s from docstring failed because %s',
                 manager, e)
 
-        return Conf({})
+        return EmptyConf()
 
 
 class RelatedImporter(Importer):
