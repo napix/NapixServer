@@ -12,7 +12,7 @@ from napixd.managers.actions import action
 from napixd.services.collection import FirstCollectionService
 
 
-class _TestDecorator(unittest2.TestCase):
+class _TestManagerAction(unittest2.TestCase):
 
     def setUp(self):
         @action
@@ -20,12 +20,6 @@ class _TestDecorator(unittest2.TestCase):
             """send a mail"""
             return dest, subject
         self.fn = send_mail
-
-
-class _TestManagerAction(_TestDecorator):
-
-    def setUp(self):
-        super(_TestManagerAction, self).setUp()
         self.Manager = ManagerType('NewManager', (Manager, ), {
             'send_mail': self.fn,
             'get_resource': mock.Mock(spec=True, return_value={'mpm': 'prefork'}),
@@ -38,14 +32,10 @@ class TestManagerAction(_TestManagerAction):
         self.assertEqual(self.Manager.get_all_actions(), ['send_mail'])
 
 
-class _TestServiceAction(_TestManagerAction):
-
+class TestServiceAction(_TestManagerAction):
     def setUp(self):
         super(_TestServiceAction, self).setUp()
         self.cs = FirstCollectionService(self.Manager, EmptyConf(), 'my-mock')
-
-
-class TestServiceAction(_TestServiceAction):
 
     def test_set_bottle(self):
         bottle = mock.Mock()
