@@ -4,127 +4,84 @@
 from __future__ import absolute_import
 
 import mock
-import unittest2
+import unittest
 
-from tests.mock.managers import Manager, Managed
-from napixd.services import Service
-from napixd.services.collection import BaseCollectionService
-from napixd.conf import EmptyConf
-from napixd.managers import ManagedClass
-
-
-class TestServiceEmpty(unittest2.TestCase):
-
-    def setUp(self):
-        self.service = Service(Managed, 'my-mock', EmptyConf())
-
-    def test_collection_service(self):
-        self.assertTrue(all(isinstance(s, BaseCollectionService)
-                            for s in self.service.collection_services))
-        self.assertEqual(len(self.service.collection_services), 1)
-
-    def test_set_bottle(self):
-        bottle = mock.Mock()
-        self.service.setup_bottle(bottle)
-        self.assertSetEqual(
-            set(mc[0][0] for mc in bottle.route.call_args_list),
-            set([
-                '/my-mock',
-                '/my-mock/',
-                '/my-mock/?',
-                '/my-mock/_napix_help',
-                '/my-mock/_napix_new',
-                '/my-mock/_napix_resource_fields',
-                ]))
+from napixd.conf import Conf
+from napixd.managers import Manager
+from napixd.managers.managed_classes import ManagedClass
+from napixd.services.urls import URL
+from napixd.services.collection import (
+    FirstCollectionService,
+    CollectionService,
+)
+from napixd.services import (
+    Service,
+    ServedManager,
+)
 
 
-class TestServiceWithManaged(unittest2.TestCase):
+class TestService(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.patch_fcs = mock.patch('napixd.services.FirstCollectionService',
+                                   spec=FirstCollectionService)
+        cls.patch_cs = mock.patch('napixd.services.CollectionService',
+                                  spec=CollectionService)
 
     def setUp(self):
-        self.service = Service(Manager, 'this-mock', EmptyConf())
+        self.conf = mock.Mock(
+            spec=Conf,
+            name='Conf',
+        )
+        self.alias = 'parent'
+        self.Manager = mock.Mock(
+            spec=Manager,
+            get_all_actions=mock.Mock(return_value=[]),
+            get_managed_classes=mock.Mock(return_value=[]),
+        )
+        self.FCS = self.patch_fcs.start()
+        self.CS = self.patch_cs.start()
 
-    def test_collection_service(self):
-        self.assertTrue(all(isinstance(s, BaseCollectionService)
-                            for s in self.service.collection_services))
-        self.assertEqual(len(self.service.collection_services), 2)
+    def tearDown(self):
+        self.patch_fcs.stop()
+        self.patch_cs.stop()
 
-    def test_set_bottle(self):
-        bottle = mock.Mock()
-        self.service.setup_bottle(bottle)
-        self.assertSetEqual(
-            set(mc[0][0] for mc in bottle.route.call_args_list),
-            set([
-                '/this-mock',
-                '/this-mock/',
-                '/this-mock/?',
-                '/this-mock/_napix_help',
-                '/this-mock/_napix_new',
-                '/this-mock/_napix_resource_fields',
-                '/this-mock/?/',
-                '/this-mock/?/my-middle-mock',
-                '/this-mock/?/my-middle-mock/',
-                '/this-mock/?/my-middle-mock/?',
-                '/this-mock/?/my-middle-mock/_napix_help',
-                '/this-mock/?/my-middle-mock/_napix_new',
-                '/this-mock/?/my-middle-mock/_napix_resource_fields',
-                ]))
+    def get_service(self):
+        return Service(self.Manager, self.alias, self.conf)
 
+    def add_managed_class(self):
+        mgr = mock.Mock(
+            spec=Manager,
+            name='Managed',
+            get_managed_classes=mock.Mock(return_value=[]),
+        )
+        mc = mock.Mock(
+            spec=ManagedClass,
+            manager_class=mgr,
+            get_name=mock.Mock(return_value='child'),
+        )
+        self.Manager.get_managed_classes.return_value = [mc]
+        self.FCS.return_value.resource_url = URL(['parent', None])
+        return mc, mgr
 
-def FakeCS(*args):
-    if len(args) == 4:
-        ps, mc, cf, ns = args
-    else:
-        ps = None
-        mc, cf, ns = args
-    name = '{0}.{1}'.format(ps.get_name(), ns) if ps else ns
-    mk = mock.Mock(spec=BaseCollectionService, name='Service:' + name)
-    mk.get_name.return_value = name
-    return mk
+    def test_FCS(self):
+        self.get_service()
+        self.FCS.assert_called_once_with(
+            ServedManager(self.Manager, self.conf, URL(['parent'])))
+        self.assertEqual(self.CS.call_count, 0)
 
+    def test_setup_bottle(self):
+        server = mock.Mock()
+        s = self.get_service()
+        s.setup_bottle(server)
+        self.FCS.return_value.setup_bottle.assert_called_once_with(server)
 
-class TestServiceServiceCollection(unittest2.TestCase):
+    def test_CS(self):
+        mc, mgr = self.add_managed_class()
+        self.get_service()
+        self.CS.assert_called_once_with(
+            self.FCS.return_value,
+            ServedManager(mgr, self.conf.get.return_value, URL(['parent', None, 'child']),
+                          extractor=mc.extractor))
 
-    def setUp(self):
-        self.config = mock.Mock(spec=EmptyConf)
-        self.config.get.side_effect = lambda x: x
-        self.CS = CS = mock.Mock(
-            spec=BaseCollectionService, side_effect=FakeCS)
-
-        self.manager = mock.Mock(name='root')
-        self.patch_cs = mock.patch.multiple(
-            'napixd.services', FirstCollectionService=CS, CollectionService=CS)
-
-        self.m1 = mock.Mock(name='m1')
-        self.m1.get_managed_classes.return_value = []
-        self.mc1 = mock.Mock(
-            spec=ManagedClass, manager_class=self.m1, name='mc1')
-        self.mc1.get_name.return_value = 'mc1'
-
-        self.m2 = mock.Mock(name='m2')
-        self.m2.get_managed_classes.return_value = [self.mc1]
-        self.mc2 = mock.Mock(
-            spec=ManagedClass, manager_class=self.m2, name='mc2')
-        self.mc2.get_name.return_value = 'mc2'
-
-    def test_config_managed_class(self):
-        self.manager.get_managed_classes.return_value = [self.mc1]
-        with self.patch_cs:
-            service = Service(self.manager, 'alias', self.config)
-
-        c1, c_m1 = self.CS.call_args_list
-        s1, s_m1 = service.collection_services
-
-        self.assertEqual(c1, mock.call(self.manager, self.config, 'alias'))
-        self.assertEqual(c_m1, mock.call(s1, self.mc1, 'alias.mc1', 'mc1'))
-
-    def test_config_managed_class_level(self):
-        self.manager.get_managed_classes.return_value = [self.mc2]
-        with self.patch_cs:
-            service = Service(self.manager, 'alias', self.config)
-
-        c1, c_m2, c_m1 = self.CS.call_args_list
-        s1, s_m2, s_m1 = service.collection_services
-
-        self.assertEqual(c1, mock.call(self.manager, self.config, 'alias'))
-        self.assertEqual(c_m2, mock.call(s1, self.mc2, 'alias.mc2', 'mc2'))
-        self.assertEqual(c_m1, mock.call(s_m2, self.mc1, 'alias.mc2.mc1', 'mc1'))
+        self.conf.get.assert_called_once_with('parent.child')
