@@ -5,42 +5,58 @@
 import redis
 
 from napixd.conf import Conf
-from napixd.utils.lock import (
-    Lock as OriginalLock,
-    synchronized as original_synchronized
-)
-from napixd.managers.base import ManagerType
+from napixd.utils.lock import Lock
 
 
-def get_connection(conf):
-    if not isinstance(conf, Conf):
-        conf = Conf(conf)
-
-    host = conf.get('host', type=basestring)
-    port = conf.get('port', type=int)
-    database = conf.get('database', type=int)
-
-    return redis.Redis(host=host, port=port, db=database)
+__all__ = ['ConnectionFactory', 'LockFactory']
 
 
-connection = get_connection(Conf.get_default())
+class cached_property(object):
+    def __init__(self, fn):
+        self.fn = fn
+        self.__doc__ = fn.__doc__
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        v = instance.__dict__[self.fn.__name__] = self.fn(instance)
+        return v
 
 
-class Lock(OriginalLock):
-    def __init__(self, name, *args, **kw):
-        super(Lock, self).__init__(name, connection, *args, **kw)
+class ConnectionFactory(object):
+    @cached_property
+    def default_conf(self):
+        return Conf.get_default('lock')
 
+    @cached_property
+    def default_port(self):
+        return self.default_conf.get('port', 6379, type=int)
 
-def synchronized(lock):
-    if not isinstance(lock, OriginalLock):
-        lock = Lock(lock)
+    @cached_property
+    def default_host(self):
+        return self.conf.get('host', 'localhost', type=unicode)
 
-    wrapper = original_synchronized(lock)
+    @cached_property
+    def default_db(self):
+        return self.conf.get('database', 2, type=int)
 
-    def inner_synchronized(fn):
-        if isinstance(fn, ManagerType):
-            raise NotImplementedError()
+    def __call__(self, conf):
+        if 'host' in conf:
+            host = conf.get('host', type=unicode)
+            port = conf.get('port', 6379, type=int)
         else:
-            return wrapper(fn)
+            host = self.default_host
+            port = self.default_port
+        database = conf.get('database', self.default_db, type=int)
 
-    return inner_synchronized
+        return redis.Redis(host=host, port=port, db=database)
+
+
+class LockFactory(object):
+    def __init__(self, connection_factory):
+        self._con_fac = connection_factory
+
+    def __call__(self, conf):
+        name = conf.get('name', type=unicode)
+        con = self._con_fac(conf)
+        return Lock(name, con)

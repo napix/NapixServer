@@ -42,7 +42,7 @@ class _TestServiceAction(_TestManagerAction):
 
     def setUp(self):
         super(_TestServiceAction, self).setUp()
-        self.cs = FirstCollectionService(self.Manager, EmptyConf(), 'my-mock')
+        self.cs = FirstCollectionService(self.Manager, EmptyConf(), 'my-mock', None)
 
 
 class TestServiceAction(_TestServiceAction):

@@ -1,22 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+The service class is the interface between the managers and the web server
+
+The service plug itself in the url router of Bottle, and will instantiate the
+appropriate Napix Manager to handle the request.
+"""
+
 import logging
 
 from napixd.services.collection import (
     FirstCollectionService,
     CollectionService
 )
+from napixd.services.lock import LockFactory, ConnectionFactory
 
-"""
-The service class is the interface between napix and Bottle.
+__all__ = [
+    'Service',
+]
 
-The service plug itself in the url router of Bottle, and will instanciate the
-appropriate Napix Manager to handle the request.
-"""
 logger = logging.getLogger('Napix.service')
 
 MAX_LEVEL = 5
+lock_factory = LockFactory(ConnectionFactory())
+
+
+class ServedManager(object):
+    def __init__(self, manager_class, config, g 
 
 
 class Service(object):
@@ -30,7 +41,7 @@ class Service(object):
         """
         Create a base service for the given collection (a Manager object) and
         its submanager.
-        namespace is the manager name (could be forced in conf)
+        *namespace* is the manager name (could be forced in conf)
         configuration parameters is the manager's config read from config file
         FIXME : remplacer collection par manager dans le code PARTOUT
         collection MUST be a Manager subclass and
@@ -39,9 +50,15 @@ class Service(object):
         self.configuration = configuration
         self.collection_services = []
         self.url = namespace
+        lock_conf = 'Lock' in configuration
+
+        if lock_conf:
+            self.lock = lock_factory(lock_conf)
+        else:
+            self.lock = None
 
         service = FirstCollectionService(
-            collection, self.configuration, self.url)
+            collection, self.configuration, self.url, self.lock)
         self._append_service(service)
         self.create_collection_service(collection, service, 0)
 
@@ -59,7 +76,9 @@ class Service(object):
             previous_service,
             managed_class,
             self.configuration.get(config_key),
-            namespace)
+            namespace,
+            self.lock,
+        )
         self._append_service(service)
         # level to avoid max recursion.
         self.create_collection_service(
@@ -76,4 +95,5 @@ class Service(object):
         """
         logger.debug('Setting %s', self.url)
         for service in self.collection_services:
+            app
             service.setup_bottle(app)

@@ -34,6 +34,7 @@ class TestServiceManagedClassesRequest(unittest.TestCase):
         self.url = url = URL(['abc', None])
         self.cs = mock.Mock(
             spec=CollectionService,
+            lock=None,
             collection=manager,
             resource_url=url)
         self.cs.get_managers.return_value = ([], manager)
@@ -63,6 +64,7 @@ class TestServiceCollectionRequest(unittest.TestCase):
         self.url = url = URL(['abc', None])
         self.cs = mock.Mock(
             spec=CollectionService,
+            lock=None,
             collection=manager,
             resource_url=url)
         self.cs.get_managers.return_value = ([], manager)
@@ -199,6 +201,7 @@ class TestServiceResourceRequest(unittest.TestCase):
         self.url = url = URL(['abc', None])
         self.cs = mock.Mock(
             spec=CollectionService,
+            lock=None,
             collection=manager,
             resource_url=url)
         self.cs.get_managers.return_value = ([], manager)

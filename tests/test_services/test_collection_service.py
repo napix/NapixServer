@@ -21,12 +21,12 @@ class TestCollectionServiceManaged(unittest2.TestCase):
         Manager.reset_mock()
         self.fcs_conf = mock.Mock(spec=Conf, name='fcs_conf')
         self.cs_conf = mock.Mock(spec=Conf, name='cs_conf')
-        self.fcs = FirstCollectionService(Manager, self.fcs_conf, 'parent')
+        self.fcs = FirstCollectionService(Manager, self.fcs_conf, 'parent', None)
         self.managed_class = mock.Mock(
             spec=ManagedClass, manager_class=Managed)
         self.managed_class.extractor.side_effect = lambda x: x
         self.cs = CollectionService(
-            self.fcs, self.managed_class, self.cs_conf, 'child')
+            self.fcs, self.managed_class, self.cs_conf, 'child', None)
 
     def test_as_colletction(self):
         r = mock.Mock(spec=Request, method='GET')

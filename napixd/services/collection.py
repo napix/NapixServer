@@ -9,7 +9,6 @@ import sys
 
 from napixd.services.urls import URL
 from napixd.services.wrapper import ResourceWrapper
-from napixd.services.lock import Lock
 from napixd.services.requests import (
     ServiceCollectionRequest,
     ServiceManagedClassesRequest,
@@ -47,13 +46,14 @@ class BaseCollectionService(object):
         requests on the resource are served
     """
 
-    def __init__(self, collection, config, collection_url, namespace):
+    def __init__(self, collection, config, collection_url, namespace, lock):
         self.collection = collection
         self.config = config
         self.namespace = namespace
 
         self.collection_url = collection_url
         self.resource_url = self.collection_url.add_variable()
+        self.lock = lock
 
         self.all_actions = [
             ActionService(self, action)
@@ -204,13 +204,9 @@ class FirstCollectionService(BaseCollectionService):
     of the this manager.
     """
 
-    def __init__(self, collection, config, namespace):
+    def __init__(self, collection, config, namespace, lock):
         super(FirstCollectionService, self).__init__(
-            collection, config, URL([namespace]), namespace)
-        if collection.has_lock():
-            self.lock = Lock()
-        else:
-            self.lock = None
+            collection, config, URL([namespace]), namespace, lock)
 
     def get_managers(self, path, request):
         return [], self.generate_manager(None, request)
@@ -226,18 +222,14 @@ class CollectionService(BaseCollectionService):
     :class:`FirstCollectionService` of the parent manager.
     """
 
-    def __init__(self, previous_service, managed_class, config, namespace):
+    def __init__(self, previous_service, managed_class, config, namespace, lock):
         collection_url = previous_service.resource_url.add_segment(namespace)
         namespace = '{0}.{1}'.format(previous_service.get_name(), namespace)
 
         super(CollectionService, self).__init__(
-            managed_class.manager_class, config, collection_url, namespace)
+            managed_class.manager_class, config, collection_url, namespace, lock)
         self.extractor = managed_class.extractor
         self.previous_service = previous_service
-
-    @property
-    def lock(self):
-        return self.previous_service.lock
 
     def generate_manager(self, resource, request):
         """
