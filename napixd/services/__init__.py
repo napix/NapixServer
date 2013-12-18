@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+The service class is the interface between napix and Bottle.
+
+The service plug itself in the url router of Bottle, and will instanciate the
+appropriate Napix Manager to handle the request.
+"""
+
 import sys
 import logging
 
@@ -15,18 +22,21 @@ from napixd.services.requests import (
 )
 
 
-"""
-The service class is the interface between napix and Bottle.
-
-The service plug itself in the url router of Bottle, and will instanciate the
-appropriate Napix Manager to handle the request.
-"""
 logger = logging.getLogger('Napix.service')
 
 MAX_LEVEL = 5
 
 
 class ServedManager(object):
+    """
+    Intermediary object the objects needed to serve a a :class:`napixd.manager.base.Manager` class.
+
+    It includes *configuration*, a :class:`napixd.conf.BaseConf` instance
+    used to configure the instances, an :class:`napixd.service.urls.URL` at wich the manager
+    is served.
+
+    The *extractor* is the extractor used for the managed classes.
+    """
     def __init__(self, manager_class, configuration, url, lock=None, extractor=None):
         self.manager_class = manager_class
         self.url = url
@@ -45,11 +55,17 @@ class ServedManager(object):
 
     @property
     def resource_fields(self):
+        """
+        The resource fields of the manager as a dict.
+        """
         rf = self.manager_class._resource_fields
         return dict((key, dict(value)) for key, value in rf.items())
 
     @property
     def source(self):
+        """
+        The location of the code of the server manager class.
+        """
         mc = self.manager_class
         return {
             'class': mc.__name__,
@@ -59,6 +75,9 @@ class ServedManager(object):
 
     @property
     def meta_data(self):
+        """
+        All the meta datas of the manager.
+        """
         mc = self.manager_class
         return {
             'doc': (mc.__doc__ or '').strip(),
@@ -76,11 +95,18 @@ class ServedManager(object):
         }
 
     def get_all_actions(self):
+        """
+        Returns a collection of :class:`ServedAction` for the actions
+        of the served manager.
+        """
         return [ServedAction(self, action)
                 for action in self.manager_class.get_all_actions()]
 
 
 class ServedAction(object):
+    """
+    An intermediary object for an action of a :class:`ServedManager`.
+    """
     def __init__(self, served_manager, action_name):
         self.name = action_name
         self.action = getattr(served_manager.manager_class, action_name)
