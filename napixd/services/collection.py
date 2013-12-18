@@ -5,9 +5,6 @@
 The Collections services handle the request on a specific manager.
 """
 
-import sys
-
-from napixd.services.urls import URL
 from napixd.services.wrapper import ResourceWrapper
 from napixd.services.requests import (
     ServiceCollectionRequest,
@@ -46,43 +43,23 @@ class BaseCollectionService(object):
         requests on the resource are served
     """
 
-    def __init__(self, collection, config, collection_url, namespace, lock):
-        self.collection = collection
-        self.config = config
-        self.namespace = namespace
+    def __init__(self, served_manager):
+        self.collection = served_manager.manager_class
+        self.config = served_manager.configuration
 
-        self.collection_url = collection_url
+        self.collection_url = served_manager.url
         self.resource_url = self.collection_url.add_variable()
-        self.lock = lock
+        self.lock = served_manager.lock
 
         self.all_actions = [
             ActionService(self, action)
-            for action in self.collection.get_all_actions()
+            for action in served_manager.get_all_actions()
         ]
 
-        rf = self.collection._resource_fields
-        self.resource_fields = dict(zip(rf, map(dict, rf.values())))
-        self.meta_data = {
-            'doc': (collection.__doc__ or '').strip(),
-            'direct_plug': False if collection.get_managed_classes() else None,
-            'views': dict((format_, (cb.__doc__ or '').strip())
-                          for (format_, cb)
-                          in self.collection.get_all_formats().items()),
-            'managed_class': [mc.get_name()
-                              for mc in self.collection.get_managed_classes()],
-            'actions': dict((action.name, action.doc)
-                            for action in self.all_actions),
-            'collection_methods': ServiceCollectionRequest.available_methods(collection),
-            'resource_methods': ServiceResourceRequest.available_methods(collection),
-            'resource_fields': self.resource_fields,
-            'source': {
-                'class': self.collection.__name__,
-                'module': self.collection.__module__,
-                'file': sys.modules[self.collection.__module__].__file__,
-            },
-        }
+        self.resource_fields = served_manager.resource_fields
+        self.meta_data = served_manager.meta_data
 
-    def generate_manager(self, resource, request):
+    def _generate_manager(self, resource, request):
         """
         instantiate a manager for the given resource
         """
@@ -154,7 +131,7 @@ class BaseCollectionService(object):
         Lists the :meth:`napixd.managers.actions.action`
         available on this manager.
         """
-        return [x.name for x in self.all_actions]
+        return [x.action for x in self.all_actions]
 
     def as_managed_classes(self, request, *path):
         """
@@ -188,9 +165,6 @@ class BaseCollectionService(object):
         """
         return None
 
-    def get_name(self):
-        return self.namespace
-
     def get_managers(self, path, request):
         raise NotImplementedError()
 
@@ -204,12 +178,8 @@ class FirstCollectionService(BaseCollectionService):
     of the this manager.
     """
 
-    def __init__(self, collection, config, namespace, lock):
-        super(FirstCollectionService, self).__init__(
-            collection, config, URL([namespace]), namespace, lock)
-
     def get_managers(self, path, request):
-        return [], self.generate_manager(None, request)
+        return [], self._generate_manager(None, request)
 
 
 class CollectionService(BaseCollectionService):
@@ -222,21 +192,17 @@ class CollectionService(BaseCollectionService):
     :class:`FirstCollectionService` of the parent manager.
     """
 
-    def __init__(self, previous_service, managed_class, config, namespace, lock):
-        collection_url = previous_service.resource_url.add_segment(namespace)
-        namespace = '{0}.{1}'.format(previous_service.get_name(), namespace)
-
-        super(CollectionService, self).__init__(
-            managed_class.manager_class, config, collection_url, namespace, lock)
-        self.extractor = managed_class.extractor
+    def __init__(self, previous_service, served_manager):
+        super(CollectionService, self).__init__(served_manager)
+        self.extractor = served_manager.extractor
         self.previous_service = previous_service
 
-    def generate_manager(self, resource, request):
+    def _generate_manager(self, resource, request):
         """
         instanciate a manager for the given resource
         """
         resource = self.extractor(resource)
-        return super(CollectionService, self).generate_manager(resource, request)
+        return super(CollectionService, self)._generate_manager(resource, request)
 
     def get_managers(self, path, request):
         managers_list, manager = self.previous_service.get_managers(path[:-1], request)
@@ -248,7 +214,7 @@ class CollectionService(BaseCollectionService):
         managers_list.append((manager, wrapped))
 
         # The manager for self is generated here.
-        manager = self.generate_manager(wrapped, request)
+        manager = self._generate_manager(wrapped, request)
         return managers_list, manager
 
 
@@ -261,19 +227,11 @@ class ActionService(object):
     *action_name* is the name of the action.
     """
 
-    def __init__(self, collection_service, action_name):
+    def __init__(self, collection_service, served_action):
         self.service = collection_service
-        self.name = action_name
-        self.action = getattr(collection_service.collection, action_name)
-        self.doc = (self.action.__doc__ or '').strip()
-        self.url = collection_service.resource_url.add_segment(
-            '_napix_action').add_segment(self.name)
-        rf = self.action.resource_fields
-        self.resource_fields = dict(zip(rf, map(dict, rf.values())))
-
-    @property
-    def lock(self):
-        return self.service.lock
+        self.action = served_action.name
+        self.url = self.service.resource_url.add_segment('_napix_action').add_segment(served_action.name)
+        self.meta_data = served_action.meta_data
 
     def setup_bottle(self, app):
         app.route(unicode(self.url.add_segment('_napix_help')), self.as_help)
@@ -283,22 +241,10 @@ class ActionService(object):
         return self.service.get_managers(path, request)
 
     def as_action(self, request, *path):
-        return ServiceActionRequest(request, path, self, self.name).handle()
+        return ServiceActionRequest(request, path, self, self.action).handle()
 
     def as_help(self, request, *path):
         """
         View for _napix_help
         """
-        action = self.action
-        return {
-            'resource_fields': self.resource_fields,
-            'doc': action.__doc__,
-            'mandatory': action.mandatory,
-            'optional': action.optional,
-            'source': {
-                'method': self.action.__name__,
-                'class': self.service.collection.__name__,
-                'module': self.service.collection.__module__,
-                'file': sys.modules[self.service.collection.__module__].__file__,
-            },
-        }
+        return self.meta_data

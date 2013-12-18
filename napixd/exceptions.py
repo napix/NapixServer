@@ -1,10 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__all__ = ['PermissionDenied', 'ValidationError',
-           'NotFound', 'Duplicate', 'ImproperlyConfigured']
+__all__ = [
+    'PermissionDenied',
+    'ValidationError',
+    'NotFound',
+    'Duplicate',
+    'ImproperlyConfigured',
+    'RemoteError',
+]
 
 import collections
+
+
+try:
+    from napix.exception import HTTPError as RemoteError
+except ImportError:
+    class RemoteError(Exception):
+        def __init__(self, request, cause, response):
+            self.request = request
+            self.remote_error = cause
+            self.response = response
+
+        def __str__(self):
+            return str(self.remote_error)
 
 
 class PermissionDenied(Exception):

@@ -18,6 +18,9 @@ class URL(object):
     def __init__(self, segments=None):
         self.segments = segments or []
 
+    def __eq__(self, other):
+        return isinstance(other, URL) and self.segments == other.segments
+
     @classmethod
     def _from(cls, orig, addition):
         segments = list(orig.segments)

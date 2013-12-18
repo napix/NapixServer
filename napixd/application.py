@@ -39,7 +39,7 @@ class NapixdBottle(object):
             logger.debug('Creating service %s', service.url)
             # add new routes
             service.setup_bottle(self.server)
-            self._root_urls.append(service.url)
+            self._root_urls.append(unicode(mi.alias))
 
         self._root_urls.sort()
 

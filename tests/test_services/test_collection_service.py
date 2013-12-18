@@ -4,76 +4,217 @@
 from __future__ import absolute_import
 
 import mock
-import unittest2
+import unittest
 
-from napixd.conf import Conf
-from napixd.services import CollectionService, FirstCollectionService
-from napixd.managers.managed_classes import ManagedClass
+from napixd.managers import Manager
+from napixd.services import ServedManager, ServedAction
+from napixd.services.urls import URL
+from napixd.services.wrapper import ResourceWrapper
 from napixd.http.request import Request
+from napixd.http.server import WSGIServer as Server
 
-from tests.mock.managers import Manager, Managed
+from napixd.services.collection import (
+    CollectionService,
+    FirstCollectionService,
+    ActionService
+)
 
 
-class TestCollectionServiceManaged(unittest2.TestCase):
-
+class TestFirstCollectionService(unittest.TestCase):
     def setUp(self):
-        Managed.reset_mock()
-        Manager.reset_mock()
-        self.fcs_conf = mock.Mock(spec=Conf, name='fcs_conf')
-        self.cs_conf = mock.Mock(spec=Conf, name='cs_conf')
-        self.fcs = FirstCollectionService(Manager, self.fcs_conf, 'parent', None)
-        self.managed_class = mock.Mock(
-            spec=ManagedClass, manager_class=Managed)
-        self.managed_class.extractor.side_effect = lambda x: x
-        self.cs = CollectionService(
-            self.fcs, self.managed_class, self.cs_conf, 'child', None)
+        self.request = mock.Mock(spec=Request)
+        self.all_actions = []
+        self.Manager = mock.Mock(
+            spec=Manager,
+            get_managed_classes=mock.Mock(return_value=[]),
+        )
+        self.conf = mock.Mock()
+        self.served_manager = mock.Mock(
+            spec=ServedManager,
+            configuration=self.conf,
+            manager_class=self.Manager,
+            url=URL(['parent']),
+            get_all_actions=mock.Mock(return_value=self.all_actions),
+        )
 
-    def test_as_colletction(self):
-        r = mock.Mock(spec=Request, method='GET')
-        with mock.patch('napixd.services.collection.ServiceCollectionRequest') as SCR:
-            self.fcs.as_collection(r, 'p1', 'c2')
+    @property
+    def fcs(self):
+        return FirstCollectionService(self.served_manager)
 
-        SCR.assert_called_once_with(r, ['p1', 'c2'], self.fcs)
-
-    def test_as_resource(self):
-        r = mock.Mock(spec=Request, method='GET')
-        with mock.patch('napixd.services.collection.ServiceResourceRequest') as SRR:
-            self.fcs.as_resource(r, 'p1')
-
-        SRR.assert_called_once_with(r, ['p1'], self.fcs)
-
-    def test_as_managed_classes(self):
-        r = mock.Mock(spec=Request, method='GET')
-        with mock.patch('napixd.services.collection.ServiceManagedClassesRequest') as SMCR:
-            managed_classes_url = self.fcs.as_managed_classes(r, 'p1')
-
-        SMCR.assert_called_once_with(r, ['p1'], self.fcs)
-        self.assertEqual(managed_classes_url, SMCR.return_value.handle.return_value)
+    def add_action(self):
+        a = mock.Mock(
+            spec=ServedAction,
+        )
+        a.name = 'impulse'
+        self.all_actions.append(a)
+        return a
 
     def test_get_managers(self):
-        managed = Managed.return_value
-        manager = Manager.return_value
-        all, this = self.cs.get_managers(['p1'], mock.Mock(spec=Request))
-        self.assertEqual(managed, this)
+        managers, manager = self.fcs.get_managers([], self.request)
 
-        self.assertEqual(len(all), 1)
-        manager_, wrapped = all[0]
-        self.assertEqual(manager, manager_)
-        manager.configure.assert_called_once_with(self.fcs_conf)
-        manager.validate_id.assert_called_once_with('p1')
-        self.assertEqual(wrapped.id, manager.validate_id())
-        manager.get_resource.assert_called_once_with(wrapped.id)
-        self.assertEqual(wrapped.resource, manager.get_resource())
+        self.assertEqual(managers, [])
+        self.assertEqual(manager, self.Manager.return_value)
+        self.Manager.return_value.configure.assert_called_once_with(self.conf)
 
-    def test_generate_manager(self):
-        resource = mock.Mock()
-        request = mock.Mock(spec=Request)
-        self.cs.generate_manager(resource, request)
-        self.managed_class.extractor.assert_called_once_with(resource)
-        Managed.assert_called_once_with(resource, request)
+    def test_as_meta(self):
+        self.assertEqual(self.fcs.as_help(self.request),
+                         self.served_manager.meta_data)
 
-    def test_get_name_fcs(self):
-        self.assertEqual(self.fcs.get_name(), 'parent')
+    def test_as_resource_fields(self):
+        self.assertEqual(self.fcs.as_resource_fields(self.request),
+                         self.served_manager.resource_fields)
 
-    def test_get_name_cs(self):
-        self.assertEqual(self.cs.get_name(), 'parent.child')
+    def test_as_example(self):
+        self.assertEqual(self.fcs.as_example_resource(self.request),
+                         self.Manager.get_example_resource.return_value)
+
+    def test_as_list_action_empty(self):
+        self.assertEqual(self.fcs.as_list_actions(self.request), [])
+
+    def test_as_list_action(self):
+        self.add_action()
+        self.assertEqual(self.fcs.as_list_actions(self.request), ['impulse'])
+
+    def test_setup_bottle(self):
+        server = mock.Mock(spec=Server)
+        fcs = self.fcs
+        fcs.setup_bottle(server)
+
+        server.route.assert_has_calls([
+            mock.call(u'/parent/_napix_resource_fields', fcs.as_resource_fields),
+            mock.call(u'/parent/_napix_help', fcs.as_help),
+            mock.call(u'/parent', mock.ANY),
+            mock.call(u'/parent/', fcs.as_collection),
+            mock.call(u'/parent/?', fcs.as_resource),
+        ], any_order=True)
+
+    def test_setup_bottle_actions(self):
+        server = mock.Mock(spec=Server)
+        self.add_action()
+        fcs = self.fcs
+        fcs.setup_bottle(server)
+
+        server.route.assert_has_calls([
+            mock.call(u'/parent/_napix_resource_fields', fcs.as_resource_fields),
+            mock.call(u'/parent/_napix_help', fcs.as_help),
+            mock.call(u'/parent', mock.ANY),
+            mock.call(u'/parent/', fcs.as_collection),
+            mock.call(u'/parent/?', fcs.as_resource),
+            mock.call(u'/parent/?/_napix_all_actions', fcs.as_list_actions),
+        ], any_order=True)
+
+    def test_setup_bottle_with_create(self):
+        self.Manager.create_resource = mock.Mock()
+        server = mock.Mock(spec=Server)
+        fcs = self.fcs
+        fcs.setup_bottle(server)
+
+        server.route.assert_has_calls([
+            mock.call(u'/parent/_napix_resource_fields', fcs.as_resource_fields),
+            mock.call(u'/parent/_napix_help', fcs.as_help),
+            mock.call(u'/parent', mock.ANY),
+            mock.call(u'/parent/', fcs.as_collection),
+            mock.call(u'/parent/?', fcs.as_resource),
+            mock.call(u'/parent/_napix_new', fcs.as_example_resource),
+        ], any_order=True)
+
+    def test_setup_bottle_with_managed_classes(self):
+        server = mock.Mock(spec=Server)
+        self.Manager.get_managed_classes.return_value = [
+            mock.Mock()
+        ]
+        fcs = self.fcs
+        fcs.setup_bottle(server)
+
+        server.route.assert_has_calls([
+            mock.call(u'/parent/_napix_resource_fields', fcs.as_resource_fields),
+            mock.call(u'/parent/_napix_help', fcs.as_help),
+            mock.call(u'/parent', mock.ANY),
+            mock.call(u'/parent/', fcs.as_collection),
+            mock.call(u'/parent/?', fcs.as_resource),
+            mock.call(u'/parent/?/', fcs.as_managed_classes),
+        ], any_order=True)
+
+
+class TestCollectionService(unittest.TestCase):
+    def setUp(self):
+        self.request = mock.Mock(spec=Request)
+        self.all_actions = []
+        self.Manager = mock.Mock(
+            spec=Manager,
+            name='Manager',
+            get_managed_classes=mock.Mock(return_value=[]),
+        )
+        self.extractor = mock.Mock()
+        self.conf = mock.Mock()
+        self.served_manager = mock.Mock(
+            spec=ServedManager,
+            name='served_manager',
+            configuration=self.conf,
+            manager_class=self.Manager,
+            url=URL(['parent']),
+            get_all_actions=mock.Mock(return_value=self.all_actions),
+            extractor=self.extractor,
+        )
+        self.ps = mock.Mock(
+            spec=CollectionService,
+            name='previous_service',
+        )
+
+    @property
+    def cs(self):
+        return CollectionService(self.ps, self.served_manager)
+
+    def test_generate_manager_fcs(self):
+        pmgr = mock.Mock(name='PreviousManager', spec=Manager, get_resource=mock.Mock())
+        self.ps.get_managers.return_value = ([], pmgr)
+
+        managers, manager = self.cs.get_managers(['abc'], self.request)
+
+        self.ps.get_managers.assert_called_once_with([], self.request)
+        self.assertEqual(manager, self.Manager.return_value)
+        self.assertEqual(managers, [
+            (pmgr, ResourceWrapper(pmgr, pmgr.validate_id.return_value)),
+        ])
+        self.assertEqual(manager, self.Manager.return_value)
+        self.Manager.assert_called_once_with(self.extractor.return_value, self.request)
+        self.extractor.assert_called_once_with(ResourceWrapper(pmgr, pmgr.validate_id.return_value))
+        pmgr.get_resource.assert_called_once_with(pmgr.validate_id.return_value)
+        pmgr.validate_id.assert_called_once_with('abc')
+
+
+class TestActionService(unittest.TestCase):
+    def setUp(self):
+        self.request = mock.Mock(spec=Request)
+        self.served_action = mock.Mock(
+            spec=ServedAction,
+            meta_data=mock.Mock(),
+            name='served_action',
+        )
+        self.served_action.name = 'impulse'
+        self.collection_service = mock.Mock(
+            spec=CollectionService,
+            resource_url=URL(['parent', None]),
+        )
+
+    @property
+    def acs(self):
+        return ActionService(self.collection_service, self.served_action)
+
+    def test_setup_bottle(self):
+        server = mock.Mock(spec=Server)
+        acs = self.acs
+        acs.setup_bottle(server)
+
+        server.route.assert_has_calls([
+            mock.call('/parent/?/_napix_action/impulse/_napix_help', acs.as_help),
+            mock.call('/parent/?/_napix_action/impulse', acs.as_action),
+        ], any_order=True)
+
+    def test_as_meta(self):
+        self.assertEqual(self.acs.as_help(self.request),
+                         self.served_action.meta_data)
+
+    def test_get_managers(self):
+        self.assertEqual(self.acs.get_managers(['id'], self.request),
+                         self.collection_service.get_managers.return_value)
