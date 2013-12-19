@@ -160,7 +160,12 @@ class Service(object):
             self.lock = None
 
         service = FirstCollectionService(
-            ServedManager(collection, self.configuration, self.url, lock=self.lock))
+            ServedManager(
+                collection,
+                self.configuration,
+                self.url,
+                lock=self.lock,
+            ))
         self._append_service(service)
         self.create_collection_service(collection, namespace, service, 0)
 
@@ -180,9 +185,13 @@ class Service(object):
 
         service = CollectionService(
             previous_service,
-            ServedManager(managed_class.manager_class, conf, url,
-                          extractor=managed_class.extractor)
-        )
+            ServedManager(
+                managed_class.manager_class,
+                conf,
+                url,
+                lock=self.lock,
+                extractor=managed_class.extractor
+            ))
         self._append_service(service)
         # level to avoid max recursion.
         self.create_collection_service(

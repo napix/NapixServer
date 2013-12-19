@@ -29,7 +29,7 @@ class TestService(unittest.TestCase):
                                   spec=CollectionService)
 
     def setUp(self):
-        self.conf = mock.Mock(
+        self.conf = mock.MagicMock(
             spec=Conf,
             name='Conf',
         )
@@ -83,5 +83,22 @@ class TestService(unittest.TestCase):
             self.FCS.return_value,
             ServedManager(mgr, self.conf.get.return_value, URL(['parent', None, 'child']),
                           extractor=mc.extractor))
+
+        self.conf.get.assert_called_once_with('parent.child')
+
+    def test_CS_lock(self):
+        self.conf.__contains__.side_effect = 'Lock'.__eq__
+        mc, mgr = self.add_managed_class()
+        with mock.patch('napixd.services.lock_factory') as LF:
+            self.get_service()
+
+        lock = LF.return_value
+
+        self.FCS.assert_called_once_with(
+            ServedManager(self.Manager, self.conf, URL(['parent']), lock=lock))
+        self.CS.assert_called_once_with(
+            self.FCS.return_value,
+            ServedManager(mgr, self.conf.get.return_value, URL(['parent', None, 'child']),
+                          lock=lock, extractor=mc.extractor))
 
         self.conf.get.assert_called_once_with('parent.child')

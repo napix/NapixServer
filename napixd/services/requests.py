@@ -32,6 +32,8 @@ class ServiceRequest(object):
     :class:`napixd.services.collection.CollectionService`.
     """
 
+    METHOD_MAP = {}
+
     def __init__(self, request, path, service):
         self.request = request
         self.method = request.method

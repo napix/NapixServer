@@ -34,6 +34,7 @@ class TestFirstCollectionService(unittest.TestCase):
             configuration=self.conf,
             manager_class=self.Manager,
             url=URL(['parent']),
+            lock=None,
             get_all_actions=mock.Mock(return_value=self.all_actions),
         )
 
@@ -44,6 +45,7 @@ class TestFirstCollectionService(unittest.TestCase):
     def add_action(self):
         a = mock.Mock(
             spec=ServedAction,
+            lock=None,
         )
         a.name = 'impulse'
         self.all_actions.append(a)
@@ -153,6 +155,7 @@ class TestCollectionService(unittest.TestCase):
             configuration=self.conf,
             manager_class=self.Manager,
             url=URL(['parent']),
+            lock=None,
             get_all_actions=mock.Mock(return_value=self.all_actions),
             extractor=self.extractor,
         )
@@ -190,6 +193,7 @@ class TestActionService(unittest.TestCase):
             spec=ServedAction,
             meta_data=mock.Mock(),
             name='served_action',
+            lock=None,
         )
         self.served_action.name = 'impulse'
         self.collection_service = mock.Mock(
