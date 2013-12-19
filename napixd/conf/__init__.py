@@ -98,6 +98,8 @@ class ConfLoader(object):
 
 
 class BaseConf(collections.Mapping):
+    _default = None
+
     def __eq__(self, other):
         return (isinstance(other, collections.Mapping) and
                 set(other.keys()) == set(self.keys()) and
