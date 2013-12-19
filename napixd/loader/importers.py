@@ -409,6 +409,7 @@ class AutoImporter(Importer):
         It parses the JSON inside the docstring of the method
         :meth:`~napixd.managers.base.Manager.configure`
         """
+        parser = ''
         try:
             doc_string = manager.configure.__doc__ or ''
             doc_string = doc_string.strip()
@@ -417,6 +418,7 @@ class AutoImporter(Importer):
                 return EmptyConf()
 
             if doc_string.startswith('{'):
+                parser = 'json'
                 #JSON object
                 logger.debug('Parse JSON configuration')
                 return JSONConfFactory().parse_string(doc_string)
@@ -424,13 +426,14 @@ class AutoImporter(Importer):
                 logger.warning('Cannot parse configuration with dotconf')
                 return EmptyConf()
             else:
+                parser = 'dotconf'
                 logger.debug('Parse dotconf configuration')
                 return DotconfConfFactory().parse_string(doc_string)
 
         except (ValueError, AttributeError) as e:
             logger.debug(
-                'Auto configuration of %s from docstring failed because %s',
-                manager, e)
+                'Auto configuration of %s from docstring failed using %s because %s',
+                manager, parser, e)
 
         return EmptyConf()
 
