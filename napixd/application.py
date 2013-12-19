@@ -35,11 +35,15 @@ class NapixdBottle(object):
         the :class:`napixd.loader.ManagerImport` given by the loader.
         """
         for mi in managers:
-            service = Service(mi.manager, mi.alias, mi.config)
-            logger.debug('Creating service %s', service.url)
-            # add new routes
-            service.setup_bottle(self.server)
-            self._root_urls.append(unicode(mi.alias))
+            try:
+                service = Service(mi.manager, mi.alias, mi.config)
+                logger.debug('Creating service %s', service.url)
+            except Exception:
+                logger.exception('Cannot create service for %s', mi.alias)
+            else:
+                # add new routes
+                service.setup_bottle(self.server)
+                self._root_urls.append(unicode(mi.alias))
 
         self._root_urls.sort()
 
