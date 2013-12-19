@@ -21,6 +21,8 @@ class ConfFactory(object):
         return self.parse_string(handle.read().decode('utf-8'))
 
     def parse_string(self, string):
+        if not string.endswith('\n'):
+            string += '\n'
         try:
             dc = Dotconf(string)
             return Conf(dc.parse())
