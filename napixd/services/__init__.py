@@ -111,6 +111,7 @@ class ServedAction(object):
     """
     def __init__(self, served_manager, action_name):
         self.name = action_name
+        self.lock = served_manager.lock
         self.action = getattr(served_manager.manager_class, action_name)
         self.doc = (self.action.__doc__ or '').strip()
         self.source = served_manager.source
@@ -152,9 +153,13 @@ class Service(object):
         self.configuration = configuration
         self.collection_services = []
         self.url = URL([namespace])
-        lock_conf = 'Lock' in configuration
 
-        if lock_conf:
+        if 'Lock' in configuration:
+            lock_conf = configuration.get('Lock')
+            if not 'name' in lock_conf:
+                raise ValueError('Lock configuration must have at least a name')
+
+            logger.info('Creating lock %s for %s', lock_conf.get('name'), namespace)
             self.lock = lock_factory(lock_conf)
         else:
             self.lock = None
