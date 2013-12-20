@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-The service class is the interface between napix and Bottle.
+The service class is the interface between the managers and the web server
 
-The service plug itself in the url router of Bottle, and will instanciate the
+The service plug itself in the url router of Bottle, and will instantiate the
 appropriate Napix Manager to handle the request.
 """
 
@@ -20,11 +20,13 @@ from napixd.services.requests import (
     ServiceCollectionRequest,
     ServiceResourceRequest,
 )
+from napixd.services.lock import LockFactory, ConnectionFactory
 
 
 logger = logging.getLogger('Napix.service')
 
 MAX_LEVEL = 5
+lock_factory = LockFactory(ConnectionFactory())
 
 
 class ServedManager(object):
@@ -109,6 +111,7 @@ class ServedAction(object):
     """
     def __init__(self, served_manager, action_name):
         self.name = action_name
+        self.lock = served_manager.lock
         self.action = getattr(served_manager.manager_class, action_name)
         self.doc = (self.action.__doc__ or '').strip()
         self.source = served_manager.source
@@ -141,7 +144,7 @@ class Service(object):
         """
         Create a base service for the given collection (a Manager object) and
         its submanager.
-        namespace is the manager name (could be forced in conf)
+        *namespace* is the manager name (could be forced in conf)
         configuration parameters is the manager's config read from config file
         FIXME : remplacer collection par manager dans le code PARTOUT
         collection MUST be a Manager subclass and
@@ -151,8 +154,23 @@ class Service(object):
         self.collection_services = []
         self.url = URL([namespace])
 
+        if 'Lock' in configuration:
+            lock_conf = configuration.get('Lock')
+            if not 'name' in lock_conf:
+                raise ValueError('Lock configuration must have at least a name')
+
+            logger.info('Creating lock %s for %s', lock_conf.get('name'), namespace)
+            self.lock = lock_factory(lock_conf)
+        else:
+            self.lock = None
+
         service = FirstCollectionService(
-            ServedManager(collection, self.configuration, self.url))
+            ServedManager(
+                collection,
+                self.configuration,
+                self.url,
+                lock=self.lock,
+            ))
         self._append_service(service)
         self.create_collection_service(collection, namespace, service, 0)
 
@@ -172,9 +190,13 @@ class Service(object):
 
         service = CollectionService(
             previous_service,
-            ServedManager(managed_class.manager_class, conf, url,
-                          extractor=managed_class.extractor)
-        )
+            ServedManager(
+                managed_class.manager_class,
+                conf,
+                url,
+                lock=self.lock,
+                extractor=managed_class.extractor
+            ))
         self._append_service(service)
         # level to avoid max recursion.
         self.create_collection_service(

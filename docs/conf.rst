@@ -256,6 +256,20 @@ store
 counter
     The default backend for counters
 
+.. _conf.napix.lock:
+
+Napix.lock
+..........
+
+The configuration of the shared locking.
+
+host
+    The Redis server address.
+port
+    The Redis post on which the server listens.
+database
+    The number of the database to use on the server.
+
 
 Configuration of the managers
 =============================

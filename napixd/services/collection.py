@@ -49,6 +49,7 @@ class BaseCollectionService(object):
 
         self.collection_url = served_manager.url
         self.resource_url = self.collection_url.add_variable()
+        self.lock = served_manager.lock
 
         self.all_actions = [
             ActionService(self, action)
@@ -231,6 +232,7 @@ class ActionService(object):
         self.action = served_action.name
         self.url = self.service.resource_url.add_segment('_napix_action').add_segment(served_action.name)
         self.meta_data = served_action.meta_data
+        self.lock = served_action.lock
 
     def setup_bottle(self, app):
         app.route(unicode(self.url.add_segment('_napix_help')), self.as_help)

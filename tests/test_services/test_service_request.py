@@ -14,14 +14,47 @@ from napixd.services.collection import (
     ActionService
 )
 from napixd.services.requests import (
+    ServiceRequest,
     ServiceActionRequest,
     ServiceResourceRequest,
     ServiceCollectionRequest,
     ServiceManagedClassesRequest,
 )
 from napixd.services.wrapper import ResourceWrapper
+from napixd.utils.lock import Lock
 from napixd.http.request import Request
 from napixd.http.response import HTTP405, HTTPError
+
+
+class MyServiceRequest(ServiceRequest):
+    METHOD_MAP = {'GET': 'pouet'}
+
+    def call(self):
+        return None
+
+    def serialize(self, value):
+        return None
+
+
+class TestServiceRequest(unittest.TestCase):
+    def setUp(self):
+        self.request = mock.Mock(spec=Request, method='GET')
+        self.cs = mock.Mock(
+            spec=CollectionService,
+            lock=mock.Mock(spec=Lock),
+        )
+        self.cs.get_managers.return_value = ([], mock.Mock())
+
+    def sr(self):
+        return MyServiceRequest(self.request, [], self.cs)
+
+    def test_handle_lock(self):
+        lock = self.cs.lock
+        sr = self.sr()
+        sr.handle()
+
+        lock.acquire.assert_called_once_with()
+        lock.release.assert_called_once_with()
 
 
 class TestServiceManagedClassesRequest(unittest.TestCase):
@@ -34,6 +67,7 @@ class TestServiceManagedClassesRequest(unittest.TestCase):
         self.url = url = URL(['abc', None])
         self.cs = mock.Mock(
             spec=CollectionService,
+            lock=None,
             collection=manager,
             resource_url=url)
         self.cs.get_managers.return_value = ([], manager)
@@ -63,6 +97,7 @@ class TestServiceCollectionRequest(unittest.TestCase):
         self.url = url = URL(['abc', None])
         self.cs = mock.Mock(
             spec=CollectionService,
+            lock=None,
             collection=manager,
             resource_url=url)
         self.cs.get_managers.return_value = ([], manager)
@@ -199,6 +234,7 @@ class TestServiceResourceRequest(unittest.TestCase):
         self.url = url = URL(['abc', None])
         self.cs = mock.Mock(
             spec=CollectionService,
+            lock=None,
             collection=manager,
             resource_url=url)
         self.cs.get_managers.return_value = ([], manager)
@@ -214,7 +250,6 @@ class TestServiceResourceRequest(unittest.TestCase):
     def test_handle_get_None(self):
         self.manager.get_resource.return_value = None
         self.assertRaises(ValueError, self.srr().handle)
-
 
     def test_handle_get_404(self):
         self.manager.get_resource.side_effect = NotFound()
@@ -323,6 +358,7 @@ class TestServiceActionRequest(unittest.TestCase):
         self.acs = mock.Mock(
             spec=ActionService,
             collection=manager,
+            lock=mock.Mock(spec=Lock),
             resource_url=url)
         self.acs.get_managers.return_value = ([], manager)
         self.action = self.manager.do_the_stuff

@@ -98,10 +98,12 @@ class ConfLoader(object):
 
 
 class BaseConf(collections.Mapping):
+    _default = None
+
     def __eq__(self, other):
         return (isinstance(other, collections.Mapping) and
-                set(other.keys()) == set(self.keys()) and
-                set(other.values()) == set(self.values()))
+                other.keys() == self.keys() and
+                other.values() == self.values())
 
     def get(self, section_id, default_value=_sentinel, type=None):
         """
