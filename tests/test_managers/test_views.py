@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-import unittest2
+import unittest
 import mock
 
 from napixd.http.response import Response
@@ -10,7 +10,7 @@ from napixd.managers.base import ManagerType, Manager
 from napixd.managers.views import view, content_type
 
 
-class TestDecorators(unittest2.TestCase):
+class TestDecorators(unittest.TestCase):
     def test_set_view(self):
         @view('text', content_type='text/plain')
         def as_text(self, resource, response):
@@ -67,7 +67,7 @@ class TestDecorators(unittest2.TestCase):
         resp.set_header.assert_called_once_with('Content-Type', 'application/pip+pampoum')
 
 
-class TestManagerView(unittest2.TestCase):
+class TestManagerView(unittest.TestCase):
 
     def setUp(self):
         @view('object')
@@ -81,7 +81,7 @@ class TestManagerView(unittest2.TestCase):
         })
 
     def test_class_with_views(self):
-        self.assertDictEqual(self.manager.get_all_formats(), {
+        self.assertEqual(self.manager.get_all_formats(), {
             'object': self.as_object,
         })
 
@@ -93,7 +93,7 @@ class TestManagerView(unittest2.TestCase):
             'as_xml': as_xml
         })
 
-        self.assertDictEqual(other_manager.get_all_formats(), {
+        self.assertEqual(other_manager.get_all_formats(), {
             'object': self.as_object,
             'xml': as_xml,
         })

@@ -3,7 +3,7 @@
 
 from __future__ import absolute_import
 
-import unittest2
+import unittest
 import mock
 
 from napixd.managers.default import ReadOnlyDictManager, DictManager, FileManager
@@ -13,7 +13,7 @@ from napixd.http.request import Request
 from napixd.managers.changeset import DiffDict
 
 
-class _TestDM(unittest2.TestCase):
+class _TestDM(unittest.TestCase):
 
     def setUp(self, kls, attrs=None):
         self.parent = mock.Mock()
@@ -39,10 +39,9 @@ class TestReadOnlyDict(_TestDM):
         super(TestReadOnlyDict, self).setUp(ReadOnlyDictManager)
 
     def test_list_resource(self):
-        self.assertSetEqual(
-            set(self.manager.list_resource()),
-            set(['one', 'three', 'two'])
-        )
+        self.assertEqual(
+            sorted(self.manager.list_resource()),
+            ['one', 'three', 'two'])
         self.spy_load.assert_called_once_with(self.parent)
 
     def test_return_not_dict(self):
@@ -53,17 +52,17 @@ class TestReadOnlyDict(_TestDM):
         self.assertRaises(NotFound, self.manager.get_resource, 'four')
 
     def test_get_resource(self):
-        self.assertDictEqual(
+        self.assertEqual(
             self.manager.get_resource('one'),
             {'french': 'un', 'german': 'eins'})
         self.spy_load.assert_called_once_with(self.parent)
 
     def test_reuse(self):
-        self.assertSetEqual(
-            set(self.manager.list_resource()),
-            set(['one', 'three', 'two'])
+        self.assertEqual(
+            sorted(self.manager.list_resource()),
+            ['one', 'three', 'two']
         )
-        self.assertDictEqual(
+        self.assertEqual(
             self.manager.get_resource('one'),
             {'french': 'un', 'german': 'eins'})
 
@@ -156,7 +155,7 @@ class MyFileManager(FileManager):
         return {'a': 1}
 
 
-class TestFileManager(unittest2.TestCase):
+class TestFileManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -211,7 +210,7 @@ class MyManager(DictManager):
         parent.save(resources)
 
 
-class TestHiddenFields(unittest2.TestCase):
+class TestHiddenFields(unittest.TestCase):
     def setUp(self):
         self.res = mock.Mock()
         self.res.load.return_value = {
