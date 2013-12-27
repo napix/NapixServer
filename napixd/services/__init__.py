@@ -20,13 +20,13 @@ from napixd.services.requests import (
     ServiceCollectionRequest,
     ServiceResourceRequest,
 )
-from napixd.services.lock import LockFactory, ConnectionFactory
+from napixd.services.lock import LockFactory
 
 
 logger = logging.getLogger('Napix.service')
 
 MAX_LEVEL = 5
-lock_factory = LockFactory(ConnectionFactory())
+lock_factory = LockFactory()
 
 
 class ServedManager(object):
