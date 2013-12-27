@@ -16,13 +16,11 @@ setup(
     author='Enix',
     author_email='gr@enix.org',
     install_requires=[
-        'napix>=0.6',
     ],
     include_package_data=True,
     scripts=[
         'bin/napixd'
     ],
     dependency_links=[
-        'http://builds.enix.org/napix/napix-latest.tar.gz#egg=napix-9999',
     ],
 )
