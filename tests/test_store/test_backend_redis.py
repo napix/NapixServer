@@ -5,22 +5,33 @@ import unittest2
 from tests.test_store.base import _BaseTestCounter, _BaseTestStore
 
 try:
-    from napixd.store.backends import redis
+    from napixd.store.backends.redis import (
+        RedisBackend,
+        RedisHashBackend,
+        RedisCounterBackend,
+        RedisKeyBackend,
+    )
 except NotImplementedError:
-    @unittest2.skip('Missing "redis" dependency')
-    class TestRedisBackend(unittest2.TestCase):
-        pass
-else:
-    class TestRedisCounter(_BaseTestCounter):
-        counter_class = redis.RedisCounterBackend({})
+    __test__ = False
+    def RedisKeyBackend(x): pass
+    def RedisHashBackend(x): pass
+    def RedisCounterBackend(x): pass
+    def RedisBackend(x): pass
 
-    class TestRedisStore(_BaseTestStore):
-        store_class = redis.RedisBackend({})
 
-    class TestRedisHashStore(_BaseTestStore):
-        store_class = redis.RedisHashBackend({})
-        testNotSave = unittest2.expectedFailure(_BaseTestStore.testNotSave)
+class TestRedisCounter(_BaseTestCounter):
+    counter_class = RedisCounterBackend({})
 
-    class TestRedisKeyStore(_BaseTestStore):
-        store_class = redis.RedisKeyBackend({})
-        testNotSave = unittest2.expectedFailure(_BaseTestStore.testNotSave)
+
+class TestRedisStore(_BaseTestStore):
+    store_class = RedisBackend({})
+
+
+class TestRedisHashStore(_BaseTestStore):
+    store_class = RedisHashBackend({})
+    testNotSave = unittest2.expectedFailure(_BaseTestStore.testNotSave)
+
+
+class TestRedisKeyStore(_BaseTestStore):
+    store_class = RedisKeyBackend({})
+    testNotSave = unittest2.expectedFailure(_BaseTestStore.testNotSave)
