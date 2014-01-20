@@ -22,25 +22,30 @@ class SecureAuthProtocol(object):
 
     The *Authorization* header of the requests is checked.
     """
+    def __init__(self):
+        self._mandatory = frozenset(['path', 'host', 'method'])
+
     def __call__(self, request):
         if not 'Authorization' in request.headers:
             return None
 
         msg, l, signature = request.headers['Authorization'].rpartition(':')
         if l != ':':
-            raise HTTPError(401, 'Incorrect NAPIX Authentication')
+            return None
 
         content = urlparse.parse_qs(msg)
         for x in content:
             content[x] = content[x][0]
 
-        missing_keys = set(['path', 'host', 'method']).difference(content)
+        missing_keys = self._mandatory.difference(content)
         if missing_keys:
             raise HTTPError(403, 'Missing authentication data: {0}'.format(
                 ', '.join(missing_keys)))
 
-        content['msg'] = msg
-        content['signature'] = signature
+        content.update({
+            'msg': msg,
+            'signature': signature,
+        })
         return content
 
 
