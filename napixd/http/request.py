@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import json
 import collections
+from urllib import unquote
 
 from cStringIO import StringIO
 from napixd.http.response import HTTPError
@@ -31,9 +32,9 @@ class Query(collections.Mapping):
             for bit in raw.split('&'):
                 if '=' in bit:
                     key, value = bit.split('=', 1)
-                    values[key].append(value)
+                    values[unquote(key)].append(unquote(value))
                 else:
-                    values[bit].append(None)
+                    values[unquote(bit)].append(None)
         elif isinstance(raw, Query):
             values = dict()
             for key in raw:

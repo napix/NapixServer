@@ -24,6 +24,23 @@ class TestQuery(unittest.TestCase):
         s = Query('a=1')
         self.assertRaises(KeyError, lambda: s['b'])
 
+    def test_query_label_escaped_contains(self):
+        s = Query('a%2fb&a%40b')
+        self.assertTrue('a/b' in s)
+        self.assertTrue('a@b' in s)
+
+    def test_query_label_escaped(self):
+        s = Query('a%2fb=1')
+        self.assertEqual(s['a/b'], '1')
+
+    def test_query_value_escaped(self):
+        s = Query('a=1%2f0')
+        self.assertEqual(s['a'], '1/0')
+
+    def test_query_values_escaped(self):
+        s = Query('a=1%2f0&a=2%2f3')
+        self.assertEqual(s.getall('a'), ['1/0', '2/3'])
+
     def test_query_string_value(self):
         s = Query('a=1')
         self.assertEqual(s['a'], '1')
