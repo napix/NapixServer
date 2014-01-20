@@ -152,6 +152,7 @@ Non-default:
     localhost:  Listen on the loopback interface only
     autonomous-auth:    Use a local source of authentication
     hosts:      Check the HTTP Host header
+    jwt:        Enables authentication by JSON Web Tokens
 
 Meta-options:
     only:       Disable default options
@@ -323,11 +324,17 @@ Meta-options:
         return providers
 
     def get_auth_sources(self, conf):
-        from napixd.auth.sources import SecureAuthProtocol, NonSecureAuthProtocol
+        from napixd.auth.sources import (
+            SecureAuthProtocol,
+            NonSecureAuthProtocol,
+            JSONWebToken,
+        )
         sources = [SecureAuthProtocol()]
         if not 'secure' in self.options:
             sources.append(NonSecureAuthProtocol.from_settings(conf))
             logger.info('Enable authentication by tokens')
+        if 'jwt' in self.options:
+            sources.append(JSONWebToken())
         return sources
 
     def get_napixd(self, server):
