@@ -354,7 +354,7 @@ Meta-options:
         used to find the managers.
         """
         if 'test' in self.options:
-            from napixd.loader import FixedImporter
+            from napixd.loader.importers import FixedImporter
             return [FixedImporter({
                 'root': 'napixd.examples.k132.Root',
                 'host': (
