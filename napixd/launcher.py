@@ -327,13 +327,13 @@ Meta-options:
         from napixd.auth.sources import (
             SecureAuthProtocol,
             NonSecureAuthProtocol,
-            JSONWebToken,
         )
         sources = [SecureAuthProtocol()]
         if not 'secure' in self.options:
             sources.append(NonSecureAuthProtocol.from_settings(conf))
             logger.info('Enable authentication by tokens')
         if 'jwt' in self.options:
+            from napixd.auth.jwt import JSONWebToken
             sources.append(JSONWebToken())
         return sources
 
