@@ -21,73 +21,19 @@ except ImportError:
     DotconfConfFactory = None
 
 
+__all__ = [
+    'AutoImporter',
+]
+
+
 logger = logging.getLogger('Napix.loader.importers.auto')
 
 
-class AutoImporter(Importer):
-    """
-    Imports all the modules in a directory
 
-    It scans the directory for ``.py`` files,
-    imports them and find all the Manager subclasses.
-    """
-
-    def __init__(self, path):
-        super(AutoImporter, self).__init__(False)
+class BaseAutoImporter(Importer):
+    def __init__(self, path, raise_on_first_import=False):
+        super(BaseAutoImporter, self).__init__(raise_on_first_import)
         self.path = path
-        if not self.path in sys.path:
-            sys.path.append(self.path)
-
-    def get_paths(self):
-        return [self.path]
-
-    def load(self):
-        """
-        Explore the path to find modules.
-
-        Any file with a ``.py`` extension is loaded.
-        """
-        # Placeholder module for all the auto imported modules
-        import napixd.auto
-        logger.debug('inspecting %s', self.path)
-        managers, errors = [], []
-        for filename in os.listdir(self.path):
-            if filename.startswith('.') or not filename.endswith('.py'):
-                continue
-
-            try:
-                module = self.import_module(filename)
-            except NapixImportError as e:
-                logger.warning('Failed to import %s from autoload: %s',
-                               filename, str(e))
-                errors.append(e)
-                continue
-
-            managers_, errors_ = self.load_module(module)
-            managers.extend(managers_)
-            errors.extend(errors_)
-        return managers, errors
-
-    def import_module(self, filename):
-        module_name, x = filename.split('.')
-        path = os.path.join(self.path, filename)
-        name = 'napixd.auto.' + module_name
-
-        if name in sys.modules and not self.has_been_modified(path, name):
-            return sys.modules[name]
-
-        logger.debug('Opening %s', path)
-        with open(path, 'U') as handle:
-            try:
-                module = imp.load_module(
-                    name,
-                    handle,
-                    path,
-                    ('py', 'U', imp.PY_SOURCE),
-                )
-            except Exception as e:
-                raise ModuleImportError(name, e)
-        return module
 
     def load_module(self, module):
         """
@@ -175,3 +121,63 @@ class AutoImporter(Importer):
                 manager, parser, e)
 
         return EmptyConf()
+
+
+class AutoImporter(BaseAutoImporter):
+    """
+    Imports all the modules in a directory
+
+    It scans the directory for ``.py`` files,
+    imports them and find all the Manager subclasses.
+    """
+
+    def get_paths(self):
+        return [self.path]
+
+    def load(self):
+        """
+        Explore the path to find modules.
+
+        Any file with a ``.py`` extension is loaded.
+        """
+        # Placeholder module for all the auto imported modules
+        import napixd.auto
+        logger.debug('inspecting %s', self.path)
+        managers, errors = [], []
+        for filename in os.listdir(self.path):
+            if filename.startswith('.') or not filename.endswith('.py'):
+                continue
+
+            try:
+                module = self.import_module(filename)
+            except NapixImportError as e:
+                logger.warning('Failed to import %s from autoload: %s',
+                               filename, str(e))
+                errors.append(e)
+                continue
+
+            managers_, errors_ = self.load_module(module)
+            managers.extend(managers_)
+            errors.extend(errors_)
+        return managers, errors
+
+    def import_module(self, filename):
+        module_name, x = filename.split('.')
+        path = os.path.join(self.path, filename)
+        name = 'napixd.auto.' + module_name
+
+        if name in sys.modules and not self.has_been_modified(path, name):
+            return sys.modules[name]
+
+        logger.debug('Opening %s', path)
+        with open(path, 'U') as handle:
+            try:
+                module = imp.load_module(
+                    name,
+                    handle,
+                    path,
+                    ('py', 'U', imp.PY_SOURCE),
+                )
+            except Exception as e:
+                raise ModuleImportError(name, e)
+        return module

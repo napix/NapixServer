@@ -371,7 +371,7 @@ Meta-options:
             loaders.append(ci)
 
         if 'auto' in self.options:
-            from napixd.loaders.auto import AutoImporter
+            from napixd.loader.auto import AutoImporter
             auto_path = get_path('auto')
             logger.info('Using %s as auto directory', auto_path)
             loaders.append(AutoImporter(auto_path))
