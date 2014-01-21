@@ -363,16 +363,19 @@ Meta-options:
                     })
             })]
 
-        from napixd.loader import AutoImporter, ConfImporter
         loaders = []
 
         if 'conf' in self.options:
+            from napixd.loader.importers import ConfImporter
             ci = ConfImporter(self.conf.get('managers'), self.raw_conf)
             loaders.append(ci)
+
         if 'auto' in self.options:
+            from napixd.loaders.auto import AutoImporter
             auto_path = get_path('auto')
             logger.info('Using %s as auto directory', auto_path)
             loaders.append(AutoImporter(auto_path))
+
         return loaders
 
     def install_plugins(self, router):
