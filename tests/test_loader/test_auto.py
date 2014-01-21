@@ -12,7 +12,7 @@ from napixd.conf import EmptyConf
 from napixd.loader.imports import ManagerImport
 from napixd.loader.errors import ModuleImportError
 
-from napixd.loader.importers import AutoImporter
+from napixd.loader.auto import AutoImporter
 
 
 class TestAutoImporter(unittest.TestCase):
@@ -25,7 +25,7 @@ class TestAutoImporter(unittest.TestCase):
         self.assertEqual(self.ai.get_paths(), ['/a/b'])
 
     def test_import_module_error(self):
-        with mock.patch('napixd.loader.importers.imp') as pimp:
+        with mock.patch('napixd.loader.auto.imp') as pimp:
             pimp.load_module.side_effect = SyntaxError()
 
             with mock.patch('__builtin__.open') as Open:
@@ -35,7 +35,7 @@ class TestAutoImporter(unittest.TestCase):
                     ModuleImportError, self.ai.import_module, 'b.py')
 
     def test_import_module(self):
-        with mock.patch('napixd.loader.importers.imp') as pimp:
+        with mock.patch('napixd.loader.auto.imp') as pimp:
             with mock.patch('__builtin__.open') as Open:
                 with mock.patch.object(self.ai, 'has_been_modified', return_value=True):
                     open = Open.return_value

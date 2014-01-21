@@ -29,7 +29,6 @@ __all__ = [
 logger = logging.getLogger('Napix.loader.importers.auto')
 
 
-
 class BaseAutoImporter(Importer):
     def __init__(self, path, raise_on_first_import=False):
         super(BaseAutoImporter, self).__init__(raise_on_first_import)
