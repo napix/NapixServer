@@ -43,6 +43,10 @@ class Query(collections.Mapping):
             values = dict()
             for key, value in raw.items():
                 values[key] = [value]
+        elif isinstance(raw, collections.Iterable):
+            values = collections.defaultdict(list)
+            for key, value in raw:
+                values[key].append(value)
         else:
             raise TypeError('value is instanciated with a dict or a string')
 

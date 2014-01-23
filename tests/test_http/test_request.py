@@ -65,6 +65,13 @@ class TestQuery(unittest.TestCase):
         s = Query('a=1')
         self.assertEqual(s.getall('c'), [])
 
+    def test_iterable(self):
+        s = Query([
+            ('a', 'abc'),
+            ('a', 'def'),
+        ])
+        self.assertEqual(s.getall('a'), ['abc', 'def'])
+
     def test_dict(self):
         s = Query({'a': 'abc'})
         self.assertEqual(s.getall('a'), ['abc'])
