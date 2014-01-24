@@ -177,11 +177,7 @@ Meta-options:
 
         self.set_loggers()
 
-        self.raw_conf = self.get_conf()
-        if 'dotconf' in self.options:
-            self.conf = self.raw_conf
-        else:
-            self.conf = self.raw_conf.get('Napix')
+        self.conf = self.get_conf()
 
         self.service_name = self.get_service_name()
         self.hosts = self.get_hostnames()
@@ -367,7 +363,7 @@ Meta-options:
 
         if 'conf' in self.options:
             from napixd.loader.importers import ConfImporter
-            ci = ConfImporter(self.conf.get('managers'), self.raw_conf)
+            ci = ConfImporter(self.conf.get('managers'), self.conf)
             loaders.append(ci)
 
         if 'auto' in self.options:
