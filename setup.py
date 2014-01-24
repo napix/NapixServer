@@ -17,6 +17,17 @@ setup(
     author_email='gr@enix.org',
     install_requires=[
     ],
+    extra_requires={
+        'base': [
+            'dotconf',
+            'permissions',
+            'napix',
+        ],
+        'production': [
+            'napixd[base]',
+            'gevent',
+        ],
+    },
     include_package_data=True,
     scripts=[
         'bin/napixd'
