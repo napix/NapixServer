@@ -106,4 +106,7 @@ class CompatConf(conf.BaseConf):
             key = key[8:]
         else:
             key = 'Napix.' + key
-        return self.conf[key]
+        value = self.conf[key]
+        if isinstance(value, dict):
+            return Conf(value)
+        return value
