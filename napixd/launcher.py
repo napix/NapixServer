@@ -50,6 +50,8 @@ def launch(options, setup_class=None):
 
     try:
         setup.run()
+    except (KeyboardInterrupt, SystemExit):
+        return
     except Exception, e:
         if 'print_exc' in setup.options:
             logger.exception(e)
