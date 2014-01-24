@@ -114,7 +114,8 @@ class CentralAuthProvider(object):
             resp = http_client.getresponse()
             content = resp.read()
         except socket.gaierror, e:
-            logger.error('Auth server %s not found %s', self.host, e)
+            logger.error('Auth server %s%s not found %s',
+                         self.http_client_factory.host, self.url, e)
             raise HTTPError(500, 'Auth server did not respond')
         except socket.timeout as e:
             logger.error('Auth server timed out, %r', e)
