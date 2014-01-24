@@ -15,6 +15,7 @@ import sys
 import optparse
 
 from napixd import get_file, get_path
+from napixd.utils.tracingset import TracingSet
 
 from napixd.conf import Conf, ConfLoader
 
@@ -175,7 +176,7 @@ Meta-options:
         options = set(options)
         if 'only' not in options:
             options = options.union(self.DEFAULT_OPTIONS)
-        self.options = options = options.difference(nooptions)
+        self.options = options = TracingSet(options.difference(nooptions))
 
         self.set_loggers()
 
@@ -254,6 +255,10 @@ Meta-options:
                     raise CannotLaunch('No server available')
 
                 adapter = adapter_class(server_options)
+
+                if self.options.unchecked:
+                    console.warning('Unchecked Options are: %s',
+                                    ','.join(self.options.unchecked))
                 adapter.run(application)
         finally:
             console.info('Stopping')
@@ -504,7 +509,11 @@ Meta-options:
         """
         self._patch_gevent()
         application = self.get_app()
-        return self.apply_middleware(application)
+        application = self.apply_middleware(application)
+        if self.options.unchecked:
+            self.logger.warning('Unchecked Options are: %s',
+                                ','.join(self.options.unchecked))
+        return application
 
     def get_server(self):
         """
