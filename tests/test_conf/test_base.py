@@ -111,6 +111,12 @@ class TestBaseConf(unittest.TestCase):
     def test_get_type(self):
         self.assertEqual(self.c.get('key', type=int), 1)
 
+    def test_get_type_tuple(self):
+        self.assertEqual(self.c.get('key', type=(int, unicode)), 1)
+
+    def test_get_type_tuple_bad(self):
+        self.assertRaises(TypeError, self.c.get, 'key', type=(unicode, list))
+
     def test_get_type_bad(self):
         self.assertRaises(TypeError, self.c.get, 'key', type=unicode)
 
