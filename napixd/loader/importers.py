@@ -265,7 +265,7 @@ class ConfImporter(Importer):
             try:
                 manager = self.import_manager(manager_path)
                 logger.info('load %s from conf', manager_path)
-                config = self.conf.get(alias)
+                config = self.conf.get('Manager ' + alias)
                 manager = self.setup(manager)
             except NapixImportError, e:
                 if self.should_raise:

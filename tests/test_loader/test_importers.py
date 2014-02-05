@@ -186,7 +186,7 @@ class TestConfImporter(unittest.TestCase):
         self.ci = ConfImporter(Conf({
             'a': 'a.b.c.Manager'
         }), Conf({
-            'a': {
+            'Manager a': {
                 'd': 123
             }
         }))
