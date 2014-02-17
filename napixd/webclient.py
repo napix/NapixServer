@@ -28,8 +28,8 @@ class WebClient(object):
         else:
             self.doc = None
 
-        if launcher.auth_handler:
-            self.auth_server = getattr(launcher.auth_handler, 'host', '')
+        if hasattr(launcher, 'central_provider'):
+            self.auth_server = launcher.central_provider.host
         else:
             self.auth_server = ''
 

@@ -321,7 +321,8 @@ Meta-options:
                 from napixd.auth.central import CentralAuthProvider
             except ImportError:
                 raise CannotLaunch('Central authentication requires permissions')
-            providers.append(CentralAuthProvider.from_settings(self.service_name, conf))
+            self.central_provider = CentralAuthProvider.from_settings(self.service_name, conf)
+            providers.append(self.central_provider)
             logger.info('Enable central server authentication')
 
         return providers
