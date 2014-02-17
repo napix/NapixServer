@@ -82,6 +82,10 @@ class CentralAuthProvider(object):
         self.filter_factory = filter_factory
         self.service_name = service_name
 
+    @property
+    def host(self):
+        return self.http_client_factory.host
+
     def __call__(self, request, content):
         content['host'] = self.service_name
         resp, content = self._do_request(content)
