@@ -182,37 +182,30 @@ class TestFixedImporter(unittest.TestCase):
 
 
 class TestConfImporter(unittest.TestCase):
-
-    def test_importer(self):
-        ci = ConfImporter(Conf({
+    def setUp(self):
+        self.ci = ConfImporter(Conf({
             'a': 'a.b.c.Manager'
         }), Conf({
-            'a': {
+            'Manager a': {
                 'd': 123
             }
         }))
 
-        with mock.patch.object(ci, 'import_manager') as meth_import:
-            managers, errors = ci.load()
+    def test_importer(self):
+        with mock.patch.object(self.ci, 'import_manager') as meth_import:
+            managers, errors = self.ci.load()
 
         meth_import.assert_called_once_with('a.b.c.Manager')
         self.assertEqual(
             managers, [ManagerImport(meth_import.return_value, 'a', {'d': 123})])
 
     def test_importer_error(self):
-        ci = ConfImporter(Conf({
-            'a': 'a.b.c.Manager'
-        }), Conf({
-            'a': {
-                'd': 123
-            }
-        }))
-        ci.set_timestamp(100)
+        self.ci.set_timestamp(100)
 
         error = ManagerImportError(
             'a.b.c', 'Manager', AttributeError('No Manager in a.b.c'))
-        with mock.patch.object(ci, 'import_manager', side_effect=error):
-            managers, errors = ci.load()
+        with mock.patch.object(self.ci, 'import_manager', side_effect=error):
+            managers, errors = self.ci.load()
 
         self.assertEqual(managers, [])
         self.assertEqual(errors, [error])

@@ -119,7 +119,7 @@ class BaseConf(collections.Mapping):
             if default_value is not _sentinel:
                 return default_value
             if type is not None:
-                raise TypeError('The key is required but does not exists')
+                raise TypeError(u'The key {0} is required but does not exists'.format(section_id))
             return EmptyConf()
 
         if type and not isinstance(value, type):
