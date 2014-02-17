@@ -11,7 +11,10 @@ from cStringIO import StringIO
 from napixd.http.response import HTTPError
 from napixd.http.headers import HeadersDict
 
-__all__ = ['Request']
+__all__ = [
+    'Request',
+    'Query',
+]
 
 
 class lazy(object):
