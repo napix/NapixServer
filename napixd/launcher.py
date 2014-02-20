@@ -37,10 +37,17 @@ def launch(options, setup_class=None):
     The exceptions are caught and logged.
     The function will block until the server is killed.
     """
-    setup_class = setup_class or Setup
+
+    parser = optparse.OptionParser(usage=Setup.HELP_TEXT)
+    parser.add_option('-p', '--port',
+                      help='The TCP port to listen to',
+                      type='int',
+                      )
+    keys, options = parser.parse_args()
+
     sys.stdin.close()
     try:
-        setup = setup_class(options)
+        setup = setup_class(options, port=keys.port)
     except CannotLaunch as e:
         logger.critical(e)
         return
@@ -163,14 +170,8 @@ Meta-options:
     options:    Show the enabled options and quit
 '''
 
-    def __init__(self, options):
-        parser = optparse.OptionParser(usage=self.HELP_TEXT)
-        parser.add_option('-p', '--port',
-                          help='The TCP port to listen to',
-                          type='int',
-                          default=self.DEFAULT_PORT)
-        self.keys, options = parser.parse_args()
-
+    def __init__(self, options, **keys):
+        self.keys = keys
         nooptions = [opt[2:] for opt in options if opt.startswith('no')]
 
         options = set(options)
@@ -535,7 +536,7 @@ Meta-options:
         return self.DEFAULT_HOST
 
     def get_port(self):
-        return self.keys.port
+        return self.keys.get('port') or self.DEFAULT_PORT
 
     def get_server_options(self):
         self.server = server = self.get_server()
