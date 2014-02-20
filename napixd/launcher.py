@@ -83,10 +83,12 @@ def launch(options, setup_class=None):
         setup = setup_class(options, port=keys.port)
     except CannotLaunch as e:
         logger.critical(e)
+        sys.exit(1)
         return
     except Exception as e:
         logger.exception(e)
         logger.critical(e)
+        sys.exit(-1)
         return
 
     try:
@@ -97,6 +99,7 @@ def launch(options, setup_class=None):
         if 'print_exc' in setup.options:
             logger.exception(e)
         logger.critical(e)
+        sys.exit(3)
 
 
 class CannotLaunch(Exception):
