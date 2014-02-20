@@ -26,6 +26,29 @@ logger = logging.getLogger('Napix.Server')
 console = logging.getLogger('Napix.console')
 
 
+def get_setup_class(class_name):
+    if class_name == 'napixd.launcher.Setup':
+        return Setup
+
+    module, dot, name = class_name.rpartition('.')
+    if not dot:
+        raise CannotLaunch('setup class value is not a valid python dotted class path, eg: napixd.launcher.Setup')
+    try:
+        __import__(module)
+    except Exception as e:
+        raise CannotLaunch('Cannot import {0} because {1}'.format(module, e))
+
+    try:
+        setup_class = getattr(sys.modules[module], name)
+    except AttributeError:
+        raise CannotLaunch('Module {0} has no attribute {1}'.format(module, name))
+
+    if not callable(setup_class):
+        raise CannotLaunch('Setup class {0} is not callable'.format(setup_class))
+
+    return setup_class
+
+
 def launch(options, setup_class=None):
     """
     Helper function to run Napix.
@@ -43,9 +66,20 @@ def launch(options, setup_class=None):
                       help='The TCP port to listen to',
                       type='int',
                       )
+    parser.add_option('-s', '--setup-class',
+                      help='The setup class used to start the Napix server',
+                      )
     keys, options = parser.parse_args()
 
     sys.stdin.close()
+
+    try:
+        setup_class = setup_class or keys.setup_class and get_setup_class(keys.setup_class) or Setup
+    except CannotLaunch as e:
+        sys.stderr.write('{0}\n'.format(e))
+        sys.exit(2)
+        return
+
     try:
         setup = setup_class(options, port=keys.port)
     except CannotLaunch as e:
