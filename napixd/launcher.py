@@ -92,7 +92,8 @@ def launch(options, setup_class=None):
 
     try:
         setup.run()
-    except (KeyboardInterrupt, SystemExit):
+    except (KeyboardInterrupt, SystemExit) as e:
+        logger.warning('Got %s, exiting', e.__class__.__name__)
         return
     except Exception, e:
         if 'print_exc' in setup.options:
