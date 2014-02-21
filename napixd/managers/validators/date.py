@@ -22,15 +22,25 @@ def ISO8601_datetime(iso_string):
 
 
 class DatetimeBoundary(object):
+    """
+    Accepts the date in either the past or the future.
+    """
+
     def __init__(self, direction=None, allow_past=True, allow_future=True):
         if direction is not None:
             if direction not in ('past', 'future'):
                 raise ValueError('Direction must be past or future')
             allow_future = direction == 'future'
             allow_past = direction == 'past'
+        elif not allow_past and not allow_future or allow_future and allow_past:
+            raise ValueError('One of allow_future and allow_past must be set to True')
+        else:
+            direction = 'past' if allow_past else 'future'
 
         self.allow_future = allow_future
         self.allow_past = allow_past
+
+        self.__doc__ = 'The date should be in the {0}'.format(direction)
 
     def __repr__(self):
         if self.allow_past:
