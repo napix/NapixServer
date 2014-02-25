@@ -30,7 +30,9 @@ setup(
     },
     include_package_data=True,
     scripts=[
-        'bin/napixd'
+        'bin/napixd',
+        'bin/napixd-template',
+        'bin/napixd-store',
     ],
     dependency_links=[
     ],
