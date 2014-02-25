@@ -382,14 +382,25 @@ class ResourceField(object):
             'typing': 'static',
             'validators': []
         }
-        extra_keys = set(values).difference(meta)
+
+        expected_keys = set(meta)
+        expected_keys.update([
+            'type',
+            'example',
+            'choices',
+            'typing',
+            'validators',
+        ])
+
+        extra_keys = set(values) - expected_keys
+
         meta.update(values)
 
         self.optional = meta['optional']
         self.computed = meta['computed']
         self.default_on_null = meta['default_on_null']
 
-        self.editable = not self.computed and meta.get('editable', True)
+        self.editable = not self.computed and meta['editable']
 
         explicit_type = meta.get('type')
         if explicit_type and not isinstance(explicit_type, type):
@@ -452,7 +463,17 @@ class ResourceField(object):
 
         self.validators = list(meta['validators'])
 
-        self.extra = dict((k, values[k]) for k in extra_keys)
+        self.extra = extras = {}
+        for extra in extra_keys:
+            value = values[extra]
+            if value is None or isinstance(value, (bool, int, long, float, basestring, dict, list)):
+                # JSON serializable
+                pass
+            elif hasattr(value, '__doc__') and value.__doc__ is not None:
+                value = value.__doc__
+            else:
+                value = unicode(value)
+            extras[extra] = value
 
     def __repr__(self):
         return 'Field <{0}>'.format(self.name)

@@ -146,7 +146,6 @@ class TestResourceFieldsDescriptor(unittest.TestCase):
                 'f2': 'E2',
             }))
 
-
     def test_validate_non_editable(self):
         self.f1.editable = True
         self.f2.editable = False
@@ -194,7 +193,6 @@ class TestResourceFieldsDescriptor(unittest.TestCase):
 
 
 class TestResourceField(unittest.TestCase):
-
     def test_bad_type(self):
         self.assertRaises(ImproperlyConfigured, ResourceField, 'f', {
             'type': 'int'
@@ -239,12 +237,28 @@ class TestResourceField(unittest.TestCase):
             'type': int,
             'example': 1,
             'optional': True,
-            'typing': 'dynamic'
+            'typing': 'dynamic',
         })
         self.assertEqual(rf.type, int)
         self.assertEqual(rf.example, 1)
         self.assertEqual(rf.optional, True)
         self.assertEqual(rf.typing, 'dynamic')
+        self.assertEqual(rf.extra, {})
+
+    def test_extra(self):
+        def a():
+            return
+        rf = ResourceField('f', {
+            'example': 'quack',
+            'unicode': u'unicode',
+            'func_doc': mock.MagicMock(__doc__='my func doc'),
+            'func': a,
+        })
+        self.assertEqual(rf.extra, {
+            'unicode': u'unicode',
+            'func_doc': 'my func doc',
+            'func': unicode(a),
+        })
 
     def test_check_type_dynamic(self):
         rf = ResourceField('f', {
