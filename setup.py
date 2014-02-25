@@ -17,7 +17,7 @@ setup(
     author_email='gr@enix.org',
     install_requires=[
     ],
-    extra_requires={
+    extra_require={
         'base': [
             'dotconf',
             'permissions',
