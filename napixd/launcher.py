@@ -246,7 +246,11 @@ Meta-options:
             factory = CompatConfFactory()
 
         loader = ConfLoader(paths, factory)
-        conf = loader()
+        try:
+            conf = loader()
+        except ValueError as e:
+            raise CannotLaunch('Cannot load conf: {0}'.format(e))
+
         return Conf.set_default(conf)
 
     def _patch_gevent(self):
