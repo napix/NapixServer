@@ -27,7 +27,7 @@ class ConfFactory(object):
             dc = Dotconf(string)
             return Conf(dc.parse())
         except ParsingError as e:
-            raise ValueError('Cannot parse string, {0}'.format(e))
+            raise ValueError('At {0.position}, Cannot parse string, {0}'.format(e))
 
 
 class Conf(conf.BaseConf):
