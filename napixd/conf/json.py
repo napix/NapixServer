@@ -24,6 +24,11 @@ class ConfFactory(object):
                 'Configuration file contains a bad JSON object ({0})'.format(e))
 
 
+class CompatConfFactory(ConfFactory):
+    def parse_file(self, handle):
+        return CompatConf(super(CompatConfFactory, self).parse_file(handle))
+
+
 class Conf(conf.BaseConf):
 
     """
