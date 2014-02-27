@@ -240,13 +240,13 @@ Meta-options:
                 from napixd.conf.dotconf import ConfFactory
             except ImportError:
                 raise CannotLaunch('dotconf option requires the external library dotconf')
-            loader = ConfLoader(paths, ConfFactory())
-            conf = loader()
+            factory = ConfFactory()
         else:
-            from napixd.conf.json import ConfFactory, CompatConf
-            loader = ConfLoader(paths, ConfFactory())
-            conf = CompatConf(loader())
+            from napixd.conf.json import CompatConfFactory
+            factory = CompatConfFactory()
 
+        loader = ConfLoader(paths, factory)
+        conf = loader()
         return Conf.set_default(conf)
 
     def _patch_gevent(self):
