@@ -176,7 +176,11 @@ class Store(BaseStore):
         return self.data.keys()
 
     def incr(self, key, incr=1):
-        self[key] += 1
+        try:
+            self[key] += 1
+        except KeyError:
+            self[key] = 1
+
         return self[key]
 
     def drop(self):
