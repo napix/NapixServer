@@ -160,20 +160,17 @@ def view(format, content_type=None):
         @functools.wraps(fn)
         def inner_view(self, resource, response):
             return_value = fn(self, resource, response)
+
             if not 'Content-Type' in response.headers:
-                if isinstance(return_value, unicode):
-                    response.set_header('Content-Type', 'text/plain; charset=utf-8')
-                    return return_value.encode('utf-8')
-
-                if isinstance(return_value, str):
-                    response.set_header('Content-Type', 'text/plain')
+                if isinstance(return_value, unicode) and _content_type == 'text/plain':
+                    content_type = 'text/plain; charset=utf-8'
+                    return_value = return_value.encode('utf-8')
+                elif isinstance(return_value, (dict, list)):
                     return return_value
+                else:
+                    content_type = _content_type
 
-                if isinstance(return_value, (dict, list)):
-                    return return_value
-
-                response.set_header('Content-Type', _content_type)
-
+                response.set_header('Content-Type', content_type)
             return return_value
 
         inner_view._napix_view = format
