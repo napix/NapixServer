@@ -102,6 +102,13 @@ class TestServer(unittest.TestCase):
         self.assertEqual(resp.headers['content-length'], '17')
         self.assertEqual(resp.body, ['See /pim/pam/poum'])
 
+    def test_cast_response_text(self):
+        r = HTTPResponse({'Content-Type': 'text/yaml'}, '''base:\n  '*':\n    webserver''')
+        resp = self.cast(r)
+        self.assertEqual(resp.headers['content-length'], '26')
+        self.assertEqual(resp.headers['content-type'], 'text/yaml')
+        self.assertEqual(resp.body, ['''base:\n  '*':\n    webserver'''])
+
 
 class TestServerRouter(unittest.TestCase):
     def setUp(self):

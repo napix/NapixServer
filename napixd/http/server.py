@@ -108,7 +108,7 @@ class WSGIServer(object):
         content_type = headers.get('Content-Type', '')
         content_length = headers.get('Content-Length', None)
 
-        if status != 200 and isinstance(body, basestring):
+        if isinstance(body, basestring):
             if not content_type:
                 content_type = 'text/plain'
             if isinstance(body, unicode):
