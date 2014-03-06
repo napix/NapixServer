@@ -6,7 +6,15 @@ import unittest
 import mock
 
 from napixd.exceptions import ValidationError
-from napixd.managers.validators.list import Map
+from napixd.managers.validators.list import Map, not_empty
+
+
+class Test_not_empty(unittest.TestCase):
+    def test_is_empty(self):
+        self.assertRaises(ValidationError, not_empty, [])
+
+    def test_is_not_empty(self):
+        self.assertEqual(not_empty([1, 2]), [1, 2])
 
 
 class TestMap(unittest.TestCase):

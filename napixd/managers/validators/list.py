@@ -4,6 +4,13 @@
 from napixd.exceptions import ValidationError, ImproperlyConfigured
 
 
+def not_empty(values):
+    '''The list must not be empty'''
+    if len(values) == 0:
+        raise ValidationError('This list cannot be empty')
+    return values
+
+
 class Map(object):
     """
     Each value of the proposed list is submitted in order to each of the validators
