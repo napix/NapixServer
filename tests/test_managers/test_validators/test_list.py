@@ -65,3 +65,14 @@ class TestMap(unittest.TestCase):
             self.fail('Unexpected {0}'.format(e))
         else:
             self.fail('ValidationError not raised')
+
+    def test_doctstring(self):
+        def a():
+            pass
+
+        def b():
+            '''this and that'''
+            pass
+
+        self.validators = [a, b]
+        self.assertEqual(self.map().__doc__, 'a\n\nthis and that')

@@ -5,6 +5,10 @@ from napixd.exceptions import ValidationError, ImproperlyConfigured
 
 
 class Map(object):
+    """
+    Each value of the proposed list is submitted in order to each of the validators
+    and the list of the results is returned.
+    """
     def __init__(self, *validators):
         if not validators:
             raise ImproperlyConfigured('Map requires at least one validator')
@@ -12,6 +16,7 @@ class Map(object):
             raise ImproperlyConfigured('Map requires a list of validtors')
 
         self.validators = list(validators)
+        self.__doc__ = '\n\n'.join(v.__doc__ or v.__name__ for v in self.validators)
 
     def __call__(self, value_list):
         errors = {}
