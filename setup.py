@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="napixd",
-    version="1.7.3",
+    version="1.7.4",
     packages=find_packages(
         exclude=[
             'napixd.examples',
