@@ -437,7 +437,7 @@ class Manager(object):
         By default, this method checks if the id is not an empty string.
         """
         if id_ == '':
-            raise ValidationError
+            raise ValidationError('A non empty ID is expected')
         return id_
 
     def validate_resource(self, resource_dict, origin=None):
