@@ -69,7 +69,7 @@ def launch(options, setup_class=None):
     parser.add_option('-s', '--setup-class',
                       help='The setup class used to start the Napix server',
                       )
-    keys, options = parser.parse_args()
+    keys, options = parser.parse_args(options)
 
     sys.stdin.close()
 
@@ -555,8 +555,8 @@ Meta-options:
         application = self.get_app()
         application = self.apply_middleware(application)
         if self.options.unchecked:
-            self.logger.warning('Unchecked Options are: %s',
-                                ','.join(self.options.unchecked))
+            logger.warning('Unchecked Options are: %s',
+                           ','.join(self.options.unchecked))
         return application
 
     def get_server(self):
