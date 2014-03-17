@@ -7,16 +7,13 @@ import collections
 __all__ = ('ResourceWrapper', )
 
 
-class cached_property(object):
+class setable_property(object):
     def __init__(self, fn):
         self.fn = fn
         self.__doc__ = fn.__doc__
 
     def __get__(self, instance, owner):
-        if instance is None:
-            return self
-        v = instance.__dict__[self.fn.__name__] = self.fn(instance)
-        return v
+        return self.fn(instance)
 
 
 class ResourceWrapper(collections.Mapping):
@@ -39,7 +36,12 @@ class ResourceWrapper(collections.Mapping):
         self.manager = manager
         self.id = id
         if resource:
-            self.resource = resource
+            self._set_resource(resource)
+
+    def _set_resource(self, r):
+        self._is_a_dict = isinstance(r, collections.Mapping)
+        self.resource = r
+        return r
 
     @property
     def request(self):
@@ -50,15 +52,21 @@ class ResourceWrapper(collections.Mapping):
         return 'resource' in self.__dict__
 
     def __len__(self):
-        return len(self.resource)
+        return len(self._ensure_is_dict())
 
     def __iter__(self):
-        return iter(self.resource)
+        return iter(self._ensure_is_dict())
 
     def __getitem__(self, item):
-        return self.resource[item]
+        return self._ensure_is_dict()[item]
 
-    @cached_property
+    def _ensure_is_dict(self):
+        r = self.resource
+        if not self._is_a_dict:
+            raise ValueError('Proxy getitem is only available on Mapping instances')
+        return r
+
+    @setable_property
     def resource(self):
         """
         The value of the resource as retruned by
@@ -66,7 +74,7 @@ class ResourceWrapper(collections.Mapping):
 
         This value is lazily loaded and cached.
         """
-        return self.manager.get_resource(self.id)
+        return self._set_resource(self.manager.get_resource(self.id))
 
     def __repr__(self):
         return 'Resource {0} of `{1}` {2}'.format(

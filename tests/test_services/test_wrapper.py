@@ -40,3 +40,19 @@ class TestWrapper(unittest.TestCase):
         self.assertFalse(rw.loaded)
         rw.resource
         self.assertTrue(rw.loaded)
+
+
+class TestWrapperObject(unittest.TestCase):
+    def setUp(self):
+        self.mgr = mock.Mock()
+        self.resource = mock.Mock()
+        self.rw = ResourceWrapper(self.mgr, 'id', self.resource)
+
+    def test_object_getitem(self):
+        self.assertRaises(ValueError, lambda: self.rw[1])
+
+    def test_object_iter(self):
+        self.assertRaises(ValueError, iter, self.rw)
+
+    def test_object_len(self):
+        self.assertRaises(ValueError, len, self.rw)
