@@ -21,7 +21,7 @@ Callback
 
 The signature of the decorated view is::
 
-    formatter( self, resource, response)
+    formatter(self, resource, response)
 
 self
     is the instance of the manager.
