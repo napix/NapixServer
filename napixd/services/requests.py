@@ -131,13 +131,13 @@ class ServiceRequest(object):
 
             self.end_request()
             return self.serialize(result)
-        except ValidationError, e:
+        except ValidationError as e:
             raise HTTPError(400, dict(e))
-        except NotFound, e:
-            raise HTTPError(404, '`{0}` not found'.format(unicode(e)))
-        except Duplicate, e:
-            raise HTTPError(409, '`{0}` already exists'.format(
-                unicode(e) or 'object'))
+        except NotFound as e:
+            raise HTTPError(404, u'`{0}` not found'.format(unicode(e)))
+        except Duplicate as e:
+            raise HTTPError(409, u'`{0}` already exists'.format(
+                unicode(e) or u'object'))
         finally:
             if self.lock is not None:
                 self.lock.release()

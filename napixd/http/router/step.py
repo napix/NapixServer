@@ -31,7 +31,7 @@ class URLTarget(object):
     def __init__(self, target):
         self.arguments = []
         self._target = target.split('/')
-        if self._target[0] != '':
+        if self._target[0] != u'':
             raise ValueError('Path does not start with a /')
         self._idx = 0
         self._len = len(self._target) - 1
@@ -65,7 +65,7 @@ class URLTarget(object):
         """
         Add an argument to the list of :attr:`arguments`.
         """
-        self.arguments.append(urllib.unquote(arg))
+        self.arguments.append(urllib.unquote(arg).decode('utf-8'))
 
 
 class RouteTaken(Exception):
