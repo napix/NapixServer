@@ -10,31 +10,33 @@ from napixd.services.wrapper import ResourceWrapper
 
 
 class TestWrapper(unittest.TestCase):
+    def setUp(self):
+        self.mgr = mock.Mock()
+        self.resource = None
+
+    def rw(self):
+        return ResourceWrapper(self.mgr, 'id', self.resource)
+
     def test_evaluation(self):
-        mgr = mock.Mock()
-        rw = ResourceWrapper(mgr, 'id')
-        self.assertEqual(rw.resource, mgr.get_resource.return_value)
+        rw = self.rw()
+        self.assertEqual(rw.resource, self.mgr.get_resource.return_value)
 
     def test_evaluated(self):
-        mgr = mock.Mock()
-        resource = mock.Mock()
-        rw = ResourceWrapper(mgr, 'id', resource)
-        self.assertEqual(rw.resource, resource)
-        self.assertEqual(mgr.get_resource.call_count, 0)
+        self.resource = mock.Mock()
+        rw = self.rw()
+        self.assertEqual(rw.resource, self.resource)
+        self.assertEqual(self.mgr.get_resource.call_count, 0)
 
     def test_dict(self):
-        mgr = mock.Mock()
-        rw = ResourceWrapper(mgr, 'id', {'a': 1})
-        self.assertEqual(dict(rw), {'a': 1})
+        self.resource = {'a': 1}
+        self.assertEqual(dict(self.rw()), {'a': 1})
 
     def test_loaded_init(self):
-        mgr = mock.Mock()
-        rw = ResourceWrapper(mgr, 'id', {'a': 1})
-        self.assertTrue(rw.loaded)
+        self.resource = {'a': 1}
+        self.assertTrue(self.rw().loaded)
 
     def test_loaded(self):
-        mgr = mock.Mock()
-        rw = ResourceWrapper(mgr, 'id')
+        rw = self.rw()
         self.assertFalse(rw.loaded)
         rw.resource
         self.assertTrue(rw.loaded)
