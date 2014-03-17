@@ -51,6 +51,10 @@ class ResourceWrapper(collections.Mapping):
     def loaded(self):
         return 'resource' in self.__dict__
 
+    def __nonzero__(self):
+        self.resource
+        return True
+
     def __len__(self):
         return len(self._ensure_is_dict())
 

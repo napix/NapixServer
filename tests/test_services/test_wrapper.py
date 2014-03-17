@@ -41,6 +41,11 @@ class TestWrapper(unittest.TestCase):
         rw.resource
         self.assertTrue(rw.loaded)
 
+    def test_object_bool(self):
+        rw = self.rw()
+        self.assertTrue(bool(rw))
+        self.assertTrue(rw.loaded)
+
 
 class TestWrapperObject(unittest.TestCase):
     def setUp(self):
@@ -56,3 +61,6 @@ class TestWrapperObject(unittest.TestCase):
 
     def test_object_len(self):
         self.assertRaises(ValueError, len, self.rw)
+
+    def test_object_bool(self):
+        self.assertTrue(bool(self.rw))
