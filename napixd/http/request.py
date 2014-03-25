@@ -51,7 +51,7 @@ class Query(collections.Mapping):
             for key, value in raw:
                 values[key].append(value)
         else:
-            raise TypeError('value is instanciated with a dict or a string')
+            raise TypeError('value is instantiated with a dict or a string')
 
         self.values = dict(values)
 

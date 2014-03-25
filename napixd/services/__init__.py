@@ -59,6 +59,7 @@ class ServedManager(object):
                 self.url == other.url and
                 self.configuration == other.configuration and
                 self.extractor == other.extractor and
+                self.namespaces == other.namespaces and
                 self.lock == other.lock
                 )
 

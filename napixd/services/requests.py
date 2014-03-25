@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-The services instanciate a instance of a :class:`ServiceRequest` sub-class
+The services instantiate a instance of a :class:`ServiceRequest` sub-class
 to handle the specific work of a request.
 """
 

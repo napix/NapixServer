@@ -71,6 +71,10 @@ class BaseCollectionService(object):
         self.resource_fields = served_manager.resource_fields
         self.meta_data = served_manager.meta_data
 
+    def __repr__(self):
+        return '{0} of {1}'.format(self.__class__.__name__,
+                                   self.served_manager)
+
     def _generate_manager(self, resource, request):
         """
         instantiate a manager for the given resource
@@ -209,7 +213,7 @@ class CollectionService(BaseCollectionService):
 
     def _generate_manager(self, resource, request):
         """
-        instanciate a manager for the given resource
+        instantiate a manager for the given resource
         """
         resource = self.extractor(resource)
         return super(CollectionService, self)._generate_manager(resource, request)
