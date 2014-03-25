@@ -467,34 +467,6 @@ class Manager(object):
             resource_dict = self._resource_fields.validate(resource_dict, None)
         return self.validate_resource(resource_dict, original)
 
-    def end_managed_request(self, request, resource):
-        """
-        Place holder method which is called
-        after a http request
-        when the class act as a managed class for the given resource
-        """
-        pass
-
-    def start_managed_request(self, request, resource):
-        """
-        Place holder method which is called
-        before a http request
-        when the class act as a managed class for the given resource
-        """
-        pass
-
-    def start_request(self, request):
-        """
-        place holder method that is called at the start of each HTTP request
-        """
-        pass
-
-    def end_request(self, request):
-        """
-        place holder method that is called at the end of each HTTP request
-        """
-        pass
-
 
 class ManagerInterface(object):
 

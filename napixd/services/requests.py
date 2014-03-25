@@ -89,18 +89,6 @@ class ServiceRequest(object):
         """
         raise NotImplementedError
 
-    def start_request(self):
-        for manager, wrapper in self.all_managers:
-            manager.start_request(self.request)
-            manager.start_managed_request(self.request, wrapper)
-        self.manager.start_request(self.request)
-
-    def end_request(self):
-        self.manager.end_request(self.request)
-        for manager, wrapper in reversed(self.all_managers):
-            manager.end_managed_request(self.request, wrapper)
-            manager.end_request(self.request)
-
     def serialize(self, result):
         """
         Serialize the *result* into something meaningful.
@@ -120,7 +108,6 @@ class ServiceRequest(object):
         try:
             # obtient l'object designé
             self.manager = self.get_manager()
-            self.start_request()
 
             # recupère la vue qui va effectuer la requete
             self.callback = self.get_callback()
@@ -129,7 +116,6 @@ class ServiceRequest(object):
             # recupere les arguments a passer a cette vue
             result = self.call()
 
-            self.end_request()
             return self.serialize(result)
         except ValidationError as e:
             raise HTTPError(400, dict(e))
