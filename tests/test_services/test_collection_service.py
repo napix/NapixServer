@@ -55,8 +55,7 @@ class TestFirstCollectionService(unittest.TestCase):
         managers, manager = self.fcs.get_managers([], self.request)
 
         self.assertEqual(managers, [])
-        self.assertEqual(manager, self.Manager.return_value)
-        self.Manager.return_value.configure.assert_called_once_with(self.conf)
+        self.assertEqual(manager, self.served_manager.instantiate.return_value)
 
     def test_as_meta(self):
         self.assertEqual(self.fcs.as_help(self.request),
@@ -175,13 +174,10 @@ class TestCollectionService(unittest.TestCase):
         managers, manager = self.cs.get_managers(['abc'], self.request)
 
         self.ps.get_managers.assert_called_once_with([], self.request)
-        self.assertEqual(manager, self.Manager.return_value)
+        self.assertEqual(manager, self.served_manager.instantiate.return_value)
         self.assertEqual(managers, [
             (pmgr, ResourceWrapper(pmgr, pmgr.validate_id.return_value)),
         ])
-        self.assertEqual(manager, self.Manager.return_value)
-        self.Manager.assert_called_once_with(self.extractor.return_value, self.request)
-        self.extractor.assert_called_once_with(ResourceWrapper(pmgr, pmgr.validate_id.return_value))
         pmgr.get_resource.assert_called_once_with(pmgr.validate_id.return_value)
         pmgr.validate_id.assert_called_once_with('abc')
 

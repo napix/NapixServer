@@ -55,6 +55,11 @@ class ServedManager(object):
                 self.lock == other.lock
                 )
 
+    def instantiate(self, resource, request):
+        manager = self.manager_class(resource, request)
+        manager.configure(self.configuration)
+        return manager
+
     @property
     def resource_fields(self):
         """

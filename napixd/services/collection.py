@@ -56,8 +56,8 @@ class BaseCollectionService(object):
     """
 
     def __init__(self, served_manager):
+        self.served_manager = served_manager
         self.collection = served_manager.manager_class
-        self.config = served_manager.configuration
 
         self.collection_url = served_manager.url
         self.resource_url = self.collection_url.add_variable()
@@ -75,9 +75,7 @@ class BaseCollectionService(object):
         """
         instantiate a manager for the given resource
         """
-        manager = self.collection(resource, request)
-        manager.configure(self.config)
-        return manager
+        return self.served_manager.instantiate(resource, request)
 
     def setup_bottle(self, app):
         """
