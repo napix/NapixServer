@@ -34,13 +34,13 @@ class ServiceRequest(object):
 
     METHOD_MAP = {}
 
-    def __init__(self, request, path, service):
-        self.request = request
-        self.method = request.method
-        self.service = service
+    def __init__(self, context, path):
+        self.context = context
+        self.method = context.method
+        self.service = context.service
         # Parse the url components
         self.path = list(path)
-        self.lock = service.lock
+        self.lock = self.service.lock
 
     @classmethod
     def available_methods(cls, manager):
@@ -67,8 +67,8 @@ class ServiceRequest(object):
         """
         Retreive the manager associated with the current request
         """
-        self.all_managers, manager = self.service.get_managers(
-            self.path if path is None else path, self.request)
+        self.all_managers, manager = self.context.get_managers(
+            self.path if path is None else path)
         return manager
 
     def get_callback(self):
@@ -162,10 +162,10 @@ class ServiceCollectionRequest(ServiceRequest):
         return Implementation(manager)
 
     def get_callback(self):
-        if (self.method == 'GET' and self.request.GET):
-            getall = 'getall' in self.request.GET
+        if self.method == 'GET' and self.context.parameters:
+            getall = 'getall' in self.context.parameters
             # remove ?getall= from GET examine other parameters
-            filter = (len(self.request.GET) - int(getall) and
+            filter = (len(self.context.parameters) - int(getall) and
                       hasattr(self.manager, self.METHOD_MAP['filter']))
 
             if getall and filter:
@@ -180,14 +180,14 @@ class ServiceCollectionRequest(ServiceRequest):
         if self.method != 'POST':
             return super(ServiceCollectionRequest, self).check_datas()
 
-        data = self.request.data
+        data = self.context.data
         return self.manager.validate(data, None)
 
     def call(self):
         if self.method == 'POST':
             return self.callback(self.data)
         elif 'filter' in self.method:
-            return self.callback(self.request.GET)
+            return self.callback(self.context.parameters)
         else:
             return self.callback()
 
@@ -274,7 +274,7 @@ class ServiceResourceRequest(ServiceRequest):
         if result is None:
             raise ValueError('resource cannot be None')
 
-        format_ = self.request.GET.get('format', None)
+        format_ = self.context.parameters.get('format', None)
         if not format_:
             return self.default_formatter(result)
         try:
@@ -325,7 +325,7 @@ class ServiceResourceRequest(ServiceRequest):
         if self.method != 'PUT':
             return super(ServiceResourceRequest, self).check_datas()
 
-        data = self.request.data
+        data = self.context.data
         return self.manager.validate(data, self.resource.resource)
 
 
@@ -334,13 +334,13 @@ class ServiceActionRequest(ServiceResourceRequest):
         'POST': 'get_resource',
     }
 
-    def __init__(self, request, path, service, action_name):
-        super(ServiceActionRequest, self).__init__(request, path, service)
+    def __init__(self, context, path, action_name):
+        super(ServiceActionRequest, self).__init__(context, path)
         self.action_name = action_name
 
     def check_datas(self):
         callback = getattr(self.manager, self.action_name)
-        data = callback.resource_fields.validate(self.request.data)
+        data = callback.resource_fields.validate(self.context.data)
         return data
 
     def get_callback(self):

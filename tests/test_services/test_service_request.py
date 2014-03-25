@@ -10,6 +10,7 @@ from napixd.managers.managed_classes import ManagedClass
 from napixd.exceptions import ValidationError, NotFound, Duplicate
 from napixd.services.urls import URL
 from napixd.services.collection import (
+    HTTPCollectionContext,
     CollectionService,
     ActionService
 )
@@ -38,15 +39,19 @@ class MyServiceRequest(ServiceRequest):
 
 class TestServiceRequest(unittest.TestCase):
     def setUp(self):
-        self.request = mock.Mock(spec=Request, method='GET')
         self.cs = mock.Mock(
             spec=CollectionService,
             lock=mock.Mock(spec=Lock),
         )
-        self.cs.get_managers.return_value = ([], mock.Mock())
+        self.context = mock.Mock(
+            spec=HTTPCollectionContext,
+            service=self.cs,
+            method='GET',
+        )
+        self.context.get_managers.return_value = ([], mock.Mock())
 
     def sr(self):
-        return MyServiceRequest(self.request, [], self.cs)
+        return MyServiceRequest(self.context, [])
 
     def test_handle_lock(self):
         lock = self.cs.lock
@@ -59,7 +64,6 @@ class TestServiceRequest(unittest.TestCase):
 
 class TestServiceManagedClassesRequest(unittest.TestCase):
     def setUp(self):
-        self.request = mock.Mock(spec=Request, method='GET')
         mc = mock.Mock(spec=ManagedClass)
         mc.get_name.return_value = 'def'
         self.manager = manager = mock.Mock()
@@ -70,16 +74,21 @@ class TestServiceManagedClassesRequest(unittest.TestCase):
             lock=None,
             collection=manager,
             resource_url=url)
-        self.cs.get_managers.return_value = ([], manager)
+        self.context = mock.Mock(
+            spec=HTTPCollectionContext,
+            method='GET',
+            service=self.cs,
+        )
+        self.context.get_managers.return_value = ([], manager)
 
     def smcr(self):
-        return ServiceManagedClassesRequest(self.request, ['123'], self.cs)
+        return ServiceManagedClassesRequest(self.context, ['123'])
 
     def test_handle(self):
         self.assertEqual(self.smcr().handle(), ['/abc/123/def'])
 
     def test_handle_method(self):
-        self.request.method = 'POST'
+        self.context.method = 'POST'
         self.assertRaises(HTTP405, self.smcr().handle)
 
 
@@ -90,8 +99,6 @@ def serialize(value):
 
 class TestServiceCollectionRequest(unittest.TestCase):
     def setUp(self):
-        self.request = mock.Mock(spec=Request, method='GET')
-        self.request.GET = self.GET = {}
         self.manager = manager = mock.Mock()
         self.manager.serialize.side_effect = serialize
         self.url = url = URL(['abc', None])
@@ -99,14 +106,23 @@ class TestServiceCollectionRequest(unittest.TestCase):
             spec=CollectionService,
             lock=None,
             collection=manager,
-            resource_url=url)
-        self.cs.get_managers.return_value = ([], manager)
+            resource_url=url
+        )
+        self.context = mock.Mock(
+            spec=HTTPCollectionContext,
+            method='GET',
+            parameters={},
+            service=self.cs,
+            data=mock.Mock(name='data'),
+        )
+
+        self.context.get_managers.return_value = ([], manager)
 
     def scr(self):
-        return ServiceCollectionRequest(self.request, [], self.cs)
+        return ServiceCollectionRequest(self.context, [])
 
     def test_handle_other(self):
-        self.request.method = 'DELETE'
+        self.context.method = 'DELETE'
         try:
             self.scr().handle()
         except HTTPError as e:
@@ -116,7 +132,7 @@ class TestServiceCollectionRequest(unittest.TestCase):
             self.fail()
 
     def test_handle_post(self):
-        self.request.method = 'POST'
+        self.context.method = 'POST'
         self.manager.create_resource.return_value = 345
 
         r = self.scr().handle()
@@ -125,11 +141,11 @@ class TestServiceCollectionRequest(unittest.TestCase):
         self.assertEqual(r.headers['Location'], '/abc/345')
 
         v = self.manager.validate
-        v.assert_called_once_with(self.request.data, None)
+        v.assert_called_once_with(self.context.data, None)
         self.manager.create_resource.assert_called_once_with(v.return_value)
 
     def test_handle_post_conflict(self):
-        self.request.method = 'POST'
+        self.context.method = 'POST'
         self.manager.create_resource.side_effect = Duplicate()
         try:
             self.scr().handle()
@@ -139,7 +155,7 @@ class TestServiceCollectionRequest(unittest.TestCase):
             self.fail()
 
     def test_handle_post_bad(self):
-        self.request.method = 'POST'
+        self.context.method = 'POST'
         self.manager.create_resource.return_value = None
         self.assertRaises(ValueError, self.scr().handle)
 
@@ -155,7 +171,7 @@ class TestServiceCollectionRequest(unittest.TestCase):
         self.assertRaises(ValueError, self.scr().handle)
 
     def test_handle_getall(self):
-        self.GET['getall'] = None
+        self.context.parameters['getall'] = None
         self.manager.get_all_resources.return_value = [
             [678, {'mpm': 'prefork'}],
             [345, {'mpm': 'worker'}],
@@ -169,7 +185,7 @@ class TestServiceCollectionRequest(unittest.TestCase):
         })
 
     def test_handle_getall_bad(self):
-        self.GET['getall'] = None
+        self.context.parameters['getall'] = None
         self.manager.get_all_resources.return_value = [
             {'mpm': 'prefork'},
             {'mpm': 'worker'},
@@ -177,12 +193,12 @@ class TestServiceCollectionRequest(unittest.TestCase):
         self.assertRaises(ValueError, self.scr().handle)
 
     def test_handle_getall_bad_bis(self):
-        self.GET['getall'] = None
+        self.context.parameters['getall'] = None
         self.manager.get_all_resources.return_value = None
         self.assertRaises(ValueError, self.scr().handle)
 
     def test_handle_head(self):
-        self.request.method = 'HEAD'
+        self.context.method = 'HEAD'
         self.manager.list_resource.return_value = [678, 123]
 
         r = self.scr().handle()
@@ -191,7 +207,7 @@ class TestServiceCollectionRequest(unittest.TestCase):
         self.assertEqual(r, None)
 
     def test_handle_get_filter(self):
-        self.GET['nut_type'] = 'peanut'
+        self.context.parameters['nut_type'] = 'peanut'
         self.manager.list_resource_filter.return_value = [678, 123]
 
         r = self.scr().handle()
@@ -200,8 +216,8 @@ class TestServiceCollectionRequest(unittest.TestCase):
         self.assertEqual(r, ['/abc/678', '/abc/123'])
 
     def test_handle_getall_filter(self):
-        self.GET['getall'] = None
-        self.GET['nut_type'] = 'peanut'
+        self.context.parameters['getall'] = None
+        self.context.parameters['nut_type'] = 'peanut'
 
         self.manager.get_all_resources_filter.return_value = [
             [678, {'mpm': 'prefork'}],
@@ -226,8 +242,6 @@ def validate_id(value):
 
 class TestServiceResourceRequest(unittest.TestCase):
     def setUp(self):
-        self.request = mock.Mock(spec=Request, method='GET')
-        self.request.GET = self.GET = {}
         self.manager = manager = mock.Mock()
         self.manager.validate_id.side_effect = validate_id
         self.manager.serialize.side_effect = serialize
@@ -237,10 +251,17 @@ class TestServiceResourceRequest(unittest.TestCase):
             lock=None,
             collection=manager,
             resource_url=url)
-        self.cs.get_managers.return_value = ([], manager)
+        self.context = mock.Mock(
+            spec=HTTPCollectionContext,
+            service=self.cs,
+            method='GET',
+            parameters={},
+            data=mock.Mock(name='data'),
+        )
+        self.context.get_managers.return_value = ([], manager)
 
     def srr(self):
-        return ServiceResourceRequest(self.request, ['123'], self.cs)
+        return ServiceResourceRequest(self.context, ['123'])
 
     def test_handle_get(self):
         self.manager.get_resource.return_value = {'mpm': 'prefork'}
@@ -265,7 +286,7 @@ class TestServiceResourceRequest(unittest.TestCase):
         self.assertRaises(ValueError, self.srr().handle)
 
     def test_handle_put(self):
-        self.request.method = 'PUT'
+        self.context.method = 'PUT'
         self.manager.modify_resource.return_value = None
 
         r = self.srr().handle()
@@ -273,14 +294,14 @@ class TestServiceResourceRequest(unittest.TestCase):
 
         o = self.manager.get_resource.return_value
         v = self.manager.validate
-        v.assert_called_once_with(self.request.data, o)
+        v.assert_called_once_with(self.context.data, o)
         self.manager.modify_resource.assert_called_once_with(
             ResourceWrapper(self.manager, 123, o),
             v.return_value
         )
 
     def test_handle_put_validation_error(self):
-        self.request.method = 'PUT'
+        self.context.method = 'PUT'
         self.manager.validate.side_effect = ValidationError({
             'mpm': 'This is prefork or worker'
         })
@@ -296,7 +317,7 @@ class TestServiceResourceRequest(unittest.TestCase):
             self.fail()
 
     def test_handle_put_new_id(self):
-        self.request.method = 'PUT'
+        self.context.method = 'PUT'
         self.manager.modify_resource.return_value = 312
 
         r = self.srr().handle()
@@ -304,13 +325,13 @@ class TestServiceResourceRequest(unittest.TestCase):
         self.assertEqual(r.headers['Location'], '/abc/312')
 
     def test_handle_head(self):
-        self.request.method = 'HEAD'
+        self.context.method = 'HEAD'
         self.manager.get_resource.return_value = {'mpm': 'prefork'}
         r = self.srr().handle()
         self.assertEqual(r, None)
 
     def test_handle_get_format_none(self):
-        self.GET['format'] = 'pouet'
+        self.context.parameters['format'] = 'pouet'
         o = self.manager.get_resource.return_value = {'mpm': 'prefork'}
         formatter = self.manager.get_formatter.return_value
         formatter.return_value = None
@@ -320,7 +341,7 @@ class TestServiceResourceRequest(unittest.TestCase):
         formatter.assert_called_once_with(ResourceWrapper(self.manager, 123, o), r)
 
     def test_handle_get_format_not_exist(self):
-        self.GET['format'] = 'pouet'
+        self.context.parameters['format'] = 'pouet'
         self.manager.get_all_formats.return_value = {'this': '', 'that': ''}
         self.manager.get_formatter.side_effect = KeyError()
 
@@ -328,7 +349,7 @@ class TestServiceResourceRequest(unittest.TestCase):
         self.assertEqual(r.status, 406)
 
     def test_handle_get_format_other_headers(self):
-        self.GET['format'] = 'pouet'
+        self.context.parameters['format'] = 'pouet'
         o = self.manager.get_resource.return_value = {'mpm': 'prefork'}
 
         def formatter(res, resp):
@@ -343,7 +364,7 @@ class TestServiceResourceRequest(unittest.TestCase):
         self.assertEqual(r.headers['Content-Type'], 'text/plain')
 
     def test_handle_delete(self):
-        self.request.method = 'DELETE'
+        self.context.method = 'DELETE'
         self.srr().handle()
         self.manager.delete_resource.assert_called_once_with(
             ResourceWrapper(self.manager, 123))
@@ -351,21 +372,27 @@ class TestServiceResourceRequest(unittest.TestCase):
 
 class TestServiceActionRequest(unittest.TestCase):
     def setUp(self):
-        self.request = mock.Mock(spec=Request, method='POST')
-        self.request.GET = self.GET = {}
         self.manager = manager = mock.Mock()
         self.url = url = URL(['abc', None])
         self.acs = mock.Mock(
             spec=ActionService,
             collection=manager,
             lock=mock.Mock(spec=Lock),
-            resource_url=url)
-        self.acs.get_managers.return_value = ([], manager)
+            resource_url=url
+        )
         self.action = self.manager.do_the_stuff
         self.action.resource_fields.validate.return_value = {}
+        self.context = mock.Mock(
+            spec=HTTPCollectionContext,
+            service=self.acs,
+            method='POST',
+            data=mock.Mock(name='data'),
+            parameters={},
+        )
+        self.context.get_managers.return_value = ([], manager)
 
     def sar(self):
-        return ServiceActionRequest(self.request, [123], self.acs, 'do_the_stuff')
+        return ServiceActionRequest(self.context, [123], 'do_the_stuff')
 
     def test_handle(self):
         r = self.sar().handle()

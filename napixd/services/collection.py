@@ -21,6 +21,18 @@ __all__ = (
 )
 
 
+class HTTPCollectionContext(object):
+    def __init__(self, cs, request):
+        self.service = cs
+        self.request = request
+        self.method = request.method
+        self.parameters = request.GET
+        self.data = request.data
+
+    def get_managers(self, path):
+        return self.service.get_managers(path, self.request)
+
+
 class BaseCollectionService(object):
     """
     Abstract class used by :class:`FirstCollectionService` and
@@ -118,13 +130,13 @@ class BaseCollectionService(object):
         """
         Launches a request on a resource of this manager
         """
-        return ServiceResourceRequest(request, list(path), self).handle()
+        return ServiceResourceRequest(HTTPCollectionContext(self, request), list(path)).handle()
 
     def as_collection(self, request, *path):
         """
         Launches a request on this manager as a collection
         """
-        return ServiceCollectionRequest(request, list(path), self).handle()
+        return ServiceCollectionRequest(HTTPCollectionContext(self, request), list(path)).handle()
 
     def as_list_actions(self, request, *path):
         """
@@ -138,7 +150,7 @@ class BaseCollectionService(object):
         Lists the :attr:`managed classes<napixd.managers.base.Manager.managed_class>`
         of this manager.
         """
-        return ServiceManagedClassesRequest(request, list(path), self).handle()
+        return ServiceManagedClassesRequest(HTTPCollectionContext(self, request), list(path)).handle()
 
     def as_help(self, request, *path):
         """
@@ -242,7 +254,7 @@ class ActionService(object):
         return self.service.get_managers(path, request)
 
     def as_action(self, request, *path):
-        return ServiceActionRequest(request, path, self, self.action).handle()
+        return ServiceActionRequest(HTTPCollectionContext(self, request), path, self.action).handle()
 
     def as_help(self, request, *path):
         """
