@@ -39,12 +39,19 @@ class ServedManager(object):
 
     The *extractor* is the extractor used for the managed classes.
     """
-    def __init__(self, manager_class, configuration, url, lock=None, extractor=None):
+    def __init__(self, service, manager_class, configuration, url, namespaces, lock=None, extractor=None):
+        self.service = service
         self.manager_class = manager_class
         self.url = url
         self.configuration = configuration
         self.lock = lock
         self.extractor = extractor
+        self.namespaces = namespaces
+
+    def __repr__(self):
+        return '{0} at /{1}'.format(
+            self.manager_class.get_name(),
+            '/'.join(self.namespaces))
 
     def __eq__(self, other):
         return (isinstance(other, ServedManager) and
@@ -156,7 +163,7 @@ class Service(object):
         configuration an instance of Conf for this collection
         """
         self.configuration = configuration
-        self.collection_services = []
+        self._collection_services = {}
         self.url = URL([namespace])
 
         if 'Lock' in configuration:
@@ -169,43 +176,52 @@ class Service(object):
         else:
             self.lock = None
 
+        namespaces = (namespace, )
         service = FirstCollectionService(
             ServedManager(
+                self,
                 collection,
                 self.configuration,
                 self.url,
+                namespaces,
                 lock=self.lock,
             ))
-        self._append_service(service)
-        self.create_collection_service(collection, namespace, service, 0)
 
-    def _append_service(self, service):
-        self.collection_services.append(service)
+        self._collection_services[namespaces] = service
+        self.create_collection_service(collection, namespaces, service, 0)
 
-    def make_collection_service(self, previous_service, previous_ns, managed_class, level):
+    def get_collection_service(self, aliases):
+        return self._collection_services[tuple(aliases)]
+
+    def make_collection_service(self, previous_service, previous_namespaces, managed_class, level):
         """
         Called from create_collection as a recursive method to collect all
         submanagers of the root manager we want to manager with this service.
         """
         namespace = managed_class.get_name()
+        namespaces = previous_namespaces + (namespace, )
         url = previous_service.resource_url.add_segment(namespace)
 
-        config_key = '{0}.{1}'.format(previous_ns, namespace)
+        config_key = '.'.join(namespaces)
         conf = self.configuration.get(config_key)
 
         service = CollectionService(
             previous_service,
             ServedManager(
+                self,
                 managed_class.manager_class,
                 conf,
                 url,
+                namespaces,
                 lock=self.lock,
                 extractor=managed_class.extractor
             ))
-        self._append_service(service)
+
+        self._collection_services[namespaces] = service
+
         # level to avoid max recursion.
         self.create_collection_service(
-            managed_class.manager_class, config_key, service, level + 1)
+            managed_class.manager_class, namespaces, service, level + 1)
 
     def create_collection_service(self, collection, ns, previous_service, level):
         if level >= MAX_LEVEL:
@@ -219,5 +235,5 @@ class Service(object):
         Route the managers inside the given bottle app.
         """
         logger.debug('Setting %s', self.url)
-        for service in self.collection_services:
+        for service in self._collection_services.values():
             service.setup_bottle(app)

@@ -1,4 +1,4 @@
-#!/usr/bin/env pysource)
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
@@ -65,9 +65,9 @@ class TestService(unittest.TestCase):
         return mc, mgr
 
     def test_FCS(self):
-        self.get_service()
+        s = self.get_service()
         self.FCS.assert_called_once_with(
-            ServedManager(self.Manager, self.conf, URL(['parent'])))
+            ServedManager(s, self.Manager, self.conf, URL(['parent']), ('parent',)))
         self.assertEqual(self.CS.call_count, 0)
 
     def test_setup_bottle(self):
@@ -78,10 +78,11 @@ class TestService(unittest.TestCase):
 
     def test_CS(self):
         mc, mgr = self.add_managed_class()
-        self.get_service()
+        s = self.get_service()
         self.CS.assert_called_once_with(
             self.FCS.return_value,
-            ServedManager(mgr, self.conf.get.return_value, URL(['parent', None, 'child']),
+            ServedManager(s, mgr, self.conf.get.return_value, URL(['parent', None, 'child']),
+                          ('parent', 'child'),
                           extractor=mc.extractor))
 
         self.conf.get.assert_called_once_with('parent.child')
@@ -94,15 +95,16 @@ class TestService(unittest.TestCase):
         })
         mc, mgr = self.add_managed_class()
         with mock.patch('napixd.services.lock_factory') as LF:
-            self.get_service()
+            s = self.get_service()
 
         lock = LF.return_value
 
         self.FCS.assert_called_once_with(
-            ServedManager(self.Manager, self.conf, URL(['parent']), lock=lock))
+            ServedManager(s, self.Manager, self.conf, URL(['parent']), ('parent', ), lock=lock))
         self.CS.assert_called_once_with(
             self.FCS.return_value,
-            ServedManager(mgr, mock.ANY, mock.ANY,
+            ServedManager(s, mgr, mock.ANY, mock.ANY,
+                          ('parent', 'child'),
                           lock=lock, extractor=mock.ANY))
 
     def test_CS_bad_lock(self):
