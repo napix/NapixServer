@@ -9,11 +9,6 @@ They will load all the resources of the manager, allow the user to make
 requests and persist all the objects after.
 """
 
-import os
-
-from threading import Lock
-from time import time
-
 from napixd.exceptions import NotFound, Duplicate, ValidationError
 from napixd.managers import Manager
 
@@ -290,4 +285,4 @@ class UniqueManager(ReadOnlyUniqueManager):
         """
         resource = wrapper.resource
         resource.update(resource_dict)
-        self._save()
+        self.save(self.context, resource)

@@ -234,5 +234,4 @@ class TestHiddenFields(unittest.TestCase):
         dd = DiffDict({'abc': 123}, {'abc': 124, 'zip': 'zap'})
         self.dm.modify_resource(ResourceWrapper(self.dm, 'id', {'abc': 123}), dd)
 
-        self.dm.end_request(mock.Mock(method='POST'))
         self.res.save.assert_called_once_with({'id': {'abc': 124, 'zip': 'zap'}})
