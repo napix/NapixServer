@@ -113,8 +113,13 @@ class Reloader(object):
         """
         Callback of the inotify call.
         """
-        if (event.dir or not event.name.endswith('.py')):
-            return
-        logger.info('Caught file change, reloading')
-        self._update_path()
-        self.app.reload()
+        try:
+            if (event.dir or not event.name.endswith('.py')):
+                return
+            logger.info('Caught file change, reloading')
+            self._update_path()
+            self.app.reload()
+        except (KeyboardInterrupt, SystemExit, MemoryError):
+            raise
+        except Exception:
+            logger.exception('Ignore exception in reload loop')
