@@ -608,7 +608,8 @@ Meta-options:
         from napixd.webclient import WebClient
         logger.info('Using %s as webclient', webclient_path)
         return WebClient(webclient_path, self,
-                         generate_docs='docs' in self.options)
+                         generate_docs='docs' in self.options,
+                         index=self.conf.get('webclient.index', 'index.html', type=unicode))
 
     def get_webclient_path(self):
         """

@@ -19,9 +19,10 @@ class WebClient(object):
     *launcher* is the :class:`napixd.launcher.Setup` class.
     """
 
-    def __init__(self, root, launcher, generate_docs=True):
+    def __init__(self, root, launcher, generate_docs=True, index='index.html'):
         self.service_name = launcher.service_name
         self._static = StaticFiles(root)
+        self._index = index
 
         if generate_docs:
             self.doc = launcher.doc
@@ -49,7 +50,7 @@ class WebClient(object):
         """
         Returns the index.
         """
-        path = path or 'index.html'
+        path = path or self._index
         return self._static(request, path)
 
     def docs(self, request):
