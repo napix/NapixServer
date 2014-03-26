@@ -33,7 +33,7 @@ class ManagerType(type):
 
     * resource_fields transformation
 
-    It instanciates a :class:`resource_fields.ResourceFields`
+    It instantiates a :class:`resource_fields.ResourceFields`
     property for the `Manager.resource_fields` attribute.
 
     * Forwarding of :mod:`~napixd.managers.actions` and :mod`~napixd.managers.views`
