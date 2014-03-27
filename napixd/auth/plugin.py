@@ -49,6 +49,7 @@ class AAAPlugin(object):
 
     def authorize(self, callback, request):
         content = self.extract(request)
+        request.environ['napixd.auth.username'] = content.get('login', '-')
         with Chrono() as chrono:
             check = self.authenticate(request, content)
 
