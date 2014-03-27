@@ -29,8 +29,8 @@ class HTTPCollectionContext(object):
         self.parameters = request.GET
         self.data = request.data
 
-    def get_managers(self, path):
-        return self.service.get_managers(path, self.request)
+    def get_manager(self, path):
+        return self.service.get_manager(path, self.request)
 
 
 class BaseCollectionService(object):
@@ -179,7 +179,7 @@ class BaseCollectionService(object):
         """
         return None
 
-    def get_managers(self, path, request):
+    def get_manager(self, path, request):
         raise NotImplementedError()
 
 
@@ -192,8 +192,8 @@ class FirstCollectionService(BaseCollectionService):
     of the this manager.
     """
 
-    def get_managers(self, path, request):
-        return [], self._generate_manager(None, request)
+    def get_manager(self, path, request):
+        return self._generate_manager(None, request)
 
 
 class CollectionService(BaseCollectionService):
@@ -218,18 +218,16 @@ class CollectionService(BaseCollectionService):
         resource = self.extractor(resource)
         return super(CollectionService, self)._generate_manager(resource, request)
 
-    def get_managers(self, path, request):
-        managers_list, manager = self.previous_service.get_managers(path[:-1], request)
+    def get_manager(self, path, request):
+        manager = self.previous_service.get_manager(path[:-1], request)
 
         id_ = manager.validate_id(path[-1])
         resource = manager.get_resource(id_)
         wrapped = ResourceWrapper(manager, id_, resource)
 
-        managers_list.append((manager, wrapped))
-
         # The manager for self is generated here.
         manager = self._generate_manager(wrapped, request)
-        return managers_list, manager
+        return manager
 
 
 class ActionService(object):
@@ -252,8 +250,8 @@ class ActionService(object):
         app.route(unicode(self.url.add_segment('_napix_help')), self.as_help)
         app.route(unicode(self.url), self.as_action)
 
-    def get_managers(self, path, request):
-        return self.service.get_managers(path, request)
+    def get_manager(self, path, request):
+        return self.service.get_manager(path, request)
 
     def as_action(self, request, *path):
         return ServiceActionRequest(HTTPCollectionContext(self, request), path, self.action).handle()

@@ -48,7 +48,7 @@ class TestServiceRequest(unittest.TestCase):
             service=self.cs,
             method='GET',
         )
-        self.context.get_managers.return_value = ([], mock.Mock())
+        self.context.get_manager.return_value = mock.Mock()
 
     def sr(self):
         return MyServiceRequest(self.context, [])
@@ -79,7 +79,7 @@ class TestServiceManagedClassesRequest(unittest.TestCase):
             method='GET',
             service=self.cs,
         )
-        self.context.get_managers.return_value = ([], manager)
+        self.context.get_manager.return_value = manager
 
     def smcr(self):
         return ServiceManagedClassesRequest(self.context, ['123'])
@@ -116,7 +116,7 @@ class TestServiceCollectionRequest(unittest.TestCase):
             data=mock.Mock(name='data'),
         )
 
-        self.context.get_managers.return_value = ([], manager)
+        self.context.get_manager.return_value = manager
 
     def scr(self):
         return ServiceCollectionRequest(self.context, [])
@@ -258,7 +258,7 @@ class TestServiceResourceRequest(unittest.TestCase):
             parameters={},
             data=mock.Mock(name='data'),
         )
-        self.context.get_managers.return_value = ([], manager)
+        self.context.get_manager.return_value = manager
 
     def srr(self):
         return ServiceResourceRequest(self.context, ['123'])
@@ -389,7 +389,7 @@ class TestServiceActionRequest(unittest.TestCase):
             data=mock.Mock(name='data'),
             parameters={},
         )
-        self.context.get_managers.return_value = ([], manager)
+        self.context.get_manager.return_value = manager
 
     def sar(self):
         return ServiceActionRequest(self.context, [123], 'do_the_stuff')

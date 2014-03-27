@@ -51,10 +51,8 @@ class TestFirstCollectionService(unittest.TestCase):
         self.all_actions.append(a)
         return a
 
-    def test_get_managers(self):
-        managers, manager = self.fcs.get_managers([], self.request)
-
-        self.assertEqual(managers, [])
+    def test_get_manager(self):
+        manager = self.fcs.get_manager([], self.request)
         self.assertEqual(manager, self.served_manager.instantiate.return_value)
 
     def test_as_meta(self):
@@ -169,15 +167,12 @@ class TestCollectionService(unittest.TestCase):
 
     def test_generate_manager_fcs(self):
         pmgr = mock.Mock(name='PreviousManager', spec=Manager, get_resource=mock.Mock())
-        self.ps.get_managers.return_value = ([], pmgr)
+        self.ps.get_manager.return_value = pmgr
 
-        managers, manager = self.cs.get_managers(['abc'], self.request)
+        manager = self.cs.get_manager(['abc'], self.request)
 
-        self.ps.get_managers.assert_called_once_with([], self.request)
+        self.ps.get_manager.assert_called_once_with([], self.request)
         self.assertEqual(manager, self.served_manager.instantiate.return_value)
-        self.assertEqual(managers, [
-            (pmgr, ResourceWrapper(pmgr, pmgr.validate_id.return_value)),
-        ])
         pmgr.get_resource.assert_called_once_with(pmgr.validate_id.return_value)
         pmgr.validate_id.assert_called_once_with('abc')
 
@@ -215,6 +210,6 @@ class TestActionService(unittest.TestCase):
         self.assertEqual(self.acs.as_help(self.request),
                          self.served_action.meta_data)
 
-    def test_get_managers(self):
-        self.assertEqual(self.acs.get_managers(['id'], self.request),
-                         self.collection_service.get_managers.return_value)
+    def test_get_manager(self):
+        self.assertEqual(self.acs.get_manager(['id'], self.request),
+                         self.collection_service.get_manager.return_value)
