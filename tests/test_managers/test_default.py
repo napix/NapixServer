@@ -29,7 +29,7 @@ class _TestDM(unittest.TestCase):
         if attrs:
             values.update(attrs)
         Manager = type(kls)(kls.__name__, (kls, ), values)
-        self.request = mock.Mock(spec=Request)
+        self.request = mock.Mock()
         self.manager = Manager(self.parent, self.request)
 
 
@@ -166,7 +166,7 @@ class TestFileManager(unittest.TestCase):
 
     def setUp(self):
         self.parent = mock.Mock()
-        self.request = mock.Mock(spec=Request)
+        self.request = mock.Mock()
         self.fm = MyFileManager(self.parent, self.request)
 
     def test_save(self):
@@ -217,7 +217,7 @@ class TestHiddenFields(unittest.TestCase):
             'abc': 123,
             'zip': 'zap'
         }
-        self.dm = MyManager(self.res, None)
+        self.dm = MyManager(self.res, mock.Mock())
 
     def test_get_resource(self):
         self.assertEqual(self.dm.get_resource('id'), {
