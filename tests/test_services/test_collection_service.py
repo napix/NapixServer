@@ -9,7 +9,6 @@ import unittest
 from napixd.managers import Manager
 from napixd.services import ServedManager, ServedAction
 from napixd.services.urls import URL
-from napixd.services.wrapper import ResourceWrapper
 from napixd.http.request import Request
 from napixd.http.server import WSGIServer as Server
 

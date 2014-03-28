@@ -4,7 +4,7 @@
 import collections
 
 from napixd.services.methods import Implementation
-from napixd.services.requests.http import HTTPMixin
+from napixd.services.requests.http import HTTPMixin, MethodMixin
 from napixd.services.requests.base import ServiceRequest
 from napixd.http.response import HTTPResponse, HTTP405
 
@@ -32,7 +32,7 @@ class ServiceCollectionRequest(ServiceRequest):
         return self.manager.validate(data, None)
 
 
-class HTTPServiceCollectionRequest(HTTPMixin, ServiceCollectionRequest):
+class HTTPServiceCollectionRequest(MethodMixin, HTTPMixin, ServiceCollectionRequest):
     METHOD_MAP = {
         'filter': 'list_resource_filter',
         'getall': 'get_all_resources',
@@ -108,7 +108,7 @@ class HTTPServiceManagedClassesRequest(HTTPMixin, ServiceRequest):
         return manager
 
     def get_callback(self):
-        if not (self.method == 'GET' or self.method == 'HEAD'):
+        if not (self.context.method == 'GET' or self.context.method == 'HEAD'):
             raise HTTP405(['GET', 'HEAD'])
         self.manager.get_resource(self.resource_id)
         return self.service.collection.get_managed_classes

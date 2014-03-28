@@ -4,7 +4,7 @@
 import collections
 
 from napixd.services.requests.base import ServiceRequest
-from napixd.services.requests.http import HTTPMixin
+from napixd.services.requests.http import HTTPMixin, MethodMixin
 from napixd.http.response import HTTPError, Response, HTTPResponse
 from napixd.services.wrapper import ResourceWrapper
 
@@ -35,7 +35,7 @@ class ModifyResourceMixin(object):
         return self.manager.validate(data, self.resource.resource)
 
 
-class HTTPServiceResourceRequest(ModifyResourceMixin, HTTPMixin, ServiceResourceRequest):
+class HTTPServiceResourceRequest(ModifyResourceMixin, MethodMixin, HTTPMixin, ServiceResourceRequest):
     METHOD_MAP = {
         'PUT': 'modify_resource',
         'GET': 'get_resource',
@@ -107,6 +107,7 @@ class ServiceActionRequest(ServiceResourceRequest):
 
     def check_datas(self):
         data = self.callback.resource_fields.validate(self.context.data)
+        print data
         return data
 
     def get_callback(self):
@@ -120,3 +121,6 @@ class HTTPServiceActionRequest(HTTPMixin, ServiceActionRequest):
     METHOD_MAP = {
         'POST': 'get_resource',
     }
+
+    def serialize(self, r):
+        return r

@@ -6,15 +6,11 @@ from napixd.exceptions import NotFound, ValidationError, Duplicate
 from napixd.http.response import HTTPError, HTTP405
 
 
-class HTTPMixin(object):
-    """
-    Mixin used with :class:`napixd.services.request.base.ServiceRequest`
-    that enables HTTP operations.
-    """
+class MethodMixin(object):
     METHOD_MAP = {}
 
     def __init__(self, *args, **kw):
-        super(HTTPMixin, self).__init__(*args, **kw)
+        super(MethodMixin, self).__init__(*args, **kw)
         self.method = self.context.method
 
     @classmethod
@@ -40,6 +36,13 @@ class HTTPMixin(object):
             return getattr(self.manager, self.METHOD_MAP[self.method])
         except (AttributeError, KeyError):
             raise HTTP405(self.available_methods(self.manager))
+
+
+class HTTPMixin(object):
+    """
+    Mixin used with :class:`napixd.services.request.base.ServiceRequest`
+    that enables HTTP operations.
+    """
 
     def handle(self):
         """
