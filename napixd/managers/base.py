@@ -340,7 +340,7 @@ class Manager(object):
             name = name[:-len('manager')]
         return name
 
-    def __init__(self, context, request):
+    def __init__(self, context, napix_context):
         """
         intialize the Manager with the wrapped resource *context* creating it
 
@@ -358,7 +358,8 @@ class Manager(object):
 
         """
         self.context = context
-        self.request = request
+        self.napix_context = napix_context
+        self.request = napix_context.request
 
     def __repr__(self):
         return '<Manager {module}:{cls} `{name}` of "{context}">'.format(

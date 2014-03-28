@@ -12,6 +12,7 @@ from napixd.services.requests import (
     ServiceResourceRequest,
     ServiceActionRequest
 )
+from napixd.services.contexts import CollectionContext
 
 __all__ = (
     'BaseCollectionService',
@@ -19,18 +20,6 @@ __all__ = (
     'CollectionService',
     'ActionService'
 )
-
-
-class HTTPCollectionContext(object):
-    def __init__(self, cs, request):
-        self.service = cs
-        self.request = request
-        self.method = request.method
-        self.parameters = request.GET
-        self.data = request.data
-
-    def get_manager(self, path):
-        return self.service.get_manager(path, self.request)
 
 
 class BaseCollectionService(object):
@@ -74,12 +63,6 @@ class BaseCollectionService(object):
     def __repr__(self):
         return '{0} of {1}'.format(self.__class__.__name__,
                                    self.served_manager)
-
-    def _generate_manager(self, resource, request):
-        """
-        instantiate a manager for the given resource
-        """
-        return self.served_manager.instantiate(resource, request)
 
     def setup_bottle(self, app):
         """
@@ -128,45 +111,45 @@ class BaseCollectionService(object):
         if self.collection.get_managed_classes():
             app.route(self.resource_url.with_slash(), self.as_managed_classes)
 
-    def as_resource(self, request, *path):
+    def as_resource(self, napixd_context, *path):
         """
         Launches a request on a resource of this manager
         """
-        return ServiceResourceRequest(HTTPCollectionContext(self, request), list(path)).handle()
+        return ServiceResourceRequest(CollectionContext(self, napixd_context), list(path)).handle()
 
-    def as_collection(self, request, *path):
+    def as_collection(self, napixd_context, *path):
         """
         Launches a request on this manager as a collection
         """
-        return ServiceCollectionRequest(HTTPCollectionContext(self, request), list(path)).handle()
+        return ServiceCollectionRequest(CollectionContext(self, napixd_context), list(path)).handle()
 
-    def as_list_actions(self, request, *path):
+    def as_list_actions(self, napixd_context, *path):
         """
         Lists the :meth:`napixd.managers.actions.action`
         available on this manager.
         """
         return [x.action for x in self.all_actions]
 
-    def as_managed_classes(self, request, *path):
+    def as_managed_classes(self, napixd_context, *path):
         """
         Lists the :attr:`managed classes<napixd.managers.base.Manager.managed_class>`
         of this manager.
         """
-        return ServiceManagedClassesRequest(HTTPCollectionContext(self, request), list(path)).handle()
+        return ServiceManagedClassesRequest(CollectionContext(self, napixd_context), list(path)).handle()
 
-    def as_help(self, request, *path):
+    def as_help(self, napixd_context, *path):
         """
         The view server at **_napix_help**
         """
         return self.meta_data
 
-    def as_resource_fields(self, request, *path):
+    def as_resource_fields(self, napixd_context, *path):
         """
         The view server at **_napix_resource_fields**
         """
         return self.resource_fields
 
-    def as_example_resource(self, request, *path):
+    def as_example_resource(self, napixd_context, *path):
         """
         The view server at **_napix_help**
         """
@@ -179,7 +162,10 @@ class BaseCollectionService(object):
         """
         return None
 
-    def get_manager(self, path, request):
+    def get_manager(self, path, call_context):
+        """
+        instantiate a manager for the given resource
+        """
         raise NotImplementedError()
 
 
@@ -192,8 +178,8 @@ class FirstCollectionService(BaseCollectionService):
     of the this manager.
     """
 
-    def get_manager(self, path, request):
-        return self._generate_manager(None, request)
+    def get_manager(self, path, call_context):
+        return self.served_manager.instantiate(None, call_context)
 
 
 class CollectionService(BaseCollectionService):
@@ -208,26 +194,17 @@ class CollectionService(BaseCollectionService):
 
     def __init__(self, previous_service, served_manager):
         super(CollectionService, self).__init__(served_manager)
-        self.extractor = served_manager.extractor
         self.previous_service = previous_service
 
-    def _generate_manager(self, resource, request):
-        """
-        instantiate a manager for the given resource
-        """
-        resource = self.extractor(resource)
-        return super(CollectionService, self)._generate_manager(resource, request)
-
-    def get_manager(self, path, request):
-        manager = self.previous_service.get_manager(path[:-1], request)
+    def get_manager(self, path, call_context):
+        manager = self.previous_service.get_manager(path[:-1], call_context)
 
         id_ = manager.validate_id(path[-1])
         resource = manager.get_resource(id_)
         wrapped = ResourceWrapper(manager, id_, resource)
 
         # The manager for self is generated here.
-        manager = self._generate_manager(wrapped, request)
-        return manager
+        return self.served_manager.instantiate(wrapped, call_context)
 
 
 class ActionService(object):
@@ -250,13 +227,13 @@ class ActionService(object):
         app.route(unicode(self.url.add_segment('_napix_help')), self.as_help)
         app.route(unicode(self.url), self.as_action)
 
-    def get_manager(self, path, request):
-        return self.service.get_manager(path, request)
+    def get_manager(self, path, call_context):
+        return self.service.get_manager(path, call_context)
 
-    def as_action(self, request, *path):
-        return ServiceActionRequest(HTTPCollectionContext(self, request), path, self.action).handle()
+    def as_action(self, napixd_context, *path):
+        return ServiceActionRequest(CollectionContext(self, napixd_context), path, self.action).handle()
 
-    def as_help(self, request, *path):
+    def as_help(self, napixd_context, *path):
         """
         View for _napix_help
         """

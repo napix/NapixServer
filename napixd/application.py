@@ -5,6 +5,7 @@
 import logging
 
 from napixd.services import Service
+from napixd.services.contexts import NapixdContext
 from napixd.exceptions import InternalRequestFailed
 
 logger = logging.getLogger('Napix.application')
@@ -25,11 +26,15 @@ class Napixd(object):
         self.loader = loader
 
         self._router = router
+        self._router.add_filter(self)
         self._router.route('/', self.slash)
 
         load = self.loader.load()
         self._services = {}
         self.make_services(load.managers)
+
+    def __call__(self, callback, request):
+        return callback(NapixdContext(self, request))
 
     def make_services(self, managers):
         """
