@@ -29,7 +29,7 @@ class FirstServedManager(object):
             '/'.join(self.namespaces))
 
     def __eq__(self, other):
-        return (isinstance(other, ServedManager) and
+        return (isinstance(other, FirstServedManager) and
                 self.manager_class == other.manager_class and
                 self.url == other.url and
                 self.configuration == other.configuration and
