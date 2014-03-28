@@ -121,6 +121,11 @@ class ServedAction(object):
         self.source = served_manager.source
         self.source['method'] = self.action.__name__
 
+    def __eq__(self, other):
+        return (isinstance(other, ServedAction) and
+                self.action == other.action
+                )
+
     @property
     def resource_fields(self):
         rf = self.action.resource_fields
