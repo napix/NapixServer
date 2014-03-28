@@ -30,3 +30,28 @@ class CollectionContext(object):
 
     def get_manager_instance(self, path):
         return self.service.get_manager(path, self)
+
+    def get_resource(self, url):
+        path = url.split('/')
+        if path[0] != '':
+            raise ValueError('get_resource is called with a path starting by a "/"')
+        if path[-1] == '':
+            raise ValueError('get_resource is called with a path not ending with a "/"')
+
+        managers = path[1::2]
+        ids = path[2::2]
+        service = self.napixd.get_service(path[1])
+
+        cs = service.get_collection_service(managers)
+        resource = FetchResource(
+            CollectionContext(cs, self.napixd,
+                              method='GET'), ids)
+        return resource.handle()
+
+
+class FetchResource(ServiceResourceRequest):
+    def get_callback(self):
+        return None
+
+    def call(self):
+        return self.resource
