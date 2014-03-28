@@ -9,7 +9,7 @@ from napixd.services import Service
 logger = logging.getLogger('Napix.application')
 
 
-class NapixdBottle(object):
+class Napixd(object):
     """
     The Main Application class.
     This object is used to connect the :class:`napixd.services.Service`
@@ -19,12 +19,12 @@ class NapixdBottle(object):
     used to find :class:`napixd.manager.base.Manager` classes.
     """
 
-    def __init__(self, loader, server):
+    def __init__(self, loader, router):
         self._root_urls = []
         self.loader = loader
 
-        self.server = server
-        self.server.route('/', self.slash)
+        self._router = router
+        self._router.route('/', self.slash)
 
         load = self.loader.load()
         self.make_services(load.managers)
@@ -42,7 +42,7 @@ class NapixdBottle(object):
                 logger.exception('Cannot create service for %s', mi.alias)
             else:
                 # add new routes
-                service.setup_bottle(self.server)
+                service.setup_bottle(self._router)
                 self._root_urls.append(unicode(mi.alias))
 
         self._root_urls.sort()
@@ -66,7 +66,7 @@ class NapixdBottle(object):
                          ', '.join(map(unicode, load.old_managers)))
         for mi in load.old_managers:
             rule = '/' + mi.alias
-            self.server.unroute(rule, all=True)
+            self._router.unroute(rule, all=True)
             if mi.alias in self._root_urls:
                 self._root_urls.remove(mi.alias)
 
@@ -91,8 +91,8 @@ class NapixdBottle(object):
         """
         logger.debug('Setup routes for error, %s', me.alias)
         callback = self._error_service_factory(me.cause)
-        self.server.route('/{0}'.format(me.alias), callback)
-        self.server.route('/{0}/'.format(me.alias), callback, catchall=True)
+        self._router.route('/{0}'.format(me.alias), callback)
+        self._router.route('/{0}/'.format(me.alias), callback, catchall=True)
 
         self._root_urls.append(me.alias)
         self._root_urls.sort()
@@ -107,3 +107,7 @@ class NapixdBottle(object):
         def inner_error_service_factory(*catch_all, **more_catch_all):
             raise cause
         return inner_error_service_factory
+
+
+#keep the compatibility
+NapixdBottle = Napixd

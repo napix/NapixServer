@@ -384,14 +384,14 @@ Meta-options:
             sources.append(JSONWebToken())
         return sources
 
-    def get_napixd(self, server):
+    def get_napixd(self, router):
         """
         Return the main application for the napixd server.
         """
-        from napixd.application import NapixdBottle
+        from napixd.application import Napixd
         from napixd.loader import Loader
         self.loader = loader = Loader(self.get_loaders())
-        napixd = NapixdBottle(loader=loader, server=server)
+        napixd = Napixd(loader, router)
 
         return napixd
 
@@ -482,8 +482,8 @@ Meta-options:
         """
         from napixd.http.server import WSGIServer
         server = WSGIServer()
-        self.install_plugins(server.router)
-        napixd = self.get_napixd(server)
+        router = self.install_plugins(server.push())
+        napixd = self.get_napixd(router)
 
         # attach autoreloaders
         if 'reload' in self.options:
@@ -513,11 +513,11 @@ Meta-options:
         if 'webclient' in self.options:
             self.web_client = self.get_webclient()
             if self.web_client:
-                self.web_client.setup_bottle(napixd.server)
+                self.web_client.setup_bottle(server)
         else:
             self.web_client = None
 
-        return napixd.server
+        return server
 
     def apply_middleware(self, application):
         """

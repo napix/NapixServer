@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import unittest
 import mock
 
-from napixd.application import NapixdBottle
+from napixd.application import Napixd
 from napixd.loader.loader import Loader, Load
 from napixd.http.server import WSGIServer
 from napixd.http.request import Request
@@ -45,7 +45,7 @@ class TestReload(unittest.TestCase):
 
         self.server = server = mock.Mock(spec=WSGIServer)
 
-        self.napixd = NapixdBottle(loader, server)
+        self.napixd = Napixd(loader, server)
         load.managers = []
 
     def tearDown(self):
