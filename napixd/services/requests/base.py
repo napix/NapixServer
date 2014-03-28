@@ -53,6 +53,8 @@ class ServiceRequest(object):
         raise NotImplementedError
 
     def handle(self):
+        lock = self.lock.acquire() if self.lock else None
+
         try:
             # obtient l'object designé
             self.manager = self.get_manager()
@@ -65,5 +67,5 @@ class ServiceRequest(object):
             result = self.call()
             return result
         finally:
-            if self.lock is not None:
-                self.lock.release()
+            if lock is not None:
+                lock.release()
