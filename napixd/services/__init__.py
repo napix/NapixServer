@@ -10,6 +10,7 @@ appropriate Napix Manager to handle the request.
 
 import logging
 
+from napixd.exceptions import InternalRequestFailed
 from napixd.services.urls import URL
 from napixd.services.collection import (
     FirstCollectionService,
@@ -73,7 +74,12 @@ class Service(object):
         self.create_collection_service(collection, namespaces, service, 0)
 
     def get_collection_service(self, aliases):
-        return self._collection_services[tuple(aliases)]
+        try:
+            return self._collection_services[tuple(aliases)]
+        except KeyError:
+            raise InternalRequestFailed('There is no collection service "{0}" in this service.'.format(
+                '/'.join(aliases)
+            ))
 
     def make_collection_service(self, previous_service, previous_namespaces, managed_class, level):
         """
