@@ -10,7 +10,7 @@ import mock
 from napixd.exceptions import InternalRequestFailed
 from napixd.application import Napixd
 from napixd.loader.loader import Loader, Load
-from napixd.http.server import WSGIServer
+from napixd.http.router.router import Router
 from napixd.http.request import Request
 
 
@@ -47,7 +47,7 @@ class TestReload(unittest.TestCase):
         load.old_managers = []
         load.error_managers = []
 
-        self.server = server = mock.Mock(spec=WSGIServer)
+        self.server = server = mock.Mock(spec=Router)
 
         self.napixd = Napixd(loader, server)
         load.managers = []
