@@ -7,7 +7,7 @@ import mock
 import unittest
 
 from napixd.managers import Manager
-from napixd.services import ServedManager, ServedAction
+from napixd.services.served import ServedManager, ServedAction
 from napixd.services.urls import URL
 from napixd.http.request import Request
 from napixd.http.server import WSGIServer as Server
@@ -15,7 +15,7 @@ from napixd.http.server import WSGIServer as Server
 from napixd.services.collection import (
     CollectionService,
     FirstCollectionService,
-    ActionService
+    ActionService,
 )
 
 
