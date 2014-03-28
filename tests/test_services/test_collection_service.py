@@ -9,6 +9,7 @@ import unittest
 from napixd.managers import Manager
 from napixd.services.served import ServedManager, ServedAction
 from napixd.services.urls import URL
+from napixd.services.wrapper import ResourceWrapper
 from napixd.http.request import Request
 from napixd.http.server import WSGIServer as Server
 
@@ -52,6 +53,7 @@ class TestFirstCollectionService(unittest.TestCase):
 
     def test_get_manager(self):
         manager = self.fcs.get_manager([], self.request)
+        self.served_manager.instantiate.assert_called_once_with(None, self.request)
         self.assertEqual(manager, self.served_manager.instantiate.return_value)
 
     def test_as_meta(self):
@@ -166,13 +168,17 @@ class TestCollectionService(unittest.TestCase):
 
     def test_generate_manager_fcs(self):
         pmgr = mock.Mock(name='PreviousManager', spec=Manager, get_resource=mock.Mock())
+        pmgr.validate_id.side_effect = lambda x: x
         self.ps.get_manager.return_value = pmgr
 
         manager = self.cs.get_manager(['abc'], self.request)
 
         self.ps.get_manager.assert_called_once_with([], self.request)
+
+        pr = ResourceWrapper(pmgr, 'abc')
+        self.served_manager.instantiate.assert_called_once_with(pr, self.request)
         self.assertEqual(manager, self.served_manager.instantiate.return_value)
-        pmgr.get_resource.assert_called_once_with(pmgr.validate_id.return_value)
+        pmgr.get_resource.assert_called_once_with('abc')
         pmgr.validate_id.assert_called_once_with('abc')
 
 
