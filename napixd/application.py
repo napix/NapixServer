@@ -5,6 +5,7 @@
 import logging
 
 from napixd.services import Service
+from napixd.exceptions import InternalRequestFailed
 
 logger = logging.getLogger('Napix.application')
 
@@ -27,6 +28,7 @@ class Napixd(object):
         self._router.route('/', self.slash)
 
         load = self.loader.load()
+        self._services = {}
         self.make_services(load.managers)
 
     def make_services(self, managers):
@@ -42,10 +44,19 @@ class Napixd(object):
                 logger.exception('Cannot create service for %s', mi.alias)
             else:
                 # add new routes
+                self._services[mi.alias] = service
                 service.setup_bottle(self._router)
                 self._root_urls.append(unicode(mi.alias))
 
         self._root_urls.sort()
+
+    def find_service(self, alias):
+        try:
+            return self._services[alias]
+        except KeyError:
+            raise InternalRequestFailed('There is no service "{0}" in this napixd.'.format(
+                alias
+            ))
 
     def list_managers(self):
         return self._root_urls
@@ -67,6 +78,8 @@ class Napixd(object):
         for mi in load.old_managers:
             rule = '/' + mi.alias
             self._router.unroute(rule, all=True)
+            if mi.alias in self._services:
+                del self._services[mi.alias]
             if mi.alias in self._root_urls:
                 self._root_urls.remove(mi.alias)
 

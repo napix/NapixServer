@@ -26,6 +26,13 @@ except ImportError:
             return str(self.remote_error)
 
 
+class InternalRequestFailed(Exception):
+    """
+    Thrown when a internal request to a sub-manager, a service or a resource fails.
+    """
+    pass
+
+
 class PermissionDenied(Exception):
 
     """

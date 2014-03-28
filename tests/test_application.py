@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import unittest
 import mock
 
+from napixd.exceptions import InternalRequestFailed
 from napixd.application import Napixd
 from napixd.loader.loader import Loader, Load
 from napixd.http.server import WSGIServer
@@ -15,7 +16,7 @@ from napixd.http.request import Request
 
 class MyService(object):
 
-    def __init__(self, mgr, alias, conf):
+    def __init__(self, mgr, alias, conf=None):
         self.alias = alias
         self.url = self.alias
 
@@ -24,6 +25,9 @@ class MyService(object):
 
     def keep(self):
         pass
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.alias == other.alias
 
 
 class TestReload(unittest.TestCase):
@@ -50,6 +54,13 @@ class TestReload(unittest.TestCase):
 
     def tearDown(self):
         self.patch_service.stop()
+
+    def test_find_service(self):
+        s = self.napixd.find_service('m1')
+        self.assertEqual(s, MyService(None, 'm1'))
+
+    def test_find_not_service(self):
+        self.assertRaises(InternalRequestFailed, self.napixd.find_service, 'm3')
 
     def test_zero(self):
         assert not self.server.route.assert_has_calls([
