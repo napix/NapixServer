@@ -28,11 +28,10 @@ def file_wrapper(environ, filelike):
 
 
 class WSGIServer(object):
-    def __init__(self, pprint=False, show_errors=False):
+    def __init__(self, pprint=False):
         self._router = r = Router()
         self._routers = [r]
         self._pprint = 4 if pprint else None
-        self._show_errors = show_errors
 
     def __call__(self, environ, start_response):
         environ['napixd.request'] = request = Request(environ)
