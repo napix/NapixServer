@@ -37,8 +37,8 @@ class FirstServedManager(object):
                 self.lock == other.lock
                 )
 
-    def instantiate(self, resource, request):
-        manager = self.manager_class(resource, request)
+    def instantiate(self, resource, context):
+        manager = self.manager_class(resource, context)
         manager.configure(self.configuration)
         return manager
 
@@ -104,9 +104,9 @@ class ServedManager(FirstServedManager):
         return (super(ServedManager, self).__eq__(other) and
                 self.extractor == other.extractor)
 
-    def instantiate(self, resource, request):
+    def instantiate(self, resource, context):
         resource = self.extractor(resource)
-        return super(ServedManager, self).instantiate(resource, request)
+        return super(ServedManager, self).instantiate(resource, context)
 
 
 class ServedAction(object):
