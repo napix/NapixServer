@@ -31,6 +31,11 @@ class CollectionContext(object):
     def get_manager_instance(self, path):
         return self.service.get_manager(path, self)
 
+    def get_collection_service(self, namespaces):
+        service = self.napixd.get_service(namespaces[0])
+        cs = service.get_collection_service(namespaces)
+        return cs
+
     def get_resource(self, url):
         path = url.split('/')
         if path[0] != '':
@@ -38,14 +43,14 @@ class CollectionContext(object):
         if path[-1] == '':
             raise ValueError('get_resource is called with a path not ending with a "/"')
 
+        #Takes the name segments
         managers = path[1::2]
+        #Takes all the ID segments
         ids = path[2::2]
-        service = self.napixd.get_service(path[1])
+        cs = self.get_collection_service(managers)
 
-        cs = service.get_collection_service(managers)
         resource = FetchResource(
-            CollectionContext(cs, self.napixd,
-                              method='GET'), ids)
+            CollectionContext(cs, self.napixd, method='GET'), ids)
         return resource.handle()
 
 
