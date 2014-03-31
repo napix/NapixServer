@@ -13,7 +13,7 @@ class ServiceResourceRequest(ServiceRequest):
 
     """
     ServiceResourceRequest is an implementation of ServiceRequest specified for
-    Ressource requests (urls not ending with /)
+    Resource requests (urls not ending with /)
     """
 
     def get_manager(self):
@@ -107,7 +107,6 @@ class ServiceActionRequest(ServiceResourceRequest):
 
     def check_datas(self):
         data = self.callback.resource_fields.validate(self.context.data)
-        print data
         return data
 
     def get_callback(self):
