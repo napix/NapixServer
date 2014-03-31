@@ -123,3 +123,11 @@ class HTTPServiceActionRequest(HTTPMixin, ServiceActionRequest):
 
     def serialize(self, r):
         return r
+
+
+class FetchResource(ServiceResourceRequest):
+    def get_callback(self):
+        return None
+
+    def call(self):
+        return self.resource

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from napixd.services.requests.resource import (
-    ServiceResourceRequest
+    FetchResource
 )
 
 
@@ -49,9 +49,4 @@ class CollectionContext(object):
         return resource.handle()
 
 
-class FetchResource(ServiceResourceRequest):
-    def get_callback(self):
-        return None
 
-    def call(self):
-        return self.resource
