@@ -156,7 +156,7 @@ class BaseCollectionService(object):
         manager = self.collection
         return manager.get_example_resource()
 
-    def noop(self, **kw):
+    def noop(self, *args, **kw):
         """
         A catch-all method that does nothing but return a 200
         """
