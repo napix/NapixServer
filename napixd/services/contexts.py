@@ -25,6 +25,9 @@ class CollectionContext(object):
         if method is not None:
             self.method = method
 
+    def __repr__(self):
+        return 'Collection Context ({0})'.format(self.service)
+
     def __getattr__(self, attr):
         return getattr(self.napixd, attr)
 
