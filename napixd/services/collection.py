@@ -162,11 +162,11 @@ class BaseCollectionService(object):
         """
         return None
 
-    def get_manager(self, path, call_context):
+    def get_manager(self, resource, call_context):
         """
         instantiate a manager for the given resource
         """
-        raise NotImplementedError()
+        return self.served_manager.instantiate(resource, call_context)
 
 
 class FirstCollectionService(BaseCollectionService):
@@ -179,7 +179,7 @@ class FirstCollectionService(BaseCollectionService):
     """
 
     def get_manager(self, path, call_context):
-        return self.served_manager.instantiate(None, call_context)
+        return super(FirstCollectionService, self).get_manager(None, call_context)
 
 
 class CollectionService(BaseCollectionService):
@@ -204,7 +204,7 @@ class CollectionService(BaseCollectionService):
         wrapped = ResourceWrapper(manager, id_, resource)
 
         # The manager for self is generated here.
-        return self.served_manager.instantiate(wrapped, call_context)
+        return super(CollectionService, self).get_manager(wrapped, call_context)
 
 
 class ActionService(object):
