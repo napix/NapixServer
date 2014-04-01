@@ -17,6 +17,14 @@ class NapixdContext(object):
     def get_service(self, service):
         return self.napixd.find_service(service)
 
+    def __repr__(self):
+        return 'Napix context of {0} in {1}'.format(self.request, self.napixd)
+
+    def __eq__(self, other):
+        return (isinstance(other, NapixdContext) and
+                self.napixd == other.napixd and
+                self.request == other.request)
+
 
 class CollectionContext(object):
     def __init__(self, cs, napixd_context, method=None):
