@@ -33,8 +33,11 @@ def serialize(value):
 class TestServiceResourceRequest(unittest.TestCase):
     def setUp(self):
         self.manager = manager = mock.Mock()
-        self.manager.validate_id.side_effect = validate_id
-        self.manager.serialize.side_effect = serialize
+        self.rw = ResourceWrapper(manager, '123', {'mpm': 'prefork'})
+        manager.validate_id.side_effect = validate_id
+        manager.serialize.side_effect = serialize
+        manager.get_resource.return_value = self.rw
+
         self.url = url = URL(['abc', None])
         self.cs = mock.Mock(
             spec=CollectionService,
@@ -54,13 +57,8 @@ class TestServiceResourceRequest(unittest.TestCase):
         return ServiceResourceRequest(self.context, ['123'])
 
     def test_handle_get(self):
-        self.manager.get_resource.return_value = {'mpm': 'prefork'}
         r = self.srr().handle()
         self.assertEqual(r, {'mpm': 'prefork', '_s': True})
-
-    def test_handle_get_None(self):
-        self.manager.get_resource.return_value = None
-        self.assertRaises(ValueError, self.srr().handle)
 
     def test_handle_get_404(self):
         self.manager.get_resource.side_effect = NotFound()
@@ -82,13 +80,9 @@ class TestServiceResourceRequest(unittest.TestCase):
         r = self.srr().handle()
         self.assertEqual(r.status, 204)
 
-        o = self.manager.get_resource.return_value
         v = self.manager.validate
-        v.assert_called_once_with(self.context.data, o)
-        self.manager.modify_resource.assert_called_once_with(
-            ResourceWrapper(self.manager, 123, o),
-            v.return_value
-        )
+        v.assert_called_once_with(self.context.data, self.rw.resource)
+        self.manager.modify_resource.assert_called_once_with(self.rw, v.return_value)
 
     def test_handle_put_validation_error(self):
         self.context.method = 'PUT'
@@ -116,19 +110,17 @@ class TestServiceResourceRequest(unittest.TestCase):
 
     def test_handle_head(self):
         self.context.method = 'HEAD'
-        self.manager.get_resource.return_value = {'mpm': 'prefork'}
         r = self.srr().handle()
         self.assertEqual(r, None)
 
     def test_handle_get_format_none(self):
         self.context.parameters['format'] = 'pouet'
-        o = self.manager.get_resource.return_value = {'mpm': 'prefork'}
         formatter = self.manager.get_formatter.return_value
         formatter.return_value = None
 
         r = self.srr().handle()
 
-        formatter.assert_called_once_with(ResourceWrapper(self.manager, 123, o), r)
+        formatter.assert_called_once_with(self.rw, r)
 
     def test_handle_get_format_not_exist(self):
         self.context.parameters['format'] = 'pouet'
@@ -140,11 +132,10 @@ class TestServiceResourceRequest(unittest.TestCase):
 
     def test_handle_get_format_other_headers(self):
         self.context.parameters['format'] = 'pouet'
-        o = self.manager.get_resource.return_value = {'mpm': 'prefork'}
 
         def formatter(res, resp):
             resp.set_header('content-type', 'text/plain')
-            self.assertEqual(res, ResourceWrapper(self.manager, 123, o))
+            self.assertEqual(res, self.rw)
             return 'pouetpouetpouet'
         self.manager.get_formatter.return_value.side_effect = formatter
 
@@ -156,8 +147,7 @@ class TestServiceResourceRequest(unittest.TestCase):
     def test_handle_delete(self):
         self.context.method = 'DELETE'
         self.srr().handle()
-        self.manager.delete_resource.assert_called_once_with(
-            ResourceWrapper(self.manager, 123))
+        self.manager.delete_resource.assert_called_once_with(self.rw)
 
 
 class TestServiceActionRequest(unittest.TestCase):

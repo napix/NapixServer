@@ -4,6 +4,7 @@
 from napixd.services.requests.resource import (
     FetchResource
 )
+from napixd.services.wrapper import ResourceWrapper
 
 
 class NapixdContext(object):
@@ -36,6 +37,12 @@ class CollectionContext(object):
     def __repr__(self):
         return 'Collection Context ({0})'.format(self.service)
 
+    def __eq__(self, other):
+        return (
+            isinstance(other, CollectionContext) and
+            self.napixd == other.napixd and
+            self.service == other.service)
+
     def __getattr__(self, attr):
         return getattr(self.napixd, attr)
 
@@ -65,4 +72,71 @@ class CollectionContext(object):
         return resource.handle()
 
 
+class maybe(object):
+    """
+    Raise a :exc:`ValueError` if the property is accessed without
+    having been set.
+    """
+    def __init__(self, fn):
+        self.fn = fn
+        self.__doc__ = fn.__doc__
+        self.__name__ = fn.__name__
 
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        try:
+            return instance.__dict__[self.__name__]
+        except KeyError:
+            raise ValueError('{name} has not been set before being accessed'.format(
+                name=self.__name__))
+
+    def __set__(self, instance, value):
+        self.fn(instance)
+        instance.__dict__[self.__name__] = value
+
+
+class ResourceContext(object):
+    def __init__(self, served_manager, collection_context):
+        self.served_manager = served_manager
+        self.collection_context = collection_context
+        self.has_manager = False
+        self.has_id = False
+        self.has_resource = False
+
+    @maybe
+    def manager(self):
+        self.has_manager = True
+
+    @maybe
+    def resource(self):
+        self.has_resource = True
+
+    @maybe
+    def id(self):
+        self.has_id = True
+
+    def __eq__(self, other):
+        return (isinstance(other, ResourceContext) and
+                self.served_manager == other.served_manager and
+                self.collection_context == other.collection_context
+                )
+
+    def __repr__(self):
+        return 'ResourceContext of {0}'.format(self.collection_context)
+
+    def __getattr__(self, attr):
+        return getattr(self.collection_context, attr)
+
+    def get_sub_manager(self, alias, resource=None):
+        if self.has_resource:
+            r = self.resource
+        else:
+            r = self.make_resource(resource)
+
+        ns = self.served_manager.namespaces + (alias, )
+        cs = self.collection_context.get_collection_service(ns)
+        return cs.served_manager.instantiate(r, self.collection_context)
+
+    def make_resource(self, resource):
+        return ResourceWrapper(self.manager, self.id, resource)

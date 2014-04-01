@@ -5,7 +5,6 @@
 The Collections services handle the request on a specific manager.
 """
 
-from napixd.services.wrapper import ResourceWrapper
 from napixd.services.requests import (
     ServiceCollectionRequest,
     ServiceManagedClassesRequest,
@@ -200,9 +199,8 @@ class CollectionService(BaseCollectionService):
         manager = self.previous_service.get_manager(path[:-1], call_context)
 
         id_ = manager.validate_id(path[-1])
-        resource = manager.get_resource(id_)
-        wrapped = ResourceWrapper(manager, id_, resource)
 
+        wrapped = manager.get_resource(id_)
         # The manager for self is generated here.
         return super(CollectionService, self).get_manager(wrapped, call_context)
 

@@ -6,6 +6,7 @@ from napixd.services.requests import (
     ServiceCollectionRequest,
     ServiceResourceRequest,
 )
+from napixd.services.contexts import ResourceContext
 
 
 class FirstServedManager(object):
@@ -38,9 +39,10 @@ class FirstServedManager(object):
                 )
 
     def instantiate(self, resource, context):
+        context = ResourceContext(self, context)
         manager = self.manager_class(resource, context)
         manager.configure(self.configuration)
-        return manager
+        return ServedManagerInstance(manager, context)
 
     @property
     def resource_fields(self):
@@ -140,3 +142,32 @@ class ServedAction(object):
             'optional': self.action.optional,
             'source': self.source,
         }
+
+
+class ServedManagerInstance(object):
+    def __init__(self, manager_instance, resource_context):
+        self._manager_instance = manager_instance
+        self._resource_context = resource_context
+        self._resource_context.manager = manager_instance
+
+    def __eq__(self, other):
+        return (isinstance(other, ServedManagerInstance) and
+                self._manager_instance == other._manager_instance and
+                self._resource_context == other._resource_context)
+
+    def __getattr__(self, attr):
+        return getattr(self._manager_instance, attr)
+
+    def validate_id(self, id):
+        id = self._manager_instance.validate_id(id)
+        self._resource_context.id = id
+        return id
+
+    def get_resource(self, id):
+        resource = self._manager_instance.get_resource(id)
+        wrapped = self._resource_context.make_resource(resource)
+        self._resource_context.resource = wrapped
+        return wrapped
+
+    def __repr__(self):
+        return 'SMI of {self._resource_context}'.format(self=self)

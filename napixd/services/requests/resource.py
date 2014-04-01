@@ -6,7 +6,6 @@ import collections
 from napixd.services.requests.base import ServiceRequest
 from napixd.services.requests.http import HTTPMixin, MethodMixin
 from napixd.http.response import HTTPError, Response, HTTPResponse
-from napixd.services.wrapper import ResourceWrapper
 
 
 class ServiceResourceRequest(ServiceRequest):
@@ -21,11 +20,11 @@ class ServiceResourceRequest(ServiceRequest):
         # resource
         resource_id = self.path.pop()
         manager = super(ServiceResourceRequest, self).get_manager()
+
         # verifie l'identifiant de la resource aussi
         resource_id = manager.validate_id(resource_id)
-        resource = manager.get_resource(resource_id)
 
-        self.resource = ResourceWrapper(manager, resource_id, resource)
+        self.resource = manager.get_resource(resource_id)
         return manager
 
 

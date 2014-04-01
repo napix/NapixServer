@@ -10,6 +10,9 @@ from napixd.managers import Manager
 from napixd.services.served import ServedManager, ServedAction
 from napixd.services.urls import URL
 from napixd.services.wrapper import ResourceWrapper
+from napixd.services.contexts import NapixdContext, CollectionContext
+
+from napixd.http.router.router import Router
 from napixd.http.request import Request
 from napixd.http.server import WSGIServer as Server
 
@@ -52,7 +55,8 @@ class TestFirstCollectionService(unittest.TestCase):
         return a
 
     def test_get_manager(self):
-        manager = self.fcs.get_manager([], self.request)
+        fcs = self.fcs
+        manager = fcs.get_manager([], self.request)
         self.served_manager.instantiate.assert_called_once_with(None, self.request)
         self.assertEqual(manager, self.served_manager.instantiate.return_value)
 
@@ -170,12 +174,12 @@ class TestCollectionService(unittest.TestCase):
         pmgr = mock.Mock(name='PreviousManager', spec=Manager, get_resource=mock.Mock())
         pmgr.validate_id.side_effect = lambda x: x
         self.ps.get_manager.return_value = pmgr
+        pmgr.get_resource.return_value = pr = ResourceWrapper(pmgr, 'abc')
 
         manager = self.cs.get_manager(['abc'], self.request)
 
         self.ps.get_manager.assert_called_once_with([], self.request)
 
-        pr = ResourceWrapper(pmgr, 'abc')
         self.served_manager.instantiate.assert_called_once_with(pr, self.request)
         self.assertEqual(manager, self.served_manager.instantiate.return_value)
         pmgr.get_resource.assert_called_once_with('abc')
@@ -218,3 +222,53 @@ class TestActionService(unittest.TestCase):
     def test_get_manager(self):
         self.assertEqual(self.acs.get_manager(['id'], self.request),
                          self.collection_service.get_manager.return_value)
+
+
+class TestServerCollectionService(unittest.TestCase):
+    def setUp(self):
+        self.context = mock.Mock(
+            name='request',
+            spec=NapixdContext,
+            method='GET',
+            parameters=mock.MagicMock(),
+        )
+        self.served_manager = mock.Mock(
+            spec=ServedManager,
+            name='served_manager',
+            url=URL(['parent', None, 'child']),
+            manager_class=mock.Mock(),
+            lock=None,
+            get_all_actions=mock.Mock(return_value=[]),
+        )
+        self.ps = mock.Mock(
+            name='previous_service',
+        )
+        self.cs = CollectionService(self.ps, self.served_manager)
+        self.router = Router()
+        self.cs.setup_bottle(self.router)
+
+    def test_as_resource(self):
+        r = self.router.resolve('/parent/123/child/456')
+        with mock.patch('napixd.services.collection.ServiceResourceRequest') as SR:
+            resp = r(self.context)
+        self.assertEqual(resp, SR.return_value.handle.return_value)
+        SR.assert_called_once_with(CollectionContext(self.cs, self.context), [u'123', u'456'])
+
+    def test_as_collection(self):
+        r = self.router.resolve('/parent/123/child/')
+        with mock.patch('napixd.services.collection.ServiceCollectionRequest') as SR:
+            resp = r(self.context)
+        self.assertEqual(resp, SR.return_value.handle.return_value)
+        SR.assert_called_once_with(CollectionContext(self.cs, self.context), [u'123', ])
+
+    def test_as_managed_classes(self):
+        r = self.router.resolve('/parent/123/child/456/')
+        with mock.patch('napixd.services.collection.ServiceManagedClassesRequest') as SR:
+            resp = r(self.context)
+        self.assertEqual(resp, SR.return_value.handle.return_value)
+        SR.assert_called_once_with(CollectionContext(self.cs, self.context), [u'123', u'456'])
+
+    def test_noop(self):
+        r = self.router.resolve('/parent/123/child')
+        resp = r(self.context)
+        self.assertEqual(resp, None)

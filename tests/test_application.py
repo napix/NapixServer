@@ -9,6 +9,7 @@ import mock
 
 from napixd.exceptions import InternalRequestFailed
 from napixd.application import Napixd
+from napixd.services.contexts import NapixdContext
 from napixd.loader.loader import Loader, Load
 from napixd.http.router.router import Router
 from napixd.http.request import Request
@@ -54,6 +55,16 @@ class TestReload(unittest.TestCase):
 
     def tearDown(self):
         self.patch_service.stop()
+
+    def test_add_filter(self):
+        self.server.add_filter.assert_called_once_with(self.napixd)
+
+    def test_as_plugin(self):
+        cb = mock.Mock()
+        req = mock.Mock()
+        r = self.napixd(cb, req)
+        self.assertEqual(r, cb.return_value)
+        cb.assert_called_once_with(NapixdContext(self.napixd, req))
 
     def test_find_service(self):
         s = self.napixd.find_service('m1')
