@@ -48,6 +48,12 @@ class WSGIServer(object):
         start_response(resp.status_line, headers.items())
         return resp.body
 
+    def __repr__(self):
+        rep = []
+        for router in self._routers:
+            rep.append(repr(router))
+        return '\n----\n'.join(rep)
+
     def handle(self, request):
         callback = self.resolve(request.path)
         if callback is None:

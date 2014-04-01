@@ -105,6 +105,22 @@ class RouterStep(object):
         # Callback associated to this '/'
         self._callback = None
 
+    def __repr__(self, level=0):
+        paths = []
+        if self._callback is not None:
+            paths.append('=> {0}'.format(self._callback.__name__))
+        for route, rs in self._fixed.items():
+            if route == '?':
+                continue
+
+            if len(rs._fixed) == 0:
+                paths.append('{0} {1}'.format(route or '/', repr(rs)))
+            else:
+                paths.append('{0} ->\n{1}'.format(route or '/', rs.__repr__(level=level+1)))
+        if '?' in self._fixed:
+            paths.append('* ->\n{0}'.format(self._fixed['?'].__repr__(level=level+1)))
+        return '\n'.join(' ' * level + path for path in paths)
+
     def __nonzero__(self):
         #A router is truthy if it has at least a rule
         return self._callback is not None or bool(self._fixed)
@@ -172,7 +188,6 @@ class RouterStep(object):
             if not router:
                 del self._fixed[dest]
 
-
     def resolve(self, target):
         """
         Resolve the *target* url.
@@ -217,6 +232,9 @@ class CatchAllRouterStep(object):
 
     def __nonzero__(self):
         return self._callback is not None
+
+    def __repr__(self, level=0):
+        return '{pad}** -> {0}'.format(self._callback.__name__, pad=' ' * level)
 
     def unroute(self, route, all):
         if route:
