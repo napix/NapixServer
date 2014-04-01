@@ -3,6 +3,7 @@
 
 import collections
 
+from napixd.exceptions import InternalRequestFailed, NotFound, ValidationError
 from napixd.services.requests.base import ServiceRequest
 from napixd.services.requests.http import HTTPMixin, MethodMixin
 from napixd.http.response import HTTPError, Response, HTTPResponse
@@ -130,7 +131,10 @@ class FetchResource(ServiceResourceRequest):
         return None
 
     def call(self):
-        return self.resource
+        try:
+            return self.resource
+        except (ValidationError, NotFound) as e:
+            raise InternalRequestFailed(e)
 
 
 class HTTPServiceManagedClassesRequest(HTTPMixin, ServiceResourceRequest):
