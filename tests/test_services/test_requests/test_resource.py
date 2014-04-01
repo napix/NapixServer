@@ -5,8 +5,9 @@ import unittest
 import mock
 
 from napixd.exceptions import ValidationError, NotFound
-from napixd.http.response import HTTPError
+from napixd.http.response import HTTPError, HTTP405
 from napixd.utils.lock import Lock
+from napixd.managers.managed_classes import ManagedClass
 
 from napixd.services.urls import URL
 from napixd.services.wrapper import ResourceWrapper
@@ -16,6 +17,9 @@ from napixd.services.contexts import CollectionContext
 from napixd.services.requests import (
     ServiceActionRequest,
     ServiceResourceRequest
+)
+from napixd.services.requests.resource import (
+    HTTPServiceManagedClassesRequest,
 )
 
 
@@ -180,3 +184,33 @@ class TestServiceActionRequest(unittest.TestCase):
         r = self.sar().handle()
         self.validate.assert_called_once_with(self.data)
         self.assertEqual(r, self.action.return_value)
+
+
+class TestServiceManagedClassesRequest(unittest.TestCase):
+    def setUp(self):
+        mc = mock.Mock(spec=ManagedClass)
+        mc.get_name.return_value = 'def'
+        self.manager = manager = mock.Mock()
+        manager.get_managed_classes.return_value = [mc]
+        self.url = url = URL(['abc', None])
+        self.cs = mock.Mock(
+            spec=CollectionService,
+            lock=None,
+            collection=manager,
+            resource_url=url)
+        self.context = mock.Mock(
+            spec=CollectionContext,
+            method='GET',
+            service=self.cs,
+        )
+        self.context.get_manager_instance.return_value = manager
+
+    def smcr(self):
+        return HTTPServiceManagedClassesRequest(self.context, ['123'])
+
+    def test_handle(self):
+        self.assertEqual(self.smcr().handle(), ['/abc/123/def'])
+
+    def test_handle_method(self):
+        self.context.method = 'POST'
+        self.assertRaises(HTTP405, self.smcr().handle)

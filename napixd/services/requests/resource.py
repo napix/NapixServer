@@ -18,7 +18,7 @@ class ServiceResourceRequest(ServiceRequest):
     def get_manager(self):
         # get the last path token because we may not just want to GET the
         # resource
-        resource_id = self.path.pop()
+        resource_id = self.path[-1]
         manager = super(ServiceResourceRequest, self).get_manager()
 
         # verifie l'identifiant de la resource aussi
@@ -60,6 +60,7 @@ class HTTPServiceResourceRequest(ModifyResourceMixin, MethodMixin, HTTPMixin, Se
             return None
         if self.method == 'PUT':
             if result is not None and result != self.resource.id:
+                self.path.pop()
                 new_url = self.make_url(result)
                 return HTTPError(205, None, Location=new_url)
             return HTTPError(204)
@@ -130,3 +131,24 @@ class FetchResource(ServiceResourceRequest):
 
     def call(self):
         return self.resource
+
+
+class HTTPServiceManagedClassesRequest(HTTPMixin, ServiceResourceRequest):
+    """
+    The :class:`ServiceRequest` class for the listing of the managed classes
+    of a manager.
+    """
+
+    def get_callback(self):
+        if not (self.context.method == 'GET' or self.context.method == 'HEAD'):
+            raise HTTP405(['GET', 'HEAD'])
+        return self.service.collection.get_managed_classes
+
+    def call(self):
+        return self.callback()
+
+    def serialize(self, result):
+        """
+        Creates urls for the managed classes aliases.
+        """
+        return [self.make_url(mc.get_name()) for mc in result]

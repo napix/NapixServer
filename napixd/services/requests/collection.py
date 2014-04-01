@@ -6,7 +6,7 @@ import collections
 from napixd.services.methods import Implementation
 from napixd.services.requests.http import HTTPMixin, MethodMixin
 from napixd.services.requests.base import ServiceRequest
-from napixd.http.response import HTTPResponse, HTTP405
+from napixd.http.response import HTTPResponse
 
 
 class ServiceCollectionRequest(ServiceRequest):
@@ -91,30 +91,3 @@ class HTTPServiceCollectionRequest(MethodMixin, HTTPMixin, ServiceCollectionRequ
             return self.callback(self.context.parameters)
         else:
             return self.callback()
-
-
-class HTTPServiceManagedClassesRequest(HTTPMixin, ServiceRequest):
-    """
-    The ServiceRequest class for the listing of the managed classes
-    of a manager.
-    """
-
-    def get_manager(self):
-        resource_id = self.path[-1]
-        manager = super(HTTPServiceManagedClassesRequest, self).get_manager(
-            path=self.path[:-1])
-        # verifie l'identifiant de la resource aussi
-        self.resource_id = manager.validate_id(resource_id)
-        return manager
-
-    def get_callback(self):
-        if not (self.context.method == 'GET' or self.context.method == 'HEAD'):
-            raise HTTP405(['GET', 'HEAD'])
-        self.manager.get_resource(self.resource_id)
-        return self.service.collection.get_managed_classes
-
-    def call(self):
-        return self.callback()
-
-    def serialize(self, result):
-        return [self.make_url(mc.get_name()) for mc in result]

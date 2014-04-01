@@ -8,11 +8,11 @@ to handle the specific work of a request.
 
 from napixd.services.requests.collection import (
     HTTPServiceCollectionRequest as ServiceCollectionRequest,
-    HTTPServiceManagedClassesRequest as ServiceManagedClassesRequest,
 )
 from napixd.services.requests.resource import (
     HTTPServiceResourceRequest as ServiceResourceRequest,
     HTTPServiceActionRequest as ServiceActionRequest,
+    HTTPServiceManagedClassesRequest as ServiceManagedClassesRequest,
 )
 
 __all__ = (
