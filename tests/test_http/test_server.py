@@ -15,6 +15,7 @@ class TestServer(unittest.TestCase):
         self.router = r = mock.Mock(spec=Router)
         self.request = mock.Mock(spec=Request,
                                  path='/a/b',
+                                 environ={},
                                  method='GET')
         self.cb = self.router.resolve.return_value
 
@@ -61,6 +62,13 @@ class TestServer(unittest.TestCase):
         resp = self.server.handle(self.request)
         self.cb.assert_called_once_with(self.request)
         self.assertEqual(resp, self.cb.return_value)
+
+    def test_file_wrapper(self):
+        self.request.environ['wsgi.file_wrapper'] = fw = mock.Mock()
+        filelike = mock.Mock(file)
+        resp = self.cast(filelike)
+        self.assertEqual(resp.body, fw.return_value)
+        fw.assert_called_once_with(filelike, 1024**2)
 
     def test_cast_HEAD(self):
         self.request.method = 'HEAD'
