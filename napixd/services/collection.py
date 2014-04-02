@@ -26,11 +26,7 @@ class BaseCollectionService(object):
     Abstract class used by :class:`FirstCollectionService` and
     :class:`CollectionService`
 
-    Serve the *collection* with the given *config*.
-    *collection* is a subclass of :class:`~napixd.managers.base.Manager`
-    *config* is the instance of :class:`napixd.conf.Conf`.
-    *collection_url* is an :class:`napixd.services.urls.URL` where the service
-    is listening.
+    Serve the *served_manager*.
 
     .. attribute:: collection_url
 
@@ -124,33 +120,32 @@ class BaseCollectionService(object):
 
     def as_list_actions(self, napixd_context, *path):
         """
-        Lists the :meth:`napixd.managers.actions.action`
-        available on this manager.
+        Lists the :meth:`napixd.managers.actions.action` available on this manager.
         """
         return [x.action for x in self.all_actions]
 
     def as_managed_classes(self, napixd_context, *path):
         """
-        Lists the :attr:`managed classes<napixd.managers.base.Manager.managed_class>`
+        Lists the :attr:`managed classes<napixd.managers.Manager.managed_class>`
         of this manager.
         """
         return ServiceManagedClassesRequest(CollectionContext(self, napixd_context), list(path)).handle()
 
     def as_help(self, napixd_context, *path):
         """
-        The view server at **_napix_help**
+        The view served at **_napix_help**
         """
         return self.meta_data
 
     def as_resource_fields(self, napixd_context, *path):
         """
-        The view server at **_napix_resource_fields**
+        The view served at **_napix_resource_fields**
         """
         return self.resource_fields
 
     def as_example_resource(self, napixd_context, *path):
         """
-        The view server at **_napix_help**
+        The view served at **_napix_help**
         """
         manager = self.collection
         return manager.get_example_resource()
@@ -163,18 +158,15 @@ class BaseCollectionService(object):
 
     def get_manager(self, resource, call_context):
         """
-        instantiate a manager for the given resource
+        Instantiates a manager for the given resource
         """
         return self.served_manager.instantiate(resource, call_context)
 
 
 class FirstCollectionService(BaseCollectionService):
     """
-    A specialisation of :class:`BaseCollectionService` used
-    for the first level of managers.
-
-    *namespace* is the :attr:`~napixd.loader.ManagerImport.alias`
-    of the this manager.
+    A specialisation of :class:`BaseCollectionService` used for the first level
+    of managers.
     """
 
     def get_manager(self, path, call_context):
@@ -183,9 +175,8 @@ class FirstCollectionService(BaseCollectionService):
 
 class CollectionService(BaseCollectionService):
     """
-    The subclass of :class:`BaseCollectionService` used
-    for all the :class:`napixd.managers.base.Manager` classes
-    after the first one.
+    The subclass of :class:`BaseCollectionService` used for all the
+    :class:`napixd.managers.base.Manager` classes after the first one.
 
     *previous_service* is the :class:`CollectionService` or the
     :class:`FirstCollectionService` of the parent manager.

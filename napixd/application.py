@@ -14,11 +14,10 @@ logger = logging.getLogger('Napix.application')
 class Napixd(object):
     """
     The Main Application class.
-    This object is used to connect the :class:`napixd.services.Service`
-    to the WSGI framework.
 
-    *loader* is a :class:`napixd.loader.Loader` instance
-    used to find :class:`napixd.manager.base.Manager` classes.
+    This object is used to connect the :class:`napixd.services.Service`
+    to the WSGI framework. *loader* is a :class:`napixd.loader.loader.Loader`
+    instance used to find :class:`napixd.managers.Manager` classes.
     """
 
     def __init__(self, loader, router):
@@ -56,6 +55,11 @@ class Napixd(object):
         self._root_urls.sort()
 
     def find_service(self, alias):
+        """
+        Finds a :class:`napixd.services.Service` for the *alias*.
+
+        If there is no service with this alias, it raises a :exc:`napixd.exceptions.InternalRequestFailed`.
+        """
         try:
             return self._services[alias]
         except KeyError:
@@ -64,13 +68,16 @@ class Napixd(object):
             ))
 
     def list_managers(self):
+        """
+        List the aliases of the services.
+        """
         return self._root_urls
 
     def reload(self):
         """
         Launch a reloading sequence.
 
-        It calls :meth:`napixd.loader.Loading.load` and
+        It calls :meth:`napixd.loader.loader.Loader.load` and
         manages the new and old managers and errors.
         """
         load = self.loader.load()
@@ -102,10 +109,10 @@ class Napixd(object):
 
     def register_error(self, me):
         """
-        Set up the routes for a :class:`napixd.loader.ManagerError`.
+        Set up the routes for a :class:`napixd.loader.imports.ManagerError`.
 
         The routes will respond to any query by raising the
-        :attr:`napixd.loader.ManagerError.cause` of the errors.
+        :attr:`~napixd.loader.imports.ManagerError.cause` of the errors.
         """
         logger.debug('Setup routes for error, %s', me.alias)
         callback = self._error_service_factory(me.cause)
@@ -117,7 +124,9 @@ class Napixd(object):
 
     def slash(self, request):
         """
-        /  view; return the list of the first level services of the app.
+        View for **/**.
+
+        Return the URL of the first level services of the app.
         """
         return ['/' + x for x in self._root_urls]
 

@@ -7,10 +7,6 @@ The napix Configuration class.
 The Napix Configuration is a :class:`collections.MutableMapping`.
 Keys are accessible by their name, or their path.
 Their path are composed of each descendant joined by a ``.``.
-
-The defautl configuration is loaded from a JSON file
-:file:`HOME/conf/settings.json`
-
 """
 
 
@@ -27,10 +23,12 @@ _sentinel = object()
 
 class ConfLoader(object):
     """
-    Load the configuration from the default file.
+    Loader of configuration.
 
-    If the configuration file does not exists,
-    a new configuration file is created.
+    A loader is associated with a *factory*. The factory can convert string and
+    files to :class:`Conf` objects and the loader finds the files.
+    If no file is found a default configuration depending from the factory
+    is created at the first writable search emplacement
     """
     def __init__(self, paths, conf_factory):
         self.factory = conf_factory
@@ -38,9 +36,15 @@ class ConfLoader(object):
         self.paths = [os.path.join(path, filename) for path in paths]
 
     def get_default_conf(self):
+        """
+        Returns the path to the default file for this factory.
+        """
         return os.path.join(os.path.dirname(__file__), self.factory.get_filename())
 
     def load_file(self, path):
+        """
+        Loads a file using the factory.
+        """
         logger.info('Using %s configuration file', path)
         handle = open(path, 'rb')
         try:
@@ -52,6 +56,9 @@ class ConfLoader(object):
             handle.close()
 
     def clone_destination(self, content):
+        """
+        Clones the default configuration in the first writable emplacement.
+        """
         for path in self.paths:
             try:
                 logger.info('Try to write default conf to %s', path)
@@ -66,6 +73,9 @@ class ConfLoader(object):
             logger.error('Cannot write defaulf conf')
 
     def copy_default_conf(self):
+        """
+        Writes the default configuration.
+        """
         default_conf = self.get_default_conf()
         logger.warning('Did not find any configuration, trying default conf from %s',
                        default_conf)
@@ -98,6 +108,9 @@ class ConfLoader(object):
 
 
 class BaseConf(collections.Mapping):
+    """
+    Base class for configuration objects.
+    """
     _default = None
 
     def __eq__(self, other):
@@ -107,11 +120,19 @@ class BaseConf(collections.Mapping):
 
     def get(self, section_id, default_value=_sentinel, type=None):
         """
+        get(section_id, [default_value], type=None)
+
         Return the value pointed at **section_id**.
 
-        If the key does not exist, **default_value** is returned.
-        If *default_value* is left by default, an empty :class:`Conf`
-        instance is returned.
+        If the key does not exist, **default_value** is returned. If
+        *default_value* is left by default, an empty :class:`Conf` instance is
+        returned.
+
+        If *type* is given, the value at *section_id* must exist and be an
+        instance of *type*, else a :exc:`TypeError` is raised.  When used in
+        combination with *default_value*, it is returned if there is no value
+        instead of the :exc:`TypeError` but the :exc:`TypeError` is still
+        raised when the value is not an instance of the *type*.
         """
         try:
             value = self[section_id]
@@ -132,6 +153,8 @@ class BaseConf(collections.Mapping):
     def get_default(value=None):
         """
         Get a value on the default conf instance.
+
+        The default conf instance is set by :meth:`get_default`.
         """
         if BaseConf._default is None:
             raise ValueError('Configuration is not loaded')
@@ -142,6 +165,11 @@ class BaseConf(collections.Mapping):
 
     @staticmethod
     def set_default(instance):
+        """
+        Set the default Conf instance.
+
+        :meth:`set_default` must be called before :meth:`get_default`.
+        """
         if instance is None:
             BaseConf._default = None
             return None
@@ -153,6 +181,12 @@ class BaseConf(collections.Mapping):
 
 
 class Conf(BaseConf):
+    """
+    A simple Conf.
+
+    It takes a dict of values and returns it with the augmented methods
+    of :class:`BaseConf`.
+    """
     def __init__(self, values):
         self._values = values
 

@@ -444,20 +444,28 @@ class Manager(object):
     def validate_resource(self, resource_dict, origin=None):
         """
         Validates a resource_dict (which can be directly a dict or an object
-        emulating a dict) by checking that every mandatory field specified
-        in self.resource_fields is defined.
+        emulating a dict) by checking that every mandatory field specified in
+        :attr:`resource_fields` is defined.
 
         If the current object implement :meth:`validate_resource_FIELDNAME`
-        method, it'll be called with the value of resource_dict[FIELDNAME]
-        as parameters.
-        It shoud raise a :exc:`napixd.exceptions.ValidationError`
+        method, it'll be called with the value of resource_dict[FIELDNAME] as
+        parameters.  It shoud raise a :exc:`napixd.exceptions.ValidationError`
         if the data isn't valid, else it must return a valid value
 
-        Return a resource_dict.
+        Returns a resource_dict.
         """
         return resource_dict
 
     def validate(self, resource_dict, original=None):
+        """
+        Validates the resource.
+
+        First, it calls the :class:`napixd.managers.resource_fields.ResourceFieldsDescriptor.validate`,
+        then it calls :meth:`validate_resource`. If there is an *original*
+        object given, a :class:`napixd.managers.changeset.DiffDict` is
+        computed with the original and proposed object.
+
+        """
         # Create a new dict to populate with validated data
         if original is not None:
             serialized = self.serialize(original)

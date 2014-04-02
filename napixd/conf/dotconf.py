@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
+"""
+The :mod:`dotconf` implementation of the config infrastructure.
+"""
+
 from __future__ import absolute_import
 
 from dotconf import Dotconf
@@ -14,6 +19,9 @@ from napixd import conf
 
 
 class ConfFactory(object):
+    """
+    :mod:`dotconf` factory.
+    """
     def get_filename(self):
         return 'settings.conf'
 
@@ -31,6 +39,11 @@ class ConfFactory(object):
 
 
 class Conf(conf.BaseConf):
+    """
+    This Conf class translate in dotconf semantics the config instructions.
+
+    It converts keys with a ' ' as sections lookups.
+    """
     def __init__(self, section):
         self.section = section
 

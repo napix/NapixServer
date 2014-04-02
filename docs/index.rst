@@ -21,7 +21,6 @@ Contents:
     high_level
     low_level
     conf
-    thread_manager
     templates
     undo
     tests

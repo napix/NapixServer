@@ -231,6 +231,11 @@ Meta-options:
         console.info('Service Name is %s', self.service_name)
 
     def get_conf(self):
+        """
+        Get the configuration from the configuration file.
+
+        It set the default conf instance by calling :meth:`napixd.conf.BaseConf.set_default`.
+        """
         logger.info('Loading configuration')
         paths = [
             get_path('conf/'),

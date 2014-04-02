@@ -187,7 +187,7 @@ class ResourceFieldsDescriptor(collections.Sequence):
         Validate the **input**.
         *original* is the actual value.
 
-        Field are ignored and remove from *input* if
+        Field are ignored and removed from *input* if
 
         * The property :attr:`ResourceField.computed` is set.
         * The property :attr:`ResourceField.editable` is not set and **original** is not None.
@@ -342,15 +342,16 @@ class ResourceField(object):
         Those fields are not used by the Napix Server
         but may be useful to the clients.
 
-        :description:
+        description
             The goal of the field.
-
-        :display_order:
+        display_order
             The priority of the field.
             The fields with a lower *display_order* are shown first.
-
-        :label:
+        label
             The label to display with this field.
+        content_type
+            An indication of the semantic content of the field.
+            Eg: a string that is a ISO8601 date, an int that is a timestamp
 
     """
 

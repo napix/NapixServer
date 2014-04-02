@@ -14,7 +14,6 @@ class ServiceCollectionRequest(ServiceRequest):
     ServiceCollectionRequest is an implementation of :class:`ServiceRequest`
     specialized for Collection requests (urls ending with /)
     """
-    # association de verbes HTTP aux methodes python
 
     def get_manager(self):
         """
@@ -25,6 +24,10 @@ class ServiceCollectionRequest(ServiceRequest):
         return Implementation(manager)
 
     def check_datas(self):
+        """
+        Checks the data when the :class:`ServiceCollectionRequest` intends
+        to call :meth:`napixd.managers.Manager.create_resource`.
+        """
         if self.method != 'POST':
             return super(ServiceCollectionRequest, self).check_datas()
 

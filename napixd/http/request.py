@@ -29,6 +29,12 @@ class lazy(object):
 
 
 class Query(collections.Mapping):
+    """
+    An object representing a query.
+
+    It behaves as a :class:`dict`. The item for a key is the first defined
+    value for this key.
+    """
     def __init__(self, raw):
         if isinstance(raw, basestring):
             values = collections.defaultdict(list)
@@ -56,17 +62,17 @@ class Query(collections.Mapping):
         self.values = dict(values)
 
     def getall(self, key):
-        if not key in self.values:
-            return []
-        return self.values[key]
+        """
+        Returns a list of all the values defined for this key.
+
+        It returns an empty list if the key is not defined.
+        """
+        return self.values.get(key, [])
 
     def __contains__(self, key):
         return key in self.values
 
     def __getitem__(self, key):
-        if not key in self.values:
-            raise KeyError(key)
-
         return self.values[key][0]
 
     def __iter__(self):
@@ -177,6 +183,9 @@ class Request(object):
 
     @lazy
     def json(self):
+        """
+        Parses the body as JSON.
+        """
         try:
             return json.load(self._body())
         except ValueError:

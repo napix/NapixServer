@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Hacks for standard library :mod:`wsgiref`.
+"""
+
 from __future__ import absolute_import
 
 import wsgiref.simple_server
@@ -8,6 +12,9 @@ from napixd.http import Adapter
 
 
 class WSGIRequestHandler(wsgiref.simple_server.WSGIRequestHandler, object):
+    """
+    Request Handler used to remove the escaping in the ``PATH_INFO``.
+    """
     def get_environ(self):
         environ = super(WSGIRequestHandler, self).get_environ()
         if '?' in self.path:
@@ -19,11 +26,17 @@ class WSGIRequestHandler(wsgiref.simple_server.WSGIRequestHandler, object):
 
 
 class QuietWSGIRequestHandler(WSGIRequestHandler):
+    """
+    Remove the log of the request in the standard output.
+    """
     def log_request(self, *args, **kw):
         pass
 
 
 class WSGIRefServer(Adapter):
+    """
+    Adapter for :mod:`napixd.http`.
+    """
     def run(self, app):
         handler_cls = self.options.get('handler_class',
                                        wsgiref.simple_server.WSGIRequestHandler)

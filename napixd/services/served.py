@@ -11,11 +11,16 @@ from napixd.services.contexts import ResourceContext
 
 class FirstServedManager(object):
     """
-    Intermediary object the objects needed to serve a a :class:`napixd.managers.base.Manager` class.
+    Intermediary object the objects needed to serve a
+    :class:`napixd.managers.Manager` class.
 
-    It includes *configuration*, a :class:`napixd.conf.BaseConf` instance
-    used to configure the instances, an :class:`napixd.service.urls.URL` at wich the manager
-    is served.
+    It includes *configuration*, a :class:`napixd.conf.BaseConf` instance used
+    to configure the instances, an :class:`napixd.service.urls.URL` at wich the
+    manager is served.
+
+    .. attribute:: manager_class
+
+        The subclass of :class:`napixd.managers.Manager`
     """
     def __init__(self, manager_class, configuration, url, namespaces, lock=None):
         self.manager_class = manager_class
@@ -39,6 +44,12 @@ class FirstServedManager(object):
                 )
 
     def instantiate(self, resource, context):
+        """
+        Instantiates a :attr:`manager_class` with the parent resource and
+        a :class:`napixd.services.contexts.ResourceContext`.
+
+        It returns a :class:`ServedManagerInstance`.
+        """
         context = ResourceContext(self, context)
         manager = self.manager_class(resource, context)
         manager.configure(self.configuration)
@@ -145,6 +156,12 @@ class ServedAction(object):
 
 
 class ServedManagerInstance(object):
+    """
+    A class to bind a :class:`napixd.managers.Manager` instance and a
+    :class:`napixd.services.contexts.ResourceContext`.
+
+    The methods fill when it's relevant the ResourceContext.
+    """
     def __init__(self, manager_instance, resource_context):
         self._manager_instance = manager_instance
         self._resource_context = resource_context
@@ -159,11 +176,19 @@ class ServedManagerInstance(object):
         return getattr(self._manager_instance, attr)
 
     def validate_id(self, id):
+        """
+        Validates *id* with :meth:`napixd.managers.Manager.validate_id` and
+        sets the :attr:`napixd.services.contexts.ResourceContext.id`.
+        """
         id = self._manager_instance.validate_id(id)
         self._resource_context.id = id
         return id
 
     def get_resource(self, id):
+        """
+        Gets the resource at *id* with :meth:`napixd.managers.Manager.validate_id`
+        and sets the :attr:`napixd.services.contexts.ResourceContext.resource`.
+        """
         resource = self._manager_instance.get_resource(id)
         wrapped = self._resource_context.make_resource(resource)
         self._resource_context.resource = wrapped

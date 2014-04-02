@@ -28,6 +28,9 @@ def file_wrapper(environ, filelike):
 
 
 class WSGIServer(object):
+    """
+    A WSGI compliant server used for napixd.
+    """
     def __init__(self, pprint=False):
         self._router = r = Router()
         self._routers = [r]
@@ -55,6 +58,10 @@ class WSGIServer(object):
         return '\n----\n'.join(rep)
 
     def handle(self, request):
+        """
+        Handles the request: :meth:`resolve` it and executes it
+        or raises a :class:`napixd.http.response.HTTP404`.
+        """
         callback = self.resolve(request.path)
         if callback is None:
             return HTTP404()
@@ -62,9 +69,10 @@ class WSGIServer(object):
 
     def resolve(self, target):
         """
-        Resolve the route at target.
+        Resolves the route at target.
 
-        The first router having a match is used.
+        The first router having a match is used. If there is no match,
+        ``None`` is returned.
         """
         for router in reversed(self._routers):
             resolved = router.resolve(target)
@@ -73,21 +81,28 @@ class WSGIServer(object):
 
     @property
     def router(self):
+        """
+        The first router of the server
+        """
         return self._router
 
     def route(self, url, callback, **kw):
+        """
+        Add a route using the first :attr:`router`.
+        """
         return self._router.route(url, callback, **kw)
 
     def unroute(self, url, all=False):
+        """
+        Remove a route from the :attr:`router`.
+        """
         return self._router.unroute(url, all=all)
 
     def push(self, router=None):
         """
-        Add a new router at the end of the stack.
+        Adds and returns a router at the end of the stack.
 
-        If *router* is ``None``, a new :class:`router.Router` is created.
-
-        The router added to the stack is returned.
+        If *router* is ``None``, a new :class:`~napixd.http.router.router.Router` is created.
         """
         if router is None:
             router = Router()
@@ -95,6 +110,10 @@ class WSGIServer(object):
         return router
 
     def cast(self, request, response):
+        """
+        Translates a response in a :class:`napixd.http.response.HTTPResponse`
+        object.
+        """
         if isinstance(response, Response):
             return HTTPResponse(200, response.headers, response)
         elif isinstance(response, (HTTPError, HTTPResponse)):

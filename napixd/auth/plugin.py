@@ -13,6 +13,8 @@ logger = logging.getLogger('Napix.auth')
 class AAAPlugin(object):
     """
     Authentication, Authorization and Accounting plugins
+
+    It takes a list of :ref:`auth.sources` and a list of :ref:`auth.providers`.
     """
 
     def __init__(self, sources, providers, timed=True):
@@ -30,6 +32,12 @@ class AAAPlugin(object):
             raise
 
     def extract(self, request):
+        """
+        Uses the :ref:`auth.sources` to retrieve informations from the request.
+
+        It returns the first non-``None`` result of a :ref:`source<auth.sources>`.
+        When all sources returns ``None``, it raises a 401.
+        """
         for source in self._sources:
             extract = source(request)
             if extract is not None:
@@ -39,6 +47,12 @@ class AAAPlugin(object):
             raise HTTPError(401, 'You need to sign your request')
 
     def authenticate(self, request, content):
+        """
+        Authenticates the *request* with the **providers**.
+
+        It returns the first non-``None`` result of a provider.
+        When all providers returns None, it raises a 403.
+        """
         for provider in self._providers:
             result = provider(request, content)
             if result is not None:
@@ -48,6 +62,15 @@ class AAAPlugin(object):
             raise HTTPError(403, 'No source')
 
     def authorize(self, callback, request):
+        """
+        Calls :meth:`authenticate` and the *callback*
+
+        If :meth:`authenticate` returns a callable, it will call it
+        with the result of the callback.
+
+        When the *timed* option is enabled, the time spend in :meth:`authenticate`
+        will be calculated and returned in the **x-auth-time** header.
+        """
         content = self.extract(request)
         request.environ['napixd.auth.username'] = content.get('login', '-')
         with Chrono() as chrono:

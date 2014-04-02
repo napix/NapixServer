@@ -16,7 +16,7 @@ class ManagerImport(object):
 
     .. attribute:: manager
 
-        A :class:`napixd.manager.Manager` subclass.
+        A :class:`napixd.managers.Manager` subclass.
 
     .. attribute:: alias
 

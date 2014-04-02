@@ -9,7 +9,6 @@ The templates are sample files used to create quickly a napixd manager.
 The source templates are file in the same directory as this file.
 
 They are generated in the :file:`HOME/auto/` directory.
-
 """
 
 import os

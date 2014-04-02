@@ -3,9 +3,9 @@
 
 
 """
-The webclient of Napixd.
+The webclient of napixd.
 
-Napixd propose a generic web client usable with  every server.
+Napixd propose a generic web client usable with every server.
 """
 
 from napixd.http.statics import StaticFiles
@@ -15,8 +15,8 @@ class WebClient(object):
     """
     An object to represent the Webclient.
 
-    *root* is the path to the directory containing the index.html
-    *launcher* is the :class:`napixd.launcher.Setup` class.
+    *root* is the path to the directory containing the index.html and *launcher*
+    is the :class:`napixd.launcher.Setup` class.
     """
 
     def __init__(self, root, launcher, generate_docs=True, index='index.html'):
@@ -48,19 +48,24 @@ class WebClient(object):
 
     def index(self, request, path):
         """
-        Returns the index.
+        View for the static pages.
+
+        Returns the *index* if path is empty.
         """
         path = path or self._index
         return self._static(request, path)
 
     def docs(self, request):
+        """
+        View of the documentation.
+        """
         return self.doc.generate()
 
     def infos(self, request):
         """
         Returns informations about the server to the client.
 
-        Those informations are extracted from the *launcher*
+        Those informations are extracted from the *launcher*.
         """
         return {
             'name': self.service_name,

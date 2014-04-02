@@ -7,6 +7,34 @@ from napixd.http.response import HTTPError, HTTP405
 
 
 class MethodMixin(object):
+    """
+    Mixin for the request where the property **method**
+    of the request defines which method is actually used.
+
+    The upper case indexes of :attr:`METHOD_MAP` are considered to be
+    HTTP methods and appears in the :meth:`available_methods` and in the
+    *Allow* header of returned 405 errors.
+
+    Lower case methods are internal methods and should be used when applicable
+    by setting the :attr:`method` before calling :meth:`get_callback`, for
+    example by overriding this method.
+    Lower case methods are not used in the 405 errors.
+
+    .. attribute:: METHOD_MAP
+
+        A mapping of strings to strings.
+
+        The index is the name of a method, ie an HTTP method like GET,
+        and the value is the name of a property of the manager.
+
+    .. attribute:: method
+
+        The current method of the current request.
+
+        This property may be updated by the sub classes before calling
+        :meth:`get_callback` if another method is more suitable.
+
+    """
     METHOD_MAP = {}
 
     def __init__(self, *args, **kw):
@@ -17,7 +45,7 @@ class MethodMixin(object):
     def available_methods(cls, manager):
         """
         Return the HTTP methods defined in the given manager
-        that are usable with this ServiceRequest
+        that are usable with this :class:`MethodMixin`.
         """
         available_methods = []
         for meth, callback in cls.METHOD_MAP.items():
@@ -27,10 +55,11 @@ class MethodMixin(object):
 
     def get_callback(self):
         """
-        Retreive the method we'll call using self.METHOD_MAP and the user input
-        (ie the HTTP method used on the ressource)
+        Retrieves the method we'll call using :attr:`METHOD_MAP` and the user input
+        (ie the HTTP method used on the request).
 
-        Return 405 if the request is not implemented.
+        When the :attr:`method` is not in :attr:`METHOD_MAP`, a *405 METHOD NOT ALLOWED*
+        HTTP error is raised with the allowed methods computed by :meth:`available_methods`.
         """
         try:
             return getattr(self.manager, self.METHOD_MAP[self.method])
@@ -46,8 +75,9 @@ class HTTPMixin(object):
 
     def handle(self):
         """
-        Actually handle the request.
-        Call a set of methods that may be overrident by subclasses.
+        Handle the request and calls :meth:`serialize` on the request.
+
+        It catches errors thrown by the managers and translate them in HTTP status codes.
         """
         try:
             result = super(HTTPMixin, self).handle()

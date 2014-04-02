@@ -13,8 +13,8 @@ from napixd.chrono import Chrono
 
 class PathInfoMiddleware(object):
     """
-    Use the `REQUEST_URI` to generate `PATH_INFO` to avoid problems with
-    URL encoding.
+    Use the `REQUEST_URI` to generate `PATH_INFO` to avoid problems with URL
+    encoding.
     """
 
     def __init__(self, application):
@@ -27,8 +27,8 @@ class PathInfoMiddleware(object):
 
 class CORSMiddleware(object):
     """
-    Reply to OPTIONS requests emitted by browsers
-    to check for Cross Origin Requests
+    Reply to OPTIONS requests emitted by browsers to check for Cross Origin
+    Requests.
     """
 
     def __init__(self, application):
@@ -117,6 +117,9 @@ def LoggerMiddleware(application):
 
 
 class HTTPHostMiddleware(object):
+    """
+    WSGI Middleware that checks the host againt a list of authorized hosts.
+    """
     def __init__(self, hosts, application):
         self.hosts = frozenset(hosts)
         self.application = application

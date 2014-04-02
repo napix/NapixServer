@@ -15,6 +15,14 @@ after a call to :meth:`RouterStep.unroute` removes all the routes in a child ste
 
 import urllib
 
+__all__ = [
+    'RouterStep',
+    'CatchAllRouterStep',
+    'URLTarget',
+    'ResolvedRequest',
+    'RouteTaken',
+]
+
 
 class URLTarget(object):
     """
@@ -96,8 +104,8 @@ class RouterStep(object):
     """
     A path bit.
 
-    Each :class:`RouterStep` handles the path without the '/'
-    and delegates to children class:`RouterStep` for the path.
+    Each :class:`RouterStep` handles the path without the '/' and delegates to
+    children :class:`RouterStep` for the path.
     """
     def __init__(self):
         # _fixed, the map of the static paths token
@@ -131,8 +139,8 @@ class RouterStep(object):
 
         *target* is an instance of :class:`URLTarget`
 
-        The *target*  can contain either full path bits that must be equal to match
-        or ``?`` to indicate a default route and save this as an argument.
+        The *target*  can contain either full path bits that must be equal to
+        match or ``?`` to indicate a default route and save this as an argument.
         Path bits are chosen first.
         """
         dest = next(target, None)

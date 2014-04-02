@@ -40,8 +40,7 @@ class Poll(object):
     """
     Le poll du pauvre (poor man's Poll)
 
-    Transforms some usage of :class:`select.Poll`
-    to :func:`select.select` calls.
+    Transforms some usage of :class:`select.Poll` to :func:`select.select` calls.
     """
 
     def __init__(self):
@@ -67,10 +66,9 @@ def patch_select():
 
 class Reloader(object):
     """
-    An object that checks for signals: SIGHUP,
-    file changes through :mod:`pyinotify`
-    or manual calls to :meth:`reload` and triggers
-    a reloading of the application.
+    An object that checks for signals: SIGHUP, file changes through
+    :mod:`pyinotify` and triggers a reloading of the application by calling
+    :meth:`napixd.application.Napixd.reload`.
     """
 
     def __init__(self, app):
@@ -90,6 +88,11 @@ class Reloader(object):
                 'Did not find pyinotify, reload on file change support disabled')
 
     def setup_inotify(self):
+        """
+        Set up the watch in the directories given by
+        :meth:`~napixd.loader.loader.Loader.get_paths` for file system events by
+        :mod:`pyinotify`.
+        """
         patch_select()
         self.watch_manager = watch_manager = pyinotify.WatchManager()
         self._update_path()

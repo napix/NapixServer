@@ -6,17 +6,21 @@ import collections
 from napixd.exceptions import InternalRequestFailed, NotFound, ValidationError
 from napixd.services.requests.base import ServiceRequest
 from napixd.services.requests.http import HTTPMixin, MethodMixin
-from napixd.http.response import HTTPError, Response, HTTPResponse
+from napixd.http.response import HTTPError, Response, HTTPResponse, HTTP405
 
 
 class ServiceResourceRequest(ServiceRequest):
-
     """
-    ServiceResourceRequest is an implementation of ServiceRequest specified for
-    Resource requests (urls not ending with /)
+    :class:`ServiceResourceRequest` is an implementation of :class:`ServiceRequest`
+    specified for Resource requests (urls not ending with /)
+
+    All requests must be on an existing (returned by :meth:`napixd.managers.Manager.get_resource`).
     """
 
     def get_manager(self):
+        """
+        Get the manager and set :attr:`resource` to the :class:`napixd.services.wrapper.ResourceWrapper`.
+        """
         # get the last path token because we may not just want to GET the
         # resource
         resource_id = self.path[-1]
@@ -30,12 +34,23 @@ class ServiceResourceRequest(ServiceRequest):
 
 
 class ModifyResourceMixin(object):
+    """
+    A mixin for :class:`ServiceResourceRequest` that intents to call
+    :meth:`napixd.managers.Manager.modify_resource`.
+    """
     def check_datas(self):
+        """"
+        Use :meth:`napixd.managers.Manager.validate` for the valition
+        of the data.
+        """
         data = self.context.data
         return self.manager.validate(data, self.resource.resource)
 
 
 class HTTPServiceResourceRequest(ModifyResourceMixin, MethodMixin, HTTPMixin, ServiceResourceRequest):
+    """
+    :class:`ServiceResourceRequest` sub class for the handling of requests coming from the HTTP server.
+    """
     METHOD_MAP = {
         'PUT': 'modify_resource',
         'GET': 'get_resource',
@@ -44,6 +59,9 @@ class HTTPServiceResourceRequest(ModifyResourceMixin, MethodMixin, HTTPMixin, Se
     }
 
     def check_datas(self):
+        """
+        Uses :meth:`ModifyResourceMixin.check_datas` for PUT request.
+        """
         if self.method == 'PUT':
             return super(HTTPServiceResourceRequest, self).check_datas()
         return super(ModifyResourceMixin, self).check_datas()
@@ -57,6 +75,11 @@ class HTTPServiceResourceRequest(ModifyResourceMixin, MethodMixin, HTTPMixin, Se
             return self.callback(self.resource)
 
     def serialize(self, result):
+        """
+        Serialize the request.
+
+        Also applies the *format* if asked in the parameters.
+        """
         if self.method == 'HEAD':
             return None
         if self.method == 'PUT':
@@ -94,6 +117,11 @@ class HTTPServiceResourceRequest(ModifyResourceMixin, MethodMixin, HTTPMixin, Se
             return HTTPResponse(response.headers, result)
 
     def default_formatter(self, value):
+        """
+        The default formatter is :meth:`napixd.managers.Manager.serialize`.
+
+        The method also ensures that the serialized value is a :class:`collections.Mapping`.
+        """
         resp = self.manager.serialize(value)
         if not isinstance(resp, collections.Mapping):
             raise ValueError('Serialized value is not an dict')
@@ -101,16 +129,25 @@ class HTTPServiceResourceRequest(ModifyResourceMixin, MethodMixin, HTTPMixin, Se
 
 
 class ServiceActionRequest(ServiceResourceRequest):
-
+    """
+    :class:`ServiceResourceRequest` used to call :mod:`napixd.managers.actions`
+    on a resource.
+    """
     def __init__(self, context, path, action_name):
         super(ServiceActionRequest, self).__init__(context, path)
         self.action_name = action_name
 
     def check_datas(self):
+        """
+        Checks the data with the :attr:`~napixd.managers.actions.BoundAction.resource_fields`
+        """
         data = self.callback.resource_fields.validate(self.context.data)
         return data
 
     def get_callback(self):
+        """
+        Returns the :class:`~napixd.managers.actions.BoundAction` from the :class:`napixd.managers.Manager`.
+        """
         return getattr(self.manager, self.action_name)
 
     def call(self):
@@ -118,6 +155,9 @@ class ServiceActionRequest(ServiceResourceRequest):
 
 
 class HTTPServiceActionRequest(HTTPMixin, ServiceActionRequest):
+    """
+    :class:`ServiceActionRequest` for the HTTP requests.
+    """
     METHOD_MAP = {
         'POST': 'get_resource',
     }
@@ -127,6 +167,10 @@ class HTTPServiceActionRequest(HTTPMixin, ServiceActionRequest):
 
 
 class FetchResource(ServiceResourceRequest):
+    """
+    :class:`ServiceResourceRequest` for the internal request passed through
+    :meth:`napixd.services.contexts.CollectionContext.get_resource`.
+    """
     def get_callback(self):
         return None
 

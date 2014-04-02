@@ -13,6 +13,8 @@ class setable_property(object):
         self.__doc__ = fn.__doc__
 
     def __get__(self, instance, owner):
+        if instance is None:
+            return self
         return self.fn(instance)
 
 

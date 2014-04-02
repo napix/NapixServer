@@ -1,10 +1,18 @@
 loader Package
 ==============
 
-:mod:`loader` Module
---------------------
+:mod:`loader` Package
+---------------------
 
 .. automodule:: napixd.loader
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`auto` Module
+------------------
+
+.. automodule:: napixd.loader.auto
     :members:
     :undoc-members:
     :show-inheritance:
@@ -17,18 +25,18 @@ loader Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`imports` Module
----------------------
-
-.. automodule:: napixd.loader.imports
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`importers` Module
 -----------------------
 
 .. automodule:: napixd.loader.importers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`imports` Module
+---------------------
+
+.. automodule:: napixd.loader.imports
     :members:
     :undoc-members:
     :show-inheritance:
@@ -40,5 +48,4 @@ loader Package
     :members:
     :undoc-members:
     :show-inheritance:
-
 

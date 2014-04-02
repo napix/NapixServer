@@ -6,6 +6,10 @@ from napixd.http.response import HTTPResponse
 
 
 class TimePlugin(object):
+    """
+    Plugin for :mod:`napixd.http` that times the callback and sends the time
+    spent in a header *header_name*.
+    """
 
     def __init__(self, header_name):
         self.header_name = header_name

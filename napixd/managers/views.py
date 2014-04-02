@@ -8,18 +8,19 @@ Views on resources
 
 The Napix views allow the resources to be presented differently.
 
-By default, a JSON presentation of the resource is returned.
-When a resource implements views, it can return different formats.
-For example, it can send a pdf file, a png image, a CSV file, etc.
+By default, a JSON presentation of the resource is returned. When a resource
+implements views, it can return different formats. For example, it can send a
+pdf file, a png image, a CSV file, etc.
 
-Views may be added to a managed by implementing a instance method
-decorated by :meth:`view`.
-
+Views may be added to a managed by implementing a instance method decorated by
+:meth:`view`.
 
 Callback
 ========
 
-The signature of the decorated view is::
+The signature of the decorated view is
+
+.. code-block:: python
 
     formatter(self, resource, response)
 
@@ -30,15 +31,13 @@ resource
     This resource is not filtered and additional fields not declared in
     :data:`~napixd.managers.Manager.resource_fields` are included.
 response
-    an empty :class:`napixd.http.Response` object.
-    This object permits to set headers with
-    :meth:`~napixd.http.Response.set_header` and fill the body of the response
-    with :meth:`~napixd.http.Response.write`.
+    an empty :class:`napixd.http.Response` object. This object permits to set
+    headers with :meth:`~napixd.http.Response.set_header` and fill the body of
+    the response with :meth:`~napixd.http.Response.write`.
 
-
-If the value returned by the callback is *response* or ``None``,
-the response object is returned.
-Else the returned value is JSON-encoded as-is and transmitted to the client.
+If the value returned by the callback is *response* or ``None``, the response
+object is returned. Else the returned value is JSON-encoded as-is and
+transmitted to the client.
 
 In all cases, the headers set on the *response* object are transmitted.
 
@@ -52,7 +51,7 @@ so the Napix server will forward this to the client.
 .. code-block:: python
 
     @view('text/csv')
-    def view_as_csv( self, resource_id, resource, response):
+    def view_as_csv(self, resource_id, resource, response):
         "Dump the race as a CSV file"
         response.write( '"Firstname";"Lastname";"laps";"avg time";"min time"' )
         for line in resource['lines']:
@@ -179,8 +178,15 @@ def view(format, content_type=None):
 
 
 def content_type(content_type):
+    """
+    A decorator used to set the content_type on a view.
+
+    .. warning::
+
+        This decorator is deprecated, use the *content_type* argument of :func:`view`.
+    """
     import warnings
-    warnings.warn('The content_type decorator is depreciated, please use the content_type argument of @view')
+    warnings.warn('The content_type decorator is deprecated, please use the content_type argument of @view')
 
     def inner(fn):
         fn._napix_view_content_type = content_type

@@ -1,11 +1,18 @@
-===================
-napixd.conf Package
-===================
+conf Package
+============
 
-:mod:`conf` Module
-------------------
+:mod:`conf` Package
+-------------------
 
 .. automodule:: napixd.conf
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`dotconf` Module
+---------------------
+
+.. automodule:: napixd.conf.dotconf
     :members:
     :undoc-members:
     :show-inheritance:
@@ -18,10 +25,10 @@ napixd.conf Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`dotconf` Module
----------------------
+:mod:`lazy` Module
+------------------
 
-.. automodule:: napixd.conf.dotconf
+.. automodule:: napixd.conf.lazy
     :members:
     :undoc-members:
     :show-inheritance:

@@ -71,9 +71,16 @@ class Service(object):
             ))
 
         self._collection_services[namespaces] = service
-        self.create_collection_service(collection, namespaces, service, 0)
+        self._create_collection_service(collection, namespaces, service, 0)
 
     def get_collection_service(self, aliases):
+        """
+        Gets a :class:`collection.CollectionService` instance for the manager
+        at *aliases*.
+
+        If there is no :class:`~collection.CollectionService` at this aliases,
+        a :exc:`napixd.exceptions.InternalRequestFailed` is raised.
+        """
         try:
             return self._collection_services[tuple(aliases)]
         except KeyError:
@@ -83,8 +90,7 @@ class Service(object):
 
     def make_collection_service(self, previous_service, previous_namespaces, managed_class, level):
         """
-        Called from create_collection as a recursive method to collect all
-        submanagers of the root manager we want to manager with this service.
+        Instanciates a :class:`collection.CollectionService` for a manager.
         """
         namespace = managed_class.get_name()
         namespaces = previous_namespaces + (namespace, )
@@ -107,10 +113,10 @@ class Service(object):
         self._collection_services[namespaces] = service
 
         # level to avoid max recursion.
-        self.create_collection_service(
+        self._create_collection_service(
             managed_class.manager_class, namespaces, service, level + 1)
 
-    def create_collection_service(self, collection, ns, previous_service, level):
+    def _create_collection_service(self, collection, ns, previous_service, level):
         if level >= MAX_LEVEL:
             return
 

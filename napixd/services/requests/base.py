@@ -6,9 +6,9 @@ class ServiceRequest(object):
     """
     This class is an abstract class created to serve a single request.
 
-    The object handles the request for the *path* given on the *service*.
-    *service* is an instance of
-    :class:`napixd.services.collection.CollectionService`.
+    The object handles the request for the *path* given on the *context*.
+    *context* is an instance of :class:`napixd.services.collection.CollectionContext`.
+    *path* is a list of **escaped strings** which are used as *id* for the managers.
     """
 
     def __init__(self, context, path):
@@ -53,6 +53,14 @@ class ServiceRequest(object):
         raise NotImplementedError
 
     def handle(self):
+        """
+        Calls the request.
+        This method takes care of acquiring the lock and releasing it.
+
+        .. warning::
+
+            When this method is overriden, the locking is not enforced.
+        """
         lock = self.lock.acquire() if self.lock else None
 
         try:

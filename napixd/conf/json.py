@@ -10,6 +10,9 @@ from napixd import conf
 
 
 class ConfFactory(object):
+    """
+    The original conf fcatory using JSON objects.
+    """
     def get_filename(self):
         return 'settings.json'
 
@@ -25,6 +28,9 @@ class ConfFactory(object):
 
 
 class CompatConfFactory(ConfFactory):
+    """
+    Compatibility layer between old config format and new config.
+    """
     def parse_file(self, handle):
         return CompatConf(super(CompatConfFactory, self).parse_file(handle))
 
@@ -94,6 +100,9 @@ class Conf(conf.BaseConf):
 
 
 class CompatConf(conf.BaseConf):
+    """
+    Proxy to :class:`Conf` returned by :class:`CompatConf`.
+    """
     def __init__(self, conf):
         self.conf = conf
 
