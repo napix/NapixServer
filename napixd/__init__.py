@@ -9,6 +9,9 @@ The root of the napix project.
     The current HOME dir
 """
 
+
+__version__ = '1.8.0b2'
+
 import os
 import sys
 

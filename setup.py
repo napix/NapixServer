@@ -1,11 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 from setuptools import setup, find_packages
+
+
+def find_version(filename):
+    filepath = os.path.join(os.path.dirname(__file__), filename)
+    with open(filepath) as init:
+        for line in init:
+            if line.startswith('__version__'):
+                x, version = line.split('=', 1)
+                return version.strip().strip('\'"')
+        else:
+            raise ValueError('Cannot find the version in {0}'.format(filename))
 
 setup(
     name="napixd",
-    version="1.8.0b1",
+    version=find_version('napixd/__init__.py'),
     packages=find_packages(
         exclude=[
             'napixd.examples',
