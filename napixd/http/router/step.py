@@ -196,6 +196,17 @@ class RouterStep(object):
             if not router:
                 del self._fixed[dest]
 
+    def __contains__(self, target):
+        dest = next(target, None)
+        if dest is None:
+            return self._callback is not None
+        if dest in self._fixed:
+            return target in self._fixed[dest]
+        if (dest == '' and '?' in self._fixed and
+                isinstance(self._fixed['?'], CatchAllRouterStep)):
+            return True
+        return False
+
     def resolve(self, target):
         """
         Resolve the *target* url.
@@ -237,6 +248,9 @@ class CatchAllRouterStep(object):
     """
     def __init__(self, callback):
         self._callback = callback
+
+    def __contains__(self, target):
+        return False
 
     def __nonzero__(self):
         return self._callback is not None

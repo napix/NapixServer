@@ -116,21 +116,49 @@ class TestRouterStep(unittest.TestCase):
         self.assertTrue(self.rs.resolve(URLTarget('/a/b')) is None)
 
 
-class TestCatchallRouterStep(unittest.TestCase):
+class TestContains(unittest.TestCase):
+    def setUp(self):
+        self.rs = rs = RouterStep()
+        cb = mock.Mock()
+        rs.route(URLTarget('/a/'), cb)
+        rs.route(URLTarget('/a/b'), cb)
+        rs.route(URLTarget('/a/?'), cb)
+        rs.route(URLTarget('/c/?/d'), cb)
 
-    def test_unroute_all(self):
-        self.rs.route(URLTarget('/a/'), self.cb)
-        self.rs.route(URLTarget('/a/b'), self.cb)
+    def test_contains_1(self):
+        self.assertTrue(URLTarget('/a/') in self.rs)
 
-        self.rs.unroute(URLTarget('/a'), all=True)
-        self.assertTrue(self.rs.resolve(URLTarget('/a/')) is None)
-        self.assertTrue(self.rs.resolve(URLTarget('/a/b')) is None)
+    def test_contains_2(self):
+        self.assertTrue(URLTarget('/a/b') in self.rs)
+
+    def test_contains_3(self):
+        self.assertTrue(URLTarget('/a/?') in self.rs)
+
+    def test_contains_4(self):
+        self.assertTrue(URLTarget('/c/?/d') in self.rs)
+
+    def test_not_contains_1(self):
+        self.assertFalse(URLTarget('/a') in self.rs)
+
+    def test_not_contains_2(self):
+        self.assertFalse(URLTarget('/a/c') in self.rs)
+
+    def test_not_contains_3(self):
+        self.assertFalse(URLTarget('/c/?') in self.rs)
+
+    def test_not_contains_4(self):
+        self.assertFalse(URLTarget('/c/?/') in self.rs)
+
+    def test_not_contains_5(self):
+        self.assertFalse(URLTarget('/d/') in self.rs)
 
 
 class TestCatchallRouterStep(unittest.TestCase):
     def setUp(self):
         self.rs = RouterStep()
-        self.cb = mock.Mock()
+        self.cb = mock.MagicMock(
+            __name__='callback'
+        )
 
     def test_route_root(self):
         self.rs.route(URLTarget('/a/'), self.cb, catchall=True)
@@ -171,3 +199,20 @@ class TestCatchallRouterStep(unittest.TestCase):
         self.rs.unroute(URLTarget('/a/?/c'))
         self.assertFalse(self.rs.resolve(URLTarget('/a/b/c')) is None)
 
+    def test_unroute_all(self):
+        self.rs.route(URLTarget('/a/'), self.cb)
+        self.rs.route(URLTarget('/a/b'), self.cb)
+
+        self.rs.unroute(URLTarget('/a'), all=True)
+        self.assertTrue(self.rs.resolve(URLTarget('/a/')) is None)
+        self.assertTrue(self.rs.resolve(URLTarget('/a/b')) is None)
+
+    def test_contains(self):
+        self.rs.route(URLTarget('/a/'), self.cb, catchall=True)
+        self.assertTrue(URLTarget('/a/') in self.rs)
+
+    def test_not_contains(self):
+        self.rs.route(URLTarget('/a/'), self.cb, catchall=True)
+        self.assertFalse(URLTarget('/a/d') in self.rs)
+        self.assertFalse(URLTarget('/a/?/d') in self.rs)
+        self.assertFalse(URLTarget('/a/?') in self.rs)
