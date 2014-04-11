@@ -26,6 +26,10 @@ class TestRouter(unittest.TestCase):
             self.router = Router()
         self.rs = RS.return_value
 
+    def test_contains(self):
+        self.assertEqual('/a/b' in self.router, self.rs.__contains__.return_value)
+        self.rs.__contains__.assert_called_once_with(URLTarget('/a/b'))
+
     def test_no_filter(self):
         resolved = self.router.resolve('/a/b/c')
         self.rs.resolve.assert_called_once_with(URLTarget('/a/b/c'))
@@ -58,5 +62,5 @@ class TestRouter(unittest.TestCase):
         self.assertRaises(ValueError, self.router.route, '/a/b/c', cb)
 
     def test_unroute(self):
-        self.router.unroute('/a/b/c') 
+        self.router.unroute('/a/b/c')
         self.rs.unroute.assert_called_once_with(URLTarget('/a/b/c'), all=False)

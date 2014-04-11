@@ -65,6 +65,9 @@ class Router(object):
             filters += '\n'
         return filters + routers
 
+    def __contains__(self, rule):
+        return URLTarget(rule) in self._router
+
     def add_filter(self, filter):
         """
         Add a *filter* to the list of filters.
