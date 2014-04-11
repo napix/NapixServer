@@ -74,6 +74,10 @@ class ManagerError(object):
         self.alias = alias
         self.cause = cause
 
+    def __repr__(self):
+        return '<{2} {0} "{1}">'.format(self.manager.__name__, self.alias,
+                                        self.cause.__class__.__name__)
+
     def __hash__(self):
         return hash((self.manager, self.alias, self.cause))
 
