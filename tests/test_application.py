@@ -48,7 +48,7 @@ class TestReload(unittest.TestCase):
         load.old_managers = []
         load.error_managers = []
 
-        self.server = server = mock.Mock(spec=Router)
+        self.server = server = mock.MagicMock(spec=Router)
 
         self.napixd = Napixd(loader, server)
         load.managers = []
@@ -120,3 +120,22 @@ class TestReload(unittest.TestCase):
         ])
         self.assertEqual(self.napixd.slash(mock.Mock(spec=Request)),
                          ['/m1', '/m2'])
+
+    def test_reload_error_and_error(self):
+        self.load.old_managers = [mock.Mock(alias='m2')]
+        self.load.error_managers = [mock.Mock(alias='m2')]
+        self.napixd.reload()
+
+        self.server.reset_mock()
+
+        error = mock.Mock(alias='m2')
+        self.load.old_managers = []
+        self.load.error_managers = [error]
+        self.server.__contains__.return_value = True
+        self.napixd.reload()
+
+        self.server.unroute.assert_called_once_with('/m2', all=True)
+        self.server.route.assert_has_calls([
+            mock.call('/m2', mock.ANY),
+            mock.call('/m2/', mock.ANY, catchall=True),
+        ])

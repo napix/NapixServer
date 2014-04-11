@@ -116,8 +116,13 @@ class Napixd(object):
         """
         logger.debug('Setup routes for error, %s', me.alias)
         callback = self._error_service_factory(me.cause)
-        self._router.route('/{0}'.format(me.alias), callback)
-        self._router.route('/{0}/'.format(me.alias), callback, catchall=True)
+
+        rule = '/{0}'.format(me.alias)
+        if rule in self._router:
+            self._router.unroute(rule, all=True)
+
+        self._router.route(rule, callback)
+        self._router.route(rule + '/', callback, catchall=True)
 
         self._root_urls.append(me.alias)
         self._root_urls.sort()
