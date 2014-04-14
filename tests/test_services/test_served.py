@@ -127,3 +127,33 @@ class TestServedManager(unittest.TestCase):
                 self.mc.return_value,
                 ResourceContext(self.sm, self.nx_c))
         )
+
+
+class TestServedManagerInstance(unittest.TestCase):
+    def setUp(self):
+        self.instance = mock.Mock()
+        self.instance.validate_id.side_effect = lambda x: x
+        self.context = mock.Mock(
+            spec=ResourceContext,
+        )
+        self.smi = ServedManagerInstance(
+            self.instance,
+            self.context,
+        )
+
+    def test_set_manager(self):
+        self.assertEqual(self.context.manager, self.instance)
+
+    def test_validate_id(self):
+        id_ = self.smi.validate_id('abc')
+
+        self.assertEqual(id_, 'abc')
+        self.instance.validate_id.assert_called_once_with('abc')
+
+        self.assertEqual(self.context.id, 'abc')
+
+    def test_get_resource(self):
+        self.smi.validate_id('abc')
+        r = self.smi.get_resource()
+        self.assertEqual(r, self.context.make_resource.return_value)
+        self.instance.get_resource.assert_called_once_with('abc')

@@ -167,6 +167,10 @@ class ServedManagerInstance(object):
         self._resource_context = resource_context
         self._resource_context.manager = manager_instance
 
+    @property
+    def manager(self):
+        return self._manager_instance
+
     def __eq__(self, other):
         return (isinstance(other, ServedManagerInstance) and
                 self._manager_instance == other._manager_instance and
@@ -184,12 +188,12 @@ class ServedManagerInstance(object):
         self._resource_context.id = id
         return id
 
-    def get_resource(self, id):
+    def get_resource(self):
         """
         Gets the resource at *id* with :meth:`napixd.managers.Manager.validate_id`
         and sets the :attr:`napixd.services.contexts.ResourceContext.resource`.
         """
-        resource = self._manager_instance.get_resource(id)
+        resource = self._manager_instance.get_resource(self._resource_context.id)
         wrapped = self._resource_context.make_resource(resource)
         self._resource_context.resource = wrapped
         return wrapped

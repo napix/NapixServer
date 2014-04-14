@@ -187,11 +187,11 @@ class CollectionService(BaseCollectionService):
         self.previous_service = previous_service
 
     def get_manager(self, path, call_context):
-        manager = self.previous_service.get_manager(path[:-1], call_context)
+        served_manager = self.previous_service.get_manager(path[:-1], call_context)
 
-        id_ = manager.validate_id(path[-1])
+        served_manager.validate_id(path[-1])
 
-        wrapped = manager.get_resource(id_)
+        wrapped = served_manager.get_resource()
         # The manager for self is generated here.
         return super(CollectionService, self).get_manager(wrapped, call_context)
 

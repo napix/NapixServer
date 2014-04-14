@@ -41,7 +41,7 @@ class TestServiceCollectionRequest(unittest.TestCase):
             data=mock.Mock(name='data'),
         )
 
-        self.context.get_manager_instance.return_value = manager
+        self.context.get_manager_instance.return_value.manager = manager
 
     def scr(self):
         return ServiceCollectionRequest(self.context, [])

@@ -24,13 +24,13 @@ class ServiceResourceRequest(ServiceRequest):
         # get the last path token because we may not just want to GET the
         # resource
         resource_id = self.path[-1]
-        manager = super(ServiceResourceRequest, self).get_manager()
+        served_manager = super(ServiceResourceRequest, self).get_manager()
 
         # verifie l'identifiant de la resource aussi
-        resource_id = manager.validate_id(resource_id)
+        resource_id = served_manager.validate_id(resource_id)
 
-        self.resource = manager.get_resource(resource_id)
-        return manager
+        self.resource = served_manager.get_resource()
+        return served_manager.manager
 
 
 class ModifyResourceMixin(object):
@@ -124,7 +124,8 @@ class HTTPServiceResourceRequest(ModifyResourceMixin, MethodMixin, HTTPMixin, Se
         """
         resp = self.manager.serialize(value)
         if not isinstance(resp, collections.Mapping):
-            raise ValueError('Serialized value is not an dict')
+            print resp
+            raise ValueError('Serialized value is not a dict')
         return resp
 
 

@@ -20,8 +20,8 @@ class ServiceCollectionRequest(ServiceRequest):
         Returns an :class:`napixd.services.methods.Implementation`
         of the manager.
         """
-        manager = super(ServiceCollectionRequest, self).get_manager()
-        return Implementation(manager)
+        smi = super(ServiceCollectionRequest, self).get_manager()
+        return Implementation(smi.manager)
 
     def check_datas(self):
         """

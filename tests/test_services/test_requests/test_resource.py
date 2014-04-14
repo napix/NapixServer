@@ -13,6 +13,7 @@ from napixd.services.urls import URL
 from napixd.services.wrapper import ResourceWrapper
 from napixd.services.collection import CollectionService, ActionService
 from napixd.services.contexts import CollectionContext
+from napixd.services.served import ServedManagerInstance
 
 from napixd.services.requests import (
     ServiceActionRequest,
@@ -36,14 +37,23 @@ def serialize(value):
 
 class TestServiceResourceRequest(unittest.TestCase):
     def setUp(self):
-        self.manager = manager = mock.Mock()
+        self.manager = manager = mock.Mock(
+            name='Manager',
+        )
+        self.served_manager_instance = smi = mock.Mock(
+            name='SMI',
+            spec=ServedManagerInstance,
+            manager=manager
+        )
         self.rw = ResourceWrapper(manager, '123', {'mpm': 'prefork'})
-        manager.validate_id.side_effect = validate_id
+        smi.validate_id.side_effect = validate_id
+        smi.get_resource.return_value = self.rw
+
         manager.serialize.side_effect = serialize
-        manager.get_resource.return_value = self.rw
 
         self.url = url = URL(['abc', None])
         self.cs = mock.Mock(
+            name='CS',
             spec=CollectionService,
             lock=None,
             collection=manager,
@@ -55,7 +65,7 @@ class TestServiceResourceRequest(unittest.TestCase):
             parameters={},
             data=mock.Mock(name='data'),
         )
-        self.context.get_manager_instance.return_value = manager
+        self.context.get_manager_instance.return_value = smi
 
     def srr(self):
         return ServiceResourceRequest(self.context, ['123'])
@@ -65,7 +75,7 @@ class TestServiceResourceRequest(unittest.TestCase):
         self.assertEqual(r, {'mpm': 'prefork', '_s': True})
 
     def test_handle_get_404(self):
-        self.manager.get_resource.side_effect = NotFound()
+        self.served_manager_instance.get_resource.side_effect = NotFound()
         try:
             self.srr().handle()
         except HTTPError as err:
@@ -74,7 +84,7 @@ class TestServiceResourceRequest(unittest.TestCase):
             self.fail()
 
     def test_handle_get_not_dict(self):
-        self.manager.get_resource.return_value = mock.MagicMock()
+        self.served_manager_instance.get_resource.return_value = mock.MagicMock()
         self.assertRaises(ValueError, self.srr().handle)
 
     def test_handle_put(self):
@@ -157,6 +167,10 @@ class TestServiceResourceRequest(unittest.TestCase):
 class TestServiceActionRequest(unittest.TestCase):
     def setUp(self):
         self.manager = manager = mock.Mock()
+        self.served_manager_instance = smi = mock.Mock(
+            spec=ServedManagerInstance,
+            manager=manager,
+        )
         self.url = url = URL(['abc', None])
         self.acs = mock.Mock(
             spec=ActionService,
@@ -175,7 +189,7 @@ class TestServiceActionRequest(unittest.TestCase):
             data=self.data,
             parameters={},
         )
-        self.context.get_manager_instance.return_value = manager
+        self.context.get_manager_instance.return_value = smi
 
     def sar(self):
         return ServiceActionRequest(self.context, [123], 'do_the_stuff')

@@ -182,7 +182,7 @@ class TestCollectionService(unittest.TestCase):
 
         self.served_manager.instantiate.assert_called_once_with(pr, self.request)
         self.assertEqual(manager, self.served_manager.instantiate.return_value)
-        pmgr.get_resource.assert_called_once_with('abc')
+        pmgr.get_resource.assert_called_once_with()
         pmgr.validate_id.assert_called_once_with('abc')
 
 
