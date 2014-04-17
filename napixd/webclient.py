@@ -8,6 +8,7 @@ The webclient of napixd.
 Napixd propose a generic web client usable with every server.
 """
 
+from napixd import __version__
 from napixd.http.statics import StaticFiles
 
 
@@ -69,6 +70,7 @@ class WebClient(object):
         """
         return {
             'name': self.service_name,
+            'version': __version__,
             'auth_server': self.auth_server,
             'directory_server': self.directory_server,
         }
