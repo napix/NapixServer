@@ -24,7 +24,7 @@ class ServiceResourceRequest(ServiceRequest):
         # get the last path token because we may not just want to GET the
         # resource
         resource_id = self.path[-1]
-        served_manager = super(ServiceResourceRequest, self).get_manager()
+        served_manager = super(ServiceResourceRequest, self).get_manager(self.path[:-1])
 
         # verifie l'identifiant de la resource aussi
         resource_id = served_manager.validate_id(resource_id)

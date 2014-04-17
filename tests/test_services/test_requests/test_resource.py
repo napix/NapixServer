@@ -72,6 +72,7 @@ class TestServiceResourceRequest(unittest.TestCase):
 
     def test_handle_get(self):
         r = self.srr().handle()
+        self.context.get_manager_instance.assert_called_once_with([])
         self.assertEqual(r, {'mpm': 'prefork', '_s': True})
 
     def test_handle_get_404(self):
