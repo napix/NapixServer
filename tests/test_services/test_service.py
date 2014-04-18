@@ -87,7 +87,8 @@ class TestService(unittest.TestCase):
     def test_FCS(self):
         self.get_service()
         self.FCS.assert_called_once_with(
-            FirstServedManager(self.Manager, self.conf, URL(['parent']), ('parent',)))
+            FirstServedManager(self.Manager, self.conf, ('parent',)),
+            URL(['parent']))
         self.assertEqual(self.CS.call_count, 0)
 
     def test_setup_bottle(self):
@@ -101,9 +102,10 @@ class TestService(unittest.TestCase):
         self.get_service()
         self.CS.assert_called_once_with(
             self.FCS.return_value,
-            ServedManager(mgr, self.conf.get.return_value, URL(['parent', None, 'child']),
+            ServedManager(mgr, self.conf.get.return_value,
                           ('parent', 'child'),
-                          extractor=mc.extractor))
+                          extractor=mc.extractor),
+            URL(['parent', None, 'child']))
 
         self.conf.get.assert_called_once_with('parent.child')
 
@@ -120,13 +122,11 @@ class TestService(unittest.TestCase):
         lock = LF.return_value
 
         self.FCS.assert_called_once_with(
-            FirstServedManager(self.Manager, self.conf, URL(['parent']), ('parent', ), lock=lock))
+            FirstServedManager(self.Manager, self.conf, ('parent', ), lock=lock), URL(['parent']))
         self.CS.assert_called_once_with(
             self.FCS.return_value,
-            ServedManager(mgr, mock.ANY, mock.ANY,
-                          ('parent', 'child'),
-                          mock.ANY, lock=lock,
-                          ))
+            ServedManager(mgr, mock.ANY, ('parent', 'child'), mock.ANY, lock),
+            URL(['parent', None, 'child']))
 
     def test_CS_bad_lock(self):
         self.conf = Conf({

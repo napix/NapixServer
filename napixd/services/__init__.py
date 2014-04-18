@@ -65,10 +65,9 @@ class Service(object):
             FirstServedManager(
                 collection,
                 self.configuration,
-                self.url,
                 namespaces,
                 lock=self.lock,
-            ))
+            ), self.url)
 
         self._collection_services[namespaces] = service
         self._create_collection_service(collection, namespaces, service, 0)
@@ -104,11 +103,12 @@ class Service(object):
             ServedManager(
                 managed_class.manager_class,
                 conf,
-                url,
                 namespaces,
                 managed_class.extractor,
                 lock=self.lock,
-            ))
+            ),
+            url,
+        )
 
         self._collection_services[namespaces] = service
 

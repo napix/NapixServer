@@ -6,7 +6,6 @@ import mock
 
 from napixd.managers import Manager
 
-from napixd.services.urls import URL
 from napixd.services.contexts import ResourceContext
 from napixd.services.served import (
     FirstServedManager,
@@ -34,7 +33,6 @@ class TestFirstServedManager(unittest.TestCase):
             }
         )
         self.conf = mock.Mock()
-        self.url = URL(['parent'])
         self.ns = ('parent',)
         self.lock = None
         self.nx_c = mock.Mock(name='napix_context')
@@ -42,7 +40,6 @@ class TestFirstServedManager(unittest.TestCase):
         self.fsm = FirstServedManager(
             self.mc,
             self.conf,
-            self.url,
             self.ns,
             self.lock)
 
@@ -93,7 +90,6 @@ class TestServedManager(unittest.TestCase):
             }
         )
         self.conf = mock.Mock()
-        self.url = URL(['parent'])
         self.ns = ('parent',)
         self.lock = None
         self.nx_c = mock.Mock(name='napix_context')
@@ -102,7 +98,6 @@ class TestServedManager(unittest.TestCase):
         self.sm = ServedManager(
             self.mc,
             self.conf,
-            self.url,
             self.ns,
             self.extractor,
             self.lock)

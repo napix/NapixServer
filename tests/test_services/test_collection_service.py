@@ -36,14 +36,14 @@ class TestFirstCollectionService(unittest.TestCase):
             spec=ServedManager,
             configuration=self.conf,
             manager_class=self.Manager,
-            url=URL(['parent']),
             lock=None,
             get_all_actions=mock.Mock(return_value=self.all_actions),
         )
 
     @property
     def fcs(self):
-        return FirstCollectionService(self.served_manager)
+        return FirstCollectionService(self.served_manager, URL(['parent']))
+
 
     def add_action(self):
         a = mock.Mock(
@@ -156,7 +156,6 @@ class TestCollectionService(unittest.TestCase):
             name='served_manager',
             configuration=self.conf,
             manager_class=self.Manager,
-            url=URL(['parent']),
             lock=None,
             get_all_actions=mock.Mock(return_value=self.all_actions),
             extractor=self.extractor,
@@ -168,7 +167,7 @@ class TestCollectionService(unittest.TestCase):
 
     @property
     def cs(self):
-        return CollectionService(self.ps, self.served_manager)
+        return CollectionService(self.ps, self.served_manager, URL(['parent']))
 
     def test_generate_manager_fcs(self):
         pmgr = mock.Mock(name='PreviousManager', spec=Manager, get_resource=mock.Mock())
@@ -235,7 +234,6 @@ class TestServerCollectionService(unittest.TestCase):
         self.served_manager = mock.Mock(
             spec=ServedManager,
             name='served_manager',
-            url=URL(['parent', None, 'child']),
             manager_class=mock.Mock(),
             lock=None,
             get_all_actions=mock.Mock(return_value=[]),
@@ -243,7 +241,7 @@ class TestServerCollectionService(unittest.TestCase):
         self.ps = mock.Mock(
             name='previous_service',
         )
-        self.cs = CollectionService(self.ps, self.served_manager)
+        self.cs = CollectionService(self.ps, self.served_manager, URL(['parent', None, 'child']))
         self.router = Router()
         self.cs.setup_bottle(self.router)
 

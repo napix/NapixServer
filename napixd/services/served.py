@@ -22,9 +22,8 @@ class FirstServedManager(object):
 
         The subclass of :class:`napixd.managers.Manager`
     """
-    def __init__(self, manager_class, configuration, url, namespaces, lock=None):
+    def __init__(self, manager_class, configuration, namespaces, lock=None):
         self.manager_class = manager_class
-        self.url = url
         self.configuration = configuration
         self.lock = lock
         self.namespaces = namespaces
@@ -37,7 +36,6 @@ class FirstServedManager(object):
     def __eq__(self, other):
         return (isinstance(other, FirstServedManager) and
                 self.manager_class == other.manager_class and
-                self.url == other.url and
                 self.configuration == other.configuration and
                 self.namespaces == other.namespaces and
                 self.lock == other.lock
@@ -109,8 +107,8 @@ class ServedManager(FirstServedManager):
     """
     The *extractor* is the extractor used for the managed classes.
     """
-    def __init__(self, manager_class, configuration, url, namespaces, extractor, lock=None):
-        super(ServedManager, self).__init__(manager_class, configuration, url, namespaces, lock)
+    def __init__(self, manager_class, configuration, namespaces, extractor, lock=None):
+        super(ServedManager, self).__init__(manager_class, configuration, namespaces, lock)
         self.extractor = extractor
 
     def __eq__(self, other):

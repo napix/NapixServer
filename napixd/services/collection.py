@@ -39,11 +39,11 @@ class BaseCollectionService(object):
         requests on the resource are served
     """
 
-    def __init__(self, served_manager):
+    def __init__(self, served_manager, url):
         self.served_manager = served_manager
         self.collection = served_manager.manager_class
 
-        self.collection_url = served_manager.url
+        self.collection_url = url
         self.resource_url = self.collection_url.add_variable()
         self.lock = served_manager.lock
 
@@ -183,8 +183,8 @@ class CollectionService(BaseCollectionService):
     :class:`FirstCollectionService` of the parent manager.
     """
 
-    def __init__(self, previous_service, served_manager):
-        super(CollectionService, self).__init__(served_manager)
+    def __init__(self, previous_service, served_manager, url):
+        super(CollectionService, self).__init__(served_manager, url)
         self.previous_service = previous_service
 
     def get_manager(self, path, call_context):
