@@ -15,6 +15,20 @@ class TestQuery(unittest.TestCase):
         s = Query('a')
         self.assertEqual(s['a'], None)
 
+    def test_empty(self):
+        s = Query('')
+        self.assertFalse(bool(s))
+        self.assertEqual(len(s), 0)
+        self.assertEqual(s, {})
+
+    def test_empty_dict(self):
+        s = Query({})
+        self.assertEqual(s, {})
+
+    def test_truthiness(self):
+        s = Query('a=1')
+        self.assertTrue(bool(s))
+
     def test_contains(self):
         self.assertTrue('a' in Query('a'))
         self.assertTrue('a' in Query('a='))

@@ -37,13 +37,16 @@ class Query(collections.Mapping):
     """
     def __init__(self, raw):
         if isinstance(raw, basestring):
-            values = collections.defaultdict(list)
-            for bit in raw.split('&'):
-                if '=' in bit:
-                    key, value = bit.split('=', 1)
-                    values[unquote(key)].append(unquote(value))
-                else:
-                    values[unquote(bit)].append(None)
+            if raw:
+                values = collections.defaultdict(list)
+                for bit in raw.split('&'):
+                    if '=' in bit:
+                        key, value = bit.split('=', 1)
+                        values[unquote(key)].append(unquote(value))
+                    else:
+                        values[unquote(bit)].append(None)
+            else:
+                values = {}
         elif isinstance(raw, Query):
             values = dict()
             for key in raw:
