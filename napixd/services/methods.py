@@ -123,4 +123,4 @@ class FromAll_list_resource_filter(BaseImplementer):
     require = ['get_all_resources_filter']
 
     def __call__(self, filters):
-        return [id for id in self.manager.get_all_resources_filter(filters)]
+        return [id for id, resource in self.manager.get_all_resources_filter(filters)]
