@@ -14,7 +14,7 @@ import os
 import sys
 import optparse
 
-from napixd import get_file, get_path
+from napixd import get_file, get_path, __version__
 from napixd.utils.tracingset import TracingSet
 
 from napixd.conf import Conf, ConfLoader
@@ -224,6 +224,7 @@ Meta-options:
         self.service_name = self.get_service_name()
         self.hosts = self.get_hostnames()
 
+        console.info('Napix version %s', __version__)
         console.info('Napixd Home is %s', get_path())
         console.info('Options are %s', ','.join(self.options))
         console.info('Starting process %s', os.getpid())
