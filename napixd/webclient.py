@@ -8,7 +8,6 @@ The webclient of napixd.
 Napixd propose a generic web client usable with every server.
 """
 
-from napixd import __version__
 from napixd.http.statics import StaticFiles
 
 
@@ -20,25 +19,11 @@ class WebClient(object):
     is the :class:`napixd.launcher.Setup` class.
     """
 
-    def __init__(self, root, launcher, generate_docs=True, index='index.html'):
-        self.service_name = launcher.service_name
+    def __init__(self, root, infos, docs=None, index='index.html'):
         self._static = StaticFiles(root)
         self._index = index
-
-        if generate_docs:
-            self.doc = launcher.doc
-        else:
-            self.doc = None
-
-        if hasattr(launcher, 'central_provider'):
-            self.auth_server = launcher.central_provider.host
-        else:
-            self.auth_server = ''
-
-        if launcher.notifier:
-            self.directory_server = launcher.notifier.directory
-        else:
-            self.directory_server = None
+        self._infos = infos
+        self.doc = docs
 
     def setup_bottle(self, app):
         router = app.push()
@@ -68,9 +53,4 @@ class WebClient(object):
 
         Those informations are extracted from the *launcher*.
         """
-        return {
-            'name': self.service_name,
-            'version': __version__,
-            'auth_server': self.auth_server,
-            'directory_server': self.directory_server,
-        }
+        return self._infos

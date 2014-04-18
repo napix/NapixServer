@@ -217,6 +217,7 @@ Meta-options:
             options = options.union(self.DEFAULT_OPTIONS)
         self.options = options = TracingSet(options.difference(nooptions))
 
+        self.extra_web_client = {}
         self.set_loggers()
 
         self.conf = self.get_conf()
@@ -370,8 +371,9 @@ Meta-options:
                 from napixd.auth.central import CentralAuthProvider
             except ImportError:
                 raise CannotLaunch('Central authentication requires permissions')
-            self.central_provider = CentralAuthProvider.from_settings(self.service_name, conf)
-            providers.append(self.central_provider)
+            central_provider = CentralAuthProvider.from_settings(self.service_name, conf)
+            providers.append(central_provider)
+            self.extra_web_client['auth_server'] = central_provider.host
             logger.info('Enable central server authentication')
 
         return providers
@@ -507,6 +509,7 @@ Meta-options:
                 napixd, conf, self.service_name, self.hosts[0],
                 self.conf.get('description'))
             notifier.start()
+            self.extra_web_client['directory_server'] = notifier.directory
         else:
             self.notifier = None
 
@@ -613,9 +616,16 @@ Meta-options:
 
         from napixd.webclient import WebClient
         logger.info('Using %s as webclient', webclient_path)
-        return WebClient(webclient_path, self,
-                         generate_docs='docs' in self.options,
+        return WebClient(webclient_path, self.get_webclient_infos(), docs=self.doc,
                          index=self.conf.get('webclient.index', 'index.html', type=unicode))
+
+    def get_webclient_infos(self):
+        infos = {
+            'name': self.service_name,
+            'version': __version__,
+        }
+        infos.update(self.extra_web_client)
+        return infos
 
     def get_webclient_path(self):
         """
