@@ -58,6 +58,16 @@ class Router(object):
         self._filters = []
         self._router = RouterStep()
 
+    def __repr__(self):
+        routers = repr(self._router)
+        filters = '\n'.join('({0})'.format(repr(f)) for f in self._filters)
+        if filters:
+            filters += '\n'
+        return filters + routers
+
+    def __contains__(self, rule):
+        return URLTarget(rule) in self._router
+
     def add_filter(self, filter):
         """
         Add a *filter* to the list of filters.

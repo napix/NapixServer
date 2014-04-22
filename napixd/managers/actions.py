@@ -110,16 +110,16 @@ class ActionProperty(object):
         for param, default in self.optional.items():
             rf = resource_fields.setdefault(param, {})
             rf.update({
-                'example': default,
                 'optional': True
             })
+            rf.setdefault('example', default)
             rf.setdefault('typing', 'dynamic' if default is None else 'static')
 
         self.resource_fields = ResourceFields(resource_fields)
 
     def __get__(self, instance, owner):
         if instance is None:
-            return UnboundAction(self.function, owner, self)
+            return UnboundAction(self.function, self)
         return BoundAction(self.function, instance, self.resource_fields)
 
     def _extract(self, fn):
@@ -143,12 +143,11 @@ class ActionProperty(object):
 
 class UnboundAction(object):
 
-    def __init__(self, function, manager_class, prop):
+    def __init__(self, function, prop):
         self.function = function
         self.__name__ = prop.__name__
         self.__doc__ = prop.__doc__
 
-        self.manager_class = manager_class
         self.resource_fields = ResourceFieldsDict(
             function, prop.resource_fields)
         self.mandatory = prop.mandatory
@@ -168,8 +167,8 @@ class BoundAction(object):
         self.resource_fields = ResourceFieldsDescriptor(
             function, resource_fields)
 
-    def __call__(self, *args, **kwargs):
-        return self.function(self.manager, *args, **kwargs)
+    def __call__(self, resource, *args, **kwargs):
+        return self.function(self.manager, resource, *args, **kwargs)
 
     def __eq__(self, other):
         if isinstance(other, (UnboundAction, BoundAction, ActionProperty)):

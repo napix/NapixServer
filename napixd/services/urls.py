@@ -51,7 +51,14 @@ class URL(object):
         return u'/'.join(urls)
 
     def _quote(self, value):
-        return urllib.quote(unicode(value), '')
+        try:
+            return urllib.quote(unicode(value).encode('utf-8'), '')
+        except UnicodeDecodeError:
+            if isinstance(value, str):
+                raise TypeError('Resource id "{0}" is not an unicode string'
+                                'but contains non-ascii characters'.format(
+                                    value))
+            raise
 
     def reverse(self, ids):
         """

@@ -16,7 +16,7 @@ class ManagerImport(object):
 
     .. attribute:: manager
 
-        A :class:`napixd.manager.Manager` subclass.
+        A :class:`napixd.managers.Manager` subclass.
 
     .. attribute:: alias
 
@@ -73,6 +73,10 @@ class ManagerError(object):
         self.manager = manager
         self.alias = alias
         self.cause = cause
+
+    def __repr__(self):
+        return '<{2} {0} "{1}">'.format(self.manager.__name__, self.alias,
+                                        self.cause.__class__.__name__)
 
     def __hash__(self):
         return hash((self.manager, self.alias, self.cause))

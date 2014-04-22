@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Validators package for date inputs.
+
+Napix does not natively supports dates, but it promotes two ways of handling them.
+First a :class:`int` resource field that contains a timestamp, and a string type
+that contains a ISO 8601 date.
+"""
+
 
 import datetime
 
@@ -8,6 +16,11 @@ from napixd.exceptions import ValidationError
 
 
 def ISO8601_date(iso_string):
+    """
+    Parses a date and returns a :class:`datetime.date` object.
+
+    Invalid dates raise a :exc:`napixd.exceptions.ValidationError`.
+    """
     try:
         return datetime.datetime.strptime(iso_string, '%Y-%m-%d').date()
     except ValueError:
@@ -15,6 +28,11 @@ def ISO8601_date(iso_string):
 
 
 def ISO8601_datetime(iso_string):
+    """
+    Parses a datetime and returns a :class:`datetime.datetime` object.
+
+    Invalid datetimes raise a :exc:`napixd.exceptions.ValidationError`.
+    """
     try:
         return datetime.datetime.strptime(iso_string, '%Y-%m-%dT%H:%M:%S')
     except ValueError:

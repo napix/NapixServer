@@ -103,7 +103,7 @@ This option overrides ``autonomous-auth``.
 Modules
 -------
 
-Each value of the *managers* section refers to a manager instanciated into the server.
+Each value of the *managers* section refers to a manager instantiated into the server.
 The key is the **alias** of the manager.
 The url of the objects managed by this manager will all be contained into this alias::
 

@@ -8,6 +8,7 @@ __all__ = [
     'Duplicate',
     'ImproperlyConfigured',
     'RemoteError',
+    'InternalRequestFailed',
 ]
 
 import collections
@@ -17,6 +18,9 @@ try:
     from napix.exception import HTTPError as RemoteError
 except ImportError:
     class RemoteError(Exception):
+        """
+        Error caused by a request in another Napix Server.
+        """
         def __init__(self, request, cause, response):
             self.request = request
             self.remote_error = cause
@@ -24,6 +28,13 @@ except ImportError:
 
         def __str__(self):
             return str(self.remote_error)
+
+
+class InternalRequestFailed(Exception):
+    """
+    Thrown when a internal request to a sub-manager, a service or a resource fails.
+    """
+    pass
 
 
 class PermissionDenied(Exception):

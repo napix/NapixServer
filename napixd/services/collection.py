@@ -5,13 +5,13 @@
 The Collections services handle the request on a specific manager.
 """
 
-from napixd.services.wrapper import ResourceWrapper
 from napixd.services.requests import (
     ServiceCollectionRequest,
     ServiceManagedClassesRequest,
     ServiceResourceRequest,
     ServiceActionRequest
 )
+from napixd.services.contexts import CollectionContext
 
 __all__ = (
     'BaseCollectionService',
@@ -26,11 +26,7 @@ class BaseCollectionService(object):
     Abstract class used by :class:`FirstCollectionService` and
     :class:`CollectionService`
 
-    Serve the *collection* with the given *config*.
-    *collection* is a subclass of :class:`~napixd.managers.base.Manager`
-    *config* is the instance of :class:`napixd.conf.Conf`.
-    *collection_url* is an :class:`napixd.services.urls.URL` where the service
-    is listening.
+    Serve the *served_manager*.
 
     .. attribute:: collection_url
 
@@ -43,11 +39,11 @@ class BaseCollectionService(object):
         requests on the resource are served
     """
 
-    def __init__(self, served_manager):
+    def __init__(self, served_manager, url):
+        self.served_manager = served_manager
         self.collection = served_manager.manager_class
-        self.config = served_manager.configuration
 
-        self.collection_url = served_manager.url
+        self.collection_url = url
         self.resource_url = self.collection_url.add_variable()
         self.lock = served_manager.lock
 
@@ -59,13 +55,9 @@ class BaseCollectionService(object):
         self.resource_fields = served_manager.resource_fields
         self.meta_data = served_manager.meta_data
 
-    def _generate_manager(self, resource, request):
-        """
-        instantiate a manager for the given resource
-        """
-        manager = self.collection(resource, request)
-        manager.configure(self.config)
-        return manager
+    def __repr__(self):
+        return '{0} of {1}'.format(self.__class__.__name__,
+                                   self.served_manager)
 
     def setup_bottle(self, app):
         """
@@ -114,108 +106,95 @@ class BaseCollectionService(object):
         if self.collection.get_managed_classes():
             app.route(self.resource_url.with_slash(), self.as_managed_classes)
 
-    def as_resource(self, request, *path):
+    def as_resource(self, napixd_context, *path):
         """
         Launches a request on a resource of this manager
         """
-        return ServiceResourceRequest(request, list(path), self).handle()
+        return ServiceResourceRequest(CollectionContext(self, napixd_context), list(path)).handle()
 
-    def as_collection(self, request, *path):
+    def as_collection(self, napixd_context, *path):
         """
         Launches a request on this manager as a collection
         """
-        return ServiceCollectionRequest(request, list(path), self).handle()
+        return ServiceCollectionRequest(CollectionContext(self, napixd_context), list(path)).handle()
 
-    def as_list_actions(self, request, *path):
+    def as_list_actions(self, napixd_context, *path):
         """
-        Lists the :meth:`napixd.managers.actions.action`
-        available on this manager.
+        Lists the :meth:`napixd.managers.actions.action` available on this manager.
         """
         return [x.action for x in self.all_actions]
 
-    def as_managed_classes(self, request, *path):
+    def as_managed_classes(self, napixd_context, *path):
         """
-        Lists the :attr:`managed classes<napixd.managers.base.Manager.managed_class>`
+        Lists the :attr:`managed classes<napixd.managers.Manager.managed_class>`
         of this manager.
         """
-        return ServiceManagedClassesRequest(request, list(path), self).handle()
+        return ServiceManagedClassesRequest(CollectionContext(self, napixd_context), list(path)).handle()
 
-    def as_help(self, request, *path):
+    def as_help(self, napixd_context, *path):
         """
-        The view server at **_napix_help**
+        The view served at **_napix_help**
         """
         return self.meta_data
 
-    def as_resource_fields(self, request, *path):
+    def as_resource_fields(self, napixd_context, *path):
         """
-        The view server at **_napix_resource_fields**
+        The view served at **_napix_resource_fields**
         """
         return self.resource_fields
 
-    def as_example_resource(self, request, *path):
+    def as_example_resource(self, napixd_context, *path):
         """
-        The view server at **_napix_help**
+        The view served at **_napix_help**
         """
         manager = self.collection
         return manager.get_example_resource()
 
-    def noop(self, **kw):
+    def noop(self, *args, **kw):
         """
         A catch-all method that does nothing but return a 200
         """
         return None
 
-    def get_managers(self, path, request):
-        raise NotImplementedError()
+    def get_manager(self, resource, call_context):
+        """
+        Instantiates a manager for the given resource
+        """
+        return self.served_manager.instantiate(resource, call_context)
 
 
 class FirstCollectionService(BaseCollectionService):
     """
-    A specialisation of :class:`BaseCollectionService` used
-    for the first level of managers.
-
-    *namespace* is the :attr:`~napixd.loader.ManagerImport.alias`
-    of the this manager.
+    A specialisation of :class:`BaseCollectionService` used for the first level
+    of managers.
     """
 
-    def get_managers(self, path, request):
-        return [], self._generate_manager(None, request)
+    def get_manager(self, path, call_context):
+        assert not path
+        return super(FirstCollectionService, self).get_manager(None, call_context)
 
 
 class CollectionService(BaseCollectionService):
     """
-    The subclass of :class:`BaseCollectionService` used
-    for all the :class:`napixd.managers.base.Manager` classes
-    after the first one.
+    The subclass of :class:`BaseCollectionService` used for all the
+    :class:`napixd.managers.base.Manager` classes after the first one.
 
     *previous_service* is the :class:`CollectionService` or the
     :class:`FirstCollectionService` of the parent manager.
     """
 
-    def __init__(self, previous_service, served_manager):
-        super(CollectionService, self).__init__(served_manager)
-        self.extractor = served_manager.extractor
+    def __init__(self, previous_service, served_manager, url):
+        super(CollectionService, self).__init__(served_manager, url)
         self.previous_service = previous_service
 
-    def _generate_manager(self, resource, request):
-        """
-        instanciate a manager for the given resource
-        """
-        resource = self.extractor(resource)
-        return super(CollectionService, self)._generate_manager(resource, request)
+    def get_manager(self, path, call_context):
+        served_manager = self.previous_service.get_manager(path[:-1], call_context)
 
-    def get_managers(self, path, request):
-        managers_list, manager = self.previous_service.get_managers(path[:-1], request)
-
-        id_ = manager.validate_id(path[-1])
-        resource = manager.get_resource(id_)
-        wrapped = ResourceWrapper(manager, id_, resource)
-
-        managers_list.append((manager, wrapped))
+        served_manager.validate_id(path[-1])
+        wrapped = served_manager.get_resource()
 
         # The manager for self is generated here.
-        manager = self._generate_manager(wrapped, request)
-        return managers_list, manager
+        return super(CollectionService, self).get_manager(wrapped, call_context)
 
 
 class ActionService(object):
@@ -238,13 +217,13 @@ class ActionService(object):
         app.route(unicode(self.url.add_segment('_napix_help')), self.as_help)
         app.route(unicode(self.url), self.as_action)
 
-    def get_managers(self, path, request):
-        return self.service.get_managers(path, request)
+    def get_manager(self, path, call_context):
+        return self.service.get_manager(path, call_context)
 
-    def as_action(self, request, *path):
-        return ServiceActionRequest(request, path, self, self.action).handle()
+    def as_action(self, napixd_context, *path):
+        return ServiceActionRequest(CollectionContext(self, napixd_context), path, self.action).handle()
 
-    def as_help(self, request, *path):
+    def as_help(self, napixd_context, *path):
         """
         View for _napix_help
         """

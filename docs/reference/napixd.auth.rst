@@ -2,6 +2,8 @@
 auth Package
 ============
 
+.. automodule:: napixd.auth
+
 :mod:`plugin` Module
 --------------------
 
@@ -47,4 +49,13 @@ Sources
     :members:
     :undoc-members:
     :show-inheritance:
+
+:mod:`jwt` Module
+-----------------
+
+.. automodule:: napixd.auth.jwt
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

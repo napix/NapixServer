@@ -14,7 +14,7 @@ import os
 import sys
 import optparse
 
-from napixd import get_file, get_path
+from napixd import get_file, get_path, __version__
 from napixd.utils.tracingset import TracingSet
 
 from napixd.conf import Conf, ConfLoader
@@ -69,7 +69,7 @@ def launch(options, setup_class=None):
     parser.add_option('-s', '--setup-class',
                       help='The setup class used to start the Napix server',
                       )
-    keys, options = parser.parse_args()
+    keys, options = parser.parse_args(options)
 
     sys.stdin.close()
 
@@ -217,6 +217,7 @@ Meta-options:
             options = options.union(self.DEFAULT_OPTIONS)
         self.options = options = TracingSet(options.difference(nooptions))
 
+        self.extra_web_client = {}
         self.set_loggers()
 
         self.conf = self.get_conf()
@@ -224,6 +225,7 @@ Meta-options:
         self.service_name = self.get_service_name()
         self.hosts = self.get_hostnames()
 
+        console.info('Napix version %s', __version__)
         console.info('Napixd Home is %s', get_path())
         console.info('Options are %s', ','.join(self.options))
         console.info('Starting process %s', os.getpid())
@@ -231,6 +233,11 @@ Meta-options:
         console.info('Service Name is %s', self.service_name)
 
     def get_conf(self):
+        """
+        Get the configuration from the configuration file.
+
+        It set the default conf instance by calling :meth:`napixd.conf.BaseConf.set_default`.
+        """
         logger.info('Loading configuration')
         paths = [
             get_path('conf/'),
@@ -240,12 +247,16 @@ Meta-options:
                 from napixd.conf.dotconf import ConfFactory
             except ImportError:
                 raise CannotLaunch('dotconf option requires the external library dotconf')
-            loader = ConfLoader(paths, ConfFactory())
-            conf = loader()
+            factory = ConfFactory()
         else:
-            from napixd.conf.json import ConfFactory, CompatConf
-            loader = ConfLoader(paths, ConfFactory())
-            conf = CompatConf(loader())
+            from napixd.conf.json import CompatConfFactory
+            factory = CompatConfFactory()
+
+        loader = ConfLoader(paths, factory)
+        try:
+            conf = loader()
+        except ValueError as e:
+            raise CannotLaunch('Cannot load conf: {0}'.format(e))
 
         return Conf.set_default(conf)
 
@@ -360,8 +371,9 @@ Meta-options:
                 from napixd.auth.central import CentralAuthProvider
             except ImportError:
                 raise CannotLaunch('Central authentication requires permissions')
-            self.central_provider = CentralAuthProvider.from_settings(self.service_name, conf)
-            providers.append(self.central_provider)
+            central_provider = CentralAuthProvider.from_settings(self.service_name, conf)
+            providers.append(central_provider)
+            self.extra_web_client['auth_server'] = central_provider.host
             logger.info('Enable central server authentication')
 
         return providers
@@ -380,14 +392,14 @@ Meta-options:
             sources.append(JSONWebToken())
         return sources
 
-    def get_napixd(self, server):
+    def get_napixd(self, router):
         """
         Return the main application for the napixd server.
         """
-        from napixd.application import NapixdBottle
+        from napixd.application import Napixd
         from napixd.loader import Loader
         self.loader = loader = Loader(self.get_loaders())
-        napixd = NapixdBottle(loader=loader, server=server)
+        napixd = Napixd(loader, router)
 
         return napixd
 
@@ -478,8 +490,8 @@ Meta-options:
         """
         from napixd.http.server import WSGIServer
         server = WSGIServer()
-        self.install_plugins(server.router)
-        napixd = self.get_napixd(server)
+        router = self.install_plugins(server.push())
+        napixd = self.get_napixd(router)
 
         # attach autoreloaders
         if 'reload' in self.options:
@@ -497,6 +509,7 @@ Meta-options:
                 napixd, conf, self.service_name, self.hosts[0],
                 self.conf.get('description'))
             notifier.start()
+            self.extra_web_client['directory_server'] = notifier.directory
         else:
             self.notifier = None
 
@@ -509,11 +522,11 @@ Meta-options:
         if 'webclient' in self.options:
             self.web_client = self.get_webclient()
             if self.web_client:
-                self.web_client.setup_bottle(napixd.server)
+                self.web_client.setup_bottle(server)
         else:
             self.web_client = None
 
-        return napixd.server
+        return server
 
     def apply_middleware(self, application):
         """
@@ -551,8 +564,8 @@ Meta-options:
         application = self.get_app()
         application = self.apply_middleware(application)
         if self.options.unchecked:
-            self.logger.warning('Unchecked Options are: %s',
-                                ','.join(self.options.unchecked))
+            logger.warning('Unchecked Options are: %s',
+                           ','.join(self.options.unchecked))
         return application
 
     def get_server(self):
@@ -603,8 +616,16 @@ Meta-options:
 
         from napixd.webclient import WebClient
         logger.info('Using %s as webclient', webclient_path)
-        return WebClient(webclient_path, self,
-                         generate_docs='docs' in self.options)
+        return WebClient(webclient_path, self.get_webclient_infos(), docs=self.doc,
+                         index=self.conf.get('webclient.index', 'index.html', type=unicode))
+
+    def get_webclient_infos(self):
+        infos = {
+            'name': self.service_name,
+            'version': __version__,
+        }
+        infos.update(self.extra_web_client)
+        return infos
 
     def get_webclient_path(self):
         """

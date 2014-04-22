@@ -3,9 +3,9 @@
 
 
 """
-The webclient of Napixd.
+The webclient of napixd.
 
-Napixd propose a generic web client usable with  every server.
+Napixd propose a generic web client usable with every server.
 """
 
 from napixd.http.statics import StaticFiles
@@ -15,28 +15,15 @@ class WebClient(object):
     """
     An object to represent the Webclient.
 
-    *root* is the path to the directory containing the index.html
-    *launcher* is the :class:`napixd.launcher.Setup` class.
+    *root* is the path to the directory containing the index.html and *launcher*
+    is the :class:`napixd.launcher.Setup` class.
     """
 
-    def __init__(self, root, launcher, generate_docs=True):
-        self.service_name = launcher.service_name
+    def __init__(self, root, infos, docs=None, index='index.html'):
         self._static = StaticFiles(root)
-
-        if generate_docs:
-            self.doc = launcher.doc
-        else:
-            self.doc = None
-
-        if hasattr(launcher, 'central_provider'):
-            self.auth_server = launcher.central_provider.host
-        else:
-            self.auth_server = ''
-
-        if launcher.notifier:
-            self.directory_server = launcher.notifier.directory
-        else:
-            self.directory_server = None
+        self._index = index
+        self._infos = infos
+        self.doc = docs
 
     def setup_bottle(self, app):
         router = app.push()
@@ -47,22 +34,23 @@ class WebClient(object):
 
     def index(self, request, path):
         """
-        Returns the index.
+        View for the static pages.
+
+        Returns the *index* if path is empty.
         """
-        path = path or 'index.html'
+        path = path or self._index
         return self._static(request, path)
 
     def docs(self, request):
+        """
+        View of the documentation.
+        """
         return self.doc.generate()
 
     def infos(self, request):
         """
         Returns informations about the server to the client.
 
-        Those informations are extracted from the *launcher*
+        Those informations are extracted from the *launcher*.
         """
-        return {
-            'name': self.service_name,
-            'auth_server': self.auth_server,
-            'directory_server': self.directory_server,
-        }
+        return self._infos

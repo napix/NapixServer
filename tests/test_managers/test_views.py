@@ -47,6 +47,16 @@ class TestDecorators(unittest.TestCase):
         as_text(None, None, resp)
         resp.set_header.assert_called_once_with('Content-Type', 'text/plain; charset=utf-8')
 
+    def test_content_type_text_yaml(self):
+        @view('yaml', content_type='text/yaml')
+        def as_text(self, resource, response):
+            return '''base:\n  '*':\n    station\n'''
+
+        resp = mock.Mock(spec=Response, headers={})
+        r = as_text(None, None, resp)
+        resp.set_header.assert_called_once_with('Content-Type', 'text/yaml')
+        self.assertEqual(r, '''base:\n  '*':\n    station\n''')
+
     def test_content_type(self):
         @view('text', content_type='text/plain')
         def as_text(self, resource, response):

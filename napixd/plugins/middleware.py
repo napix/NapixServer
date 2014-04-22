@@ -13,8 +13,8 @@ from napixd.chrono import Chrono
 
 class PathInfoMiddleware(object):
     """
-    Use the `REQUEST_URI` to generate `PATH_INFO` to avoid problems with
-    URL encoding.
+    Use the `REQUEST_URI` to generate `PATH_INFO` to avoid problems with URL
+    encoding.
     """
 
     def __init__(self, application):
@@ -27,8 +27,8 @@ class PathInfoMiddleware(object):
 
 class CORSMiddleware(object):
     """
-    Reply to OPTIONS requests emitted by browsers
-    to check for Cross Origin Requests
+    Reply to OPTIONS requests emitted by browsers to check for Cross Origin
+    Requests.
     """
 
     def __init__(self, application):
@@ -75,6 +75,10 @@ class LoggedRequest(object):
         del self._start_response
 
     @property
+    def username(self):
+        return self.environ.get('napixd.auth.username', '-')
+
+    @property
     def request_line(self):
         request_line = self.environ['PATH_INFO']
         if self.environ.get('QUERY_STRING'):
@@ -90,8 +94,9 @@ class LoggedRequest(object):
 
         total_time = (transfert.total + self.chrono.total) * 1000
 
-        self.logger.info('%s - - [%s] "%s %s" %s %s %.2fms',
+        self.logger.info('%s - %s [%s] "%s %s" %s %s %.2fms',
                          self.environ.get('REMOTE_ADDR', '-'),
+                         self.username,
                          datetime.datetime.now().replace(microsecond=0),
                          self.environ['REQUEST_METHOD'],
                          self.request_line,
@@ -112,6 +117,9 @@ def LoggerMiddleware(application):
 
 
 class HTTPHostMiddleware(object):
+    """
+    WSGI Middleware that checks the host againt a list of authorized hosts.
+    """
     def __init__(self, hosts, application):
         self.hosts = frozenset(hosts)
         self.application = application

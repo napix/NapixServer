@@ -52,7 +52,7 @@ Doing mutliple request simultaneously
 
 .. currentmodule:: napixd.client
 
-The :class:`pool.ClientPool` class instanciates and manages multiples
+The :class:`pool.ClientPool` class instantiates and manages multiples
 :class:`gevent.Client` doing request simultaneously on different servers
 or on the same server.
 

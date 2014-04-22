@@ -19,6 +19,10 @@ TIMEOUT = 5
 
 
 class FilterFactory(object):
+    """
+    A creator of :class:`Filter` that only have :class:`permissions.models.Perm`
+    matching the *service*.
+    """
     def __init__(self, service):
         self.service = service
 
@@ -28,6 +32,17 @@ class FilterFactory(object):
 
 
 class Filter(object):
+    """
+    The :class:`Filter` instances filters a list of values accoring to a
+    :class:`permissions.managers.PermSet`.
+
+    The filter is called with a dict or a list of values. The items of the
+    :class:`list` or the indexes of the :class:`dict` are paths. It returns
+    the same type of data that it was given with the paths filtered by the
+    :class:`permissions.managers.PermSet`.
+
+    The values of the :class:`dict` are kept.
+    """
     def __init__(self, rules):
         self.rules = rules
 
@@ -45,6 +60,9 @@ class Filter(object):
 
 
 class ConnectionFactory(object):
+    """
+    A factory for :class:`httplib.HTTPConnection` to the *host*.
+    """
     def __init__(self, host, timeout=TIMEOUT):
         self.host = host
         self.timeout = timeout
@@ -57,6 +75,10 @@ class ConnectionFactory(object):
 
 
 class CentralAuthProvider(object):
+    """
+    A provider of authentication using a Central Napix server.
+    """
+
     headers = {
         'Accept': 'application/json',
         'Content-type': 'application/json',
@@ -84,6 +106,9 @@ class CentralAuthProvider(object):
 
     @property
     def host(self):
+        """
+        The central server used by the provider to authenticate its users.
+        """
         return self.http_client_factory.host
 
     def __call__(self, request, content):

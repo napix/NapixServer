@@ -4,12 +4,11 @@
 """
 Tools used with :mod:`gevent`.
 
-A feature implemented by :class:`Tracer` allows to keep track
-of the time spent executing Python in an observed greenlet,
-excluding the IO and the other greenlet`s
+A feature implemented by :class:`Tracer` allows to keep track of the time spent
+executing Python in an observed greenlet, excluding the IO and the other greenlets.
 
-The other feature is :class:`GeventServer` witch acts as a WSGI server
-and overrides the value of the environ key PATH_INFO to undo all unescaping.
+The other feature is :class:`GeventServer` witch acts as a WSGI server and
+overrides the value of the environ key ``PATH_INFO`` to undo all unescaping.
 """
 
 import time
@@ -65,7 +64,7 @@ class Tracer(object):
 
     .. attribute:: last
 
-        The last :class:`Greenlet` witch have been running
+        The last :class:`Greenlet` wich have been running
     """
     def __init__(self):
         self.last = None
@@ -105,12 +104,9 @@ class Tracer(object):
 
 class AddGeventTimeHeader(object):
     """
-    A bottle plugin used to transfert the results
-    of the time spent by the greenlet to the users
-    by the HTTP headers.
+    A :mod:`napixd.http` plugin used to transfert the results of the time spent
+    by the :class:`gevent.greenlet` to the users by the HTTP headers.
     """
-    name = 'gevent_time_header'
-    api = 2
 
     def __init__(self):
         self.tracer = Tracer()
