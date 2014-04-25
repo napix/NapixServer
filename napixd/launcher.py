@@ -128,10 +128,6 @@ class Setup(object):
 
         A set of options to use by default.
 
-    .. attribute:: LOG_FILE
-
-        A path to a log file.
-
     .. attribute:: HELP_TEXT
 
         The help provided to the user if the option help is used.
@@ -162,7 +158,6 @@ class Setup(object):
         'central',  # Use a central Napix server for the authentication
     ])
 
-    LOG_FILE = get_file('log/napix.log')
     HELP_TEXT = '''
 napixd daemon runner.
 usage: napixd [--port PORT] [only] [(no)option ...]
@@ -191,6 +186,7 @@ Default options:
     docs:       Generate automated documentation
     dotconf:    Use a dotconf file as the source of configuration
     central:    Use a central Napix server for the authentication
+    logfile:    Write the log of Napix in a log file
 
 Non-default:
     uwsgi:      Use with uwsgi (by default when loading napixd.application)
@@ -235,7 +231,6 @@ Meta-options:
         console.info('Napixd Home is %s', get_path())
         console.info('Options are %s', ','.join(self.options))
         console.info('Starting process %s', os.getpid())
-        console.info('Logging activity in %s', self.LOG_FILE)
         console.info('Service Name is %s', self.service_name)
 
     def get_conf(self):
@@ -655,43 +650,76 @@ Meta-options:
             if directory and os.path.isdir(directory):
                 return directory
 
+    def get_log_file(self):
+        if hasattr(self, 'LOG_FILE'):
+            import warnings
+            warnings.warn('Use get_log_file instead of LOG_FILE')
+            return self.LOG_FILE
+        return get_file('log/napix.log')
+
+    def get_logger_file(self):
+        lf = self.get_log_file()
+        file_handler = logging.handlers.RotatingFileHandler(
+            lf,
+            maxBytes=5 * 10 ** 6,
+            backupCount=10,
+        )
+        console.info('Writing logs in %s', lf)
+
+        formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel(
+            logging.DEBUG if 'verbose' in self.options else logging.INFO)
+
+        return file_handler
+
+    def get_logger_console_formatter(self):
+        if 'colors' in self.options:
+            from napixd.utils.logger import ColoredLevelFormatter
+            return ColoredLevelFormatter('%(levelname)8s [%(name)s] %(message)s')
+        else:
+            return logging.Formatter('%(levelname)8s [%(name)s] %(message)s')
+
+    def get_logger_console(self):
+        formatter = self.get_logger_console_formatter()
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        console_handler.setLevel(
+            logging.DEBUG if 'verbose' in self.options else logging.INFO)
+
+        return console_handler
+
+    def get_loggers(self):
+        log_handlers = []
+        if not 'silent' in self.options:
+            ch = self.get_logger_console()
+            log_handlers.append(ch)
+        if 'logfile' in self.options:
+            lfh = self.get_logger_file()
+            log_handlers.append(lfh)
+
+        return log_handlers
+
     def set_loggers(self):
         """
         Defines the loggers
         """
-        formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        self.set_log_console()
+        from napixd.utils.logger import NullHandler
 
-        self.log_file = file_handler = logging.handlers.RotatingFileHandler(
-            self.LOG_FILE,
-            maxBytes=5 * 10 ** 6,
-            backupCount=10,
-        )
-        file_handler.setLevel(
-            logging.DEBUG
-            if 'verbose' in self.options else
-            logging.WARNING
-            if 'silent' in self.options else
-            logging.INFO)
-        file_handler.setFormatter(formatter)
+        logger = logging.getLogger('Napix')
+        logger.setLevel(logging.DEBUG)
+        self.log_handlers = self.get_loggers() or [NullHandler()]
 
-        self.console = console_handler = logging.StreamHandler()
-        console_handler.setLevel(
-            logging.DEBUG
-            if 'verbose' in self.options else
-            logging.WARNING
-            if 'silent' in self.options else
-            logging.INFO)
+        for lh in self.log_handlers:
+            logger.addHandler(lh)
 
-        console_handler.setFormatter(formatter)
-
-        logging.getLogger('Napix').setLevel(logging.DEBUG)
-        logging.getLogger('Napix').addHandler(console_handler)
-        logging.getLogger('Napix').addHandler(file_handler)
-
-        if 'silent' not in self.options:
-            if 'verbose' in self.options:
-                logging.getLogger('Napix.console').setLevel(logging.DEBUG)
-            else:
-                logging.getLogger('Napix.console').setLevel(logging.INFO)
-            logging.getLogger('Napix.console').addHandler(
-                logging.StreamHandler())
+    def set_log_console(self):
+        console.setLevel(logging.DEBUG if 'verbose' in self.options else logging.INFO)
+        if 'silent' in self.options:
+            from napixd.utils.logger import NullHandler
+            h = NullHandler()
+        else:
+            h = logging.StreamHandler()
+            console.propagate = False
+        console.addHandler(h)
