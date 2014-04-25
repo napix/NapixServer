@@ -201,6 +201,7 @@ Non-default:
     autonomous-auth:    Use a local source of authentication
     hosts:      Check the HTTP Host header
     jwt:        Enables authentication by JSON Web Tokens
+    wait:       Do not respond in less than a given time
 
 Meta-options:
     only:       Disable default options
@@ -456,6 +457,12 @@ Meta-options:
             router.add_filter(self.auth_handler)
         else:
             self.auth_handler = None
+
+        if 'wait' in self.options:
+            from napixd.plugins.times import WaitPlugin
+            wait = self.conf.get('wait', 1000, type=(float, int))
+            logger.info('Waiting for %sms', wait)
+            router.add_filter(WaitPlugin(wait))
 
         return router
 
