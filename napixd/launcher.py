@@ -83,7 +83,7 @@ def launch(options, setup_class=None):
     try:
         setup = setup_class(options, port=keys.port)
     except CannotLaunch as e:
-        logger.critical(e)
+        console.critical(e)
         sys.exit(1)
         return
     except Exception as e:
@@ -92,20 +92,20 @@ def launch(options, setup_class=None):
             import traceback
             traceback.print_exc()
         else:
-            logger.exception(e)
-            logger.critical(e)
+            console.exception(e)
+            console.critical(e)
         sys.exit(-1)
         return
 
     try:
         setup.run()
     except (KeyboardInterrupt, SystemExit) as e:
-        logger.warning('Got %s, exiting', e.__class__.__name__)
+        console.warning('Got %s, exiting', e.__class__.__name__)
         return
     except Exception, e:
         if 'print_exc' in setup.options:
-            logger.exception(e)
-        logger.critical(e)
+            console.exception(e)
+        console.critical(e)
         sys.exit(3)
 
 
