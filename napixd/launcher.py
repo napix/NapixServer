@@ -156,6 +156,7 @@ class Setup(object):
         'docs',
         'dotconf',
         'central',  # Use a central Napix server for the authentication
+        'colors',
     ])
 
     HELP_TEXT = '''
@@ -186,7 +187,7 @@ Default options:
     docs:       Generate automated documentation
     dotconf:    Use a dotconf file as the source of configuration
     central:    Use a central Napix server for the authentication
-    logfile:    Write the log of Napix in a log file
+    colors:     Show colored logs in the console
 
 Non-default:
     uwsgi:      Use with uwsgi (by default when loading napixd.application)
@@ -203,6 +204,7 @@ Non-default:
     hosts:      Check the HTTP Host header
     jwt:        Enables authentication by JSON Web Tokens
     loggers:    Set up extra loggers
+    logfile:    Write the log of Napix in a log file
     wait:       Do not respond in less than a given time
 
 Meta-options:
