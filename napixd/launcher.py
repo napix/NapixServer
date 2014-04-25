@@ -202,6 +202,7 @@ Non-default:
     autonomous-auth:    Use a local source of authentication
     hosts:      Check the HTTP Host header
     jwt:        Enables authentication by JSON Web Tokens
+    loggers:    Set up extra loggers
     wait:       Do not respond in less than a given time
 
 Meta-options:
@@ -223,6 +224,9 @@ Meta-options:
         self.set_loggers()
 
         self.conf = self.get_conf()
+
+        if 'loggers' in self.options:
+            self.set_extra_loggers()
 
         self.service_name = self.get_service_name()
         self.hosts = self.get_hostnames()
@@ -723,3 +727,21 @@ Meta-options:
             h = logging.StreamHandler()
             console.propagate = False
         console.addHandler(h)
+
+    def set_extra_loggers(self):
+        loggers = self.conf.get('loggers')
+
+        if not loggers:
+            logger.debug('No extra loggers')
+        else:
+            for ns, level_name in loggers.items():
+                logger.info('Adding %s at level %s', ns, level_name)
+                l = logging.getLogger(ns)
+                level = getattr(logging, level_name.upper(), None)
+                if not level:
+                    logger.error('Level %s does not exists', level)
+                    continue
+                l.propagate = False
+                l.setLevel(level)
+                for lh in self.log_handlers:
+                    l.addHandler(lh)
