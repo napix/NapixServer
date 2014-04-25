@@ -87,8 +87,13 @@ def launch(options, setup_class=None):
         sys.exit(1)
         return
     except Exception as e:
-        logger.exception(e)
-        logger.critical(e)
+        if not logging.getLogger('Napix').handlers:
+            sys.stderr.write('Napix failed before the loggers went up\n')
+            import traceback
+            traceback.print_exc()
+        else:
+            logger.exception(e)
+            logger.critical(e)
         sys.exit(-1)
         return
 
