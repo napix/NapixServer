@@ -65,3 +65,9 @@ class TestDatetimeBoundary(unittest.TestCase):
     def test_allow_past_past(self):
         self.expect_past()
         self.assertEqual(self.check(self.past), self.past)
+
+    def test_direction_init(self):
+        self.assertEqual(DatetimeBoundary('future'),
+                         DatetimeBoundary(allow_past=False))
+        self.assertNotEqual(DatetimeBoundary('past'),
+                            DatetimeBoundary(allow_past=False))
