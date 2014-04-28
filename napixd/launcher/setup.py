@@ -1,112 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-The launcher defines the infrastructure to prepare and run the Napix Server.
-
-:class:`Setup` is intended to be overidden to customize running
-as an integrated component or in a specialized server.
-"""
-
-import logging
-import logging.handlers
 import os
 import sys
-import optparse
+import logging
 
 from napixd import get_file, get_path, __version__
-from napixd.utils.tracingset import TracingSet
-
 from napixd.conf import Conf, ConfLoader
-
-
-__all__ = ['launch', 'Setup']
+from napixd.utils.tracingset import TracingSet
 
 logger = logging.getLogger('Napix.Server')
 console = logging.getLogger('Napix.console')
-
-
-def get_setup_class(class_name):
-    if class_name == 'napixd.launcher.Setup':
-        return Setup
-
-    module, dot, name = class_name.rpartition('.')
-    if not dot:
-        raise CannotLaunch('setup class value is not a valid python dotted class path, eg: napixd.launcher.Setup')
-    try:
-        __import__(module)
-    except Exception as e:
-        raise CannotLaunch('Cannot import {0} because {1}'.format(module, e))
-
-    try:
-        setup_class = getattr(sys.modules[module], name)
-    except AttributeError:
-        raise CannotLaunch('Module {0} has no attribute {1}'.format(module, name))
-
-    if not callable(setup_class):
-        raise CannotLaunch('Setup class {0} is not callable'.format(setup_class))
-
-    return setup_class
-
-
-def launch(options, setup_class=None):
-    """
-    Helper function to run Napix.
-
-    It creates a **setup_class** (by default :class:`Setup` instance with the given **options**.
-
-    **options** is an iterable.
-
-    The exceptions are caught and logged.
-    The function will block until the server is killed.
-    """
-
-    parser = optparse.OptionParser(usage=Setup.HELP_TEXT)
-    parser.add_option('-p', '--port',
-                      help='The TCP port to listen to',
-                      type='int',
-                      )
-    parser.add_option('-s', '--setup-class',
-                      help='The setup class used to start the Napix server',
-                      )
-    keys, options = parser.parse_args(options)
-
-    sys.stdin.close()
-
-    try:
-        setup_class = setup_class or keys.setup_class and get_setup_class(keys.setup_class) or Setup
-    except CannotLaunch as e:
-        sys.stderr.write('{0}\n'.format(e))
-        sys.exit(2)
-        return
-
-    try:
-        setup = setup_class(options, port=keys.port)
-    except CannotLaunch as e:
-        console.critical(e)
-        sys.exit(1)
-        return
-    except Exception as e:
-        if not logging.getLogger('Napix').handlers:
-            sys.stderr.write('Napix failed before the loggers went up\n')
-            import traceback
-            traceback.print_exc()
-        else:
-            console.exception(e)
-            console.critical(e)
-        sys.exit(-1)
-        return
-
-    try:
-        setup.run()
-    except (KeyboardInterrupt, SystemExit) as e:
-        console.warning('Got %s, exiting', e.__class__.__name__)
-        return
-    except Exception, e:
-        if 'print_exc' in setup.options:
-            console.exception(e)
-        console.critical(e)
-        sys.exit(3)
 
 
 class CannotLaunch(Exception):
@@ -235,7 +139,7 @@ Meta-options:
 
         console.info('Napix version %s', __version__)
         console.info('Napixd Home is %s', get_path())
-        console.info('Options are %s', ','.join(self.options))
+        console.info('Options are %s', ','.join(sorted(self.options)))
         console.info('Starting process %s', os.getpid())
         console.info('Service Name is %s', self.service_name)
 
@@ -292,20 +196,20 @@ Meta-options:
             print self.HELP_TEXT
             return 1
         if 'options' in self.options:
-            print 'Enabled options are: ' + ' '.join(self.options)
+            print 'Enabled options are: ' + ' '.join(sorted(self.options))
             return
 
         self._patch_gevent()
         app = self.get_app()
 
-        logger.info('Starting')
+        console.info('Starting')
         try:
             if 'app' in self.options:
                 server_options = self.get_server_options()
                 application = self.apply_middleware(app)
 
-                logger.info('Listening on %s:%s',
-                            server_options['host'], server_options['port'])
+                console.info('Listening on %s:%s',
+                             server_options['host'], server_options['port'])
 
                 adapter_class = server_options.pop('server', None)
                 if not adapter_class:
@@ -315,7 +219,7 @@ Meta-options:
 
                 if self.options.unchecked:
                     console.warning('Unchecked Options are: %s',
-                                    ','.join(self.options.unchecked))
+                                    ','.join(sorted(self.options.unchecked)))
                 adapter.run(application)
         finally:
             console.info('Stopping')
@@ -578,7 +482,7 @@ Meta-options:
         application = self.apply_middleware(application)
         if self.options.unchecked:
             logger.warning('Unchecked Options are: %s',
-                           ','.join(self.options.unchecked))
+                           ','.join(sorted(self.options.unchecked)))
         return application
 
     def get_server(self):
@@ -624,8 +528,8 @@ Meta-options:
     def get_webclient(self):
         webclient_path = self.get_webclient_path()
         if not webclient_path:
-            logger.warning('No webclient path found')
-            return
+            logger.error('No webclient path found')
+            raise CannotLaunch('Option webclient is enabled but there is not webclient path')
 
         from napixd.webclient import WebClient
         logger.info('Using %s as webclient', webclient_path)
