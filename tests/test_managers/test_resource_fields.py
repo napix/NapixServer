@@ -311,6 +311,17 @@ class TestResourceField(unittest.TestCase):
 
         vrf.assert_called_once_with(validator1.return_value)
 
+    def test_validate_validator_returns_None(self):
+        rf = ResourceField('f', {
+            'example': 123,
+            'type': int,
+        })
+        manager = mock.Mock(spec=object, validate_resource_f=mock.MagicMock(
+            return_value=None,
+            __name__='validare_resource_f',
+        ))
+        self.assertRaises(ValueError, rf.validate, manager, 123)
+
     def test_validate_validator(self):
         rf = ResourceField('f', {
             'example': 123,

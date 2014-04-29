@@ -507,7 +507,7 @@ class ResourceField(object):
         """
         Validate the input **value**.
         """
-        manager_validator = getattr(manager, 'validate_resource_%s' % self.name, None)
+        manager_validator = getattr(manager, 'validate_resource_{0}'.format(self.name), None)
 
         if value is None and self.default_on_null:
             if not callable(manager_validator):
@@ -533,11 +533,16 @@ class ResourceField(object):
 
     def _run_callback(self, callback, value):
         try:
-            return callback(value)
-        except ValidationError, e:
+            result = callback(value)
+        except ValidationError as e:
             raise ValidationError({
                 self.name: unicode(e)
             })
+
+        if result is None:
+            raise ValueError('Validator {0} returned None'.format(
+                callback.__name__))
+        return result
 
     def get_choices(self):
         """
