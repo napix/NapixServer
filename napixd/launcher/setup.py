@@ -5,6 +5,7 @@ import os
 import sys
 import logging
 
+import napixd
 from napixd import get_file, get_path, __version__
 from napixd.conf import Conf, ConfLoader
 from napixd.utils.tracingset import TracingSet
@@ -553,7 +554,7 @@ Meta-options:
             self.conf.get('webclient.path'),
             get_path('web', create=False),
             os.path.join(os.path.dirname(module_file), 'web'),
-            os.path.join(os.path.dirname(__file__), 'web'),
+            os.path.join(os.path.dirname(napixd.__file__), 'web'),
         ]
         for directory in directories:
             logger.debug('Try WebClient in directory %s', directory)
