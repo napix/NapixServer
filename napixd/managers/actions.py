@@ -50,17 +50,43 @@ def action(fn):
 
 def parameter(name, **kw):
     """
-    Allow to set one or several parameters on an action.
+    Sets the meta-data on a parameter of an action.
+
+    This decorator is applied on an action of a manager and set the meta-data
+    on the argument *name* of the action. The meta-data are the same as the
+    :attr:`napixd.managers.Manager.resource_fields` and are described in
+    :class:`napixd.managers.resource_fields.ResourceField`.
 
     .. code-block:: python
 
         @action
-        @parameter('tries', description='Number of times we try to ping')
+        @parameter('tries',
+            description='Number of times we try to ping'
+            validators=[
+                Mininum(1),
+                Maximum(10),
+                ])
         def ping(self, router, tries=3):
             for x in tries:
                 if ping( router['ip']):
                     return 'Router responds'
             return 'Router Unreachable'
+
+    Amongst other meta-data, a validator can reveive a list of
+    :attr:`~napixd.managers.resource_fields.ResourceField.validators`, a
+    :attr:`~napixd.managers.resource_fields.ResourceField.type` and
+    :attr:`~napixd.managers.resource_fields.ResourceField.typing`,
+    :attr:`~napixd.managers.resource_fields.ResourceField.choices`, etc,
+    that are enforced before the method is called.
+
+    There is no error when specifying
+    :attr:`~napixd.managers.resource_fields.ResourceField.computed`,
+    :attr:`~napixd.managers.resource_fields.ResourceField.editable`
+    although it does not make sense.
+
+    An action can reveive mutliple :func:`parameter` decorators for each of its
+    arguments but each argument can only have a single :func:`parameter`
+    decorator.
     """
     def inner_action_parameter(fn):
         if not hasattr(fn, 'resource_fields'):
