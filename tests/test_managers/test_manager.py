@@ -10,7 +10,7 @@ from napixd.exceptions import ValidationError, ImproperlyConfigured
 from napixd.managers.base import Manager, ManagerType
 from napixd.managers.managed_classes import ManagedClass
 from napixd.managers.resource_fields import ResourceFieldsDescriptor
-from napixd.managers.actions import action
+from napixd.managers.actions import ActionProperty
 
 
 class TestManager(unittest.TestCase):
@@ -103,16 +103,10 @@ class TestManagerType(unittest.TestCase):
         RF.assert_called_once_with(rf)
 
     def test_inherit_actions(self):
-        class M1(Manager):
-
-            @action
-            def a_m1(self, r):
-                pass
-
-        class M2(M1):
-
-            @action
-            def a_m2(self, r):
-                pass
-
+        M1 = ManagerType('M1', (Manager,), {
+            'a_m1': mock.Mock(spec=ActionProperty),
+        })
+        M2 = ManagerType('M2', (M1,), {
+            'a_m2': mock.Mock(spec=ActionProperty),
+        })
         self.assertEqual(M2.get_all_actions(), ['a_m1', 'a_m2'])
