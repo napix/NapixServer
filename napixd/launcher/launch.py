@@ -13,10 +13,32 @@ import optparse
 import logging
 
 from napixd.launcher.setup import Setup, CannotLaunch
-from napixd.launcher.setup_class import get_setup_class
 
 
 console = logging.getLogger('Napix.console')
+
+
+def get_setup_class(class_name):
+    if class_name == 'napixd.launcher.Setup':
+        return Setup
+
+    module, dot, name = class_name.rpartition('.')
+    if not dot:
+        raise CannotLaunch('setup class value is not a valid python dotted class path, eg: napixd.launcher.Setup')
+    try:
+        __import__(module)
+    except Exception as e:
+        raise CannotLaunch('Cannot import {0} because {1}'.format(module, e))
+
+    try:
+        setup_class = getattr(sys.modules[module], name)
+    except AttributeError:
+        raise CannotLaunch('Module {0} has no attribute {1}'.format(module, name))
+
+    if not callable(setup_class):
+        raise CannotLaunch('Setup class {0} is not callable'.format(setup_class))
+
+    return setup_class
 
 
 def launch(options, setup_class=None):
