@@ -8,33 +8,55 @@ with :attr:`napixd.managers.resource_fields.ResourceField.validators`.
 """
 
 import re
+import collections
+
 from napixd.exceptions import ValidationError
 
 
-def strip(value):
-    """Strips the value of beggining and ending space characters"""
-    return value.strip()
-
-
-def not_empty(value):
+class StringValidator(object):
     """
-    Checks that the *value* is not an empty string.
+    Base string validator.
+
+    It strips the trailing whitespace if strip is ``True``. It rejects string
+    containing a new line character if multiline is ``False``. It rejects empty
+    strings if empty is ``False``.
+
+    docstring is either a string that is used as a the :func:`help`, or a list
+    of strings concatenated to the default :func:`help`.
     """
-    if value == '':
-        raise ValidationError('This should not be empty')
-    return value
+    def __init__(self, strip=True, multiline=False, empty=False, docstring=None):
+        self._strip = strip
+        self._multi = multiline
+        self._empty = empty
+        doc = []
+        if self._strip:
+            doc.append(u'Trailing whitespace is ignored.')
+        if not self._multi:
+            doc.append(u'Only single line string.')
+        if not self._empty:
+            doc.append(u'No empty strings.')
+        if isinstance(docstring, basestring):
+            self.__doc__ = docstring
+        else:
+            if docstring:
+                doc.extend(docstring)
+            self.__doc__ = u'\n'.join(doc)
+
+    def __call__(self, value):
+        if self._strip:
+            value = value.strip()
+        if not self._multi and ('\n' in value or '\r' in value):
+            raise ValidationError(u'String have to be a single line')
+        if value == '':
+            raise ValidationError('This should not be empty')
+        return value
+
+strip = StringValidator(strip=True, multiline=True, empty=True)
+not_empty = StringValidator(strip=False, multiline=True, empty=False)
+single_lined = StringValidator(strip=False, multiline=False, empty=True)
 
 
-def single_lined(value):
-    """
-    Value have to be singlelined.
-    """
-    if "\n" in value or "\r" in value:
-        raise ValidationError("string have to be a single line")
-    return value
-
-
-class MatchRegexp(object):
+class MatchRegexp(StringValidator):
     """
     Checks that the input matches the *source* regexp
 
@@ -48,20 +70,18 @@ class MatchRegexp(object):
     it is used for introspection.
     """
 
-    def __init__(self, source, default=None, error=None, docstring=None):
+    def __init__(self, source, error=None, docstring=None, **kw):
         if not docstring:
-            docstring = 'Field have to match regex {0}'.format(source)
+            docstring = ['Field have to match regex {0}'.format(source)]
+        super(MatchRegexp, self).__init__(docstring=docstring, **kw)
+
         if not error:
             error = 'Value {value} have to match {regex.pattern}'
         self.error = error
-
-        self.__doc__ = docstring
-        self.default = default
         self.regex = re.compile(source)
 
     def __call__(self, value):
-        if self.default is not None and value is None:
-            return self.default
+        value = super(MatchRegexp, self).__call__(value)
         if not self.regex.match(value):
             raise ValidationError(self.error.format(
                 value=value, regex=self.regex))

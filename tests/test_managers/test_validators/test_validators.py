@@ -5,15 +5,33 @@ import unittest
 import mock
 
 from napixd.exceptions import ValidationError
-from napixd.managers.validators import MatchRegexp, not_empty
+from napixd.managers.validators import (
+    MatchRegexp,
+    not_empty,
+    StringValidator,
+)
 
 
-class TestValidator(unittest.TestCase):
+class TestStringValidator(unittest.TestCase):
     def test_not_empty_empty(self):
         self.assertRaises(ValidationError, not_empty, '')
 
     def test_not_empty(self):
         self.assertEqual(not_empty('value'), 'value')
+
+    def test_strip_multiline(self):
+        sv = StringValidator(strip=True, multiline=False)
+        self.assertEqual(sv(' value\n\n'), 'value')
+
+    def test_multiline(self):
+        sv = StringValidator(strip=False, multiline=False)
+        self.assertRaises(ValidationError, sv, ' value\n\n')
+
+    def test_strip_empty(self):
+        sv = StringValidator(strip=True, empty=False, multiline=False)
+        self.assertRaises(ValidationError, sv, '\n\n\n')
+
+
 
 
 class TestMatchRegexp(unittest.TestCase):
