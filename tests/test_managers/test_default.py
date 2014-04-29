@@ -242,10 +242,25 @@ class TestImplements(unittest.TestCase):
             def save(self):
                 pass
 
+            def generate_new_id(self, rd):
+                pass
+
         self.assertEqual(MyMGR.implements(), set([
             'list_resource',
             'get_resource',
             'create_resource',
+            'delete_resource',
+            'modify_resource',
+        ]))
+
+    def test_implements_no_new_id(self):
+        class MyMGR(DictManager):
+            def save(self):
+                pass
+
+        self.assertEqual(MyMGR.implements(), set([
+            'list_resource',
+            'get_resource',
             'delete_resource',
             'modify_resource',
         ]))
