@@ -141,6 +141,13 @@ class ManagerType(type):
             name=self.get_name(),
         )
 
+    def implements(self):
+        """
+        Returns a set of implemented methods.
+        """
+        base = set(attr for attr in dir(self) if not attr.startswith('_'))
+        return base.intersection(ManagerInterface.__dict__)
+
 
 class Manager(object):
 

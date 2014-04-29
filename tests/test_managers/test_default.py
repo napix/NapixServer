@@ -9,7 +9,6 @@ import mock
 from napixd.managers.default import ReadOnlyDictManager, DictManager, FileManager
 from napixd.exceptions import NotFound, Duplicate
 from napixd.services.wrapper import ResourceWrapper
-from napixd.http.request import Request
 from napixd.managers.changeset import DiffDict
 
 
@@ -235,3 +234,27 @@ class TestHiddenFields(unittest.TestCase):
         self.dm.modify_resource(ResourceWrapper(self.dm, 'id', {'abc': 123}), dd)
 
         self.res.save.assert_called_once_with({'id': {'abc': 124, 'zip': 'zap'}})
+
+
+class TestImplements(unittest.TestCase):
+    def test_implements(self):
+        class MyMGR(DictManager):
+            def save(self):
+                pass
+
+        self.assertEqual(MyMGR.implements(), set([
+            'list_resource',
+            'get_resource',
+            'create_resource',
+            'delete_resource',
+            'modify_resource',
+        ]))
+
+    def test_implements_no_save(self):
+        class MyMGR(DictManager):
+            pass
+
+        self.assertEqual(MyMGR.implements(), set([
+            'list_resource',
+            'get_resource',
+        ]))

@@ -110,3 +110,10 @@ class TestManagerType(unittest.TestCase):
             'a_m2': mock.Mock(spec=ActionProperty),
         })
         self.assertEqual(M2.get_all_actions(), ['a_m1', 'a_m2'])
+
+    def test_implements(self):
+        M1 = ManagerType('M1', (Manager,), {
+            'get_resource': mock.Mock,
+            'list_resource': mock.Mock,
+        })
+        self.assertEqual(M1.implements(), set(['get_resource', 'list_resource']))

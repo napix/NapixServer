@@ -48,8 +48,9 @@ class MethodMixin(object):
         that are usable with this :class:`MethodMixin`.
         """
         available_methods = []
+        implemented = manager.implements()
         for meth, callback in cls.METHOD_MAP.items():
-            if meth.isupper() and hasattr(manager, callback):
+            if meth.isupper() and callback in implemented:
                 available_methods.append(meth)
         return available_methods
 

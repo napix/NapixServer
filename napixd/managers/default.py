@@ -11,6 +11,7 @@ requests and persist all the objects after.
 
 from napixd.exceptions import NotFound, Duplicate, ValidationError
 from napixd.managers import Manager
+from napixd.managers.base import ManagerType
 
 
 class ReadOnlyDictManager(Manager):
@@ -148,6 +149,21 @@ class DictManager(ReadOnlyDictManager):
             raise NotFound(resource.id)
         else:
             self._save()
+
+    @classmethod
+    def implements(cls):
+        """
+        If :meth:`save` is not overriden
+        """
+        implemented = ManagerType.implements(cls)
+        if cls.save == DictManager.save:
+            implemented.discard('create_resource')
+            implemented.discard('delete_resource')
+            implemented.discard('modify_resource')
+
+        if cls.generate_id == DictManager.generate_id and cls.generate_new_id == DictManager.generate_new_id:
+            implemented.discard('create_resource')
+        return implemented
 
 
 class ListManager(DictManager):

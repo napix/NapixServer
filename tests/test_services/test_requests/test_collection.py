@@ -48,6 +48,11 @@ class TestServiceCollectionRequest(unittest.TestCase):
 
     def test_handle_other(self):
         self.context.method = 'DELETE'
+        self.manager.implements.return_value = set([
+            'list_resource',
+            'get_resource',
+            'create_resource',
+        ])
         try:
             self.scr().handle()
         except HTTPError as e:
