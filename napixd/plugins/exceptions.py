@@ -11,9 +11,9 @@ import traceback
 import json
 import logging
 
-from napix.exceptions import HTTPError
-
 import napixd
+
+from napixd.exceptions import RemoteError
 
 
 class ExceptionsCatcher(object):
@@ -54,7 +54,7 @@ class ExceptionsCatcher(object):
             }
         }
         res.update(self.traceback_info(last_traceback))
-        if isinstance(error, HTTPError):
+        if isinstance(error, RemoteError):
             res.update(self.remote_exception(error))
         res.update(self.exception_details(error))
         return res
@@ -81,12 +81,18 @@ class ExceptionsCatcher(object):
         """
         all_tb = [dict(zip(('filename', 'line', 'in', 'call'), x))
                   for x in traceback.extract_tb(last_traceback)]
-        extern_tb = [x for x in all_tb
-                     if not x['filename'].startswith(self.napix_path)]
+        for i, frame in enumerate(all_tb):
+            if not frame['filename'].startswith(self.napix_path):
+                break
+        else:
+            i = 0
+
+        all_tb = all_tb[i:]
         filename, lineno, function_name, text = traceback.extract_tb(
             last_traceback)[-1]
+
         return {
-            'traceback': extern_tb or all_tb,
+            'traceback': all_tb,
             'filename': filename,
             'line': lineno,
         }

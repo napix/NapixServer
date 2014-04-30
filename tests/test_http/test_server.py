@@ -15,6 +15,7 @@ class TestServer(unittest.TestCase):
         self.router = r = mock.Mock(spec=Router)
         self.request = mock.Mock(spec=Request,
                                  path='/a/b',
+                                 environ={},
                                  method='GET')
         self.cb = self.router.resolve.return_value
 
@@ -62,6 +63,13 @@ class TestServer(unittest.TestCase):
         self.cb.assert_called_once_with(self.request)
         self.assertEqual(resp, self.cb.return_value)
 
+    def test_file_wrapper(self):
+        self.request.environ['wsgi.file_wrapper'] = fw = mock.Mock()
+        filelike = mock.Mock(file)
+        resp = self.cast(filelike)
+        self.assertEqual(resp.body, fw.return_value)
+        fw.assert_called_once_with(filelike, 1024**2)
+
     def test_cast_HEAD(self):
         self.request.method = 'HEAD'
         resp = self.cast('VALUE')
@@ -101,6 +109,13 @@ class TestServer(unittest.TestCase):
         self.assertEqual(resp.headers['content-type'], 'text/plain; charset=utf-8')
         self.assertEqual(resp.headers['content-length'], '17')
         self.assertEqual(resp.body, ['See /pim/pam/poum'])
+
+    def test_cast_response_text(self):
+        r = HTTPResponse({'Content-Type': 'text/yaml'}, '''base:\n  '*':\n    webserver''')
+        resp = self.cast(r)
+        self.assertEqual(resp.headers['content-length'], '26')
+        self.assertEqual(resp.headers['content-type'], 'text/yaml')
+        self.assertEqual(resp.body, ['''base:\n  '*':\n    webserver'''])
 
 
 class TestServerRouter(unittest.TestCase):

@@ -10,6 +10,9 @@ from napixd import conf
 
 
 class ConfFactory(object):
+    """
+    The original conf fcatory using JSON objects.
+    """
     def get_filename(self):
         return 'settings.json'
 
@@ -22,6 +25,14 @@ class ConfFactory(object):
         except ValueError as e:
             raise ValueError(
                 'Configuration file contains a bad JSON object ({0})'.format(e))
+
+
+class CompatConfFactory(ConfFactory):
+    """
+    Compatibility layer between old config format and new config.
+    """
+    def parse_file(self, handle):
+        return CompatConf(super(CompatConfFactory, self).parse_file(handle))
 
 
 class Conf(conf.BaseConf):
@@ -89,6 +100,9 @@ class Conf(conf.BaseConf):
 
 
 class CompatConf(conf.BaseConf):
+    """
+    Proxy to :class:`Conf` returned by :class:`CompatConf`.
+    """
     def __init__(self, conf):
         self.conf = conf
 
@@ -106,4 +120,7 @@ class CompatConf(conf.BaseConf):
             key = key[8:]
         else:
             key = 'Napix.' + key
-        return self.conf[key]
+        value = self.conf[key]
+        if isinstance(value, dict):
+            return Conf(value)
+        return value

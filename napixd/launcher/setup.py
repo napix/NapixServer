@@ -1,59 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-The launcher defines the infrastructure to prepare and run the Napix Server.
-
-:class:`Setup` is intended to be overidden to customize running
-as an integrated component or in a specialized server.
-"""
-
-import logging
-import logging.handlers
 import os
 import sys
-import optparse
+import logging
 
-from napixd import get_file, get_path
-
+import napixd
+from napixd import get_file, get_path, __version__
 from napixd.conf import Conf, ConfLoader
-
-
-__all__ = ['launch', 'Setup']
+from napixd.utils.tracingset import TracingSet
 
 logger = logging.getLogger('Napix.Server')
 console = logging.getLogger('Napix.console')
-
-
-def launch(options, setup_class=None):
-    """
-    Helper function to run Napix.
-
-    It creates a **setup_class** (by default :class:`Setup` instance with the given **options**.
-
-    **options** is an iterable.
-
-    The exceptions are caught and logged.
-    The function will block until the server is killed.
-    """
-    setup_class = setup_class or Setup
-    sys.stdin.close()
-    try:
-        setup = setup_class(options)
-    except CannotLaunch as e:
-        logger.critical(e)
-        return
-    except Exception as e:
-        logger.exception(e)
-        logger.critical(e)
-        return
-
-    try:
-        setup.run()
-    except Exception, e:
-        if 'print_exc' in setup.options:
-            logger.exception(e)
-        logger.critical(e)
 
 
 class CannotLaunch(Exception):
@@ -74,10 +32,6 @@ class Setup(object):
     .. attribute:: DEFAULT_OPTIONS
 
         A set of options to use by default.
-
-    .. attribute:: LOG_FILE
-
-        A path to a log file.
 
     .. attribute:: HELP_TEXT
 
@@ -107,9 +61,9 @@ class Setup(object):
         'docs',
         'dotconf',
         'central',  # Use a central Napix server for the authentication
+        'colors',
     ])
 
-    LOG_FILE = get_file('log/napix.log')
     HELP_TEXT = '''
 napixd daemon runner.
 usage: napixd [--port PORT] [only] [(no)option ...]
@@ -131,7 +85,6 @@ Default options:
     reload:     The reloader events attachement on signal, page and inotify
     webclient:  The web interface accessible on /_napix_js/
     gevent:     Use gevent as the wsgi interface
-    uwsgi:      Use with uwsgi
     auto:       Load from HOME/auto/ directory
     conf:       Load from the Napix.managers section of the config
     time:       Add custom header to show the duration of the request
@@ -139,6 +92,7 @@ Default options:
     docs:       Generate automated documentation
     dotconf:    Use a dotconf file as the source of configuration
     central:    Use a central Napix server for the authentication
+    colors:     Show colored logs in the console
 
 Non-default:
     uwsgi:      Use with uwsgi (by default when loading napixd.application)
@@ -153,6 +107,10 @@ Non-default:
     localhost:  Listen on the loopback interface only
     autonomous-auth:    Use a local source of authentication
     hosts:      Check the HTTP Host header
+    jwt:        Enables authentication by JSON Web Tokens
+    loggers:    Set up extra loggers
+    logfile:    Write the log of Napix in a log file
+    wait:       Do not respond in less than a given time
     ratelimit:  Enable the rate-limiting  plugin
 
 Meta-options:
@@ -161,39 +119,38 @@ Meta-options:
     options:    Show the enabled options and quit
 '''
 
-    def __init__(self, options):
-        parser = optparse.OptionParser(usage=self.HELP_TEXT)
-        parser.add_option('-p', '--port',
-                          help='The TCP port to listen to',
-                          type='int',
-                          default=self.DEFAULT_PORT)
-        self.keys, options = parser.parse_args()
-
+    def __init__(self, options, **keys):
+        self.keys = keys
         nooptions = [opt[2:] for opt in options if opt.startswith('no')]
 
         options = set(options)
         if 'only' not in options:
             options = options.union(self.DEFAULT_OPTIONS)
-        self.options = options = options.difference(nooptions)
+        self.options = options = TracingSet(options.difference(nooptions))
 
+        self.extra_web_client = {}
         self.set_loggers()
 
-        self.raw_conf = self.get_conf()
-        if 'dotconf' in self.options:
-            self.conf = self.raw_conf
-        else:
-            self.conf = self.raw_conf.get('Napix')
+        self.conf = self.get_conf()
+
+        if 'loggers' in self.options:
+            self.set_extra_loggers()
 
         self.service_name = self.get_service_name()
         self.hosts = self.get_hostnames()
 
+        console.info('Napix version %s', __version__)
         console.info('Napixd Home is %s', get_path())
-        console.info('Options are %s', ','.join(self.options))
+        console.info('Options are %s', ','.join(sorted(self.options)))
         console.info('Starting process %s', os.getpid())
-        console.info('Logging activity in %s', self.LOG_FILE)
         console.info('Service Name is %s', self.service_name)
 
     def get_conf(self):
+        """
+        Get the configuration from the configuration file.
+
+        It set the default conf instance by calling :meth:`napixd.conf.BaseConf.set_default`.
+        """
         logger.info('Loading configuration')
         paths = [
             get_path('conf/'),
@@ -203,12 +160,16 @@ Meta-options:
                 from napixd.conf.dotconf import ConfFactory
             except ImportError:
                 raise CannotLaunch('dotconf option requires the external library dotconf')
-            loader = ConfLoader(paths, ConfFactory())
-            conf = loader()
+            factory = ConfFactory()
         else:
-            from napixd.conf.json import ConfFactory, CompatConf
-            loader = ConfLoader(paths, ConfFactory())
-            conf = CompatConf(loader())
+            from napixd.conf.json import CompatConfFactory
+            factory = CompatConfFactory()
+
+        loader = ConfLoader(paths, factory)
+        try:
+            conf = loader()
+        except ValueError as e:
+            raise CannotLaunch('Cannot load conf: {0}'.format(e))
 
         return Conf.set_default(conf)
 
@@ -237,26 +198,30 @@ Meta-options:
             print self.HELP_TEXT
             return 1
         if 'options' in self.options:
-            print 'Enabled options are: ' + ' '.join(self.options)
+            print 'Enabled options are: ' + ' '.join(sorted(self.options))
             return
 
         self._patch_gevent()
         app = self.get_app()
 
-        logger.info('Starting')
+        console.info('Starting')
         try:
             if 'app' in self.options:
                 server_options = self.get_server_options()
                 application = self.apply_middleware(app)
 
-                logger.info('Listening on %s:%s',
-                            server_options['host'], server_options['port'])
+                console.info('Listening on %s:%s',
+                             server_options['host'], server_options['port'])
 
                 adapter_class = server_options.pop('server', None)
                 if not adapter_class:
                     raise CannotLaunch('No server available')
 
                 adapter = adapter_class(server_options)
+
+                if self.options.unchecked:
+                    console.warning('Unchecked Options are: %s',
+                                    ','.join(sorted(self.options.unchecked)))
                 adapter.run(application)
         finally:
             console.info('Stopping')
@@ -319,27 +284,35 @@ Meta-options:
                 from napixd.auth.central import CentralAuthProvider
             except ImportError:
                 raise CannotLaunch('Central authentication requires permissions')
-            providers.append(CentralAuthProvider.from_settings(self.service_name, conf))
+            central_provider = CentralAuthProvider.from_settings(self.service_name, conf)
+            providers.append(central_provider)
+            self.extra_web_client['auth_server'] = central_provider.host
             logger.info('Enable central server authentication')
 
         return providers
 
     def get_auth_sources(self, conf):
-        from napixd.auth.sources import SecureAuthProtocol, NonSecureAuthProtocol
+        from napixd.auth.sources import (
+            SecureAuthProtocol,
+            NonSecureAuthProtocol,
+        )
         sources = [SecureAuthProtocol()]
         if not 'secure' in self.options:
             sources.append(NonSecureAuthProtocol.from_settings(conf))
             logger.info('Enable authentication by tokens')
+        if 'jwt' in self.options:
+            from napixd.auth.jwt import JSONWebToken
+            sources.append(JSONWebToken())
         return sources
 
-    def get_napixd(self, server):
+    def get_napixd(self, router):
         """
         Return the main application for the napixd server.
         """
-        from napixd.application import NapixdBottle
+        from napixd.application import Napixd
         from napixd.loader import Loader
         self.loader = loader = Loader(self.get_loaders())
-        napixd = NapixdBottle(loader=loader, server=server)
+        napixd = Napixd(loader, router)
 
         return napixd
 
@@ -349,7 +322,7 @@ Meta-options:
         used to find the managers.
         """
         if 'test' in self.options:
-            from napixd.loader import FixedImporter
+            from napixd.loader.importers import FixedImporter
             return [FixedImporter({
                 'root': 'napixd.examples.k132.Root',
                 'host': (
@@ -358,16 +331,19 @@ Meta-options:
                     })
             })]
 
-        from napixd.loader import AutoImporter, ConfImporter
         loaders = []
 
         if 'conf' in self.options:
-            ci = ConfImporter(self.conf.get('managers'), self.raw_conf)
+            from napixd.loader.importers import ConfImporter
+            ci = ConfImporter(self.conf.get('managers'), self.conf)
             loaders.append(ci)
+
         if 'auto' in self.options:
+            from napixd.loader.auto import AutoImporter
             auto_path = get_path('auto')
             logger.info('Using %s as auto directory', auto_path)
             loaders.append(AutoImporter(auto_path))
+
         return loaders
 
     def install_plugins(self, router):
@@ -398,6 +374,12 @@ Meta-options:
             router.add_filter(self.auth_handler)
         else:
             self.auth_handler = None
+
+        if 'wait' in self.options:
+            from napixd.plugins.times import WaitPlugin
+            wait = self.conf.get('wait', 1000, type=(float, int))
+            logger.info('Waiting for %sms', wait)
+            router.add_filter(WaitPlugin(wait))
 
         return router
 
@@ -432,8 +414,8 @@ Meta-options:
         """
         from napixd.http.server import WSGIServer
         server = WSGIServer()
-        self.install_plugins(server.router)
-        napixd = self.get_napixd(server)
+        router = self.install_plugins(server.push())
+        napixd = self.get_napixd(router)
 
         # attach autoreloaders
         if 'reload' in self.options:
@@ -451,6 +433,7 @@ Meta-options:
                 napixd, conf, self.service_name, self.hosts[0],
                 self.conf.get('description'))
             notifier.start()
+            self.extra_web_client['directory_server'] = notifier.directory
         else:
             self.notifier = None
 
@@ -463,11 +446,11 @@ Meta-options:
         if 'webclient' in self.options:
             self.web_client = self.get_webclient()
             if self.web_client:
-                self.web_client.setup_bottle(napixd.server)
+                self.web_client.setup_bottle(server)
         else:
             self.web_client = None
 
-        return napixd.server
+        return server
 
     def apply_middleware(self, application):
         """
@@ -503,7 +486,11 @@ Meta-options:
         """
         self._patch_gevent()
         application = self.get_app()
-        return self.apply_middleware(application)
+        application = self.apply_middleware(application)
+        if self.options.unchecked:
+            logger.warning('Unchecked Options are: %s',
+                           ','.join(sorted(self.options.unchecked)))
+        return application
 
     def get_server(self):
         """
@@ -524,7 +511,7 @@ Meta-options:
         return self.DEFAULT_HOST
 
     def get_port(self):
-        return self.keys.port
+        return self.keys.get('port') or self.DEFAULT_PORT
 
     def get_server_options(self):
         self.server = server = self.get_server()
@@ -548,13 +535,21 @@ Meta-options:
     def get_webclient(self):
         webclient_path = self.get_webclient_path()
         if not webclient_path:
-            logger.warning('No webclient path found')
-            return
+            logger.error('No webclient path found')
+            raise CannotLaunch('Option webclient is enabled but there is not webclient path')
 
         from napixd.webclient import WebClient
         logger.info('Using %s as webclient', webclient_path)
-        return WebClient(webclient_path, self,
-                         generate_docs='docs' in self.options)
+        return WebClient(webclient_path, self.get_webclient_infos(), docs=self.doc,
+                         index=self.conf.get('webclient.index', 'index.html', type=unicode))
+
+    def get_webclient_infos(self):
+        infos = {
+            'name': self.service_name,
+            'version': __version__,
+        }
+        infos.update(self.extra_web_client)
+        return infos
 
     def get_webclient_path(self):
         """
@@ -565,50 +560,101 @@ Meta-options:
             self.conf.get('webclient.path'),
             get_path('web', create=False),
             os.path.join(os.path.dirname(module_file), 'web'),
-            os.path.join(os.path.dirname(__file__), 'web'),
+            os.path.join(os.path.dirname(napixd.__file__), 'web'),
         ]
         for directory in directories:
             logger.debug('Try WebClient in directory %s', directory)
             if directory and os.path.isdir(directory):
                 return directory
 
+    def get_log_file(self):
+        if hasattr(self, 'LOG_FILE'):
+            import warnings
+            warnings.warn('Use get_log_file instead of LOG_FILE')
+            return self.LOG_FILE
+        return get_file('log/napix.log')
+
+    def get_logger_file(self):
+        lf = self.get_log_file()
+        file_handler = logging.handlers.RotatingFileHandler(
+            lf,
+            maxBytes=5 * 10 ** 6,
+            backupCount=10,
+        )
+        console.info('Writing logs in %s', lf)
+
+        formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel(
+            logging.DEBUG if 'verbose' in self.options else logging.INFO)
+
+        return file_handler
+
+    def get_logger_console_formatter(self):
+        if 'colors' in self.options:
+            from napixd.utils.logger import ColoredLevelFormatter
+            return ColoredLevelFormatter('%(levelname)8s [%(name)s] %(message)s')
+        else:
+            return logging.Formatter('%(levelname)8s [%(name)s] %(message)s')
+
+    def get_logger_console(self):
+        formatter = self.get_logger_console_formatter()
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        console_handler.setLevel(
+            logging.DEBUG if 'verbose' in self.options else logging.INFO)
+
+        return console_handler
+
+    def get_loggers(self):
+        log_handlers = []
+        if not 'silent' in self.options:
+            ch = self.get_logger_console()
+            log_handlers.append(ch)
+        if 'logfile' in self.options:
+            lfh = self.get_logger_file()
+            log_handlers.append(lfh)
+
+        return log_handlers
+
     def set_loggers(self):
         """
         Defines the loggers
         """
-        formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        self.set_log_console()
+        from napixd.utils.logger import NullHandler
 
-        self.log_file = file_handler = logging.handlers.RotatingFileHandler(
-            self.LOG_FILE,
-            maxBytes=5 * 10 ** 6,
-            backupCount=10,
-        )
-        file_handler.setLevel(
-            logging.DEBUG
-            if 'verbose' in self.options else
-            logging.WARNING
-            if 'silent' in self.options else
-            logging.INFO)
-        file_handler.setFormatter(formatter)
+        logger = logging.getLogger('Napix')
+        logger.setLevel(logging.DEBUG)
+        self.log_handlers = self.get_loggers() or [NullHandler()]
 
-        self.console = console_handler = logging.StreamHandler()
-        console_handler.setLevel(
-            logging.DEBUG
-            if 'verbose' in self.options else
-            logging.WARNING
-            if 'silent' in self.options else
-            logging.INFO)
+        for lh in self.log_handlers:
+            logger.addHandler(lh)
 
-        console_handler.setFormatter(formatter)
+    def set_log_console(self):
+        console.setLevel(logging.DEBUG if 'verbose' in self.options else logging.INFO)
+        if 'silent' in self.options:
+            from napixd.utils.logger import NullHandler
+            h = NullHandler()
+        else:
+            h = logging.StreamHandler()
+            console.propagate = False
+        console.addHandler(h)
 
-        logging.getLogger('Napix').setLevel(logging.DEBUG)
-        logging.getLogger('Napix').addHandler(console_handler)
-        logging.getLogger('Napix').addHandler(file_handler)
+    def set_extra_loggers(self):
+        loggers = self.conf.get('loggers')
 
-        if 'silent' not in self.options:
-            if 'verbose' in self.options:
-                logging.getLogger('Napix.console').setLevel(logging.DEBUG)
-            else:
-                logging.getLogger('Napix.console').setLevel(logging.INFO)
-            logging.getLogger('Napix.console').addHandler(
-                logging.StreamHandler())
+        if not loggers:
+            logger.debug('No extra loggers')
+        else:
+            for ns, level_name in loggers.items():
+                logger.info('Adding %s at level %s', ns, level_name)
+                l = logging.getLogger(ns)
+                level = getattr(logging, level_name.upper(), None)
+                if not level:
+                    logger.error('Level %s does not exists', level)
+                    continue
+                l.propagate = False
+                l.setLevel(level)
+                for lh in self.log_handlers:
+                    l.addHandler(lh)

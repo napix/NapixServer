@@ -12,7 +12,7 @@ NapixID is stored in :file:`HOME/napixd_id`.
     for the running Napix instance.
     The ID will stay the same between two runs of this instance.
 
-    The ID will change on the same server if used with another **HOME**.
+    The ID will change on the same server if used with another :data:`napixd.HOME`.
 
 """
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-import unittest2
+import unittest
 import mock
 
 from napixd.http.response import Response
@@ -10,7 +10,7 @@ from napixd.managers.base import ManagerType, Manager
 from napixd.managers.views import view, content_type
 
 
-class TestDecorators(unittest2.TestCase):
+class TestDecorators(unittest.TestCase):
     def test_set_view(self):
         @view('text', content_type='text/plain')
         def as_text(self, resource, response):
@@ -47,6 +47,16 @@ class TestDecorators(unittest2.TestCase):
         as_text(None, None, resp)
         resp.set_header.assert_called_once_with('Content-Type', 'text/plain; charset=utf-8')
 
+    def test_content_type_text_yaml(self):
+        @view('yaml', content_type='text/yaml')
+        def as_text(self, resource, response):
+            return '''base:\n  '*':\n    station\n'''
+
+        resp = mock.Mock(spec=Response, headers={})
+        r = as_text(None, None, resp)
+        resp.set_header.assert_called_once_with('Content-Type', 'text/yaml')
+        self.assertEqual(r, '''base:\n  '*':\n    station\n''')
+
     def test_content_type(self):
         @view('text', content_type='text/plain')
         def as_text(self, resource, response):
@@ -67,7 +77,7 @@ class TestDecorators(unittest2.TestCase):
         resp.set_header.assert_called_once_with('Content-Type', 'application/pip+pampoum')
 
 
-class TestManagerView(unittest2.TestCase):
+class TestManagerView(unittest.TestCase):
 
     def setUp(self):
         @view('object')
@@ -81,7 +91,7 @@ class TestManagerView(unittest2.TestCase):
         })
 
     def test_class_with_views(self):
-        self.assertDictEqual(self.manager.get_all_formats(), {
+        self.assertEqual(self.manager.get_all_formats(), {
             'object': self.as_object,
         })
 
@@ -93,7 +103,7 @@ class TestManagerView(unittest2.TestCase):
             'as_xml': as_xml
         })
 
-        self.assertDictEqual(other_manager.get_all_formats(), {
+        self.assertEqual(other_manager.get_all_formats(), {
             'object': self.as_object,
             'xml': as_xml,
         })

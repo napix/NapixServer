@@ -33,7 +33,7 @@ class ManagerType(type):
 
     * resource_fields transformation
 
-    It instanciates a :class:`resource_fields.ResourceFields`
+    It instantiates a :class:`resource_fields.ResourceFields`
     property for the `Manager.resource_fields` attribute.
 
     * Forwarding of :mod:`~napixd.managers.actions` and :mod`~napixd.managers.views`
@@ -140,6 +140,13 @@ class ManagerType(type):
             cls=self.__name__,
             name=self.get_name(),
         )
+
+    def implements(self):
+        """
+        Returns a set of implemented methods.
+        """
+        base = set(attr for attr in dir(self) if not attr.startswith('_'))
+        return base.intersection(ManagerInterface.__dict__)
 
 
 class Manager(object):
@@ -340,7 +347,7 @@ class Manager(object):
             name = name[:-len('manager')]
         return name
 
-    def __init__(self, context, request):
+    def __init__(self, context, napix_context):
         """
         intialize the Manager with the wrapped resource *context* creating it
 
@@ -358,7 +365,8 @@ class Manager(object):
 
         """
         self.context = context
-        self.request = request
+        self.napix_context = napix_context
+        self.request = napix_context.request
 
     def __repr__(self):
         return '<Manager {module}:{cls} `{name}` of "{context}">'.format(
@@ -437,26 +445,34 @@ class Manager(object):
         By default, this method checks if the id is not an empty string.
         """
         if id_ == '':
-            raise ValidationError
+            raise ValidationError('A non empty ID is expected')
         return id_
 
     def validate_resource(self, resource_dict, origin=None):
         """
         Validates a resource_dict (which can be directly a dict or an object
-        emulating a dict) by checking that every mandatory field specified
-        in self.resource_fields is defined.
+        emulating a dict) by checking that every mandatory field specified in
+        :attr:`resource_fields` is defined.
 
         If the current object implement :meth:`validate_resource_FIELDNAME`
-        method, it'll be called with the value of resource_dict[FIELDNAME]
-        as parameters.
-        It shoud raise a :exc:`napixd.exceptions.ValidationError`
+        method, it'll be called with the value of resource_dict[FIELDNAME] as
+        parameters.  It shoud raise a :exc:`napixd.exceptions.ValidationError`
         if the data isn't valid, else it must return a valid value
 
-        Return a resource_dict.
+        Returns a resource_dict.
         """
         return resource_dict
 
     def validate(self, resource_dict, original=None):
+        """
+        Validates the resource.
+
+        First, it calls the :class:`napixd.managers.resource_fields.ResourceFieldsDescriptor.validate`,
+        then it calls :meth:`validate_resource`. If there is an *original*
+        object given, a :class:`napixd.managers.changeset.DiffDict` is
+        computed with the original and proposed object.
+
+        """
         # Create a new dict to populate with validated data
         if original is not None:
             serialized = self.serialize(original)
@@ -466,34 +482,6 @@ class Manager(object):
         else:
             resource_dict = self._resource_fields.validate(resource_dict, None)
         return self.validate_resource(resource_dict, original)
-
-    def end_managed_request(self, request, resource):
-        """
-        Place holder method which is called
-        after a http request
-        when the class act as a managed class for the given resource
-        """
-        pass
-
-    def start_managed_request(self, request, resource):
-        """
-        Place holder method which is called
-        before a http request
-        when the class act as a managed class for the given resource
-        """
-        pass
-
-    def start_request(self, request):
-        """
-        place holder method that is called at the start of each HTTP request
-        """
-        pass
-
-    def end_request(self, request):
-        """
-        place holder method that is called at the end of each HTTP request
-        """
-        pass
 
 
 class ManagerInterface(object):

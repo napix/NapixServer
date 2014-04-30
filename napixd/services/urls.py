@@ -18,6 +18,9 @@ class URL(object):
     def __init__(self, segments=None):
         self.segments = segments or []
 
+    def __eq__(self, other):
+        return isinstance(other, URL) and self.segments == other.segments
+
     @classmethod
     def _from(cls, orig, addition):
         segments = list(orig.segments)
@@ -48,7 +51,14 @@ class URL(object):
         return u'/'.join(urls)
 
     def _quote(self, value):
-        return urllib.quote(unicode(value), '')
+        try:
+            return urllib.quote(unicode(value).encode('utf-8'), '')
+        except UnicodeDecodeError:
+            if isinstance(value, str):
+                raise TypeError('Resource id "{0}" is not an unicode string'
+                                'but contains non-ascii characters'.format(
+                                    value))
+            raise
 
     def reverse(self, ids):
         """

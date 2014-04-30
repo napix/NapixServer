@@ -1,38 +1,13 @@
-==============
 napixd Package
 ==============
 
-Loading
-=======
+:mod:`napixd` Package
+---------------------
 
-:mod:`auto` Module
-------------------
-
-.. automodule:: napixd.auto
+.. automodule:: napixd.__init__
     :members:
     :undoc-members:
     :show-inheritance:
-
-:mod:`launcher` Module
-----------------------
-
-.. automodule:: napixd.launcher
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-HTTP Binding
-============
-
-:mod:`wsgi` Module
-------------------
-
-The napixd.wsgi module contains the WSGI application.
-
-.. data:: application
-
-   The napixd WSGI application.
-   The parameters are extracted from :data:`sys.argv`
 
 :mod:`application` Module
 -------------------------
@@ -42,39 +17,10 @@ The napixd.wsgi module contains the WSGI application.
     :undoc-members:
     :show-inheritance:
 
-Daemon
-======
+:mod:`auto` Module
+------------------
 
-:mod:`gevent_tools` Module
---------------------------
-
-.. automodule:: napixd.gevent_tools
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`reload` Module
---------------------
-
-.. automodule:: napixd.reload
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-Utils
-=====
-
-:mod:`templates` Module
------------------------
-
-.. automodule:: napixd.templates
-   :members:
-
-
-:mod:`napixd` Package
----------------------
-
-.. automodule:: napixd
+.. automodule:: napixd.auto
     :members:
     :undoc-members:
     :show-inheritance:
@@ -87,8 +33,21 @@ Utils
     :undoc-members:
     :show-inheritance:
 
-Napix Infrastructure
-====================
+:mod:`exceptions` Module
+------------------------
+
+.. automodule:: napixd.exceptions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`gevent_tools` Module
+--------------------------
+
+.. automodule:: napixd.gevent_tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 :mod:`guid` Module
 ------------------
@@ -98,10 +57,10 @@ Napix Infrastructure
     :undoc-members:
     :show-inheritance:
 
-:mod:`exceptions` Module
-------------------------
+:mod:`launcher` Module
+----------------------
 
-.. automodule:: napixd.exceptions
+.. automodule:: napixd.launcher
     :members:
     :undoc-members:
     :show-inheritance:
@@ -114,6 +73,22 @@ Napix Infrastructure
     :undoc-members:
     :show-inheritance:
 
+:mod:`reload` Module
+--------------------
+
+.. automodule:: napixd.reload
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`thread_manager` Module
+----------------------------
+
+.. automodule:: napixd.thread_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`webclient` Module
 -----------------------
 
@@ -122,20 +97,40 @@ Napix Infrastructure
     :undoc-members:
     :show-inheritance:
 
+:mod:`wsgi` Module
+------------------
+
+.. data:: application
+
+    The napixd WSGI application.
+    The parameters are extracted from :data:`sys.argv`
+
+
+:mod:`wsgiref` Module
+---------------------
+
+.. automodule:: napixd.wsgiref
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
-===========
+-----------
 
 .. toctree::
 
+    napixd.auth
     napixd.client
     napixd.conf
     napixd.contrib
     napixd.docs
+    napixd.examples
     napixd.http
     napixd.loader
     napixd.managers
     napixd.plugins
     napixd.services
     napixd.store
+    napixd.templates
     napixd.utils
 

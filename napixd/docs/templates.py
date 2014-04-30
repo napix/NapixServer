@@ -17,7 +17,9 @@ class LoaderDocTemplate(object):
     The base template for a :class:`napixd.loader.loader.Loader` instance.
     """
     def __init__(self, loader):
-        self.root_managers = map(RootDocTemplate, loader.managers)
+        self.root_managers = [
+            RootDocTemplate(manager, set())
+            for manager in loader.managers]
 
     def render(self, context):
         return [rm.render(context) for rm in self.root_managers]
@@ -27,14 +29,19 @@ class DocTemplate(object):
     """
     A base class for managers classes.
     """
-    def __init__(self, manager):
+    def __init__(self, manager, seen):
         self.manager = manager
         self.resource_doc = ResourceDocTemplate(manager)
         self.collection_doc = CollectionDocTemplate(manager)
         self.fields_doc = ResourceFieldsDocTemplate(manager._resource_fields)
-        self.sub_managers_docs = [ManagedClassDocTemplate(managed_class)
-                                  for managed_class
-                                  in manager.get_managed_classes()]
+        if manager in seen:
+            self.sub_managers_docs = []
+        else:
+            seen.add(manager)
+            self.sub_managers_docs = [ManagedClassDocTemplate(managed_class, seen)
+                                      for managed_class
+                                      in manager.get_managed_classes()
+                                      ]
 
     def render(self, context):
         return {
@@ -53,8 +60,8 @@ class RootDocTemplate(DocTemplate):
     All sub-managers and their sub-managers are rendered
     by a :class:`ManagedClassDocTemplate`
     """
-    def __init__(self, manager_import):
-        super(RootDocTemplate, self).__init__(manager_import.manager)
+    def __init__(self, manager_import, seen):
+        super(RootDocTemplate, self).__init__(manager_import.manager, seen)
         self.alias = manager_import.alias
 
     def render(self, context):
@@ -71,9 +78,9 @@ class RootDocTemplate(DocTemplate):
 
 
 class ManagedClassDocTemplate(DocTemplate):
-    def __init__(self, managed_class):
+    def __init__(self, managed_class, seen):
         super(ManagedClassDocTemplate, self).__init__(
-            managed_class.manager_class)
+            managed_class.manager_class, seen)
         self.alias = managed_class.get_name()
 
     def render(self, context):

@@ -5,11 +5,22 @@ managers Package
 -----------------------
 
 .. automodule:: napixd.managers
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-:mod:`base` Module
-------------------
+:mod:`actions` Module
+---------------------
 
-.. automodule:: napixd.managers.base
+.. automodule:: napixd.managers.actions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`changeset` Module
+-----------------------
+
+.. automodule:: napixd.managers.changeset
     :members:
     :undoc-members:
     :show-inheritance:
@@ -18,14 +29,6 @@ managers Package
 ---------------------
 
 .. automodule:: napixd.managers.default
-    :members:
-    :undoc-members:
-
-
-:mod:`changeset` Module
------------------------
-
-.. automodule:: napixd.managers.changeset
     :members:
     :undoc-members:
     :show-inheritance:
@@ -54,22 +57,6 @@ managers Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`validators` Module
-------------------------
-
-.. automodule:: napixd.managers.validators
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`actions` Module
----------------------
-
-.. automodule:: napixd.managers.actions
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`views` Module
 -------------------
 
@@ -77,4 +64,11 @@ managers Package
     :members:
     :undoc-members:
     :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+
+    napixd.managers.validators
 

@@ -33,7 +33,7 @@ All the managers after the first are *sub-managers*.
 They hold a :attr:`~napixd.managers.base.Manager.parent` property
 that link to the resource that spawned them.
 
-For instance: ``/host/127.0.0.1/ports/``, ``/ports/`` sub-manager has been instanciated
+For instance: ``/host/127.0.0.1/ports/``, ``/ports/`` sub-manager has been instantiated
 with the resource ``/host/127.0.0.1``.
 
 

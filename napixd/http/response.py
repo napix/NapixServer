@@ -8,16 +8,25 @@ from cStringIO import StringIO
 
 from napixd.http.headers import HeadersDict
 
+__all__ = [
+    'Response',
+    'HTTPResponse',
+    'HTTPError',
+    'HTTP403',
+    'HTTP404',
+    'HTTP405',
+]
+
 
 class Response(object):
     """
     HTTP response object used for custom HTTP responses.
 
-    This class implements the :class:`file` interface for its body,
-    and has :meth:`set_header` for the HTTP headers.
+    This class implements the :class:`file` interface for its body, and has
+    :meth:`set_header` for the HTTP headers.
 
-    It is meant to be used with :mod:`napixd.manager.views` and
-    be given to methods like :meth:`json.dump`, :meth:`PIL.Image.save` or
+    It is meant to be used with :mod:`napixd.managers.views` and be given to
+    methods like :meth:`json.dump`, :meth:`PIL.Image.save` or
     :class:`reportlab.platypus.SimpleDocTemplate`.
 
     .. attribute:: headers
@@ -70,19 +79,16 @@ class Response(object):
 
 class HTTPResponse(object):
     """
-    HTTPResponse(body)
-    HTTPResponse(header, body)
-    HTTPResponse(status, header, body)
+    HTTPResponse([[status,] headers,] body)
 
     A HTTP response.
 
-    **status** is the status of the response.
-    **headers** is a mapping of HTTP headers.
-    **body** is the content of the response.
+    *status* is the status of the response, by default 200.
+    *headers* is a mapping of HTTP headers.
+    *body* is the content of the response.
 
-    If body is a :class:`HTTPResponse` or a :class:`HTTPError`,
-    the headers are merged with the given headers
-    and the body of the original object is used.
+    If body is a :class:`HTTPResponse` or a :class:`HTTPError`, the headers are
+    merged with the given headers and the body of the original object is used.
     If the status is not specified, the status of the response is used.
     """
     def __init__(self, *args):
@@ -141,7 +147,7 @@ class HTTPError(BaseException):
 
     *status* is the status response.
 
-    Body is a line of text or a more complex object.
+    *body* is a line of text or a more complex object.
     """
     def __init__(self, status, body='', **headers):
         self.status = status
@@ -151,16 +157,27 @@ class HTTPError(BaseException):
 
 
 class HTTP403(HTTPError):
+    """
+    403 Forbidden
+    """
     def __init__(self):
         super(HTTP403, self).__init__(403, 'The access to this page is forbidden')
 
 
 class HTTP404(HTTPError):
+    """
+    404 Not found
+    """
     def __init__(self, text=''):
         super(HTTP404, self).__init__(404, text or 'ERROR 404: The requested page does not exists')
 
 
 class HTTP405(HTTPError):
+    """
+    405 Not allowed HTTP Error.
+
+    It takes a list of allowed HTTP methods.
+    """
     def __init__(self, allowed):
         super(HTTP405, self).__init__(405,
                                       'ERROR 405: The method is not allowed',

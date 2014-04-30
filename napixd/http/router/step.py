@@ -15,6 +15,14 @@ after a call to :meth:`RouterStep.unroute` removes all the routes in a child ste
 
 import urllib
 
+__all__ = [
+    'RouterStep',
+    'CatchAllRouterStep',
+    'URLTarget',
+    'ResolvedRequest',
+    'RouteTaken',
+]
+
 
 class URLTarget(object):
     """
@@ -31,7 +39,7 @@ class URLTarget(object):
     def __init__(self, target):
         self.arguments = []
         self._target = target.split('/')
-        if self._target[0] != '':
+        if self._target[0] != u'':
             raise ValueError('Path does not start with a /')
         self._idx = 0
         self._len = len(self._target) - 1
@@ -65,7 +73,7 @@ class URLTarget(object):
         """
         Add an argument to the list of :attr:`arguments`.
         """
-        self.arguments.append(urllib.unquote(arg))
+        self.arguments.append(urllib.unquote(arg).decode('utf-8'))
 
 
 class RouteTaken(Exception):
@@ -96,14 +104,30 @@ class RouterStep(object):
     """
     A path bit.
 
-    Each :class:`RouterStep` handles the path without the '/'
-    and delegates to children class:`RouterStep` for the path.
+    Each :class:`RouterStep` handles the path without the '/' and delegates to
+    children :class:`RouterStep` for the path.
     """
     def __init__(self):
         # _fixed, the map of the static paths token
         self._fixed = {}
         # Callback associated to this '/'
         self._callback = None
+
+    def __repr__(self, level=0):
+        paths = []
+        if self._callback is not None:
+            paths.append('=> {0}'.format(self._callback.__name__))
+        for route, rs in self._fixed.items():
+            if route == '?':
+                continue
+
+            if len(rs._fixed) == 0:
+                paths.append('{0} {1}'.format(route or '/', repr(rs)))
+            else:
+                paths.append('{0} ->\n{1}'.format(route or '/', rs.__repr__(level=level+1)))
+        if '?' in self._fixed:
+            paths.append('* ->\n{0}'.format(self._fixed['?'].__repr__(level=level+1)))
+        return '\n'.join(' ' * level + path for path in paths)
 
     def __nonzero__(self):
         #A router is truthy if it has at least a rule
@@ -115,8 +139,8 @@ class RouterStep(object):
 
         *target* is an instance of :class:`URLTarget`
 
-        The *target*  can contain either full path bits that must be equal to match
-        or ``?`` to indicate a default route and save this as an argument.
+        The *target*  can contain either full path bits that must be equal to
+        match or ``?`` to indicate a default route and save this as an argument.
         Path bits are chosen first.
         """
         dest = next(target, None)
@@ -172,6 +196,16 @@ class RouterStep(object):
             if not router:
                 del self._fixed[dest]
 
+    def __contains__(self, target):
+        dest = next(target, None)
+        if dest is None:
+            return self._callback is not None
+        if dest in self._fixed:
+            return target in self._fixed[dest]
+        if (dest == '' and '?' in self._fixed and
+                isinstance(self._fixed['?'], CatchAllRouterStep)):
+            return True
+        return False
 
     def resolve(self, target):
         """
@@ -215,8 +249,14 @@ class CatchAllRouterStep(object):
     def __init__(self, callback):
         self._callback = callback
 
+    def __contains__(self, target):
+        return False
+
     def __nonzero__(self):
         return self._callback is not None
+
+    def __repr__(self, level=0):
+        return '{pad}** -> {0}'.format(self._callback.__name__, pad=' ' * level)
 
     def unroute(self, route, all):
         if route:

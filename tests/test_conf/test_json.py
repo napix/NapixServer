@@ -148,11 +148,19 @@ class TestCompatConf(unittest.TestCase):
         self.conf = CompatConf(Conf({
             'Napix': {
                 'service': 'napix.io',
+                'notify': {
+                    'url': 'http://directory.napix.io/directory/',
+                }
             },
             'local': {
                 'hostname': 'napix.io'
             }
         }))
+
+    def test_dict(self):
+        conf = self.conf.get('notify')
+        self.assertTrue(isinstance(conf, Conf))
+        self.assertEqual(conf['url'],  'http://directory.napix.io/directory/')
 
     def test_compat_napix(self):
         self.assertEqual(self.conf.get('service'), 'napix.io')

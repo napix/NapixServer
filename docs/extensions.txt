@@ -5,19 +5,20 @@
 Managers Extensions
 ===================
 
-Napix allows to write quickly managers that can do CRUD operations with JSON objects.
-This page deals with extensions to those CRUD operations: the :ref:`actions<actions>`
-that allow arbitrary operation with arbitrary parameters and the :ref:`views<views>`
-that let the resources to be presented as arbitrary file types.
+Napix allows to write quickly managers that can do CRUD operations with JSON
+objects.  This page deals with extensions to those CRUD operations: the
+:ref:`actions<actions>` that allow arbitrary operation with arbitrary parameters
+and the :ref:`views<views>` that let the resources to be presented as arbitrary
+file types.
 
-This page assumes that a Napix server runs on ``localhost:8002``
-with this simple manager:  :download:`/samples/extensions.py`::
+This page assumes that a Napix server runs on ``localhost:8002`` with this
+simple manager:  :download:`/samples/extensions.py`::
 
     $ virtualenv action_example
     $ cd action_example
     $ source bin/activate
-    (napix)$ pip install http://builds.napix.io/latest/napixd dotconf pyinotify
-    (napix)$ napixd only
+    (napix)$ pip install -i http://pi.enix.org/ napixd dotconf pyinotify
+    (napix)$ napixd dotconf noauth
 
 This very simple manager show the content of the :file:`/etc/hosts` file.
 The resource are identified by the first hostname and contains
@@ -123,19 +124,10 @@ The ``doc`` key gives the docstring of the method, ``mandatory`` lists the manda
         }
     }
 
-Calling the action
-------------------
-
-In order to call an action, send a dict containing the desired parameters to the action URL::
-
-    >> action /hosts/localhost scan port=22
-    OPEN
-    >> action /hosts/localhost scan port=4352
-    CLOSED
-
-The data returned by the action are encoded in JSON.
-
-The additional documentation on the parameters of the action can be set with :func:`action.parameter`
+The additional documentation on the parameters of the action can be set with
+:func:`action.parameter`. Those parameters are the same as the
+:attr:`managers.Manager.resource_fields`. They are described in
+:class:`resource_fields.ResourceField`.
 
 .. code-block:: python
 
@@ -143,7 +135,7 @@ The additional documentation on the parameters of the action can be set with :fu
         #...
         @action
         @parameter('port', description='The port to scan', example=22)
-        @parameter('timeout', description='The time to wait in seconds', example=1 )
+        @parameter('timeout', description='The time to wait in seconds', example=1)
         def scan(self, resource, port, timeout=1):
             #...
 
@@ -170,6 +162,20 @@ Now, the resource_fields dict of the help is populated.::
             }
         }
     }
+
+
+
+Calling the action
+------------------
+
+In order to call an action, send a dict containing the desired parameters to the action URL::
+
+    >> action /hosts/localhost scan port=22
+    OPEN
+    >> action /hosts/localhost scan port=4352
+    CLOSED
+
+The data returned by the action are encoded in JSON.
 
 .. _views:
 

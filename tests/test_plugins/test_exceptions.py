@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import unittest2
+import unittest
 import mock
 import functools
 
-from napix.exceptions import HTTPError
-
+from napixd.exceptions import RemoteError
 from napixd.plugins.exceptions import ExceptionsCatcher
 
 
-class TestExceptionCatcher(unittest2.TestCase):
+class TestExceptionCatcher(unittest.TestCase):
     def setUp(self):
         self.cb = mock.Mock()
         self.exc = ExceptionsCatcher(self.cb)
@@ -70,7 +69,7 @@ class TestExceptionCatcher(unittest2.TestCase):
             'traceback': [],
             'error_class': 'ValueError',
         }
-        err = HTTPError(request, cause, response)
+        err = RemoteError(request, cause, response)
 
         with mock.patch('napixd.plugins.exceptions.traceback') as traceback:
             traceback.extract_tb.return_value = [
@@ -88,7 +87,7 @@ class TestExceptionCatcher(unittest2.TestCase):
         request = 'GET server.napix.nx/captains'
         response = mock.Mock()
         cause = '403 Forbidden'
-        remote_error = HTTPError(request, cause, response)
+        remote_error = RemoteError(request, cause, response)
 
         with mock.patch('napixd.plugins.exceptions.traceback') as traceback:
             traceback.extract_tb.return_value = [

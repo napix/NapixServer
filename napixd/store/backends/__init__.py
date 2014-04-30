@@ -149,6 +149,13 @@ class BaseStore(collections.MutableMapping):
     def drop(self):
         raise NotImplementedError
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        if self.exception_type is None:
+            self.save()
+
 
 class Store(BaseStore):
 
@@ -169,7 +176,11 @@ class Store(BaseStore):
         return self.data.keys()
 
     def incr(self, key, incr=1):
-        self[key] += 1
+        try:
+            self[key] += 1
+        except KeyError:
+            self[key] = 1
+
         return self[key]
 
     def drop(self):

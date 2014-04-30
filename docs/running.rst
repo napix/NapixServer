@@ -151,3 +151,6 @@ Non-default
 :hosts:
     Check the HTTP Host header
     See :ref:`conf.hosts`
+
+:jwt:
+    Enable the :mod:`JSON Web Token Source<napixd.auth.jwt>`

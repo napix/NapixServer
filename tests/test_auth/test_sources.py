@@ -56,7 +56,7 @@ class TestSecureProtocol(unittest.TestCase):
 
     def test_misformated(self):
         self.headers['Authorization'] = 'this & that'
-        self.assertRaises(HTTPError, self.call)
+        self.assertTrue(self.call() is None)
 
     def test_missing_keys(self):
         self.headers['Authorization'] = 'path=/&host=server.napix.nx:sign'

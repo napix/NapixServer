@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
+"""
+The :mod:`dotconf` implementation of the config infrastructure.
+"""
+
 from __future__ import absolute_import
 
 from dotconf import Dotconf
@@ -14,6 +19,9 @@ from napixd import conf
 
 
 class ConfFactory(object):
+    """
+    :mod:`dotconf` factory.
+    """
     def get_filename(self):
         return 'settings.conf'
 
@@ -21,14 +29,21 @@ class ConfFactory(object):
         return self.parse_string(handle.read().decode('utf-8'))
 
     def parse_string(self, string):
+        if not string.endswith('\n'):
+            string += '\n'
         try:
             dc = Dotconf(string)
             return Conf(dc.parse())
         except ParsingError as e:
-            raise ValueError('Cannot parse string, {0}'.format(e))
+            raise ValueError('At {0.position}, Cannot parse string, {0}'.format(e))
 
 
 class Conf(conf.BaseConf):
+    """
+    This Conf class translate in dotconf semantics the config instructions.
+
+    It converts keys with a ' ' as sections lookups.
+    """
     def __init__(self, section):
         self.section = section
 
@@ -98,3 +113,21 @@ class Conf(conf.BaseConf):
             return ss[suffix]
 
         raise KeyError(key)
+
+    def __contains__(self, key):
+        value = self._get_own(key)
+        if value is not None:
+            return True
+
+        prefix, dot, suffix = key.partition('.')
+        if not dot:
+            return False
+
+        if ' ' in prefix:
+            prefix, dot, suffix = key.rpartition('.')
+
+        ss = self._subsection(prefix)
+        if ss is not None:
+            return suffix in ss
+
+        return False

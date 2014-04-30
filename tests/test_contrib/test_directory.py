@@ -8,12 +8,12 @@ import mock
 
 from napixd.contrib.directory import NapixDirectoryManager
 from napixd.http.request import Request
-from napixd.exceptions import NotFound, ValidationError
+from napixd.exceptions import NotFound
 
 
 class TestDirectory(unittest.TestCase):
     def setUp(self):
-        self.request = r = mock.Mock(spec=Request)
+        self.request = r = mock.Mock()
         self.ndm = NapixDirectoryManager(None, r)
         with mock.patch('napixd.contrib.directory.Store') as Store:
             self.ndm.configure({})

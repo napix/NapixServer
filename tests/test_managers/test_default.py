@@ -3,17 +3,16 @@
 
 from __future__ import absolute_import
 
-import unittest2
+import unittest
 import mock
 
 from napixd.managers.default import ReadOnlyDictManager, DictManager, FileManager
 from napixd.exceptions import NotFound, Duplicate
 from napixd.services.wrapper import ResourceWrapper
-from napixd.http.request import Request
 from napixd.managers.changeset import DiffDict
 
 
-class _TestDM(unittest2.TestCase):
+class _TestDM(unittest.TestCase):
 
     def setUp(self, kls, attrs=None):
         self.parent = mock.Mock()
@@ -29,7 +28,7 @@ class _TestDM(unittest2.TestCase):
         if attrs:
             values.update(attrs)
         Manager = type(kls)(kls.__name__, (kls, ), values)
-        self.request = mock.Mock(spec=Request)
+        self.request = mock.Mock()
         self.manager = Manager(self.parent, self.request)
 
 
@@ -39,10 +38,9 @@ class TestReadOnlyDict(_TestDM):
         super(TestReadOnlyDict, self).setUp(ReadOnlyDictManager)
 
     def test_list_resource(self):
-        self.assertSetEqual(
-            set(self.manager.list_resource()),
-            set(['one', 'three', 'two'])
-        )
+        self.assertEqual(
+            sorted(self.manager.list_resource()),
+            ['one', 'three', 'two'])
         self.spy_load.assert_called_once_with(self.parent)
 
     def test_return_not_dict(self):
@@ -53,17 +51,17 @@ class TestReadOnlyDict(_TestDM):
         self.assertRaises(NotFound, self.manager.get_resource, 'four')
 
     def test_get_resource(self):
-        self.assertDictEqual(
+        self.assertEqual(
             self.manager.get_resource('one'),
             {'french': 'un', 'german': 'eins'})
         self.spy_load.assert_called_once_with(self.parent)
 
     def test_reuse(self):
-        self.assertSetEqual(
-            set(self.manager.list_resource()),
-            set(['one', 'three', 'two'])
+        self.assertEqual(
+            sorted(self.manager.list_resource()),
+            ['one', 'three', 'two']
         )
-        self.assertDictEqual(
+        self.assertEqual(
             self.manager.get_resource('one'),
             {'french': 'un', 'german': 'eins'})
 
@@ -156,7 +154,7 @@ class MyFileManager(FileManager):
         return {'a': 1}
 
 
-class TestFileManager(unittest2.TestCase):
+class TestFileManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -167,7 +165,7 @@ class TestFileManager(unittest2.TestCase):
 
     def setUp(self):
         self.parent = mock.Mock()
-        self.request = mock.Mock(spec=Request)
+        self.request = mock.Mock()
         self.fm = MyFileManager(self.parent, self.request)
 
     def test_save(self):
@@ -211,14 +209,14 @@ class MyManager(DictManager):
         parent.save(resources)
 
 
-class TestHiddenFields(unittest2.TestCase):
+class TestHiddenFields(unittest.TestCase):
     def setUp(self):
         self.res = mock.Mock()
         self.res.load.return_value = {
             'abc': 123,
             'zip': 'zap'
         }
-        self.dm = MyManager(self.res, None)
+        self.dm = MyManager(self.res, mock.Mock())
 
     def test_get_resource(self):
         self.assertEqual(self.dm.get_resource('id'), {
@@ -235,5 +233,43 @@ class TestHiddenFields(unittest2.TestCase):
         dd = DiffDict({'abc': 123}, {'abc': 124, 'zip': 'zap'})
         self.dm.modify_resource(ResourceWrapper(self.dm, 'id', {'abc': 123}), dd)
 
-        self.dm.end_request(mock.Mock(method='POST'))
         self.res.save.assert_called_once_with({'id': {'abc': 124, 'zip': 'zap'}})
+
+
+class TestImplements(unittest.TestCase):
+    def test_implements(self):
+        class MyMGR(DictManager):
+            def save(self):
+                pass
+
+            def generate_new_id(self, rd):
+                pass
+
+        self.assertEqual(MyMGR.implements(), set([
+            'list_resource',
+            'get_resource',
+            'create_resource',
+            'delete_resource',
+            'modify_resource',
+        ]))
+
+    def test_implements_no_new_id(self):
+        class MyMGR(DictManager):
+            def save(self):
+                pass
+
+        self.assertEqual(MyMGR.implements(), set([
+            'list_resource',
+            'get_resource',
+            'delete_resource',
+            'modify_resource',
+        ]))
+
+    def test_implements_no_save(self):
+        class MyMGR(DictManager):
+            pass
+
+        self.assertEqual(MyMGR.implements(), set([
+            'list_resource',
+            'get_resource',
+        ]))

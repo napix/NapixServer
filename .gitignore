@@ -23,3 +23,5 @@ venv-*
 
 napix
 permissions
+.tox
+xunit

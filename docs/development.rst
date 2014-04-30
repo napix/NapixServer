@@ -18,22 +18,19 @@ Manager / DictManager / ListManager
 
 .. currentmodule:: napixd.managers
 
-All managers in Napix are sub-classes of :class:`base.Manager`.
-Napix proposes a set of classes inheriting of this class and exposing another interface.
+All managers in Napix are sub-classes of :class:`base.Manager`. Napix proposes a
+set of classes inheriting of this class and exposing another interface.
 
-To select the best suited interface for your project,
-you should consider the way the resources data and their ID are fetched.
+To select the best suited interface for your project, you should consider the way
+the resources data and their ID are fetched.
 
-When the resources are all fetched and written in one block,
-for example by parsing a file,
-the :class:`default.DictManager` is the best suited interface.
-It exposes a :meth:`default.DictManager.load` method to
-retrieve all the resources and a :meth:`default.DictManager.save` method
-to persist them all.
+When the resources are all fetched and written in one block, for example by
+parsing a file, the :class:`default.DictManager` is the best suited interface.
+It exposes a :meth:`default.DictManager.load` method to retrieve all the
+resources and a :meth:`default.DictManager.save` method to persist them all.
 
-When the resources are fetched one by one, for example DB record,
-then the classic :class:`base.Manager` class is better.
-It exposes 5 methods that handle
+When the resources are fetched one by one, for example DB record, then the
+classic :class:`base.Manager` class is better. It exposes 5 methods that handle
 :meth:`listing<base.ManagerInterface.list_resource>`,
 :meth:`fetching<base.ManagerInterface.get_resource>`,
 :meth:`creation<base.ManagerInterface.create_resource>`,
@@ -43,56 +40,59 @@ It exposes 5 methods that handle
 MutiManager
 ===========
 
-Managers can be stacked.
-A stacked manager depends on the resource of the previous manager.
+Managers can be stacked. A stacked manager depends on the resource of the previous
+manager.
 
-**Usecases**: A DNS server manager has a list of zones.
-There is a zone manager. Inside the zone there are records.
-The zone manager gets a record manager stacked inside.
+**Usecases**: A DNS server manager has a list of zones. There is a zone manager.
+Inside the zone there are records.  The zone manager gets a record manager
+stacked inside.
 
 
 The link between the manager and its parent
 -------------------------------------------
 
-If the stacked manager requires to modify the resource of the parent manager,
-or call methods, etc, then it's recommended to use a object instead of a dict in the parent.
+If the stacked manager requires to modify the resource of the parent manager, or
+call methods, etc, then it's recommended to use a object instead of a dict in
+the parent.
 
 The resource as returned by :meth:`base.Manager.get_resource` or
 :meth:`default.DictManager.load` is an object and the method
 :meth:`base.Manager.serialize` transform it into a dict.
 
-This will produce better looking code than doing query on a dict
-and help with type checking, etc.
+This will produce better looking code than doing query on a dict and help with
+type checking, etc.
 
 ===========================
 Writing the resource fields
 ===========================
 
-Napix requires that the managers declare the fields owned by the objects
-they produce and they receive.
-The resource_fields writing step is important in Napix as it forces
-the developper to lay his ideas and it serves as a first prototyping.
+Napix requires that the managers declare the fields owned by the objects they
+produce and they receive.  The resource_fields writing step is important in
+Napix as it forces the developper to lay his ideas and it serves as a first
+prototyping.
 
-The :attr:`~base.Manager.resource_fields` are listed as a :class:`dict` in the class.
-Each resource field is a :class:`dict` of the options and the meta data about this field.
+The :attr:`~base.Manager.resource_fields` are listed as a :class:`dict` in the
+class.  Each resource field is a :class:`dict` of the options and the meta data
+about this field.
 
 Read only fields
 ================
 
-When prototyping or in development or by choice, you can declare fields read-only.
-The read-only fields are filtered in the input but still appear in the ouptut.
+When prototyping or in development or by choice, you can declare fields
+read-only.  The read-only fields are filtered in the input but still appear in
+the ouptut.
 
-The :attr:`~resource_fields.ResourceField.computed` property
-declares a field read-only.
+The :attr:`~resource_fields.ResourceField.computed` property declares a field
+read-only.
 
 Meta data
 =========
 
-You can add any meta-data to your fields, including *display_order* or *description*.
-Values not recognized by the server are stored in the meta dict.
-:attr:`~resource_fields.ResourceField.extra` and recopied
-in the *_napix_help* section.
-Those values serves as a hint for the generic web interface, the users or the other developpers.
+You can add any meta-data to your fields, including *display_order* or
+*description*.  Values not recognized by the server are stored in the meta dict.
+:attr:`~resource_fields.ResourceField.extra` and recopied in the *_napix_help*
+section.  Those values serves as a hint for the generic web interface, the users
+or the other developpers.
 
 =====================
 Howto write a manager

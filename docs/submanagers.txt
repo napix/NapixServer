@@ -196,7 +196,7 @@ extractor
 ---------
 
 The extractor is a callback called with the parent and returning the arguments for the
-instanciation of the Sub manager.
+instantiation of the Sub manager.
 
 By default the extractor returns the parent.
 
@@ -206,7 +206,7 @@ for public and users permissions.
 An extractor in the *managed_class* of the :class:`UserManager` returns
 the permissions of the users.
 A root manager :class:`PublicPermissionsManager` inheriting of :class:`PermissionManager`
-instanciates it with the public permissions set ad context.
+instantiates it with the public permissions set ad context.
 
 Other uses includes the url permissions, for example, if you want to create groups of resources.
 For example, in :mod:`django` inspired code:
@@ -230,7 +230,7 @@ Thus you can set permissions to all the Cisco routers for Cisco professionals: `
 and by network for the admins of a specific subnet: ``/bynetwork/10.23.0.0-24/router/*``.
 
 
-Instanciate Managers
+Instantiate Managers
 ====================
 
 Dont do it.

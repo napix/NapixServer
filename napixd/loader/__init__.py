@@ -12,4 +12,3 @@ It uses :class:`importers.Importer` subclasses to find the its managers.
 """
 
 from napixd.loader.loader import Loader
-from napixd.loader.importers import AutoImporter, ConfImporter, FixedImporter

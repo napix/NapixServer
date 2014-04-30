@@ -7,8 +7,8 @@ class ManagedClass(object):
     """
     A managed class of a :class:`napixd.managers.base.Manager`.
 
-    It contains a Promise to a Manager object by its Python path.
-    The promise will be resolved with the final class by calling :meth`resolve`
+    It contains a Promise to a Manager object by its Python path. The promise
+    will be resolved with the final class by calling :meth:`resolve`
     """
 
     def __init__(self, manager_class, name='', extractor=None):
@@ -30,6 +30,9 @@ class ManagedClass(object):
             resolved=' resolved' if self.is_resolved() else '')
 
     def is_resolved(self):
+        """
+        Returns `True` if the :meth:`resolve` has be called.
+        """
         return self.manager_class is not None
 
     def resolve(self, cls):
@@ -41,6 +44,9 @@ class ManagedClass(object):
     def get_name(self):
         """
         Returns the name of the managed class.
+
+        It raises a :exc:`ValueError` if the class is not
+        :meth:`resolved<is_resolved>` yet.
         """
         if self.manager_class is None:
             raise ValueError('Managed class is not yet resolved')

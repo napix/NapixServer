@@ -7,7 +7,13 @@ import unittest
 import mock
 
 from napixd.conf import Conf
-from napixd.client.client import Client
+
+try:
+    import napix
+except ImportError:
+    __test__ = False
+else:
+    from napixd.client.client import Client
 
 
 class TestClient(unittest.TestCase):

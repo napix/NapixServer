@@ -4,7 +4,9 @@
 import hmac
 import hashlib
 
-__all__ = ('AutonomousAuthProvider', )
+__all__ = [
+    'AutonomousAuthProvider',
+]
 
 
 def decode(value):
@@ -17,15 +19,23 @@ class AutonomousAuthProvider(object):
     """
     This class implements the central protocol in local.
 
-    Requests signature is checked with the same hmac mechanism as the central does.
-    The requests is then granted if the signature matches else it's refused.
+    A local password is associated with a local username. If the request is
+    emitted by the local username, this providers will responds authoritatively.
+    Else it will let the other providers decide.
+
+    When the user using the local username emitted the request, he signed with
+    a shared password. The hash is checked with the password and if it matches,
+    the request is granted.
+
+    Users authenticated by the :class:`AutonomousAuthProvider` are granted all
+    the requests.
     """
     @classmethod
     def from_settings(cls, settings):
         login = settings.get('login', 'local_master')
         password = settings.get('password', None)
         if not password:
-            raise ValueError('password cannot be empty. Set Napix.auth.password')
+            raise ValueError(u'password cannot be empty. Set Napix.auth.password')
         return cls(login, password)
 
     def __init__(self, login, password):

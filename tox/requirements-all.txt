@@ -1,0 +1,4 @@
+-r requirements-gevent.txt
+dotconf
+http://builds.napix.io/latest/permissions
+http://builds.napix.io/latest/napix

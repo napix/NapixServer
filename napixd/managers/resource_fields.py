@@ -187,7 +187,7 @@ class ResourceFieldsDescriptor(collections.Sequence):
         Validate the **input**.
         *original* is the actual value.
 
-        Field are ignored and remove from *input* if
+        Field are ignored and removed from *input* if
 
         * The property :attr:`ResourceField.computed` is set.
         * The property :attr:`ResourceField.editable` is not set and **original** is not None.
@@ -342,15 +342,16 @@ class ResourceField(object):
         Those fields are not used by the Napix Server
         but may be useful to the clients.
 
-        :description:
+        description
             The goal of the field.
-
-        :display_order:
+        display_order
             The priority of the field.
             The fields with a lower *display_order* are shown first.
-
-        :label:
+        label
             The label to display with this field.
+        content_type
+            An indication of the semantic content of the field.
+            Eg: a string that is a ISO8601 date, an int that is a timestamp
 
     """
 
@@ -382,14 +383,25 @@ class ResourceField(object):
             'typing': 'static',
             'validators': []
         }
-        extra_keys = set(values).difference(meta)
+
+        expected_keys = set(meta)
+        expected_keys.update([
+            'type',
+            'example',
+            'choices',
+            'typing',
+            'validators',
+        ])
+
+        extra_keys = set(values) - expected_keys
+
         meta.update(values)
 
         self.optional = meta['optional']
         self.computed = meta['computed']
         self.default_on_null = meta['default_on_null']
 
-        self.editable = not self.computed and meta.get('editable', True)
+        self.editable = not self.computed and meta['editable']
 
         explicit_type = meta.get('type')
         if explicit_type and not isinstance(explicit_type, type):
@@ -452,7 +464,17 @@ class ResourceField(object):
 
         self.validators = list(meta['validators'])
 
-        self.extra = dict((k, values[k]) for k in extra_keys)
+        self.extra = extras = {}
+        for extra in extra_keys:
+            value = values[extra]
+            if value is None or isinstance(value, (bool, int, long, float, basestring, dict, list)):
+                # JSON serializable
+                pass
+            elif hasattr(value, '__doc__') and value.__doc__ is not None:
+                value = value.__doc__
+            else:
+                value = unicode(value)
+            extras[extra] = value
 
     def __repr__(self):
         return 'Field <{0}>'.format(self.name)
@@ -485,7 +507,7 @@ class ResourceField(object):
         """
         Validate the input **value**.
         """
-        manager_validator = getattr(manager, 'validate_resource_%s' % self.name, None)
+        manager_validator = getattr(manager, 'validate_resource_{0}'.format(self.name), None)
 
         if value is None and self.default_on_null:
             if not callable(manager_validator):
@@ -511,11 +533,16 @@ class ResourceField(object):
 
     def _run_callback(self, callback, value):
         try:
-            return callback(value)
-        except ValidationError, e:
+            result = callback(value)
+        except ValidationError as e:
             raise ValidationError({
                 self.name: unicode(e)
             })
+
+        if result is None:
+            raise ValueError('Validator {0} returned None'.format(
+                callback.__name__))
+        return result
 
     def get_choices(self):
         """
