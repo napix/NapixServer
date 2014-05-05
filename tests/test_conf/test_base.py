@@ -137,3 +137,31 @@ class TestBaseConf(unittest.TestCase):
 
     def test_get_default_bad_type(self):
         self.assertRaises(TypeError, self.c.get, 'key', '12', type=unicode)
+
+    def test_get_list(self):
+        c = MyConf([1])
+        self.assertEqual(c.get_list('key'), [1])
+
+    def test_get_list_bool(self):
+        c = MyConf(True)
+        self.assertRaises(TypeError, c.get_list, 'key')
+
+    def test_get_list_bool_default(self):
+        c = MyConf(True)
+        self.assertRaises(TypeError, c.get_list, 'key', ['default'])
+
+    def test_get_list_unicode(self):
+        c = MyConf(u'dude')
+        self.assertEqual(c.get_list('key'), [u'dude'])
+
+    def test_get_list_int(self):
+        c = MyConf(1)
+        self.assertEqual(c.get_list('key'), [1])
+
+    def test_get_list_nothing_default(self):
+        c = MyConf(1)
+        self.assertEqual(c.get_list('this', [123]), [123])
+
+    def test_get_list_nothing(self):
+        c = MyConf(1)
+        self.assertEqual(c.get_list('this'), [])

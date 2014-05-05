@@ -149,6 +149,32 @@ class BaseConf(collections.Mapping):
 
         return value
 
+    def get_list(self, key, default_value=_sentinel):
+        """
+        Returns a list of values.
+
+        If the *key* is a single :class:`int`, :class:`float`, :class:`unicode`
+        value, it returns a list containing only this value. If the *key* is a
+        list, this list is returned. If the key does not exists, an empty list
+        is returned. Else, a :exc:`TypeError` is raised.
+        """
+        try:
+            value = self[key]
+        except KeyError:
+            if default_value is not _sentinel:
+                return default_value
+            return []
+
+        if value is None and default_value is not _sentinel:
+            return default_value
+        if isinstance(value, list):
+            return value
+        if (isinstance(value, (basestring, int, float, long)) and
+            not value is True and not value is False):
+            return [value]
+        raise TypeError('{key} is not a list nor an int or a string but a {actual}'.format(
+            key=key, actual=type(value).__name__))
+
     @staticmethod
     def get_default(value=None):
         """
