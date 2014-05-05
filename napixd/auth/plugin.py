@@ -72,7 +72,9 @@ class AAAPlugin(object):
         will be calculated and returned in the **x-auth-time** header.
         """
         content = self.extract(request)
-        request.environ['napixd.auth.username'] = content.get('login', '-')
+        if 'login' in content:
+            request.environ['napixd.auth.username'] = content['login']
+
         with Chrono() as chrono:
             check = self.authenticate(request, content)
 

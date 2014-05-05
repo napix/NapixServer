@@ -50,6 +50,13 @@ class TestAuthPlugin(unittest.TestCase):
         self.assertRaises(HTTPError, self.call)
         self.assertEqual(self.cb.call_count, 0)
 
+    def test_set_username(self):
+        self.source.return_value = {'login': 'dude'}
+        self.provider.return_value = True
+        self.call()
+
+        self.assertEqual(self.request.environ['napixd.auth.username'], 'dude')
+
     def test_authenticate(self):
         self.source.return_value = {'a': 1}
         self.provider.return_value = None
