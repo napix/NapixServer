@@ -28,11 +28,15 @@ class RequestEnvironCriteria(object):
 
 
 class LimiterPlugin(object):
-    def __init__(self, criteria):
+    def __init__(self, criteria, excludes):
         self._criteria = criteria
+        self._excludes = frozenset(excludes)
 
     def get_criteria(self, request):
-        return self._criteria(request)
+        criteria = self._criteria(request)
+        if criteria in self._excludes:
+            return None
+        return criteria
 
 
 class RateLimiterPlugin(LimiterPlugin):
@@ -47,11 +51,12 @@ class RateLimiterPlugin(LimiterPlugin):
         max = settings.get('max', type=int)
         timespan = settings.get('timespan', type=int)
         con = connection_factory(settings.get('connection'))
+        excludes = settings.get_list('excludes')
         logger.info('Ratelimiting to %s/%ss via %s', max, timespan, con)
-        return cls(max, timespan, con, criteria)
+        return cls(max, timespan, con, criteria, excludes)
 
-    def __init__(self, max, timespan, con, criteria):
-        super(RateLimiterPlugin, self).__init__(criteria)
+    def __init__(self, max, timespan, con, criteria, excludes):
+        super(RateLimiterPlugin, self).__init__(criteria, excludes)
         self._max = max
         self._timespan = timespan
         self._con = con
@@ -68,6 +73,9 @@ class RateLimiterPlugin(LimiterPlugin):
         """
 
         criteria = self.get_criteria(request)
+        if criteria is None:
+            return callback(request)
+
         used = self.get_rate_used(criteria)
 
         headers = {

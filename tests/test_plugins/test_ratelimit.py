@@ -7,17 +7,17 @@ from __future__ import absolute_import
 import unittest
 import mock
 
-from napixd.http.response import HTTPError, HTTPResponse
+from napixd.http.response import HTTPResponse
 from napixd.plugins.ratelimit import RateLimiterPlugin
 
 
 class TestRateLimiterPlugin(unittest.TestCase):
     def setUp(self):
-        #2 requests max by 60 seconds
+        # 2 requests max by 60 seconds
         self.con = mock.MagicMock()
         self.pipe = self.con.pipeline.return_value.__enter__.return_value = mock.Mock()
         self.criteria = c = mock.Mock(return_value='123')
-        self.rl = RateLimiterPlugin(2, 60, self.con, c)
+        self.rl = RateLimiterPlugin(2, 60, self.con, c, ['exclude'])
 
     def call(self):
         self.cb = mock.Mock(name='callback')
@@ -25,6 +25,12 @@ class TestRateLimiterPlugin(unittest.TestCase):
         with mock.patch('napixd.plugins.ratelimit.time') as time:
             time.time.return_value = 1200
             return self.rl(self.cb, self.req)
+
+    def test_exclude(self):
+        self.criteria.return_value = 'exclude'
+        resp = self.call()
+        self.assertEqual(resp, self.cb.return_value)
+        self.assertEqual(self.con.mock_calls, [])
 
     def test_first_req(self):
         self.pipe.zcount.return_value = 0
