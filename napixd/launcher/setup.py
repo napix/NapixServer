@@ -350,6 +350,8 @@ Meta-options:
     def install_plugins(self, router):
         """
         Install the plugins in the bottle application.
+
+        .. note:: The plugins installed firsts are executed last.
         """
         if 'time' in self.options:
             from napixd.plugins.times import TimePlugin
@@ -366,9 +368,12 @@ Meta-options:
             router.add_filter(UserAgentDetector())
 
         if 'ratelimit-auth' in self.options:
-            from napixd.plugins.ratelimit import RateLimiterPlugin
+            from napixd.plugins.ratelimit import (
+                RateLimiterPlugin,
+                RequestEnvironCriteria,
+            )
             router.add_filter(RateLimiterPlugin.from_settings(
-                self.conf.get('rate_limit.auth')
+                self.conf.get('rate_limit.auth'),
                 RequestEnvironCriteria('napixd.auth.username'),
             ))
 
@@ -377,7 +382,10 @@ Meta-options:
             router.add_filter(auth_handler)
 
         if 'ratelimit-ip' in self.options:
-            from napixd.plugins.ratelimit import RateLimiterPlugin, RequestEnvironCriteria
+            from napixd.plugins.ratelimit import (
+                RateLimiterPlugin,
+                RequestEnvironCriteria,
+            )
             router.add_filter(RateLimiterPlugin.from_settings(
                 self.conf.get('rate_limit.ip'),
                 RequestEnvironCriteria('REMOTE_ADDR'),
