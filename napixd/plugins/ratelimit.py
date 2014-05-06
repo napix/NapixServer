@@ -9,8 +9,8 @@ import time
 import logging
 
 from napixd.store import Counter
-from napixd.utils.connection import ConnectionFactory
-from napixd.http.response import HTTPError
+from napixd.utils.connection import ConnectionFactory, transaction
+from napixd.http.response import HTTPError, HTTPResponse
 from napixd.conf.lazy import LazyConf
 
 logger = logging.getLogger('Napix.ratelimit')
@@ -19,7 +19,23 @@ logger = logging.getLogger('Napix.ratelimit')
 connection_factory = ConnectionFactory(LazyConf('redis'))
 
 
-class RateLimitingPlugin(object):
+class RequestEnvironCriteria(object):
+    def __init__(self, parameter):
+        self._paramater = parameter
+
+    def __call__(self, request):
+        return request.environ.get(self._paramater)
+
+
+class LimiterPlugin(object):
+    def __init__(self, criteria):
+        self._criteria = criteria
+
+    def get_criteria(self, request):
+        return self._criteria(request)
+
+
+class RateLimiterPlugin(LimiterPlugin):
     """
     Limits the number of requests made by users to *max* during *timespan*.
 
@@ -27,44 +43,68 @@ class RateLimitingPlugin(object):
     """
 
     @classmethod
-    def from_settings(cls, settings):
+    def from_settings(cls, settings, criteria):
         max = settings.get('max', type=int)
         timespan = settings.get('timespan', type=int)
         con = connection_factory(settings.get('connection'))
         logger.info('Ratelimiting to %s/%ss via %s', max, timespan, con)
-        return cls(max, timespan, con)
+        return cls(max, timespan, con, criteria)
 
-    def __init__(self, max, timespan, con):
+    def __init__(self, max, timespan, con, criteria):
+        super(RateLimiterPlugin, self).__init__(criteria)
         self._max = max
         self._timespan = timespan
         self._con = con
 
     def __call__(self, callback, request):
+        """
+        :X-RateLimit-Limit:
+            <number of request>/<time unit>
+            the current rate limit for this API key
+        :X-RateLimit-Used:
+            the number of method calls used on this API key this timespan
+        :X-RateLimit-Remaining:
+            the estimated number of remaining calls allowed by this API key this minute
+        """
+
         criteria = self.get_criteria(request)
-        if not self.is_under_limit(criteria):
+        used = self.get_rate_used(criteria)
+
+        headers = {
+            'x-ratelimit-limit': '{0}/{1}s'.format(self._max, self._timespan),
+            'x-ratelimit-used': used,
+            'x-ratelimit-remaining': max(self._max - used, 0),
+        }
+
+        if used >= self._max:
             logger.warning('Rejecting request of %s, quota maxed', criteria)
-            return HTTPError(429, 'You exceeded your quota')
+            return HTTPResponse(429, headers, 'You exceeded your quota')
 
-        return callback(request)
+        return HTTPResponse(headers, callback(request))
 
-    def get_criteria(self, request):
-        return request.environ.get('REMOTE_ADDR', '?')
-
-    def is_under_limit(self, criteria):
+    def get_rate_used(self, criteria):
         key = 'rate_limit:{0}'.format(criteria)
         period_end = time.time()
         period_start = period_end - self._timespan
 
-        with self._con.pipeline() as pipe:
-            pipe.zcount(key, period_start, period_end)
+        @transaction(self._con)
+        def run(pipe):
+            pipe.watch(key)
+            count = pipe.zcount(key, period_start, period_end)
+
+            if count >= self._max:
+                return self._max
+
+            pipe.multi()
             pipe.zadd(key, period_end, period_end)
             pipe.expireat(key, int(period_end + self._timespan))
-            count, add, xat = pipe.execute()
+            return count
 
-        return count < self._max
+        count = run()
+        return count
 
 
-class ConcurrentLimiter(object):
+class ConcurrentLimiterPlugin(RateLimiterPlugin):
     def __init__(self, max=2):
         self.max = max
 
@@ -75,4 +115,4 @@ class ConcurrentLimiter(object):
         return callback(request)
 
     def get_counter(self, request):
-        return Counter(request.environ['REMOTE_ADDR'])
+        return Counter(self.get_criteria(request))
