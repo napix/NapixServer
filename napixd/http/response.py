@@ -124,6 +124,13 @@ class HTTPResponse(object):
 
         self.status = status
 
+    def __repr__(self):
+        ret = [self.status_line]
+        ret.extend('{0}: {1}'.format(*items) for items in self.headers.items())
+        ret.append('')
+        ret.append(str(self.body))
+        return '\n'.join(ret)
+
     @property
     def status_line(self):
         """The HTTP Status line as expected by start_response"""
@@ -139,6 +146,12 @@ class HTTPResponse(object):
     def body(self):
         """The body of the response"""
         return self._body
+
+    def __eq__(self, other):
+        return (isinstance(other, HTTPResponse) and
+                self.status == other.status and
+                self.headers == other.headers and
+                self.body == other.body)
 
 
 class HTTPError(BaseException):
