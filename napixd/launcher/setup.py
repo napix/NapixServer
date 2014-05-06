@@ -111,7 +111,8 @@ Non-default:
     loggers:    Set up extra loggers
     logfile:    Write the log of Napix in a log file
     wait:       Do not respond in less than a given time
-    ratelimit:  Enable the rate-limiting  plugin
+    ratelimit-auth: Enable the rate-limiting plugin by authenticated username
+    ratelimit-ip:   Enable the rate-limiting plugin by source IP
 
 Meta-options:
     only:       Disable default options
@@ -360,20 +361,27 @@ Meta-options:
             from napixd.gevent_tools import AddGeventTimeHeader
             router.add_filter(AddGeventTimeHeader())
 
-        if 'ratelimit' in self.options:
-            from napixd.plugins.ratelimit import RateLimitingPlugin
-            conf = self.conf.get('rate_limit')
-            router.add_filter(RateLimitingPlugin(conf))
-
         if 'useragent' in self.options:
             from napixd.plugins.conversation import UserAgentDetector
             router.add_filter(UserAgentDetector())
 
+        if 'ratelimit-auth' in self.options:
+            from napixd.plugins.ratelimit import RateLimiterPlugin
+            router.add_filter(RateLimiterPlugin.from_settings(
+                self.conf.get('rate_limit.auth')
+                RequestEnvironCriteria('napixd.auth.username'),
+            ))
+
         if 'auth' in self.options:
-            self.auth_handler = self.get_auth_handler()
-            router.add_filter(self.auth_handler)
-        else:
-            self.auth_handler = None
+            auth_handler = self.get_auth_handler()
+            router.add_filter(auth_handler)
+
+        if 'ratelimit-ip' in self.options:
+            from napixd.plugins.ratelimit import RateLimiterPlugin, RequestEnvironCriteria
+            router.add_filter(RateLimiterPlugin.from_settings(
+                self.conf.get('rate_limit.ip'),
+                RequestEnvironCriteria('REMOTE_ADDR'),
+            ))
 
         if 'wait' in self.options:
             from napixd.plugins.times import WaitPlugin
