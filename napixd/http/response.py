@@ -17,6 +17,10 @@ __all__ = [
     'HTTP405',
 ]
 
+responses = dict(httplib.responses)
+responses.update({
+    429: 'Too Many Requests',
+})
 
 class Response(object):
     """
@@ -134,7 +138,7 @@ class HTTPResponse(object):
     @property
     def status_line(self):
         """The HTTP Status line as expected by start_response"""
-        reason = httplib.responses.get(self.status, 'Unknown')
+        reason = responses.get(self.status, 'Unknown')
         return '{0} {1}'.format(self.status, reason)
 
     @property
