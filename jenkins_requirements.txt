@@ -1,7 +1,7 @@
 -r paver_requirements.txt
 -r tests/requirements.txt
-gevent
+gevent>=1.0
 dotconf
 redis
-nosexcover
+nosexcover>=1.0.10
 flake8
