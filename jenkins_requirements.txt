@@ -4,4 +4,3 @@ gevent>=1.0
 dotconf
 redis
 nosexcover>=1.0.10
-flake8>=2.1.0
