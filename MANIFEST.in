@@ -2,4 +2,4 @@ include napixd/conf/settings.json
 include napixd/conf/settings.conf
 recursive-include napixd/templates *.templ
 recursive-include napixd/web *
-setup.py
+include setup.py
