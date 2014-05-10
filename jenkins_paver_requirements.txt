@@ -1,3 +1,0 @@
-# Packages needed to setup Paver in Jenkins
-paver>=1.0.0
-virtualenv>=1.11

@@ -1,6 +1,2 @@
-# Packages needed to setup an autonomous paver in a repo copy
 paver>=1.0.0
 nose>=1.3.0
-coverage>=3.7.0
-flake8>=2.1.0
-requests>=2.2.0
