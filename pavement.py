@@ -49,6 +49,17 @@ def make(options):
         path(target).symlink(link)
 
 
+@task
+def test_archive():
+    if path('archive-test').isdir():
+        path('archive-test').rmtree()
+
+    target = 'dist/{name}-{version}.tar.gz'.format(**options.setup)
+    sh(['virtualenv', '--python', 'python2', 'archive-test'])
+    sh(['archive-test/bin/pip', 'install', target])
+    sh(['archive-test/bin/napixd', 'only'])
+
+
 remote_archive = 'http://builds.napix.io/web/napix-latest.tar.gz'
 
 
