@@ -215,7 +215,7 @@ def jenkins():
     # Generate flake8.log
 
     call_task('coverage', options={
-        'xunit': 'nosetest.xml',
+        'xunit': 'nosetests.xml',
         'xcoverage': 'coverage.xml',
     })
     call_task('flake8', options={
