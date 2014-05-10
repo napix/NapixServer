@@ -1,0 +1,7 @@
+-r paver_requirements.txt
+-r tests/requirements.txt
+gevent
+dotconf
+redis
+nosexcover
+flake8

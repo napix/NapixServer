@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-from setuptools import setup, find_packages
+import os.path
+from setuptools import find_packages, setup
 
 
 def find_version(filename):
@@ -15,7 +15,8 @@ def find_version(filename):
         else:
             raise ValueError('Cannot find the version in {0}'.format(filename))
 
-setup(
+
+build_info = dict(
     name="napixd",
     version=find_version('napixd/__init__.py'),
     packages=find_packages(
@@ -25,11 +26,12 @@ setup(
             'tests.*',
         ]
     ),
+    url='http://napix.io',
     author='Enix',
     author_email='gr@enix.org',
     install_requires=[
     ],
-    extra_require={
+    extras_require={
         'base': [
             'dotconf',
             'permissions',
@@ -49,3 +51,7 @@ setup(
     dependency_links=[
     ],
 )
+
+
+if __name__ == '__main__':
+    setup(**build_info)
