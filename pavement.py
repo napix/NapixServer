@@ -11,8 +11,9 @@ try:
 except ImportError:
     requests = None
 
-from paver.easy import task, needs, cmdopts, options, path, call_task, sh
+from paver.easy import task, needs, cmdopts, options, path, call_task, sh, Bunch
 from paver.setuputils import setup
+from paver.virtual import virtualenv, bootstrap
 
 try:
     from setup import build_info
@@ -208,7 +209,20 @@ def coverage(options):
 
 
 @task
+@cmdopts([
+    optparse.make_option('-z', '--package',
+                         action='append',
+                         help='Additional packages to intall'),
+],
+    share_with=['setup_jenkins'])
+@needs('setup_jenkins')
 def jenkins():
+    call_task('run_jenkins')
+
+
+@task
+@virtualenv('jenkins-env')
+def run_jenkins():
     """Runs the Jenkins tasks"""
     # Generate nosetest.xml
     # Generate coverage.xml
@@ -230,3 +244,20 @@ def push():
     call_task('upload', options={
         'repository': 'http://enixpi.enix.org',
     })
+
+
+@task
+@cmdopts([
+    ('python=', 'p', 'Version of python to use'),
+    optparse.make_option('-z', '--package',
+                         action='append',
+                         help='Additional packages to intall'),
+])
+def setup_jenkins(options):
+    python_version = getattr(options.setup_jenkins, 'python', 'python2.7')
+    if not path('jenkins-env').isdir():
+        sh(['virtualenv', 'jenkins-env', '--python', python_version])
+
+    install = ['./jenkins-env/bin/pip', 'install', '-r', 'jenkins_requirements.txt']
+    install.extend(getattr(options.setup_jenkins, 'package', []))
+    sh(install)

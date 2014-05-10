@@ -1,7 +1,8 @@
--r paver_requirements.txt
+# Packages required to run the test in the virtualenv of jenkins
 -r tests/requirements.txt
 gevent>=1.0
 dotconf
 redis
+nose>=1.3.0
 nosexcover>=1.0.10
 flake8>=2.1.0
