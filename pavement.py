@@ -121,7 +121,7 @@ def _nosetests(options):
         nosetest_options.update({
             'with-xunit': True,
             'xunit-file': options.xunit,
-            'quiet': True,
+            'verbosity': '0',
         })
 
     if hasattr(options, 'auto'):
