@@ -16,20 +16,23 @@ Napix is hosted on a Git repository at
 Config
 ------
 
-Napix requires a virtual env.
-If you don't want a virtualenv, you're on your own.
+Napix requires a virtual env. If you don't want a virtualenv, you're on your own.
 
-You may set the virtualenv wherever you like.
-**Do not** install the :mod:`napixd` package in the virtualenv.
-The ``HOME`` of your Napix Server will be in the root of the Git repo.
+You may set the virtualenv wherever you like. **Do not** install the :mod:`napixd`
+package in the virtualenv. The ``HOME`` of your Napix Server will be in the root
+of the Git repo.
 
+
+Web interface
+-------------
+
+Although it is not mandatory, the generic web interface
 
 Running
 -------
 
-In order to run server, run the :program:`napixd` in the :file:`bin`
-directory of the repo.
-The path of the repo is added to the :envvar:`PYTHONPATH`.
+In order to run server, run the :program:`napixd` in the :file:`bin` directory
+of the repo. The path of the repo is added to the :envvar:`PYTHONPATH`.
 
 Writing code
 ============
@@ -41,33 +44,31 @@ Use **4 spaces**.
 
 .. image:: images/tabsspacesboth.png
 
-The PEP-8 should be respected.
-However, the maximum width of the lines is increased to 100 characters.
-
+The PEP-8 should be respected. However, the maximum width of the lines is
+increased to 120 characters.
 
 Versions
 --------
 
-The Python code is expected to run on Python 2.6 and Python 2.7.
-There should **not** be hacks for the support of older versions.
+The Python code is expected to run on Python 2.6 and Python 2.7. There should
+**not** be hacks for the support of older versions.
 
-Hacks may be added for the support of different runtimes (PyPy, Jython, etc)
-or for the version of Python > 3.
+Hacks may be added for the support of different runtimes (PyPy, Jython, etc) or
+for the version of Python > 3.
 
 
 Dependencies
 ------------
 
 Napix Server **does not requires any dependency** to operate at a basic level.
-All the features requiring a dependency are optional.
-Optional features may be started by default,
-for example the :mod:`Dotconf loader<napixd.conf.dotconf>` is enabled by default
-but the :mod:`dotconf` is not a required dependency.
+All the features requiring a dependency are optional. Optional features may be
+activated by default, for example the :mod:`Dotconf loader<napixd.conf.dotconf>`
+is enabled by default but the :mod:`dotconf` is not a required dependency.
 
 If a dependency is required to run the Server, it must be added to the
-``install_requires`` of the :file:`setup.py`.
-If the dependency is required by a default feature of the Napix server,
-it should be added in the :file:`requirements.txt`.
+``install_requires`` of the :file:`setup.py`. If the dependency is required by a
+default feature of the Napix server, it should be added in the
+:file:`requirements.txt`.
 
 Tests
 =====
@@ -77,37 +78,43 @@ Napix includes an extensive test suite.
 Running the tests
 -----------------
 
-The Napix Server test suite uses :mod:`nose` for the discovery
-and the execution of the tests.
+The Napix Server test suite uses :mod:`nose` for the discovery and the execution
+of the tests.
 
 In the root directory of the repo, running :program:`nosetests`
-runs all the available tests.
-The available tests are all those that have their dependencies satisfied.
+runs all the available tests. The available tests are all those that have their
+dependencies satisfied.
 
+The test and the coverage is simplfied by the use of :ref:`paver<paver>`.
 
 Dependencies
 ************
 
 The test suite of Napix requires a few dependencies.
 
-The dependencies are listed in :file:`tests/requirements.txt`
-Napix uses :mod:`mock` and :mod:`unitest2`.
+The dependencies are listed in :file:`tests/requirements.txt`. Napix uses
+:mod:`mock` and :mod:`unitest2`.
 
-The :mod:`unittest2` is *historically* used but :mod:`unittest`
-should be preferred.
+The :mod:`unittest2` is *historically* used but :mod:`unittest` should be
+preferred.
+
 
 Writing a test
 --------------
 
 When you add a feature or identify a bug you should add a test.
 
-Each Python source file has a test in the :file:`tests` directory.
-The name of the test file is the same as the Python source with
-the file and directory names prefixed by ``test_``,
-so that the discovery detects only the tests.
-For example, tests of classes defined :file:`napixd/loader/importers.py`
-are written in :file:`tests/test_loader/test_importers.py`.
+Test naming convention
+**********************
 
+Each Python source file has a test in the :file:`tests` directory. The name of
+the test file is the same as the Python source with the file and directory names
+prefixed by ``test_``, so that the discovery detects only the tests. For example,
+tests of classes defined :file:`napixd/loader/importers.py` are written in
+:file:`tests/test_loader/test_importers.py`.
+
+This convention is used by the option auto of :ref:`paver.test` and
+:ref:`paver.coverage`.
 
 Dependency of the tests
 -----------------------
@@ -157,4 +164,3 @@ Using Tox
 ---------
 
 A Tox configuration is ready in the Napix Server repo.
-

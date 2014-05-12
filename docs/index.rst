@@ -28,6 +28,7 @@ Contents:
     client
     auth
     notify
+    paver
     reference/modules
 
 
