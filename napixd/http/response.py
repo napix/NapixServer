@@ -22,6 +22,7 @@ responses.update({
     429: 'Too Many Requests',
 })
 
+
 class Response(object):
     """
     HTTP response object used for custom HTTP responses.

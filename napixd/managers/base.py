@@ -97,8 +97,9 @@ class ManagerType(type):
             return []
 
         if isinstance(self.managed_class, (basestring, ManagerType)):
-            raise ImproperlyConfigured('Depreciation Error, direct_plug=True of {0}.{1} are not supported anymore'.format(
-                self.__module__, self.__name__))
+            raise ImproperlyConfigured('Depreciation Error, direct_plug=True of {0}.'
+                                       '{1} are not supported anymore'.format(
+                                           self.__module__, self.__name__))
 
         if not isinstance(self.managed_class, collections.Iterable):
             raise ImproperlyConfigured('managed_class attribute of {0} is not an list'.format(

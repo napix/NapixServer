@@ -170,7 +170,7 @@ class BaseConf(collections.Mapping):
         if isinstance(value, list):
             return value
         if (isinstance(value, (basestring, int, float, long)) and
-            not value is True and not value is False):
+           value is not True and value is not False):
             return [value]
         raise TypeError('{key} is not a list nor an int or a string but a {actual}'.format(
             key=key, actual=type(value).__name__))
