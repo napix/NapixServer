@@ -140,7 +140,7 @@ class AutoImporter(BaseAutoImporter):
         Any file with a ``.py`` extension is loaded.
         """
         # Placeholder module for all the auto imported modules
-        import napixd.auto
+        import napixd.auto  # NOQA
         logger.debug('inspecting %s', self.path)
         managers, errors = [], []
         for filename in os.listdir(self.path):

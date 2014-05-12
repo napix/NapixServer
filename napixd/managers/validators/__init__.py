@@ -8,7 +8,6 @@ with :attr:`napixd.managers.resource_fields.ResourceField.validators`.
 """
 
 import re
-import collections
 
 from napixd.exceptions import ValidationError
 

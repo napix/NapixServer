@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import napixd
+import napixd  # noqa
 
 from napixd.launcher import Setup
 
