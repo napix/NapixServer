@@ -119,7 +119,7 @@ class ExceptionsCatcher(object):
             return self.application(environ, start_response)
         except (MemoryError, SystemExit, KeyboardInterrupt):
             raise
-        except Exception, e:
+        except Exception as e:
             res = self.extract_error(environ, e)
             if self.show_errors:
                 traceback.print_exc()

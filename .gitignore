@@ -25,3 +25,9 @@ napix
 permissions
 .tox
 xunit
+paver
+nosetests.xml
+coverage.xml
+archive-test/
+flake8.log
+napixd/web

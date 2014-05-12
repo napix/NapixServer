@@ -90,7 +90,7 @@ class Importer(object):
                              module_name, last_modif,
                              self.timestamp,
                              'reload' if last_modif > self.timestamp else '')
-        except OSError, e:
+        except OSError as e:
             logger.error('Failed to get file %s, %s', module_name, e)
             raise ModuleImportError(module_name, 'Module does not exists anymore')
 
@@ -267,7 +267,7 @@ class ConfImporter(Importer):
                 logger.info('load %s from conf', manager_path)
                 config = self.conf.get('Manager ' + alias)
                 manager = self.setup(manager)
-            except NapixImportError, e:
+            except NapixImportError as e:
                 if self.should_raise:
                     raise
                 errors.append(e)
@@ -302,7 +302,7 @@ class RelatedImporter(Importer):
                     managed_class = self.import_manager(
                         cls.path, reference=self.reference)
                     cls.resolve(managed_class)
-                except NapixImportError, e:
+                except NapixImportError as e:
                     return [], [e]
             managed_classes.append(cls.manager_class)
         return managed_classes, []
