@@ -122,9 +122,9 @@ class CollectionContext(object):
         if path[-1] == '':
             raise ValueError('get_resource is called with a path not ending with a "/"')
 
-        #Takes the name segments
+        # Takes the name segments
         managers = path[1::2]
-        #Takes all the ID segments
+        # Takes all the ID segments
         ids = path[2::2]
         cs = self.get_collection_service(managers)
 

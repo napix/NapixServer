@@ -47,7 +47,7 @@ class Poll(object):
         self.fd = -1
 
     def register(self, fd, event):
-        #event is select.POLLIN
+        # event is select.POLLIN
         self.fd = fd
 
     def unregister(self):

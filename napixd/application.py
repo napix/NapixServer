@@ -141,5 +141,5 @@ class Napixd(object):
         return inner_error_service_factory
 
 
-#keep the compatibility
+# keep the compatibility
 NapixdBottle = Napixd

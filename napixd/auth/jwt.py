@@ -24,23 +24,23 @@ class JSONWebToken(object):
         dependencies between the inputs and outputs of the steps.  If any of
         the listed steps fails then the JWT MUST be rejected for processing.
         """
-        #1.   The JWT MUST contain at least one period ('.') character.
+        # 1.   The JWT MUST contain at least one period ('.') character.
 
-        #6.   Determine whether the JWT is a JWS or a JWE using any of the
+        # 6.   Determine whether the JWT is a JWS or a JWE using any of the
         #       methods described in Section 9 of [JWE].
 
-        #o  If the object is using the JWS Compact Serialization or the JWE
+        # o  If the object is using the JWS Compact Serialization or the JWE
         #   Compact Serialization, the number of base64url encoded segments
         #   separated by period ('.') characters differs for JWSs and JWEs.
         #   JWSs have three segments separated by two period ('.') characters.
         #   JWEs have five segments separated by four period ('.') characters.
 
-        #Only JWS are supported
+        # Only JWS are supported
 
-        #2.   Let the Encoded JWT Header be the portion of the JWT before the
+        # 2.   Let the Encoded JWT Header be the portion of the JWT before the
         #       first period ('.') character.
 
-        #7.   Depending upon whether the JWT is a JWS or JWE, there are two
+        # 7.   Depending upon whether the JWT is a JWS or JWE, there are two
         #       cases:
 
         #       *  If the JWT is a JWS, all steps specified in [JWS] for
@@ -51,12 +51,12 @@ class JSONWebToken(object):
         #       validating a JWE MUST be followed.  Let the Message be the
         #       JWE Plaintext.
 
-        #JWS are validated by the authentication servers
+        # JWS are validated by the authentication servers
 
         signed_payload, signature = http_header.rsplit('.', 1)
         encoded_jwt_header, encoded_jws_payload = signed_payload.split('.')
 
-        #3.   The Encoded JWT Header MUST be successfully base64url decoded
+        # 3.   The Encoded JWT Header MUST be successfully base64url decoded
         #       following the restriction given in this specification that no
         #       padding characters have been used.
 
@@ -67,14 +67,14 @@ class JSONWebToken(object):
         except (ValueError, TypeError):
             return None
 
-        #4.   The resulting JWT Header MUST be completely valid JSON syntax
+        # 4.   The resulting JWT Header MUST be completely valid JSON syntax
         #       conforming to RFC 4627 [RFC4627].
         try:
             jwt_headers = json.loads(raw_jwt_header)
         except ValueError:
             return None
 
-        #5.   The resulting JWT Header MUST be validated to only include
+        # 5.   The resulting JWT Header MUST be validated to only include
         #       parameters and values whose syntax and semantics are both
         #       understood and supported or that are specified as being ignored
         #       when not understood.
@@ -82,7 +82,7 @@ class JSONWebToken(object):
             raise HTTPError(400, 'Unsupported JWT headers: {0}'.format(
                 ','.join(set(jwt_headers.keys()).difference(self._expected_headers))))
 
-        #8.   If the JWT Header contains a "cty" (content type) value of
+        # 8.   If the JWT Header contains a "cty" (content type) value of
         #       "JWT", then the Message is a JWT that was the subject of nested
         #       signing or encryption operations.  In this case, return to Step
         #       1, using the Message as the JWT.
@@ -90,7 +90,7 @@ class JSONWebToken(object):
         if jwt_headers.get('cty', '').upper() == 'JWT':
             raise HTTPError('Nested Encryption is not supported')
 
-        #10.  The JWT Claims Set MUST be completely valid JSON syntax
+        # 10.  The JWT Claims Set MUST be completely valid JSON syntax
         #       conforming to RFC 4627 [RFC4627].
 
         try:

@@ -130,7 +130,7 @@ class RouterStep(object):
         return '\n'.join(' ' * level + path for path in paths)
 
     def __nonzero__(self):
-        #A router is truthy if it has at least a rule
+        # A router is truthy if it has at least a rule
         return self._callback is not None or bool(self._fixed)
 
     def route(self, target, callback, catchall=False):
@@ -260,7 +260,7 @@ class CatchAllRouterStep(object):
 
     def unroute(self, route, all):
         if route:
-            #try to unroute a route inside
+            # try to unroute a route inside
             return
 
         self._callback = None

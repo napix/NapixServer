@@ -50,7 +50,7 @@ class ExceptionsCatcher(object):
             'request': {
                 'method': method,
                 'path': path,
-                #'query': dict(bottle.request.GET),
+                # 'query': dict(bottle.request.GET),
             }
         }
         res.update(self.traceback_info(last_traceback))

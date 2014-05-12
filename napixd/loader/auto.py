@@ -103,7 +103,7 @@ class BaseAutoImporter(Importer):
 
             if doc_string.startswith('{'):
                 parser = 'json'
-                #JSON object
+                # JSON object
                 logger.debug('Parse JSON configuration')
                 return JSONConfFactory().parse_string(doc_string)
             elif DotconfConfFactory is None:
