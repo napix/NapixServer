@@ -174,7 +174,7 @@ class Loader(object):
         return ins
 
     def _get_class(self, fqdn):
-        if not fqdn in self._class_cache:
+        if fqdn not in self._class_cache:
             module, dot, classname = fqdn.rpartition('.')
             if not module:
                 raise NoSuchStoreBackend(

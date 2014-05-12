@@ -26,7 +26,7 @@ class SecureAuthProtocol(object):
         self._mandatory = frozenset(['path', 'host', 'method'])
 
     def __call__(self, request):
-        if not 'Authorization' in request.headers:
+        if 'Authorization' not in request.headers:
             return None
 
         msg, l, signature = request.headers['Authorization'].rpartition(':')

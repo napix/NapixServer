@@ -567,7 +567,7 @@ class ResourceField(object):
             value = [value]
 
         for v in value:
-            if not v in choices:
+            if v not in choices:
                 raise ValidationError({
                     self.name: u'{0} is not one of the available choices'.format(v)
                 })

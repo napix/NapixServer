@@ -120,7 +120,7 @@ class Importer(object):
             raise TypeError('module_path is a string')
 
         try:
-            if not module_path in sys.modules or self.timestamp == 0:
+            if module_path not in sys.modules or self.timestamp == 0:
                 return self.first_import(module_path)
             else:
                 return self.reload(module_path)

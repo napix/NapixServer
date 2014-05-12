@@ -126,7 +126,7 @@ class JSONWebToken(object):
         }
 
     def __call__(self, request):
-        if not 'Authorization' in request.headers:
+        if 'Authorization' not in request.headers:
             return None
 
         authorization = request.headers['Authorization']

@@ -104,7 +104,7 @@ class HostManager(DictManager):
             ip = line[0]
             # remove empty strings
             hostnames = filter(bool, line[1:])
-            if not ip in hosts:
+            if ip not in hosts:
                 hosts[ip] = {
                     'hostnames': [],
                     'ip': ip,

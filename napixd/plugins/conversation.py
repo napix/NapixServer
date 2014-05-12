@@ -12,7 +12,7 @@ class UserAgentDetector(object):
     def __call__(self, callback, request):
         if (request.headers.get('user_agent', '').startswith('Mozilla') and
             not request.headers.get('X-Requested-With') == 'XMLHttpRequest' and
-                not 'Authorization' in request.headers):
+                'Authorization' not in request.headers):
             return HTTPError(401, '''
 <html>
 <head><title>Request Not authorized</title></head>

@@ -298,7 +298,7 @@ Meta-options:
             NonSecureAuthProtocol,
         )
         sources = [SecureAuthProtocol()]
-        if not 'secure' in self.options:
+        if 'secure' not in self.options:
             sources.append(NonSecureAuthProtocol.from_settings(conf))
             logger.info('Enable authentication by tokens')
         if 'jwt' in self.options:
@@ -358,7 +358,7 @@ Meta-options:
             router.add_filter(TimePlugin('x-total-time'))
 
         if 'times' in self.options:
-            if not 'gevent' in self.options:
+            if 'gevent' not in self.options:
                 raise CannotLaunch('`times` option requires `gevent`')
             from napixd.gevent_tools import AddGeventTimeHeader
             router.add_filter(AddGeventTimeHeader())
@@ -441,7 +441,7 @@ Meta-options:
         if 'notify' in self.options:
             from napixd.notify import Notifier
             conf = self.conf.get('notify')
-            if not 'url' in conf:
+            if 'url' not in conf:
                 raise CannotLaunch('Notifier has no configuration options')
 
             logger.info('Set up notifier')
@@ -537,7 +537,7 @@ Meta-options:
             'server': server,
             'quiet': 'logger' in self.options,
         }
-        if not 'gevent' in self.options:
+        if 'gevent' not in self.options:
             if server_options['quiet']:
                 from napixd.wsgiref import QuietWSGIRequestHandler
                 server_options['handler_class'] = QuietWSGIRequestHandler
@@ -624,7 +624,7 @@ Meta-options:
 
     def get_loggers(self):
         log_handlers = []
-        if not 'silent' in self.options:
+        if 'silent' not in self.options:
             ch = self.get_logger_console()
             log_handlers.append(ch)
         if 'logfile' in self.options:

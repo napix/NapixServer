@@ -52,7 +52,7 @@ class Service(object):
 
         if 'Lock' in configuration:
             lock_conf = configuration.get('Lock')
-            if not 'name' in lock_conf:
+            if 'name' not in lock_conf:
                 raise ValueError('Lock configuration must have at least a name')
 
             logger.info('Creating lock %s for %s', lock_conf.get('name'), namespace)
