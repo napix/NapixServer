@@ -16,9 +16,9 @@ from napixd.managers import Manager
 from napixd.conf import EmptyConf
 
 try:
-    from napixd.conf.dotconf import ConfFactory as DotconfConfFactory
+    from napixd.conf.confiture import ConfFactory as ConfitureConfFactory
 except ImportError:
-    DotconfConfFactory = None
+    ConfitureConfFactory = None
 
 
 __all__ = [
@@ -106,13 +106,13 @@ class BaseAutoImporter(Importer):
                 # JSON object
                 logger.debug('Parse JSON configuration')
                 return JSONConfFactory().parse_string(doc_string)
-            elif DotconfConfFactory is None:
+            elif ConfitureConfFactory is None:
                 logger.warning('Cannot parse configuration with dotconf')
                 return EmptyConf()
             else:
-                parser = 'dotconf'
-                logger.debug('Parse dotconf configuration')
-                return DotconfConfFactory().parse_string(doc_string)
+                parser = 'confiture'
+                logger.debug('Parse confiture configuration')
+                return ConfitureConfFactory().parse_string(doc_string)
 
         except (ValueError, AttributeError) as e:
             logger.debug(

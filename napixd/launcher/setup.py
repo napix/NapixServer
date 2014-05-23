@@ -158,9 +158,9 @@ Meta-options:
         ]
         if 'dotconf' in self.options:
             try:
-                from napixd.conf.dotconf import ConfFactory
+                from napixd.conf.confiture import ConfFactory
             except ImportError:
-                raise CannotLaunch('dotconf option requires the external library dotconf')
+                raise CannotLaunch('dotconf option requires the external library confiture')
             factory = ConfFactory()
         else:
             from napixd.conf.json import CompatConfFactory

@@ -3,14 +3,14 @@
 
 
 """
-The :mod:`dotconf` implementation of the config infrastructure.
+The :mod:`confiture` implementation of the config infrastructure.
 """
 
 from __future__ import absolute_import
 
-from dotconf import Dotconf
-from dotconf.parser import ParsingError
-from dotconf.tree import (
+from confiture import Confiture
+from confiture.parser import ParsingError
+from confiture.tree import (
     ConfigValue,
     MultipleSectionsWithThisNameError,
 )
@@ -20,7 +20,7 @@ from napixd import conf
 
 class ConfFactory(object):
     """
-    :mod:`dotconf` factory.
+    :mod:`confiture` factory.
     """
     def get_filename(self):
         return 'settings.conf'
@@ -32,7 +32,7 @@ class ConfFactory(object):
         if not string.endswith('\n'):
             string += '\n'
         try:
-            dc = Dotconf(string)
+            dc = Confiture(string)
             return Conf(dc.parse())
         except ParsingError as e:
             raise ValueError('At {0.position}, Cannot parse string, {0}'.format(e))
@@ -40,7 +40,8 @@ class ConfFactory(object):
 
 class Conf(conf.BaseConf):
     """
-    This Conf class translate in dotconf semantics the config instructions.
+    This Conf class translate in :mod:`confiture` semantics the config
+    instructions.
 
     It converts keys with a ' ' as sections lookups.
     """

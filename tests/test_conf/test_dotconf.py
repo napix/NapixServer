@@ -5,12 +5,12 @@
 import unittest
 
 try:
-    from napixd.conf.dotconf import ConfFactory
+    from napixd.conf.confiture import ConfFactory
 except ImportError:
     __test__ = False
 
 
-class TestDotconf(unittest.TestCase):
+class TestConfiture(unittest.TestCase):
     def setUp(self):
         self.conf = ConfFactory().parse_string('''
 a = 1
