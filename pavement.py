@@ -31,10 +31,12 @@ except ImportError:
                          help='Create a package with minimal dependencies'),
 ])
 def setup_options(options):
+    nodeps = getattr(getattr(options, 'setup_options', None), 'naked', False)
+
     sys.stderr.write('Creating {0} version\n'.format(
-        'nodeps' if options.setup_options.naked else 'standard'
+        'nodeps' if nodeps else 'standard'
     ))
-    if options.setup_options.naked:
+    if nodeps:
         build_info['name'] += '-nodeps'
     setup(**build_info)
 
@@ -182,6 +184,7 @@ def _nosetests(options):
 
 
 @task
+@needs(['setup_options'])
 @cmdopts([
     optparse.make_option('-t', '--test',
                          action='append',
