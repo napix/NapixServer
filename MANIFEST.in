@@ -1,5 +1,7 @@
 include napixd/conf/settings.json
 include napixd/conf/settings.conf
 recursive-include napixd/templates *.templ
-recursive-include napixd/web *
+graft napixd/web
+include requirements.txt
 include setup.py
+exclude pavement.py

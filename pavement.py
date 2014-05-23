@@ -4,6 +4,7 @@
 import os
 import sys
 import optparse
+from StringIO import StringIO
 
 from tarfile import TarFile
 try:
@@ -11,7 +12,7 @@ try:
 except ImportError:
     requests = None
 
-from paver.easy import task, needs, cmdopts, options, path, call_task, sh
+from paver.easy import task, needs, cmdopts, options, path, call_task, sh, no_help
 from paver.setuputils import setup
 
 try:
@@ -21,12 +22,38 @@ except ImportError:
     from setup import build_info
 
 
-setup(**build_info)
-is_prerelease = (
-    'a' in options.setup.version or
-    'b' in options.setup.version or
-    'rc' in options.setup.version
-)
+@task
+@no_help
+@cmdopts([
+    optparse.make_option('-n', '--naked',
+                         action='store_true',
+                         default=False,
+                         help='Create a package with minimal dependencies'),
+])
+def setup_options(options):
+    sys.stderr.write('Creating {0} version\n'.format(
+        'nodeps' if options.setup_options.naked else 'standard'
+    ))
+    if options.setup_options.naked:
+        build_info['name'] += '-nodeps'
+    setup(**build_info)
+
+
+@task
+@no_help
+@needs(['setup_options'])
+@cmdopts([
+    optparse.make_option('-n', '--naked',
+                         action='store_true',
+                         default=False,
+                         help='Create a package with minimal dependencies'),
+])
+def set_requirements(options):
+    path('requirements.txt').unlink_p()
+    if options.set_requirements.naked:
+        path('naked_requirements.txt').copy('requirements.txt')
+    else:
+        path('default_requirements.txt').copy('requirements.txt')
 
 
 @task
@@ -36,27 +63,35 @@ def clean():
 
 
 @task
-@needs(['clean', 'web', 'distutils.command.sdist'])
-@cmdopts([
-    ('web_archive=', 'w', 'Web site package')
-], share_with=['web'])
+@needs(['web', 'set_requirements'])
+@cmdopts([], share_with=['set_requirements', 'setup_options'])
 def make(options):
     """Overrides sdist to make sure that our setup.py is generated."""
+    call_task('distutils.command.sdist')
+
+    is_prerelease = (
+        'a' in options.setup.version or
+        'b' in options.setup.version or
+        'rc' in options.setup.version
+    )
     if not is_prerelease:
         target = '{name}-{version}.tar.gz'.format(**options.setup)
         link = 'dist/{name}-latest.tar.gz'.format(**options.setup)
+        path(link).unlink_p()
+
         sys.stderr.write('Link {0} to {1}\n'.format(link, target))
         path(target).symlink(link)
 
 
 @task
+@needs(['setup_options'])
 def test_archive():
     if path('archive-test').isdir():
         path('archive-test').rmtree()
 
     target = 'dist/{name}-{version}.tar.gz'.format(**options.setup)
     sh(['virtualenv', '--python', 'python2', 'archive-test'])
-    sh(['archive-test/bin/pip', 'install', target])
+    sh(['archive-test/bin/pip', 'install', target, '-i', 'http://pi.enix.org/'])
     sh(['archive-test/bin/napixd', 'only'])
 
 
@@ -74,18 +109,15 @@ def web(options):
     if '://' in web_archive:
         if requests is None:
             raise ValueError('Missing required lib requests')
-        url = web_archive
-        web_archive = path(web_archive).basename()
-        sys.stderr.write('Downloading from {0} to {1}\n'.format(url, web_archive))
-        dl = requests.get(url)
+        sys.stderr.write('Downloading from {0}\n'.format(web_archive))
+        dl = requests.get(web_archive)
 
-        chunk_size = 4 * 2**10
-        with open(web_archive, 'wb') as fd:
-            for chunk in dl.iter_content(chunk_size):
-                fd.write(chunk)
+        tf = TarFile.open(path(web_archive).basename(),
+                          'r:*', fileobj=StringIO(dl.content))
+    else:
+        tf = TarFile.open(web_archive)
 
     path('napixd/web').rmtree()
-    tf = TarFile.open(web_archive)
 
     for ti in tf.getmembers():
         name = path(ti.name)
@@ -103,6 +135,7 @@ def web(options):
 
 
 @task
+@needs(['setup_options'])
 @cmdopts([
     ('output=', 'o', 'Output of the flake8 report'),
 ])
@@ -167,6 +200,7 @@ def test(options):
 
 
 @task
+@needs(['setup_options'])
 @cmdopts([
     optparse.make_option('-c', '--packages',
                          action='append',
@@ -235,6 +269,7 @@ def jenkins():
 
 
 @task
+@needs(['setup_options'])
 def push():
     """Pushes the archive in the enix repo"""
     call_task('distutils.command.sdist')

@@ -31,3 +31,4 @@ coverage.xml
 archive-test/
 flake8.log
 napixd/web
+requirements.txt

@@ -16,8 +16,28 @@ def find_version(filename):
             raise ValueError('Cannot find the version in {0}'.format(filename))
 
 
+def parse_requirements(requirements_txt):
+    requirements = []
+    try:
+        with open(requirements_txt, 'rb') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('#') or not line:
+                    continue
+                if line.startswith('-'):
+                    raise ValueError('Unexpected command {0} in {1}'.format(
+                        line,
+                        requirements_txt,
+                    ))
+
+                requirements.append(line)
+        return requirements
+    except IOError:
+        return []
+
+
 build_info = dict(
-    name="napixd",
+    name='napixd',
     version=find_version('napixd/__init__.py'),
     packages=find_packages(
         exclude=[
@@ -29,26 +49,12 @@ build_info = dict(
     url='http://napix.io',
     author='Enix',
     author_email='gr@enix.org',
-    install_requires=[
-    ],
-    extras_require={
-        'base': [
-            'dotconf',
-            'permissions',
-            'napix',
-        ],
-        'production': [
-            'napixd[base]',
-            'gevent',
-        ],
-    },
+    install_requires=parse_requirements('requirements.txt'),
     include_package_data=True,
     scripts=[
         'bin/napixd',
         'bin/napixd-template',
         'bin/napixd-store',
-    ],
-    dependency_links=[
     ],
 )
 
