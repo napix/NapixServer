@@ -15,7 +15,7 @@ Installation process using a Virtual-env::
     virtualenv napix
     cd napix
     source bin/activate
-    pip install http://builds.napix.io/latest/napixd dotconf
+    pip install -i http://pi.enix.org/ napixd
 
 .. _usage-gevent:
 

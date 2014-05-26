@@ -16,7 +16,7 @@ It's recommended to use a virtual-env::
     $ virtualenv napix
     $ cd napix
     $ source bin/activate
-    (napix)$ pip install http://builds.napix.io/latest/napixd dotconf
+    (napix)$ pip install -i http://pi.enix.org/ napixd
 
 Dependencies
 ============
@@ -36,7 +36,7 @@ Napixd requires at least the 1.0 version of :mod:`gevent`.
 
 :mod:`gevent` requires :mod:`cython` to compile and is installable from the git repo::
 
-    (napix)$ pip install cython -e git://github.com/surfly/gevent.git@1.0rc2#egg=gevent
+    (napix)$ pip install gevent
 
 
 pynotify

@@ -107,7 +107,7 @@ class BaseAutoImporter(Importer):
                 logger.debug('Parse JSON configuration')
                 return JSONConfFactory().parse_string(doc_string)
             elif ConfitureConfFactory is None:
-                logger.warning('Cannot parse configuration with dotconf')
+                logger.warning('Cannot parse configuration with confiture')
                 return EmptyConf()
             else:
                 parser = 'confiture'

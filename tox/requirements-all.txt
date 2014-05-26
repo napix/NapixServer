@@ -1,4 +1,4 @@
 -r requirements-gevent.txt
-dotconf
+confiture>=2.0
 http://builds.napix.io/latest/permissions
 http://builds.napix.io/latest/napix

@@ -9,10 +9,10 @@ conf Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`dotconf` Module
----------------------
+:mod:`confiture` Module
+-----------------------
 
-.. automodule:: napixd.conf.dotconf
+.. automodule:: napixd.conf.confiture
     :members:
     :undoc-members:
     :show-inheritance:
