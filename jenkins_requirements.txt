@@ -1,6 +1,2 @@
--r paver_requirements.txt
 -r tests/requirements.txt
-gevent>=1.0
-confiture>=2.0
-redis
-nosexcover>=1.0.10
+sett>=0.1.0
