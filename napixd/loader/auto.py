@@ -23,6 +23,7 @@ except ImportError:
 
 __all__ = [
     'AutoImporter',
+    'RecursiveAutoImporter',
 ]
 
 
@@ -180,3 +181,89 @@ class AutoImporter(BaseAutoImporter):
             except Exception as e:
                 raise ModuleImportError(name, e)
         return module
+
+
+class RecursiveAutoImporter(BaseAutoImporter):
+    def __init__(self, base_dir,
+                 targets=['setup.py', '.git', '.hg', '.svn', '.bzr'],
+                 cross_fs_boundaries=False, follow_symlinks=False):
+        super(RecursiveAutoImporter, self).__init__(base_dir)
+        self._source_fs = None if cross_fs_boundaries else os.stat(base_dir).st_dev
+        self._follow = bool(follow_symlinks)
+        self._targets = frozenset(targets)
+
+    def get_paths(self):
+        return list(self._explore(self.path))
+
+    def _check_fs(self, path):
+        if self._source_fs is None:
+            return True
+
+        try:
+            return os.stat(path).st_dev == self._source_fs
+        except OSError:
+            return False
+
+    def _check_link(self, path):
+        return not os.path.islink(path) or self.follow_symlinks
+
+    def _contains_target(self, path):
+        return bool(self._targets.intersection(os.listdir(path)))
+
+    def _explore(self, base):
+        log = logger.isEnabledFor(logging.DEBUG)
+        for filename in os.listdir(base):
+            if filename.startswith('.'):
+                continue
+
+            full_path = os.path.join(base, filename)
+
+            if not os.path.isdir(full_path):
+                continue
+
+            if self._check_fs(full_path) and self._check_link(full_path):
+                yield full_path
+            elif log:
+                logger.debug('Ignore dir %s: FS:%s, link:%s, target:%s', full_path,
+                             self._check_fs(full_path),
+                             self._check_link(full_path),
+                             self._contains_target(full_path))
+
+    def load(self):
+        managers, errors = [], []
+
+        logger.debug('Recursive loading in %s', self.path)
+
+        for path in self._explore(self.path):
+            if not self._contains_target(path):
+                continue
+
+            # Found a directory
+            managers_, errors_ = self.inspect(path)
+            managers.extend(managers_)
+            errors.extend(errors_)
+
+        return managers, errors
+
+    def inspect(self, path):
+        logger.debug('Inspecting %s', path)
+
+        managers, errors = [], []
+
+        modules = list(self.find_modules_of(path))
+        if modules and path not in sys.path:
+            logger.info('Adding %s to PATH', path)
+            sys.path.insert(0, path)
+
+        for module_name in modules:
+            module = self.import_module(module_name)
+            managers_, errors_ = self.load_module(module)
+            managers.extend(managers_)
+            errors.extend(errors_)
+
+        return managers, errors
+
+    def find_modules_of(self, path):
+        for dir in self._explore(path):
+            if os.path.isfile(os.path.join(dir, '__init__.py')):
+                yield os.path.basename(dir)

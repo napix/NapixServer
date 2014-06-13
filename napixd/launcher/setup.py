@@ -345,6 +345,11 @@ Meta-options:
             logger.info('Using %s as auto directory', auto_path)
             loaders.append(AutoImporter(auto_path))
 
+        if 'recursive' in self.options:
+            from napixd.loader.auto import RecursiveAutoImporter
+            auto_path = get_path('auto')
+            loaders.append(RecursiveAutoImporter(auto_path))
+
         return loaders
 
     def install_plugins(self, router):
