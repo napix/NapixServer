@@ -29,7 +29,7 @@ def run_background(fn, *args, **kw):
     Runs the function *fn* with *args* and *kw* in a separate :class:`Thread` or
     :class:`Greenlet`. Returns the Greenlet.
     """
-    logger.info('Start in background')
+    logger.info('Start %s in background', fn.__name__)
     if with_gevent:
         return gevent.spawn(fn, *args, **kw)
     else:
