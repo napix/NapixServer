@@ -7,7 +7,7 @@ import logging
 
 import napixd
 from napixd import get_file, get_path, __version__
-from napixd.conf import Conf, ConfLoader
+from napixd.conf import Conf, ConfLoader, BaseConf
 from napixd.utils.tracingset import TracingSet
 
 logger = logging.getLogger('Napix.Server')
@@ -608,8 +608,7 @@ Meta-options:
 
         formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
         file_handler.setFormatter(formatter)
-        file_handler.setLevel(
-            logging.DEBUG if 'verbose' in self.options else logging.INFO)
+        file_handler.setLevel(logging.DEBUG)
 
         return file_handler
 
@@ -624,8 +623,7 @@ Meta-options:
         formatter = self.get_logger_console_formatter()
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
-        console_handler.setLevel(
-            logging.DEBUG if 'verbose' in self.options else logging.INFO)
+        console_handler.setLevel(logging.DEBUG)
 
         return console_handler
 
@@ -648,14 +646,14 @@ Meta-options:
         from napixd.utils.logger import NullHandler
 
         logger = logging.getLogger('Napix')
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG if 'verbose' in self.options else logging.INFO)
         self.log_handlers = self.get_loggers() or [NullHandler()]
 
         for lh in self.log_handlers:
             logger.addHandler(lh)
 
     def set_log_console(self):
-        console.setLevel(logging.DEBUG if 'verbose' in self.options else logging.INFO)
+        console.setLevel(logging.DEBUG)
         if 'silent' in self.options:
             from napixd.utils.logger import NullHandler
             h = NullHandler()
@@ -669,15 +667,19 @@ Meta-options:
 
         if not loggers:
             logger.debug('No extra loggers')
-        else:
-            for ns, level_name in loggers.items():
-                logger.info('Adding %s at level %s', ns, level_name)
-                l = logging.getLogger(ns)
-                level = getattr(logging, level_name.upper(), None)
-                if not level:
-                    logger.error('Level %s does not exists', level)
-                    continue
-                l.propagate = False
-                l.setLevel(level)
-                for lh in self.log_handlers:
-                    l.addHandler(lh)
+            return
+
+        for ns, level_name in loggers.items():
+            if ns == 'logger' and isinstance(level_name, BaseConf):
+                ns, level_name = level_name.get('name'), level_name.get('level')
+
+            logger.info('Adding %s at level %s', ns, level_name)
+            l = logging.getLogger(ns)
+            level = getattr(logging, level_name.upper(), None)
+            if not level:
+                logger.error('Level %s does not exists', level)
+                continue
+            l.propagate = False
+            l.setLevel(level)
+            for lh in self.log_handlers:
+                l.addHandler(lh)
