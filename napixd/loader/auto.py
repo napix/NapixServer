@@ -258,7 +258,14 @@ class RecursiveAutoImporter(BaseAutoImporter):
             sys.path.insert(0, path)
 
         for module_name in modules:
-            module = self.import_module(module_name)
+            try:
+                module = self.import_module(module_name)
+            except NapixImportError as e:
+                logger.warning('Failed to import %s from autoload: %s',
+                               module_name, str(e))
+                errors.append(e)
+                continue
+
             managers_, errors_ = self.load_module(module)
             managers.extend(managers_)
             errors.extend(errors_)
