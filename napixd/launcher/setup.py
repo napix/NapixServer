@@ -55,6 +55,7 @@ class Setup(object):
         'gevent',  # Use gevent
         'cors',  # Set CORS headers
         'auto',
+        'recursive',  # Load sub directories of auto
         'conf',
         'time',  # Show duration
         'logger',  # Ouput of the logs in the console is consistent
@@ -86,6 +87,7 @@ Default options:
     webclient:  The web interface accessible on /_napix_js/
     gevent:     Use gevent as the wsgi interface
     auto:       Load from HOME/auto/ directory
+    recursive:  Load recursively from HOME/auto/ sub directories
     conf:       Load from the Napix.managers section of the config
     time:       Add custom header to show the duration of the request
     logger:     Standardize the ouptut on the console accross servers
