@@ -129,7 +129,8 @@ class Reloader(object):
         for path in self.app.loader.get_paths():
             if os.path.isdir(path):
                 logger.info('Watch path %s', path)
-                self.watch_manager.add_watch(path, pyinotify.IN_CLOSE_WRITE)
+                self.watch_manager.add_watch(path, pyinotify.IN_CLOSE_WRITE,
+                                             rec=True, auto_add=True)
 
     def on_sighup(self, signum, frame):
         """
