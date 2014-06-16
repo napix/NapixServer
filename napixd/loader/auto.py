@@ -35,6 +35,9 @@ class BaseAutoImporter(Importer):
         super(BaseAutoImporter, self).__init__(raise_on_first_import)
         self.path = path
 
+    def get_paths(self):
+        return [self.path]
+
     def load_module(self, module):
         """
         Explore a module and search for
@@ -131,9 +134,6 @@ class AutoImporter(BaseAutoImporter):
     imports them and find all the Manager subclasses.
     """
 
-    def get_paths(self):
-        return [self.path]
-
     def load(self):
         """
         Explore the path to find modules.
@@ -193,7 +193,9 @@ class RecursiveAutoImporter(BaseAutoImporter):
         self._targets = frozenset(targets)
 
     def get_paths(self):
-        return list(self._explore(self.path))
+        paths = super(RecursiveAutoImporter, self).get_paths()
+        paths.extend(self._explore(self.path))
+        return paths
 
     def _check_fs(self, path):
         if self._source_fs is None:
