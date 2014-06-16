@@ -15,7 +15,9 @@ and it will then issue a reload.
 import os
 import select as original_select
 import logging
+import threading
 import signal
+import functools
 
 try:
     from gevent import select
@@ -64,6 +66,24 @@ def patch_select():
         original_select.poll = Poll
 
 
+# https://gist.github.com/walkermatt/2871026
+def debounce(wait):
+    """ Decorator that will postpone a functions execution until after *wait*
+    seconds have elapsed since the last time it was invoked. """
+
+    def decorator(fn):
+        @functools.wraps(fn)
+        def debounced(self):
+            try:
+                debounced.t.cancel()
+            except(AttributeError):
+                pass
+            debounced.t = threading.Timer(wait, fn, (self, ))
+            debounced.t.start()
+        return debounced
+    return decorator
+
+
 class Reloader(object):
     """
     An object that checks for signals: SIGHUP, file changes through
@@ -99,6 +119,12 @@ class Reloader(object):
         notifier = pyinotify.Notifier(watch_manager, self.on_file_change)
         run_background(notifier.loop)
 
+    @debounce(1)
+    def reload(self):
+        logger.info('Reloading')
+        self._update_path()
+        self.app.reload()
+
     def _update_path(self):
         for path in self.app.loader.get_paths():
             if os.path.isdir(path):
@@ -110,7 +136,7 @@ class Reloader(object):
         Callback of the SIGHUP
         """
         logger.info('Caught SIGHUP, reloading')
-        self.app.reload()
+        self.reload()
 
     def on_file_change(self, event):
         """
@@ -119,9 +145,8 @@ class Reloader(object):
         try:
             if (event.dir or not event.name.endswith('.py')):
                 return
-            logger.info('Caught file change, reloading')
-            self._update_path()
-            self.app.reload()
+            logger.debug('Caught file change, reloading')
+            self.reload()
         except (KeyboardInterrupt, SystemExit, MemoryError):
             raise
         except Exception:
