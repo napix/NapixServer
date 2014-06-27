@@ -276,3 +276,7 @@ class RecursiveAutoImporter(BaseAutoImporter):
         for dir in self._explore(path):
             if os.path.isfile(os.path.join(dir, '__init__.py')):
                 yield os.path.basename(dir)
+            if os.path.isfile(os.path.join(dir, 'managers.py')):
+                yield os.path.basename(dir) + '.managers'
+            if os.path.isfile(os.path.join(dir, 'manager.py')):
+                yield os.path.basename(dir) + '.manager'
