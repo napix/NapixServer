@@ -236,6 +236,11 @@ class RecursiveAutoImporter(BaseAutoImporter):
 
         logger.debug('Recursive loading in %s', self.path)
 
+        if self._contains_target(self.path):
+            managers_, errors_ = self.inspect(self.path)
+            managers.extend(managers_)
+            errors.extend(errors_)
+
         for path in self._explore(self.path):
             if not self._contains_target(path):
                 continue
