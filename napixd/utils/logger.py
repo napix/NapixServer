@@ -26,11 +26,11 @@ def colorize(text, color):
     return COLOR_SENTENCE.format(color, text)
 
 DEFAULT_COLORS = {
-    'WARNING': YELLOW,
+    'WARNING': MAGENTA,
     'INFO': GREEN,
     'DEBUG': BLUE,
-    'CRITICAL': RED,
-    'ERROR': MAGENTA
+    'CRITICAL': YELLOW,
+    'ERROR': RED,
 }
 
 
