@@ -63,6 +63,7 @@ class Setup(object):
         'dotconf',
         'central',  # Use a central Napix server for the authentication
         'colors',
+        'cwd',
     ])
 
     HELP_TEXT = '''
@@ -115,6 +116,7 @@ Non-default:
     wait:       Do not respond in less than a given time
     ratelimit-auth: Enable the rate-limiting plugin by authenticated username
     ratelimit-ip:   Enable the rate-limiting plugin by source IP
+    cwd:        Auto loader on the current working directory
 
 Meta-options:
     only:       Disable default options
@@ -351,6 +353,10 @@ Meta-options:
             from napixd.loader.auto import RecursiveAutoImporter
             auto_path = get_path('auto')
             loaders.append(RecursiveAutoImporter(auto_path))
+
+        if 'cwd' in self.options:
+            from napixd.loader.auto import RecursiveAutoImporter
+            loaders.append(RecursiveAutoImporter(os.getcwd()))
 
         return loaders
 
