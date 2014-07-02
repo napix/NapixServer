@@ -604,6 +604,7 @@ Meta-options:
         return get_file('log/napix.log')
 
     def get_logger_file(self):
+        import logging.handlers
         lf = self.get_log_file()
         file_handler = logging.handlers.RotatingFileHandler(
             lf,
