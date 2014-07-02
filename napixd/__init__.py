@@ -10,7 +10,7 @@ The root of the napix project.
 """
 
 
-__version__ = '1.8.4'
+__version__ = '1.8.5'
 
 import os
 import sys
