@@ -15,9 +15,9 @@ class Napixd(object):
     """
     The Main Application class.
 
-    This object is used to connect the :class:`napixd.services.Service`
-    to the WSGI framework. *loader* is a :class:`napixd.loader.loader.Loader`
-    instance used to find :class:`napixd.managers.Manager` classes.
+    This object is used to connect the :class:`napixd.services.Service` to the
+    WSGI framework. *loader* is a :class:`napixd.loader.loader.Loader` instance
+    used to find :class:`napixd.managers.Manager` classes.
     """
 
     def __init__(self, loader, router):
@@ -37,8 +37,8 @@ class Napixd(object):
 
     def make_services(self, managers):
         """
-        Make :class:`napixd.services.Service` instance from
-        the :class:`napixd.loader.ManagerImport` given by the loader.
+        Make :class:`napixd.services.Service` instance from the
+        :class:`napixd.loader.ManagerImport` given by the loader.
         """
         for mi in managers:
             try:
@@ -58,7 +58,8 @@ class Napixd(object):
         """
         Finds a :class:`napixd.services.Service` for the *alias*.
 
-        If there is no service with this alias, it raises a :exc:`napixd.exceptions.InternalRequestFailed`.
+        If there is no service with this alias, it raises a
+        :exc:`napixd.exceptions.InternalRequestFailed`.
         """
         try:
             return self._services[alias]

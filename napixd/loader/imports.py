@@ -52,8 +52,8 @@ class ManagerImport(object):
 
 class ManagerError(object):
     """
-    An object representing the exception *cause*
-    interfering with the loading of *manager* with *alias*
+    An object representing the exception *cause* interfering with the loading of
+    *manager* with *alias*
 
     .. attribute:: cause
 
