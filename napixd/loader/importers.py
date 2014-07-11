@@ -209,16 +209,29 @@ class FixedImporter(Importer):
         super(FixedImporter, self).__init__()
         self.managers = managers
 
+    def _parse(self, source):
+        if not isinstance(source, (tuple, basestring)):
+            raise TypeError('Invalid value {0!r} should be a tuple or a string'.format(source))
+
+        if isinstance(source, basestring):
+            return source, None
+        if len(source) == 1:
+            return source[0], None
+
+        if len(source) == 2:
+            return source
+
+        raise ValueError('Expecting a tuple of length up to 2')
+
     def load(self):
         managers, errors = [], []
         for alias, spec in self.managers.items():
-            try:
-                manager, conf = spec
-            except ValueError:
-                manager, conf = spec, EmptyConf()
-            else:
-                if not isinstance(conf, BaseConf):
-                    conf = Conf(conf)
+            manager, conf = self._parse(spec)
+
+            if conf is None:
+                conf = EmptyConf()
+            elif not isinstance(conf, BaseConf):
+                conf = Conf(conf)
 
             logger.info('Import fixed %s', manager)
             try:
