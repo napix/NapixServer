@@ -121,7 +121,11 @@ class CentralAuthProvider(object):
                 # Discard Non GET/HEAD requests and requests on resources
                 return False
 
-            paths = [perm['path'] for perm in content]
+            if isinstance(content, dict):
+                paths = [perm['path'] for perm in content]
+            else:
+                paths = content
+
             if not any('*' in path for path in paths):
                 # Return a non-authoritative response
                 raise HTTPError(203, paths)
@@ -142,7 +146,7 @@ class CentralAuthProvider(object):
             http_client.request('POST', self.url, body=body, headers=self.headers)
             resp = http_client.getresponse()
             content = resp.read()
-        except socket.gaierror, e:
+        except socket.gaierror as e:
             logger.error('Auth server %s%s not found %s',
                          self.http_client_factory.host, self.url, e)
             raise HTTPError(500, 'Auth server did not respond')

@@ -90,7 +90,7 @@ class TestCentralAuthProvider(unittest.TestCase):
 
     def test_fail_but_success(self):
         self.request.path = '/abc/'
-        self.response.status = 403
+        self.response.status = 200
         self.response.read.return_value = '[{"host":"*","methods":["GET"],"path":"/a/*"}]'
         self.response.getheader.return_value = 'application/json'
 
@@ -106,12 +106,13 @@ class TestCentralAuthProvider(unittest.TestCase):
     def test_fail_and_203(self):
         self.request.path = '/abc/'
         self.response.status = 403
-        self.response.read.return_value = '[{"host":"*","methods":["GET"],"path":"/a/b"}]'
+        self.response.read.return_value = '["/a/b"]'
         self.response.getheader.return_value = 'application/json'
 
         try:
             self.call()
         except HTTPError as resp:
+            self.assertEqual(resp.status, 203)
             self.assertEqual(resp.body, ['/a/b'])
         else:
             self.fail()
