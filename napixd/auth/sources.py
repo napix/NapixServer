@@ -16,6 +16,13 @@ import urlparse
 from napixd.http.response import HTTPError
 
 
+class CatchAllSource(object):
+    def __call__(self, request):
+        return {
+            'is_secure': False
+        }
+
+
 class SecureAuthProtocol(object):
     """
     Implements the secure-auth provider.
