@@ -5,9 +5,38 @@
 import unittest
 import mock
 
-from napixd.auth.request import HostChecker, RequestParamaterChecker
 from napixd.http.response import HTTPError
 from napixd.http.request import Request
+from napixd.auth.request import (
+    HostChecker,
+    RequestParamaterChecker,
+    GlobalPermissions,
+)
+
+
+class TestGlobalPermissions(unittest.TestCase):
+    def setUp(self):
+        self.permset = mock.Mock()
+        self.gp = GlobalPermissions(self.permset)
+
+        self.headers = {'host': 'this.napix.io'}
+        self.request = mock.Mock(
+            spec=Request,
+            headers=self.headers,
+            method='GET',
+            path='/abc/def',
+        )
+        self.content = {'host': 'this.napix.io'}
+
+    def test_authorizes(self):
+        self.permset.authorized.return_value = True
+        self.assertEqual(self.gp(self.request, self.content), True)
+
+        self.permset.authorized.assert_called_once_with('this.napix.io', 'GET', '/abc/def')
+
+    def test_denies(self):
+        self.permset.authorized.return_value = False
+        self.assertEqual(self.gp(self.request, self.content), None)
 
 
 class TestHostChecker(unittest.TestCase):

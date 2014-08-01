@@ -12,6 +12,23 @@ and that request signed is the request actually being done.
 from napixd.http.response import HTTPError
 
 
+class GlobalPermissions(object):
+    """
+    Authorizes the request granted by *permset* for anynone
+    """
+    def __init__(self, permset):
+        self._permset = permset
+
+    def __call__(self, request, content):
+        host = request.headers['host']
+        method = request.method
+        path = request.path
+
+        if self._permset.authorized(host, method, path):
+            return True
+        return None
+
+
 class HostChecker(object):
     """
     Checks that the target host is one of the authorized hosts.
