@@ -128,6 +128,14 @@ class TestServerRouter(unittest.TestCase):
         with mock.patch('napixd.http.server.Router', return_value=r2):
             self.server.push()
 
+    def test_pop_r1(self):
+        self.assertRaises(ValueError, self.server.pop, self.router1)
+
+    def test_pop_r2(self):
+        self.server.pop(self.router2)
+        self.server.resolve('/a/b/c')
+        self.assertEqual(self.router2.resolve.call_count, 0)
+
     def test_router(self):
         self.assertEqual(self.server.router, self.router1)
 

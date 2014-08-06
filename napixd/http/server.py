@@ -109,6 +109,14 @@ class WSGIServer(object):
         self._routers.append(router)
         return router
 
+    def pop(self, router):
+        """
+        Removes the *router* from the stack.
+        """
+        if router is self._router:
+            raise ValueError('Cannot pop internal router')
+        self._routers.remove(router)
+
     def cast(self, request, response):
         """
         Translates a response in a :class:`napixd.http.response.HTTPResponse`
