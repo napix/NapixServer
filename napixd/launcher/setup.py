@@ -326,16 +326,6 @@ Meta-options:
         Returns an array of :class:`napixd.loader.Importer`
         used to find the managers.
         """
-        if 'test' in self.options:
-            from napixd.loader.importers import FixedImporter
-            return [FixedImporter({
-                'root': 'napixd.examples.k132.Root',
-                'host': (
-                    'napixd.examples.hosts.HostManager', {
-                        'file': '/tmp/h1'
-                    })
-            })]
-
         loaders = []
 
         if 'conf' in self.options:
