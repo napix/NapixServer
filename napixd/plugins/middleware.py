@@ -13,15 +13,16 @@ from napixd.chrono import Chrono
 
 class PathInfoMiddleware(object):
     """
-    Use the `REQUEST_URI` to generate `PATH_INFO` to avoid problems with URL
+    Use *key* to generate `PATH_INFO` to avoid problems with URL
     encoding.
     """
 
-    def __init__(self, application):
+    def __init__(self, application, key='REQUEST_URI'):
         self.application = application
+        self._key = key
 
     def __call__(self, environ, start_response):
-        environ['PATH_INFO'] = urlparse.urlparse(environ['REQUEST_URI']).path
+        environ['PATH_INFO'] = urlparse.urlparse(environ[self._key]).path
         return self.application(environ, start_response)
 
 
