@@ -98,7 +98,8 @@ Default options:
     colors:     Show colored logs in the console
 
 Non-default:
-    uwsgi:      Use with uwsgi (by default when loading napixd.application)
+    uwsgi:      Use with uwsgi
+    gunicorn:   Use with gunicorn
     notify:     Enable the notification thread
     silent:     Do not show the messages in the console
     verbose:    Augment the ouptut of the loggers
@@ -484,6 +485,8 @@ Meta-options:
                                                )
         if 'uwsgi' in self.options:
             application = PathInfoMiddleware(application)
+        if 'gunicorn' in self.options:
+            application = PathInfoMiddleware(application, key='RAW_URI')
         if 'cors' in self.options:
             application = CORSMiddleware(application)
         if 'hosts' in self.options:
