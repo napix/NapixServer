@@ -125,13 +125,23 @@ Meta-options:
     options:    Show the enabled options and quit
 '''
 
-    def __init__(self, options, **keys):
+    def __init__(self, options, auto_guess_wsgi=True, **keys):
         self.keys = keys
         nooptions = [opt[2:] for opt in options if opt.startswith('no')]
 
         options = set(options)
         if 'only' not in options:
             options = options.union(self.DEFAULT_OPTIONS)
+
+        if auto_guess_wsgi:
+            guessed = None
+            if 'uwsgi' in sys.argv[0]:
+                guessed = 'uwsgi'
+                options.add('uwsgi')
+            elif 'gunicorn' in sys.argv[0]:
+                guessed = 'gunicorn'
+                options.add('gunicorn')
+
         self.options = options = TracingSet(options.difference(nooptions))
 
         self.extra_web_client = {}
@@ -144,6 +154,12 @@ Meta-options:
 
         self.service_name = self.get_service_name()
         self.hosts = self.get_hostnames()
+
+        if auto_guess_wsgi:
+            if guessed is None:
+                logger.warning('Cannot guess the WSGI server')
+            else:
+                logger.info('Running from %s', guessed)
 
         console.info('Napix version %s', __version__)
         console.info('Napixd Home is %s', get_path())
