@@ -61,6 +61,12 @@ def launch(options, setup_class=None):
     parser.add_option('-s', '--setup-class',
                       help='The setup class used to start the Napix server',
                       )
+    parser.add_option('-G', '--no-auto-wsgi',
+                      help='Do not guess which WSGI server napixd is running on',
+                      action='store_false',
+                      dest='auto_guess_wsgi',
+                      default=True,
+                      )
     keys, options = parser.parse_args(options)
 
     sys.stdin.close()
@@ -73,7 +79,7 @@ def launch(options, setup_class=None):
         return
 
     try:
-        setup = setup_class(options, port=keys.port)
+        setup = setup_class(options, auto_guess_wsgi=keys.auto_guess_wsgi, port=keys.port)
     except CannotLaunch as e:
         console.critical(e)
         sys.exit(1)
