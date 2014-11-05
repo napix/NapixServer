@@ -111,10 +111,11 @@ class Request(object):
     """
     MAX_REQ_SIZE = 10 * 1e6  # 10M
 
-    def __init__(self, environ):
+    def __init__(self, environ, json=json):
         self.environ = environ
         self.method = environ['REQUEST_METHOD']
         self.path = environ['PATH_INFO'] or '/'
+        self._json_provider = json
 
     def __repr__(self):
         return 'Request: {method} {path}'.format(**self.__dict__)
@@ -190,6 +191,6 @@ class Request(object):
         Parses the body as JSON.
         """
         try:
-            return json.load(self._body())
+            return self._json_provider.load(self._body())
         except ValueError:
             raise HTTPError(400, 'Misformated JSON object')

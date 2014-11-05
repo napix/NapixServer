@@ -31,13 +31,13 @@ class WSGIServer(object):
     """
     A WSGI compliant server used for napixd.
     """
-    def __init__(self, pprint=False):
+    def __init__(self, json=json):
         self._router = r = Router()
         self._routers = [r]
-        self._pprint = 4 if pprint else None
+        self._json_provider = json
 
     def __call__(self, environ, start_response):
-        environ['napixd.request'] = request = Request(environ)
+        environ['napixd.request'] = request = Request(environ, self._json_provider)
         try:
             resp = self.handle(request)
         except HTTPError as error:
@@ -150,7 +150,7 @@ class WSGIServer(object):
             body = file_wrapper(request.environ, body)
         elif body is not None:
             content_type = 'application/json'
-            body = json.dumps(body, indent=self._pprint)
+            body = self._json_provider.dumps(body)
         else:
             content_type = ''
             body = []
