@@ -75,4 +75,4 @@ remote_archive = 'http://builds.napix.io/web/napix-latest.tar.gz'
 ])
 def web(options):
     web_archive = getattr(options.web, 'web_archive', remote_archive)
-    call_task('sett.build.install_remote_tar', args=[web_archive, 'napixd/web'])
+    call_task('install_remote_tar', args=[web_archive, 'napixd/web'])
