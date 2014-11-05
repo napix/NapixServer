@@ -118,6 +118,7 @@ Non-default:
     ratelimit-auth: Enable the rate-limiting plugin by authenticated username
     ratelimit-ip:   Enable the rate-limiting plugin by source IP
     cwd:        Auto loader on the current working directory
+    decimal:    Use decimal.Decimal to encode/decode float values from/to JSON
 
 Meta-options:
     only:       Disable default options
@@ -444,12 +445,25 @@ Meta-options:
         logger.warning('Cannot reliably determine the hostname, using hostname "%s"', hostname)
         return [hostname]
 
+    def get_json_provider(self):
+        pprint = 'pprint' in self.options
+        decimal = 'decimal' in self.options
+        if not pprint and not decimal:
+            import json
+            return json
+
+        from napixd.utils.json import JSONProvider
+        return JSONProvider(pprint=pprint, decimal=decimal)
+
+    def get_wsgi_server(self):
+        from napixd.http.server import WSGIServer
+        return WSGIServer(json=self.get_json_provider())
+
     def get_app(self):
         """
         Return the bottle application with the plugins added
         """
-        from napixd.http.server import WSGIServer
-        server = WSGIServer()
+        server = self.get_wsgi_server()
         router = self.install_plugins(server.push())
         napixd = self.get_napixd(router)
 
@@ -514,7 +528,8 @@ Meta-options:
         application = ExceptionsCatcher(
             application,
             show_errors=('print_exc' in self.options),
-            pprint='pprint' in self.options)
+            json=self.get_json_provider(),
+        )
 
         return application
 
