@@ -9,15 +9,15 @@ from napixd.store import Store, NoSuchStoreBackend, Loader
 from napixd.store.backends.file import FileStore
 from napixd.conf import Conf
 
-from tests.mock.store_backend import MockBackend
+from tests.test_store.store_backend import MockBackend
 
 
 class TestStore(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.conf = Conf({
-            'store': 'tests.mock.store_backend.MockBackend',
-            'Store tests.mock.store_backend.MockBackend': {
+            'store': 'tests.test_store.store_backend.MockBackend',
+            'Store tests.test_store.store_backend.MockBackend': {
                 'this': 'that'
             }
         })
@@ -42,7 +42,7 @@ class TestStore(unittest.TestCase):
 
     def testImportAbsoluteStore(self):
         store = Store('collection',
-                      backend='tests.mock.store_backend.MockBackend')
+                      backend='tests.test_store.store_backend.MockBackend')
         self.assertEqual(store, MockBackend.return_value.return_value)
 
     def testFailImport(self):
