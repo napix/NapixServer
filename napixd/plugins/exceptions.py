@@ -23,16 +23,15 @@ class ExceptionsCatcher(object):
     When an exception is caught, the traceback, the exception value
     and the details of the error are extracted and returned in a :class:`dict`.
 
-    If *pprint* is True, the produced JSON will be indented.
     If *show_errors* is True, the exceptions are printed on the console.
     """
     logger = logging.getLogger('Napix.Errors')
 
-    def __init__(self, application, show_errors=False, pprint=False):
+    def __init__(self, application, show_errors=False, json=json):
         self.application = application
         self.show_errors = show_errors
         self.napix_path = os.path.dirname(napixd.__file__)
-        self.pprint = 4 if pprint else None
+        self._json_provider = json
 
     def extract_error(self, environ, error):
         """
@@ -124,9 +123,17 @@ class ExceptionsCatcher(object):
             if self.show_errors:
                 traceback.print_exc()
 
-        response = json.dumps(res, indent=self.pprint)
+        try:
+            response = self._json_provider.dumps(res)
+            content_type = 'application/json'
+        except Exception as e:
+            self.logger.exception('Cannot encode the error')
+            response = u'Cannot encode the error: {0} while representing {1!r}'.format(e, res)
+            response = response.encode('utf-8')
+            content_type = 'text/plain'
+
         start_response('500 Internal Error', [
-            ('Content-Type', 'application/json'),
+            ('Content-Type', content_type),
             ('Content-Length', str(len(response))),
         ])
 
