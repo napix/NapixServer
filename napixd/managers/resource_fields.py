@@ -8,6 +8,8 @@ It makes the documentation and the poperty homogenous.
 """
 
 import collections
+import decimal
+
 from napixd.exceptions import ImproperlyConfigured, ValidationError
 
 __all__ = [
@@ -487,11 +489,13 @@ class ResourceField(object):
         """
         if self._dynamic_typing:
             return True
+        elif self.type == decimal.Decimal and isinstance(value, (int, long)):
+            return True
         elif self.type == int and isinstance(value, long):
             return True
         elif self.type == str and isinstance(value, unicode):
             return True
-        elif self.type == float and isinstance(value, (long, int)):
+        elif self.type == float and isinstance(value, (long, int, decimal.Decimal)):
             return True
         else:
             return isinstance(value, self.type)
@@ -520,6 +524,10 @@ class ResourceField(object):
                 self.name: u'Bad type: {0} has type {2} but should be {1}'.format(
                     self.name, self.type.__name__, type(value).__name__)
             })
+
+        if not self._dynamic_typing and self.type in (int, long, float):
+            value = self.type(value)
+
         if self.choices is not None:
             self.check_choice(value)
 

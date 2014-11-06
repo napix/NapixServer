@@ -6,6 +6,8 @@ from __future__ import absolute_import
 import unittest
 import mock
 
+import decimal
+
 from napixd.managers.base import Manager
 from napixd.managers.resource_fields import (
     ResourceFields,
@@ -296,6 +298,29 @@ class TestResourceField(unittest.TestCase):
         })
         r = rf.validate(mock.Mock(spec=object), 132)
         self.assertEqual(r, 132)
+
+    def test_validate_decimal_to_float(self):
+        rf = ResourceField('f', {
+            'example': 123,
+            'type': float,
+        })
+        r = rf.validate(mock.Mock(spec=object), decimal.Decimal('13.2'))
+        self.assertEqual(r, 13.2)
+
+    def test_validate_float_to_decimal(self):
+        rf = ResourceField('f', {
+            'example': decimal.Decimal('12.3'),
+            'type': decimal.Decimal,
+        })
+        self.assertRaises(ValidationError, rf.validate, mock.Mock(), 12.3)
+
+    def test_validate_int_to_decimal(self):
+        rf = ResourceField('f', {
+            'example': decimal.Decimal('12.3'),
+            'type': decimal.Decimal,
+        })
+        r = rf.validate(mock.Mock(spec=object), 1)
+        self.assertEqual(r, 1)
 
     def test_validate_validator_validators(self):
         validator1 = mock.Mock()
