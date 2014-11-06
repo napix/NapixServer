@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import unittest2
+import unittest
 from tests.test_store.base import _BaseTestCounter, _BaseTestStore
 
 try:
@@ -29,9 +29,9 @@ class TestRedisStore(_BaseTestStore):
 
 class TestRedisHashStore(_BaseTestStore):
     store_class = RedisHashBackend({})
-    testNotSave = unittest2.expectedFailure(_BaseTestStore.testNotSave)
+    testNotSave = unittest.expectedFailure(_BaseTestStore.testNotSave)
 
 
 class TestRedisKeyStore(_BaseTestStore):
     store_class = RedisKeyBackend({})
-    testNotSave = unittest2.expectedFailure(_BaseTestStore.testNotSave)
+    testNotSave = unittest.expectedFailure(_BaseTestStore.testNotSave)

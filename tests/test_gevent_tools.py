@@ -4,7 +4,7 @@
 from __future__ import absolute_import
 
 import mock
-import unittest2 as unittest
+import unittest
 
 import time
 import functools

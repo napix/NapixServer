@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import unittest2
+import unittest
 import os
 
 from napixd.store.backends import file
@@ -25,5 +25,5 @@ class TestFileStore(_BaseTestStore):
 
 class TestDirectoryStore(_BaseTestStore):
     store_class = file.DirectoryBackend({})
-    testNotSave = unittest2.expectedFailure(_BaseTestStore.testNotSave)
-    testIncrement = unittest2.expectedFailure(_BaseTestStore.testIncrement)
+    testNotSave = unittest.expectedFailure(_BaseTestStore.testNotSave)
+    testIncrement = unittest.expectedFailure(_BaseTestStore.testIncrement)

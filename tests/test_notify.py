@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-import unittest2
+import unittest
 import mock
 import httplib
 import contextlib
@@ -23,7 +23,7 @@ class RunStop(Exception):
     pass
 
 
-class TestNotifier(unittest2.TestCase):
+class TestNotifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):

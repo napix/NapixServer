@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import unittest2
+import unittest
 
 
-class _BaseTestCounter(unittest2.TestCase):
+class _BaseTestCounter(unittest.TestCase):
 
     def setUp(self):
         self.counter = self.counter_class('test')
@@ -33,7 +33,7 @@ class _BaseTestCounter(unittest2.TestCase):
         self.assertEqual(self.counter.value, 0)
 
 
-class _BaseTestStore(unittest2.TestCase):
+class _BaseTestStore(unittest.TestCase):
 
     def setUp(self):
         store = self.store_class('_napix_store_test')
