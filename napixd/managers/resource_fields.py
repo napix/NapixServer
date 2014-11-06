@@ -119,8 +119,8 @@ class ResourceFieldDict(collections.Mapping):
 
         if resource_field.type in (str, basestring, unicode):
             values['type'] = 'string'
-        if resource_field.type == decimal.Decimal:
-            values['type'] = float
+        elif resource_field.type == decimal.Decimal:
+            values['type'] = 'float'
         else:
             values['type'] = resource_field.type.__name__
 
