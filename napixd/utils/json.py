@@ -33,5 +33,11 @@ class JSONProvider(object):
         kw.setdefault('indent', self.indent)
         return json.dumps(value, **kw)
 
+    def dump(self, value, fp, **kw):
+        fp.write(self.dump(value, **kw))
+
+    def load(self, fp, **kw):
+        return self.loads(fp.read(), **kw)
+
     def loads(self, value, **kw):
         return json.loads(value, parse_float=self.parse_float)
