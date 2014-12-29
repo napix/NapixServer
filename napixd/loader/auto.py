@@ -210,7 +210,10 @@ class RecursiveAutoImporter(BaseAutoImporter):
         return not os.path.islink(path) or self.follow_symlinks
 
     def _contains_target(self, path):
-        return bool(self._targets.intersection(os.listdir(path)))
+        try:
+            return bool(self._targets.intersection(os.listdir(path)))
+        except OSError:
+            return False
 
     def _explore(self, base):
         log = logger.isEnabledFor(logging.DEBUG)
