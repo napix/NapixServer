@@ -44,7 +44,7 @@ class CORSMiddleware(object):
                 ('Access-Control-Allow-Headers',
                  'Authorization, Content-Type'),
                 ('Access-Control-Expose-Headers',
-                 'Content-Length', 'Location')
+                 'Content-Length, Location')
             ])
             return []
 
