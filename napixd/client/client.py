@@ -43,7 +43,7 @@ class Client(object):
     def __init__(self, host, authenticator):
         self.host = host
         authenticator = coerce_authenticator(authenticator)
-        self.conn = Connection(host, authenticator, follow=False)
+        self.conn = Connection(host, authenticator)
 
     def request(self, method, url, body='', headers=None):
         try:
