@@ -518,7 +518,7 @@ Meta-options:
         if 'gunicorn' in self.options:
             application = PathInfoMiddleware(application, key='RAW_URI')
         if 'cors' in self.options:
-            application = CORSMiddleware(application)
+            application = CORSMiddleware(application, self.conf.get('cors'))
         if 'hosts' in self.options:
             application = HTTPHostMiddleware(self.hosts, application)
         if 'logger' in self.options:

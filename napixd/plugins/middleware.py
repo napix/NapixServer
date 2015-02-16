@@ -32,26 +32,39 @@ class CORSMiddleware(object):
     Requests.
     """
 
-    def __init__(self, application):
+    def __init__(self, application, config):
         self.application = application
+        exposed_headers = config.get('exposed_headers', None, type=list)
+
+        if exposed_headers:
+            self.exposed_headers = u', '.join(exposed_headers).encode('latin9')
+        else:
+            self.exposed_headers = 'Location, Content-Type'
+
+        if config.get('origins'):
+            self.allowed_origins = u', '.join(config.get('origins', type=list))
+        else:
+            self.allowed_origins = '*'
 
     def __call__(self, environ, orig_start_response):
         if environ['REQUEST_METHOD'] == 'OPTIONS':
             orig_start_response('200 OK', [
-                ('Access-Control-Allow-Origin', '*'),
+                ('Access-Control-Allow-Origin', self.allowed_origins),
                 ('Access-Control-Allow-Methods',
                  'GET, POST, PUT, CREATE, DELETE, OPTIONS'),
                 ('Access-Control-Allow-Headers',
                  'Authorization, Content-Type'),
-                ('Access-Control-Expose-Headers',
-                 'Content-Length, Location')
             ])
             return []
 
-        def start_response(status, headers):
-            headers = list(headers)
-            headers.append(('Access-Control-Allow-Origin', '*'))
-            orig_start_response(status, headers)
+        if 'HTTP_ORIGIN' in environ:
+            def start_response(status, headers):
+                headers = list(headers)
+                headers.append(('Access-Control-Expose-Headers', self.exposed_headers))
+                headers.append(('Access-Control-Allow-Origin', self.allowed_origins))
+                orig_start_response(status, headers)
+        else:
+            start_response = orig_start_response
 
         return self.application(environ, start_response)
 
