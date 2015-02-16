@@ -31,11 +31,10 @@ class TestClient(unittest.TestCase):
             with mock.patch('napixd.client.client.LoginAuthenticator') as LA:
                 Client('server.napix.nx', {'login': 'user', 'key': 'pass'})
         LA.assert_called_once_with('user', 'pass')
-        Con.assert_called_once_with(
-            'server.napix.nx', LA.return_value, follow=False)
+        Con.assert_called_once_with('server.napix.nx', LA.return_value)
 
     def test_client(self):
         auth = mock.Mock()
         with mock.patch('napixd.client.client.Connection') as Con:
             Client('server.napix.nx', auth)
-        Con.assert_called_once_with('server.napix.nx', auth, follow=False)
+        Con.assert_called_once_with('server.napix.nx', auth)
