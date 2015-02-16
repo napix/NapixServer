@@ -43,6 +43,8 @@ class CORSMiddleware(object):
                  'GET, POST, PUT, CREATE, DELETE, OPTIONS'),
                 ('Access-Control-Allow-Headers',
                  'Authorization, Content-Type'),
+                ('Access-Control-Expose-Headers',
+                 'Content-Length', 'Location')
             ])
             return []
 
