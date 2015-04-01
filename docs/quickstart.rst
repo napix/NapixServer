@@ -11,7 +11,7 @@ Install the napix server::
 
     virtualenv napix
     source napix/bin/activate
-    pip install http://builds.enix.org/napix/napixd-latest.tar.gz
+    pip install -i http://pi.enix.org http://builds.enix.org/napix/napixd-latest.tar.gz
 
 .. note::
 
@@ -68,9 +68,12 @@ Install a module
 Modules come from two sources: the config file and the ``auto`` directory.
 In the config file, modules are listed in the mapping ``Napix.managers``.
 
-Edit ``HOME/conf/settings.json`` and add  the follwing inside the braces after ``managers`` inside ``Napix`` ::
+Edit ``HOME/conf/settings.json`` and add  the follwing inside the braces after ``managers``::
 
-    "hello" : "napixd.contrib.helloworld.HelloWorld"
+    managers {
+        bonjour = 'napixd.contrib.helloworld.ConfiguredHelloWorld'
+    }
+
 
 Stop the server by pressing ``Ctrl-C`` and restart it.
 Open a browser at http://127.0.0.1:8002/hello/ and http://127.0.0.1:8002/hello/world .
@@ -86,26 +89,24 @@ Configure a module
 Module added by the config file may receive a configuration.
 The configuration is stored in the root object of the configuration.
 
-Edit ``HOME/conf/settings.json`` and add  the follwing inside the braces after ``managers`` inside ``Napix`` ::
+Edit ``HOME/conf/settings.conf`` and add the following inside the braces after
+``managers`` inside ``Napix`` ::
 
-    "bonjour" : "napixd.contrib.helloworld.ConfiguredHelloWorld",
-    "gutentag" : "napixd.contrib.helloworld.ConfiguredHelloWorld",
+    managers {
+        bonjour = 'napixd.contrib.helloworld.ConfiguredHelloWorld'
+        gutentag = 'napixd.contrib.helloworld.ConfiguredHelloWorld'
+    }
 
 ConfiguredHelloWorld does the same as HelloWorld, but it takes a configuration.
 The configuration of ConfiguredHelloWorld contains a key **hello** that links to a localized hello world message.
 
-Add the configuration inside the root object, outside of ``Napix``::
+Add the configuration inside the conf file, outside of ``Napix``::
 
-    {
-        "Napix" : {
-            ...
-        },
-        "bonjour" : {
-            "hello" : "Le monde"
-        },
-        "gutentag" : {
-            "hello" : "Die Welt"
-        }
+    Manager 'bonjour' {
+        hello = 'Le monde'
+    }
+    Manager 'gutentag' {
+        hello = 'Die Welt'
     }
 
 Restart the Napix Server and open your browser at http://127.0.0.1:8002/bonjour/world and http://127.0.0.1:8002/gutentag/world .
