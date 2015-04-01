@@ -54,7 +54,7 @@ The development setup
 
 In order to develop on napix without being embarrassed with extra features::
 
-    napixd only print_exc times gevent app reload useragent webclient auto
+    napixd noauth print_exc
 
 This setup disable authentication and notifications and print the caught exceptions in the console.
 
